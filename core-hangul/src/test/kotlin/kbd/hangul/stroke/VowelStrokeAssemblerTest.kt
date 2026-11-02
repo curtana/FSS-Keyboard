@@ -444,6 +444,20 @@ class VowelStrokeAssemblerTest {
     }
 
     @Test
+    fun `VS-15 a lone first stroke's other role with C - the center syllable's bracket (FSS#36)`() {
+        assertEquals(OtherRole.Dot(DotPlace.UNDER), write(C, v(237, 80, 174)).otherRole)    // shows ㅣ; could be ㅗ·ㅛ's dot
+        assertEquals(OtherRole.Vowel(Jamo.I), write(C, v(177, 176, 199)).otherRole)         // shows a dot; could be ㅣ
+        assertEquals(OtherRole.Dot(DotPlace.RIGHT), write(C, h(184, 137, 247)).otherRole)   // shows ㅡ; could be ㅓ·ㅕ's dot
+        assertEquals(OtherRole.Vowel(Jamo.EU), write(C, h(124, 227, 247)).otherRole)        // shows a dot; could be ㅡ
+        assertNull(asm().otherRole)                                                          // no stroke
+        assertNull(write(v(100, 40, 160)).otherRole)                                         // bare: no C
+        val two = write(C, v(237, 80, 174), h(124, 237, 262))
+        assertNull(two.otherRole)                                                            // the second stroke settled it
+        two.pop()
+        assertEquals(OtherRole.Dot(DotPlace.UNDER), two.otherRole)                          // ⌫ back to one: both roles again
+    }
+
+    @Test
     fun `debug text (issue 217) - role by C with its numbers, why a stroke would be ignored, the state and candidates`() {
         val a = asm()
         assertEquals("empty vowel=- pending=-", a.stateText())

@@ -125,7 +125,7 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | FR-SWP-60~65 (0.16, 이슈 #160) | LLD-04 4.7 `classifyCheonjiin`, 6절 매퍼의 조립기(기준 키 예외·조립 닫기·`popElement`·`pendingGlyph`), 7.1 `ReplaceVowel` 단위, 8.1 천지인 키, 9.3 `guided`; LLD-05 4절(core-hangul 소속); LLD-06 4절; LLD-08 6.1 | SL-01, CK-01~CK-04, CJ-50~CJ-59, SW-10, SW-11, ID-30~ID-33 |
 | FR-DSP-01~08 | LLD-04 5절·9.3(그 키의 음절, 모든 자음 키, 0.18), LLD-06 | PS-01~PS-18, GT-01~GT-10, SW-05, SW-08, PG-04, PG-05, PG-07, DV-01~DV-04 |
 | FR-DSP-09 | LLD-04 9.4(획 자국) | SW-08b, SW-12, SW-13, TU-61 |
-| FR-DSP-10 (0.21, 이슈 #180 후속, 0.35 FSS#36·#37) | LLD-04 9.5 `CenterConsonantPainter`·`CenterText`, `SwipeHost.centerText`, LLD-08 6.1 `InputDispatcher.centerText`, LLD-04 6.3 `otherRole`, 8.1 `SwipeLayout.consonantBox`, LLD-07 2.3 `PracticeInput.centerText` | CS-01~CS-04, SW-14~SW-17·SW-14b, CT-01~CT-07, SL-08, TU-62, DV-29 |
+| FR-DSP-10 (0.21, 이슈 #180 후속, 0.35 FSS#36·#37) | LLD-04 9.5 `CenterConsonantPainter`·`CenterText`, `SwipeHost.centerText`, LLD-08 6.1 `InputDispatcher.centerText`, LLD-04 6.3 `otherRole`, 8.1 `SwipeLayout.consonantBox`, LLD-07 2.3 `PracticeInput.centerText` | VS-15, CS-01~CS-04, SW-14~SW-17·SW-14b, CT-01~CT-07, SL-08, TU-62, DV-29 |
 | FR-TUT-01 | LLD-07 2.5 `PracticeLaunchPolicy`(처음 한 번 주제 목록만) | PR-09, SS-05, DV-11 |
 | FR-TUT-02 (04·07·08 삭제) | LLD-07 2.2·2.3 | PR-01, PR-06~PR-08, PR-10~PR-12, PR-20, DV-24 |
 | FR-TUT-05 | LLD-07 3절(고정값), 7절(안내 없음) | DV-11 |
@@ -559,7 +559,7 @@ T27(PR #78)·T30(PR #84) 구현 중 찾은 LLD 0.4의 빈틈이다. 두 PR이 �
 | SRS FR-DSP-01·04, SWIPE 9.1 | 다음 획 자리 표시 삭제. 코드는 0.18부터 그리지 않았으므로 바뀜 없음 | LLD-06 0.24, LLD-04 5.2 |
 | SRS FR-DSP-03 | 현재 글자는 모음만 그대로(바뀜 없음) | LLD-06 |
 | SWIPE 3.6.5 (가) | 시험 C = (139, 76)–(221, 172), 사례 y + 24(결과 그대로). C를 쓰는 다른 시험 획도 y + 24 | LLD-11 0.39 |
-| 시험 | CS-01 새 뜻·CS-04, SW-14b, CT-01~CT-07, DV-29 | LLD-11 0.39 |
+| 시험 | VS-15, CS-01 새 뜻·CS-04, SW-14b, CT-01~CT-07, DV-29 | LLD-11 0.39 |
 
 - **확인할 것(실기기, DV-29):** 괄호의 크기·자리(C 위 반 키 높이, 쌍자음 줄 라벨과 겹침), 점의 크기, 줄 높이 64dp에서 마지막 ㅣ의 오른쪽 여유(SWIPE 9.5 공간 점검). 수치는 상수 한곳(`CenterConsonantPainter.OTHER_*`·`DOT_*`, `SwipeLayout.C_*`).
 
