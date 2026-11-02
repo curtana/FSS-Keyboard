@@ -26,7 +26,6 @@ class TemplateMatcherTest {
         Template(id, TemplateOutput.Text(id), corners, listOf(pts.toList()))
 
     private fun scoreOf(s: InkStroke, t: Template): Float = TemplateMatcher.best(s, listOf(t))!!.second
-
     // --- GR-21..GR-24 -------------------------------------------------------------------------------------
 
     @Test
@@ -106,6 +105,7 @@ class TemplateMatcherTest {
         assertTrue(TemplateMatcher.cornerCount(roundedPts) >= 2)
         val noAid = { t: Template -> TemplateMatcher.best(rounded, listOf(t.copy(corners = TemplateMatcher.cornerCount(roundedPts))))!!.second }
         assertTrue("raw ㅇ > raw ㅁ", noAid(ieung) > noAid(mieum))
+        // Its corners also keep it off the loop comparison (FSS#33, step 4a): the raw ㅇ score is the plain one.
         assertEquals(noAid(ieung) - TemplateMatcher.CORNER_PENALTY, scoreOf(rounded, ieung), 1e-6f)
         assertEquals("ko_m", TemplateMatcher.best(rounded, listOf(ieung, mieum))!!.first)
     }
