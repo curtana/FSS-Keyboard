@@ -22,7 +22,7 @@ One file = one stroke: `{ "area": "LETTER", "lang": "KO", "points": [[x, y, t], 
 
 So GR-EVAL measures robustness of the templates to distortion of the shapes they were drawn from, not accuracy on real users. Real-device strokes (GRAFFITI 7) should replace or join these sets before TBD-12 is set.
 
-`device/ko/` is the exception: raw touches read with `adb shell getevent` on a tablet (density 360, so px / 2.25 = dp) while "갸" (ㄱ ㅣ ㆍ ㆍ) was written ten times, shifted into the letter area. Six of its ten ㅣ strokes end in a short move back up as the finger lifts (LLD-05 §3.1 step 2 lift-off tail).
+`device/ko/` is the exception: raw touches read with `adb shell getevent` on a tablet (density 360, so px / 2.25 = dp) while "갸" (ㄱ ㅣ ㆍ ㆍ) was written over and over, shifted into the letter area (taps on the auxiliary bar left out): 84 strokes, 23 of them ㅣ. The long ㅣ strokes end in a short move back up as the finger lifts (LLD-05 §3.1 step 2 lift-off tail).
 
 Regenerate (repository root, project venv):
 
