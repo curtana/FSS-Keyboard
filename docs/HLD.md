@@ -334,10 +334,10 @@ nextEnabled(m) = 순서상 m 다음의 첫 켜진 모드
     if returnMode != null: current = returnMode; returnMode = null   (previous 안 바꿈)
 applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면 곧바로)와 onStartInputView마다    // FR-CMN-03f ②~④
   if previous ∉ enabled: previous = null
-  if returnMode != null and returnMode ∉ enabled: returnMode = nextEnabled(returnMode)
+  if returnMode != null and returnMode ∉ enabled: returnMode = nextEnabled(returnMode); 마지막 모드 저장(= returnMode)
   if current ∉ enabled: 확정·조립기 초기화(FR-CMN-03d); current = nextEnabled(current)   (typed·previous 안 바꿈)
                         if returnMode == null: 마지막 모드 저장
-프로세스 시작 → current = 저장된 마지막 모드(꺼져 있으면 nextEnabled), previous = 없음, typed = false, returnMode = 없음
+프로세스 시작 → current = 저장된 마지막 모드(꺼져 있으면 nextEnabled로 고치고 마지막 모드로 저장), previous = 없음, typed = false, returnMode = 없음
 모드 키 →
   확정(finishComposingText, 입력 단위 목록은 확정으로 소멸), SwipeInputMapper의 모음 획 조립기·천지인 조립기 초기화   // FR-CMN-03d
   if typed and previous != null and previous != current:  next = previous      (previous는 늘 켜진 모드, applyEnabled)
@@ -348,6 +348,7 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 ```
 
 - 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 8행(FR-CMN-03f)을 단위 시험한다. 켜진 모드 집합은 밖(`SettingsStore`)에서 받아 넣는다.
+- **설정 변경 전달:** `KeyboardService`가 `SettingsStore`의 켜진 모드 값(Flow)을 구독한다. 값이 바뀌면 `applyEnabled`를 부르고, 입력 뷰가 떠 있는 동안 `current`가 바뀌었으면 입력 뷰를 새 모드의 뷰로 바꾼다(`setInputView`, 모드 전환과 같은 경로). 떠 있지 않으면 다음 `onStartInputView`의 `applyEnabled`가 맡는다.
 - 그래피티 안의 한영 상태(`GraffitiState`, 5장)는 `ModeController`와 따로이고 켜진 모드와 상관없다(FR-CMN-03f ⑥).
 - 숫자류 입력창 안에서도 모드 키는 위 규칙 그대로다(typed·previous 포함). 마지막 모드 저장만 하지 않으므로, 숫자류 입력창 안에서 프로세스가 다시 시작되면 저장된 마지막 모드(= 돌아갈 모드)를 `returnMode`로 삼아 다시 쿼티로 시작한다(사례 표 7행).
 - 위 "모드 키 →"는 모드 키의 **탭** 결과(8.2절의 `ModeKeyTap`)일 때만이다. ↑(설정 열기)는 `ModeController`를 거치지 않는다.
@@ -541,4 +542,4 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 | 0.59 | 2026-11-02 | SRS 0.65·SWIPE 0.47 반영(오너 결정 2026-11-02, 이슈 #251: 공개판·개인판을 하나로 합침): 3장 의존 방향·`gesture-engine`·`app` 행, 3.1 빌드 변형 삭제, 6장 제목, 7.1 튜터 그림의 public 경로, 7.2 표 1-1, 12장 결정 표·13장 추적표의 빌드 변형 행 |
 | 0.60 | 2026-11-02 | SRS 0.66 반영(오너 결정 2026-11-02, 이슈 #254): 5장 템플릿·획 안내표 그리기의 출처 표현을 중립 표현으로 |
 | 0.61 | 2026-11-02 | (검수 반영: 3장 그림·7.1 코드 이름 `Practice…`로 통일, 11장 ⑩ 완화 칸. 오너 결정 A: 탭 자판 연습은 실제 자판 그대로·⌫ 반영 뒤 판정(7.1, 시험 표). PM 결정 B: `posTolDp` = 실행 때 실제 키 폭 × 0.4(7.1, 7.2)) SRS 0.68·SWIPE 0.48 반영(오너 방향·결정 2026-11-02, FSS#17): 7장을 입력 연습과 저장소로 — 7.1 그림(주제 목록 → 설명 → 항목 → 끝, 주제별 연습 자판, `PracticeItemJudge` 결과 판정, 재는 것·저장 없음, 첫 실행은 주제 목록만)과 빠지는 것, 7.2 고정 기준값 표(코드 상수, 저장 파일·내보내기·가져오기·초기화 없음, 옛 저장 파일은 읽지 않음), 7.3 기준값 행 삭제 |
-| 0.62 | 2026-11-02 | SRS 0.69·SWIPE 0.49 반영(오너 결정 2026-11-02, FSS#31): 8.1 `ModeController`에 켜진 모드 집합·`nextEnabled`·`applyEnabled`(꺼진 모드 건너뜀, 이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로), 8장 `onCreateInputView`·`onStartInputView` 행, 7.1 주제 목록의 "꺼져 있음" 표시, 7.3 설정에 켜진 모드, 11장 시험, 13장 추적(FR-CMN-03f, FR-SET-08) |
+| 0.62 | 2026-11-02 | SRS 0.69·SWIPE 0.49 반영(오너 결정 2026-11-02, FSS#31): 8.1 `ModeController`에 켜진 모드 집합·`nextEnabled`·`applyEnabled`·설정 변경 전달(Flow 구독, 뷰 교체)(검수 반영: 돌아갈 모드·시작 때 고친 모드도 마지막 모드로 저장)(꺼진 모드 건너뜀, 이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로), 8장 `onCreateInputView`·`onStartInputView` 행, 7.1 주제 목록의 "꺼져 있음" 표시, 7.3 설정에 켜진 모드, 11장 시험, 13장 추적(FR-CMN-03f, FR-SET-08) |
