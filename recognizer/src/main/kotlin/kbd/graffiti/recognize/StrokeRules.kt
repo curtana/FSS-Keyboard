@@ -18,6 +18,8 @@ object StrokeRules {
     const val CORNER_RATIO = 0.15f
     const val LINE_STRAIGHTNESS = 0.92f
     const val LINE_SECTOR_DEG = 20.0
+    /** Lift-off tail limit (FSS#47): device tails were 5–13 dp, at most 9 % of the stroke. */
+    const val LIFT_TAIL_RATIO = 0.2f
 
     private val SECTORS: List<Pair<Double, StrokeToken>> = listOf(
         90.0 to StrokeToken.LineDown,
@@ -43,9 +45,10 @@ object StrokeRules {
     /**
      * Step 2: straightness |end − start| / L ≥ [LINE_STRAIGHTNESS] and direction within [LINE_SECTOR_DEG]
      * of one of the six line directions. Null for a curve or a straight line in no sector (→ templates).
+     * A lift-off tail is left out first ([liftTailCut]).
      */
     fun line(stroke: InkStroke): StrokeToken? {
-        val pts = stroke.points
+        val pts = stroke.points.subList(0, liftTailCut(stroke.points) + 1)
         val length = pathLength(pts)
         if (length <= 0f) return null
         val dx = (pts.last().x - pts.first().x).toDouble()
@@ -53,6 +56,20 @@ object StrokeRules {
         if (hypot(dx, dy) / length < LINE_STRAIGHTNESS) return null
         val theta = Math.toDegrees(atan2(dy, dx))
         return SECTORS.firstOrNull { (center, _) -> angleDiff(theta, center) <= LINE_SECTOR_DEG }?.second
+    }
+
+    /**
+     * Index of the last point the line rule looks at (FSS#47). A finger often slides back a few dp as it
+     * lifts; when the path after the point farthest from the start is at most [LIFT_TAIL_RATIO] of the path
+     * up to it, the stroke ends at that point. A longer way back (a retracing stroke) keeps the whole stroke.
+     */
+    internal fun liftTailCut(pts: List<InkPoint>): Int {
+        val p0 = pts[0]
+        val far = pts.indices.maxBy { hypot(pts[it].x - p0.x, pts[it].y - p0.y) }
+        if (far == pts.lastIndex) return far
+        val head = pathLength(pts.subList(0, far + 1))
+        val tail = pathLength(pts.subList(far, pts.size))
+        return if (tail <= head * LIFT_TAIL_RATIO) far else pts.lastIndex
     }
 
     /** Start inside the top-left [CORNER_RATIO] of the area's width and height (FR-GRF-05a). */
