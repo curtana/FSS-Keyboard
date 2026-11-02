@@ -6,9 +6,8 @@ import android.util.Log
 
 /**
  * The `FSSStroke` debug stroke log (issue #217): `adb logcat -s FSSStroke`. On only in debuggable builds (the
- * release build type is not debuggable), so it never ships in a release. The swipe keyboard and the tutor's
- * swipe practice keyboard both write their lines ([StrokeLogLine]) through [sink]; whichever has a context
- * first calls [init] (the keyboard view, the practice guide).
+ * release build type is not debuggable), so it never ships in a release. The swipe keyboard (also the input
+ * practice's, FSS#17) writes its lines ([StrokeLogLine]) through [sink]; the view calls [init] with its context.
  */
 internal object StrokeDebugLog {
     const val TAG = "FSSStroke"

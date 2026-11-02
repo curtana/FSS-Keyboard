@@ -5,8 +5,7 @@ import kbd.stroke.geom.StrokePoint
 /**
  * The vowel strokes' trail (SWIPE 9.4, SRS FR-DSP-09, issue #173): the path of each vowel stroke as
  * the finger drew it, kept after release, one kept path per stroke of the open vowel assembly.
- * Display only (never judged with); Android-free so the swipe keyboard and the tutor's practice
- * keyboard share it.
+ * Display only (never judged with); Android-free (the input practice shows the same swipe view, FSS#17).
  *
  * The kept paths always follow the assembly: [sync] cuts them to the number of open strokes, so an
  * input that closes the assembly (a tap, a number or symbol, a function key, the cheonjiin key, a

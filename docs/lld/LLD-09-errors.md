@@ -1,12 +1,13 @@
 # LLD-09 오류 처리
 
 - 대응 HLD 절: 9장(오류 처리)
-- 버전 **0.18** (2026-11-01)
+- 버전 **0.19** (2026-11-02)
+- 0.19(FSS#17: 기준값이 코드 상수): 3절 기준값 파일 손상 처리를 지웠다(파일을 읽지 않음, LLD-07 4절).
 - 0.18(이슈 #173): 긋기 스냅숏(`SwipeMapperSnapshot`)에 모음 획 조립기의 획 열(`strokes`)이 더해짐(천지인 요소 `cj`와 함께).
 - 0.17(이슈 #168): 긋기 스냅숏(`SwipeMapperSnapshot`)은 천지인 조립기 요소(`cj`)뿐이다(기준 키·쌍자음 후보 없음).
 - 0.16(이슈 #160): 긋기 스냅숏(`SwipeMapperSnapshot`)에 천지인 조립기 요소(`cj`)가 들어간다.
 - 0.14(이슈 #150): 긋기 스냅숏의 엔진 상태가 `BlockParser`에서 `SwipeInputMapper`(기준 키·쌍자음 후보)로 바뀌었다.
-- `ErrorLog`는 [LLD-07-tutor-store.md#62-errorlog](LLD-07-tutor-store.md#62-errorlog), `ThresholdStore.load`는 [LLD-07-tutor-store.md#4](LLD-07-tutor-store.md#4-thresholdstore)에 있다.
+- `ErrorLog`는 [LLD-07-tutor-store.md#62-errorlog](LLD-07-tutor-store.md#62-errorlog)에 있다(0.19: `ThresholdStore`는 FSS#17로 삭제).
 - 요구: NFR-03, NFR-05, FR-TUT-05.
 
 ## 1. 원칙
@@ -43,16 +44,9 @@ catch (e: Exception) { state.restore(s); log.record(site, e); return null }
   - 편집기가 그 쓰기를 실제로 반영한 뒤에 예외가 났다면 편집기와 조합기가 어긋날 수 있다. `InputConnection`은 실패를 반환값(`false`)으로 알리고 예외를 내지 않으므로(`AndroidEditorPort`는 반환값을 쓰지 않는다, LLD-08 4절) 이 경로는 우리 코드 결함에서만 생기며, 오류 기록으로 찾는다. 0.4의 "조합기 `finish()` + 표시 상태 비움"은 EG-05(되돌림)와 반대 결과였고 HLD 9장과도 맞지 않아 없앴다.
 - 근거: NFR-03, HLD 9장. 시험: EG-01~EG-06, CC-20~CC-22.
 
-## 3. 기준값 파일 손상
+## 3. ~~기준값 파일 손상~~ (0.19 삭제, FSS#17)
 
-| 경우 | 동작 | 근거 |
-|---|---|---|
-| 파일 없음 | 기본값(`ThresholdDefaults`), `LoadStatus.DEFAULT_MISSING` | FR-TUT-05 |
-| 해독 실패·`version` 모름·값 범위 밖 | 기본값, `DEFAULT_CORRUPT`, `ErrorLog.record("ThresholdStore.load", e)`. 손상 파일은 지우지 않고 그대로 둔다(다음 저장이 덮어씀) | HLD 9장 |
-| 가져오기 파일이 잘못됨 | 저장하지 않고 `ImportResult.Invalid` | FR-TUT-07 |
-| 저장 실패 | 이전 파일 유지(임시 파일 + 이름 바꾸기), 기록 | D-21 |
-
-- `DEFAULT_*`면 기본값으로 동작하고 따로 안내하지 않는다(HLD 9장, SRS FR-TUT-05. DCR-10은 오너 결정으로 대체됨).
+기준값은 코드 상수라 읽는 파일이 없다(LLD-07 3·4절). 옛 `thresholds.json`은 읽지 않는다.
 
 ## 4. 그 밖의 실패
 

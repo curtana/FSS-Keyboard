@@ -10,7 +10,7 @@ import kbd.stroke.threshold.Thresholds
  */
 data class GuideFlags(val directionOn: Boolean, val nextCharOn: Boolean, val bigCurrentOn: Boolean) {
     companion object {
-        /** [field] null = the tutor practice keyboard, which has no input field (FR-TUT-11, issue #135). */
+        /** [field] null = no input field (the input practice passes its plain text field, FR-TUT-11). */
         fun of(s: Settings, field: FieldInfo?): GuideFlags = GuideFlags(
             directionOn = s.showDirectionGuide,
             nextCharOn = s.showNextChar,

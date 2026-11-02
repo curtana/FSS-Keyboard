@@ -23,7 +23,7 @@ data class Thresholds(
 object ThresholdDefaults {
     /**
      * The tap / stroke boundary (owner decision 2026-11-02, issue #217): fixed at the platform touch slop, never
-     * measured by the tutor nor read from a stored file. A tap in place stays a tap; anything drawn further is a
+     * measured nor read from a stored file. A tap in place stays a tap; anything drawn further is a
      * stroke whatever its length (a vowel stroke on the swipe consonant keys; an edge crossing elsewhere).
      */
     const val MIN_CROSS_DP = 8f

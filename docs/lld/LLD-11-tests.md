@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.35** (2026-11-02)
+- 버전 **0.36** (2026-11-02)
+- 0.36(FSS#17, LLD-07 0.24): 튜터를 입력 연습으로 바꾸며 튜터·기준값 저장 시험을 지웠다: PG-01, PG-02, PG-03, PG-04, PG-05, PG-06, PG-07, TE-01, TE-02, TE-03, TE-04, TE-05, TE-06, TE-07, TE-08, TE-09, TE-10, TJ-01, TJ-02, TJ-03, TJ-04, TJ-05, TJ-06, TJ-07, TJ-08, TJ-09, TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08, TS-09, TS-10, TS-11, TU-01, TU-02, TU-03, TU-04, TU-05, TU-06, TU-07, TU-08, TU-09, TU-10, TU-11, TU-12, TU-13, TU-14, TU-15, TU-16, TU-17, TU-18, TU-18b, TU-19, TU-20, TU-21, TU-22, TU-23, TU-27, TU-28, TU-29, TU-30, TU-31, TU-32, TU-33, TU-34, TU-40, TU-41, TU-42, TU-43, TU-44, TU-45, TU-46, TU-47, TU-48, TU-49, TU-50, TU-51, TU-52, TU-53, TU-54, TU-55, TU-56, TU-57, TU-58, TU-59, TU-62, TY-01, TY-02, TY-03, TY-04. 새 시험은 7.6 입력 연습(PR-01~PR-13, PR-20·PR-21), TH-10(위치 허용 오차 = 키 폭 × 0.4), SS-05 이름 바꿈·SS-07. 9장의 `PracticeKeyboardView` 행과 9.1의 연습 자판 안내 행을 지웠다(연습 자판은 실제 `SwipeKeyboardView`라 SW-08이 같은 것을 본다). DV-11·DV-24를 입력 연습으로 고쳤다. MOD-04에서 `tutorSteps()`를 뺐다.
 - 0.35(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59): MC-11·MC-13 삭제, SS-03은 모르는 저장 이름 사례만, TS-07·MOD 행의 public·HLD 3.1 표기 정리(CON-5·NFR-11·FR-CMN-03b·FR-TUT-08 삭제). 앱 시험은 한 번만 돈다(`testDebugUnitTest`, `testPersonal`·`testPublic` 합침). MOD-01 = `assembleDebug`, MOD-02 = `kbd.app.swipe.impl` 밖 main에 `import kbd.gesture` 없음, MOD-04 = 제공자가 `SwipeEngineModule`. 공개판 튜터 시험 삭제: TU-02, TU-07, TU-30, TU-33, TU-40, TU-41(public 1-1), PG-06(쿼티 1-1 안내 없음), 쿼티 연습 echo 시험 셋, 개인판 쿼티 연습 자판 대체 시험.
 - 0.34(이슈 #246): ㅄ = ㅂ(q) → — TA-12(q: ← ㅂ, → ㅄ), TA-20·TA-21(q 힌트 ↑ ㅃ → ㅄ, q ← = ㅂ) 기대값 바뀜.
 - 0.33(이슈 #242 오너 결정(두벌식 겹받침 한 번에)): HC-60(겹받침 11개 = 두 번 치기, 도깨비불 갈가, ⌫ 갈), HC-61(낱자 ㄺ, ㄺ + ㅏ = ㄹ가, 각ㄺ, ㄱㄳ, ㄺㄱ, ⌫), TA-21(두벌식 겹받침 출력, ↑ 시프트 자모 유지, 쿼티 그대로, `edgeHints`), ID-40(다 + ㄹ ← = 닭, ⌫ 달). TK-11·TK-20·TK-23(r ← = ㄳ), TA-12(q ← ㅄ, s ← ㄵ → ㄶ), TA-20(q 힌트에 ← ㅄ, 빈 힌트는 ㅁ; 0.34에서 q는 → ㅄ) 기대값 바뀜.
@@ -842,97 +843,12 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | GT-08 | 〃 | 다음 글자 끔 | showNext false | FR-DSP-08 |
 | GT-09 | – | (삭제, 0.12: 누르고 있기 타이머 없음, GT-04로 합침) | – | – |
 | GT-10 | `GuideFlags.of` | 기본 설정 + 보통 입력창 / 입력창 없음(튜터) / 세 설정 끔 / 비밀번호 입력창 / 학습 금지 입력창 | 모두 켬 / 모두 켬 / 모두 끔 / `bigCurrentOn` false(설정과 상관없이) / 모두 켬(0.21: 학습 금지 칸은 표시 그대로), 다음 글자는 늘 그대로 | FR-DSP-08, FR-CMN-08 ①② (0.21), FR-TUT-11 (0.11) |
-| TE-01 | `ThresholdEstimator.boundary` | short [1..10], long [20..30] | Ok((p90 + p10) / 2) | HLD 7.1 |
-| TE-02 | 〃 | short p90 ≥ long p10 | Overlap | FR-TUT-03 |
-| TE-03 | 〃 | 표본 부족 | NotEnough | 3절 |
-| TE-04 | `percentile` | [1,2,3,4], 90 | 3.7 | D-20 |
-| TE-05 | 〃 | [5], 10 | 5 | D-20 |
-| TE-06 | 〃 | 정렬 안 된 입력 | 정렬 뒤 같은 값 | 3절 |
-| TE-07 | `oneSidedDistance` | 탭 흔들림 [1..10] (10개), 여유 4 | Ok(13.91) (P99 = 9.91) | HLD 7.1 1단계 (DCR-09) |
-| TE-08 | (0.18 삭제: 2-1 쌍자음 시간 창 없음. `toStoredMs` 반올림은 그대로 시험) | `toStoredMs(271.5)` | 272 | – |
-| TE-09 | `oneSidedDistance` | 표본 9개 | NotEnough | 3절 |
-| TE-10 | `oneSidedDistance` | 아주 넓게 퍼진 표본 | Ok(겹침 검사 없음, Overlap이 나오지 않음) | HLD 7.1 "분포가 하나라 겹침 검사는 없다" |
-| TU-01 | `SwipeEngineModule.tutorSteps` | – | 1-1, 1-2, 3-1, 3-4, 5-1(0.19: 3-2 없음) | FR-TUT-02 |
-| ~~TU-02~~ | `NoSwipeModule.tutorSteps` | – | 1-1(쿼티 글자 키)만 | FR-TUT-08 | (0.35 삭제, 이슈 #251)
-| TU-03 | `TutorSession` 1-1 + 1-2 | 탭 흔들림, 점 22~30, 긴 획 80~90 | minCrossDp = 8 그대로(0.28), longDp = 점 ↔ 긴 획 공식, calibration(탭 44·점 20·긴 획 30·위치 20) | FR-TUT-13 (0.19) |
-| TU-04 | 〃 1-2 | 점 50 / 긴 획 45(겹침) × 3 | Overlap(LONG) 둘(다시, ㄱ부터), 셋째 Accepted, extraRounds 2, gap ≤ 0 | SWIPE 10, D-56 (0.19) |
-| TU-05 | (0.10에서 없앰: 머물기 단계) | – | – | 이슈 #127 |
-| TU-06 | 〃 완료 | – | `keySizeDp`가 연습 자판 키 크기 | HLD 7.1 |
-| ~~TU-07~~ | `TutorSession`(public) 1단계 | 쿼티 글자 키 탭 10회(목표 q~p 한 번씩) | `minCrossDp` = 8 그대로(0.28, 공식 값은 쓰지 않음), Accepted(Overlap 없음), 튜터 끝 | HLD 7.1·7.2 1단계 (DCR-09) | (0.35 삭제, 이슈 #251)
-| TU-08 | (0.19 삭제: 3-2 없음) | – | – | 이슈 #173 |
-| TU-09 | (0.18 삭제: 2-1 없음) | – | – | 이슈 #168 |
-| TU-10 | `TutorLaunchPolicy.shouldAutoStart` | `tutorAutoStarted` false / true | true / false | FR-TUT-01 |
-| TU-11 | 첫 실행 흐름(`TutorLaunchPolicy` + 가짜 `SettingsStore`) | 첫 열기 → 튜터 건너뜀 → 다시 열기 | 첫 열기: `setTutorAutoStarted(true)`가 튜터 시작보다 먼저 1회, 튜터 시작 1회 / 다시 열기: 튜터 시작 0회 | FR-TUT-01, 05 (DCR-10 대체 결정) |
-| TU-12 | 튜터 건너뛰기 | 1-2에서 건너뜀 | `ThresholdStore.save` 0회, 키보드는 기존 값(없으면 기본값). 안내 표시 호출 없음 | FR-TUT-05 |
-| TU-13 | `QwertyPracticeEcho`(폭 360, 줄 48) | q 탭, w 2dp 흔들린 탭 / a에서 위 변 너머 16dp / a 위 변 너머 20dp를 `minCrossDp` 30·14로 | "qw" / "A" / "a"·"A" | FR-TUT-09, LLD-05A 2.2 |
-| TU-14 | `SwipePracticeEcho` | ㄱ탭, ㅣ, 점, ㄱ탭 / 위로·점·ㄴ탭 / 첫 가로 60dp(longDp 51·80) | ㄱ → 기 → 가 → 각, openStrokes 1·2·0 / lastIgnored, ㄱㆍ, ㄱㄴ / ㅡ·ㆍ | FR-TUT-09 (0.19) |
-| TU-15 | `TutorFlow` + 단계 시도마다 새 echo | 한 단계 19획 / 20획째 Overlap / 다시 3획 / 표본이 차 Accepted | 줄 19자 / 빈 줄(새 echo) / 3자 / 빈 줄, 다음 단계 | FR-TUT-09 "단계가 바뀌거나 다시 할 때 비움" |
-| TU-16 | 〃 | 2획 뒤 단계 끝 버튼(NotEnough) / 20자·25자 | 2자 그대로 / 20자 그대로·"…" + 끝 19자 / 폭 0이면 echo에 넣지 않고 측정만 | FR-TUT-09, D-38 |
-| TU-17 | personal 흐름 | 1-1 ✓✗✗ … → 1-2 가(탭, ㅣ, 점) ✓ → 꺼 차례에 ㅣ ✗ → 위로 ✗ | 안내 "꺼 = ㄲ 탭 → 자음 오른쪽에 오른쪽으로 → 점 오른쪽 끝에서 점이 위나 가운데에 오게 아래로", 둘째는 덧붙임 줄 | SWIPE 10.1 (0.21) |
-| TU-18 | (0.14 삭제: 4-1 없음) | – | – | – |
-| TU-19 | (0.14 삭제: `wordSamples` 없음) | – | – | – |
-| TU-20 | 5-1 | `itemSpec` / 스페이스 키 획 / 문장 4개 [다음] | null(판정 없음) / `judgement` null / Accepted(값 그대로) | HLD 7.1, FR-TUT-12 "5과 판정 없음" (0.15, 3-3 없음) |
-| TU-21 | (0.14 삭제: `SwipeSentenceJudge` 없음) | – | – | – |
-| TU-22 | `TutorFlow` 설명 | 설명 중 획 / `startPractice` 뒤 획 | 무시(줄 빔) / 줄에 보임 | FR-TUT-02 |
-| TU-32 | `TutorSession`(personal) 1-1 | 흔들림 1~14 탭, 획마다 `currentTarget`·`progress` | 목표 ㄱ ㄴ … ㅎ 차례, 진행 0/14 … 13/14, Accepted, `minCrossDp` = `oneSidedDistance(1..14)` | 이슈 #144 |
-| ~~TU-33~~ | `TutorSession`(public) 1-1 | 탭 10회 | 목표 q w e r t y u i o p 차례, 진행 0/10 … 9/10, Accepted | 이슈 #144 | (0.35 삭제, 이슈 #251)
-| TU-18b | `TutorSteps` | 단계와 화면 번호 | 1-1, 1-2, 3-1, 3-4, 5-1 / 1-1, 1-2, 2-1, 2-4, 3-1 | 0.19 |
-| TU-34 | `STEP_1_2` | 항목, 획 수, 한 바퀴 | 가 거 고 구 그 기 아 오 이, 가 3·그 2, 물은 항목 가 꺼 노 두 뜨 띠 아 오 이, 6/30 | SWIPE 10 (0.19) |
-| TJ-01 | `record` | 7.9dp / 8dp / ㄲ에서 ↓80 / ← / 제자리 | tap / 획 / 세로·→↓·키 ㄲ / forward 아님 / 축 없음(D-60) | HLD 7.1 (0.19) |
-| TJ-02 | (0.19 삭제: firstPassed 없음) | – | – | |
-| TJ-03 | `judge`(1-2 가) | 누름, 짧은 ㅣ, 긴 점 / 다른 키 / → / ↑ / 제자리 / 2dp | Right / Wrong ×4 / Pending | SWIPE 10.1 1-2 (0.19) |
-| TJ-04 | `judge`(3-1 과, C 없음) | 탭, 점, ㅡ, ㅣ, 점 / 탭 아님 / ㅡ가 점 오른쪽에서 시작(점 아래를 지나지 않음, 0.21) / 마지막 세로 | Right / Wrong ×3 | SWIPE 10.1 3-1 (0.21) |
-| TJ-05 | `HowTo.STROKES` | 21모음 | ㅏ ↓→, ㅙ ↓→↓→↓, ㅞ →↓→↓↓ | SWIPE 3.3 |
-| TJ-06 | 안내 문구 | q, 가, 고, 과, 까, 의, 거, 덧붙임, 21모음 모든 획 | SWIPE 0.35 10.1 보기(자음 기준 첫 획·위치 말 늘 붙임 D-59), "길게·짧게" 없음 | SWIPE 10.1 (0.21) |
-| TJ-07 | `record(...).element`·`judge`(3-4) | 천지인 키 탭 / ↑ / ↓ / → / 가 = [ㄱ 탭, ↑], [ㄱ 탭, ↓, 탭], [ㄱ 탭, →], [ㄱ 탭, ↑, ↑], [ㄱ 탭, ㄱ 키 ↑] | ㆍ / ㅣ / ㅣ / ㅡ / Pending, Right, Wrong, Wrong, Wrong | SWIPE 10.1 3-4 |
-| TJ-08 | `HowTo.ROTATION`·`withInitial` | – / (가, ㄴ) / (괘, ㄲ) / (의, ㄴ) | ㄱ ㄲ ㄴ ㄷ ㄸ ㄹ ㅁ ㅂ ㅃ ㅅ ㅆ ㅇ ㅈ ㅉ ㅊ ㅋ ㅌ ㅍ ㅎ / 나 / 꽤 / 늬 | SWIPE 10장 돌림 (0.18) |
-| TJ-09 | `judge(3-1, consonantBox = C)` | 기: C 위 세로 / C 없이 같은 획 / C 옆 ㅣ, 고: C 아래 긴 점 + 짧은 가로 | Wrong / Right / Right, Right | SWIPE 10.1 "입력 표시와 같다", TBD-24 (0.21) |
-| ~~TU-40~~ | `TutorSession`(public) 1-1 | q 차례에 a 30dp 터치 → q~p 탭 10회(흔들림 1~10) | Wrong, 목표 q 그대로, 진행 0, 안내 "q = q 탭" → Accepted, `minCrossDp` = `oneSidedDistance(1..10)`(틀린 터치는 표본 아님) | FR-TUT-12 | (0.35 삭제, 이슈 #251)
-| ~~TU-41~~ | 〃 | q 차례에 q에서 40dp 흔들린 터치(긋기) | Right, 다음 목표 w | SWIPE 10.1 1-1 "누른 키만" | (0.35 삭제, 이슈 #251)
-| TU-42 | personal `TutorFlow` 1-2·3-4(진동) | 다른 키 / 위로 / 가 / 천지인 ↑↑ | 진동 0 / 1 / ✓ / 2 | SWIPE 10.1 오류 진동 (0.19) |
-| TU-43 | `TutorSession` 1-2 | 다른 키 / → / 위로(reversedLast) / 제자리 / 긴 점·짧은 ㅣ | Wrong ×4 / Right | SWIPE 10.1 (0.19) |
-| TU-44 | (0.19 삭제: 1-2·3-1 판정이 바뀜, TU-43·TU-48·TU-49가 대신함) | – | – | 이슈 #173 |
-| TU-45 | (0.19 삭제: 1-2·3-1 판정이 바뀜, TU-43·TU-48·TU-49가 대신함) | – | – | 이슈 #173 |
-| TU-46 | (0.19 삭제: 1-2·3-1 판정이 바뀜, TU-43·TU-48·TU-49가 대신함) | – | – | 이슈 #173 |
-| TU-47 | (0.19 삭제: 1-2·3-1 판정이 바뀜, TU-43·TU-48·TU-49가 대신함) | – | – | 이슈 #173 |
-| TU-48 | 〃 3-1 | 15항목 한 바퀴(표준 획, 돌림) | 모두 Right, Accepted | SWIPE 10.1 3-1 (0.19) |
-| TU-49 | 〃 3-1 | 갸: ㅣ 왼쪽 점 | Wrong, 같은 항목 | SWIPE 3.6 (0.19) |
-| TU-50 | 안내 문구 | ㄱ, 가, 구, 모든 항목 | 위치 말, "측정" 없음, 5-1 밖 모두 판정 | SWIPE 10.1 (0.19) |
-| TU-51 | 이상값(D-51) | 1-1 키 밖 11dp / 10dp | 표본 없음(Right, 진행 +1) / 표본 1 | LLD-07 3절 (0.18: 2-1 간격 행 삭제) |
-| TU-52 | `TutorSession` 3-4(0.16) | 항목·획 수·안내 / ㄱ탭 + 천지인 → / ㄱ탭 + ↑ + 탭 | "가 — 천지인 키", 3획 / Wrong / Right, 진행 1/1, Accepted(기준값 그대로) | SWIPE 10장 3-4, FR-TUT-02 |
-| TU-53 | personal `TutorFlow` 3-4 ✓ 뒤 5-1(이슈 #163) | ㅇ탭, ㅇ→ / ㅇ탭, ㅇ↓ 길게 | 줄 "아" / "아이", 판정 표시 없음(수정 전: 빈 줄) | FR-TUT-09, 12 |
-| TU-58 | (0.19 삭제: 3-1·3-2 바뀜, TU-34·TU-48이 돌림을 확인) | – | – | |
-| TU-59 | 1-2 → 3-1 | Accepted 뒤 | 3-1 첫 항목 갸(ㄱ부터) | D-56 |
-| TU-55 | 5-1 흐름 | 나, ㅇ탭, 위로, ㅏ, ㄱ탭, ㅣ | 낭 → 낭 → 나아 → 나아기 | SWIPE 10장 (0.19) |
-| TU-56 | 〃 | 아, 천지인 ↑↑, 나 / 점, ㄲ탭, ㅏ | 아ㅣ나 / 아ㅣ나까 | 〃 |
-| TU-57 | 〃 ⌫ | 아가 ⌫ ⌫ ⌫ ⌫ / 아이 [다음] | 아기, 아ㄱ, 아, "" / 4타 | SWIPE 3.5, FR-TUT-10 (0.19) |
-| TU-54 | `TutorSession` 1-1 ✓ 뒤 5-1 첫 획(이슈 #163) | ㅇ탭 | `judgement`·`judgedItem` null | FR-TUT-12 "5과 판정 없음" |
-| TU-27 | `TutorFlow` 1~4과 단계(가짜 echo) | 획마다 text ㄱ / 가 / 각 / 가가(다시 나눔) / 가가ㄴ | `echoAsLine` false, `echoChar` ㄱ, 가, 각, 가, ㄴ | FR-TUT-09(#143) |
-| TU-28 | 〃 | 2획 뒤 NotEnough / 2-2 Accepted → 5과 | 큰 글자 그대로 / 빈 글자, `echoAsLine` true, 빈 줄 | FR-TUT-09 |
-| TU-29 | `TutorFlow` 5과(가짜 echo, personal 5-1) | 두 획 / [다음] | 줄 "곡기"·"가가" / 빈 줄 | FR-TUT-09 |
-| ~~TU-30~~ | public 1-1(`MinCrossOnQwertyStep`, `QwertyPracticeEcho`) | q 탭 / `onPress` / w 위로 나감 / e 차례에 a 탭 / e 탭 | ✓, `echoChar` "q" / 판정·글자 비움 / ✓, "w"(실제는 W, TBD-17 = A) / ✗, "a", 안내 "e = e 탭", 덧붙임 없음, 목표 e 그대로, 진동 0 / ✓, 안내 지움, 줄 "e"(시도마다 새 echo) | FR-TUT-08, 09, 12 (0.15) | (0.35 삭제, 이슈 #251)
-| TU-31 | `TutorFlow.lastChar` | "", "가각", "a" + U+1F600 | "", "각", U+1F600(대리 쌍 통째) | – |
-| TU-23 | `TutorFlow` 5과 | 곡기 두 획(1000~2500ms) [다음], 빈 문장 [다음] | 5타·1500ms·100%, 줄 비움, 다음 문장 / "–"·0%, 끝, 저장 1회, 전체 200타/분·50% | FR-TUT-10, 09 |
-| TS-01 | `ThresholdCodec` | 형식 5 예시 / 모르는 칸 | 왕복 / 무시 | HLD 7.2 (0.19) |
-| TS-02 | `ThresholdStore.load` | 파일 없음 | 기본값, DEFAULT_MISSING | FR-TUT-05 |
-| TS-03 | 〃 | 깨진 JSON / 형식 5에서 longDp 없음 / 형식 2에서 keySizeDp 없음 / 문자열 값 | DEFAULT_CORRUPT | HLD 9장 |
-| TS-04 | 〃 | version 6 | DEFAULT_CORRUPT | 0.19 |
-| TS-05 | 〃 | 칸별 범위 끝값·한 단계 밖(longDp 10·300, posTolDp 1·100) / `minCrossDp` 0·14·20·61·없음 | 받음·거부 / OK, 8(읽지 않음, 0.28) | D-23, 이슈 #217 |
-| TS-10 | 형식 3·4 | 예시, 옛 칸 값 엉망 | 같은 결과(읽지 않음) | HLD 7.2 (0.19) |
-| TS-11 | `calibration` | 두 경계·위치 기록 | 쓰기·읽기, 판정 무관, 못 읽으면 null, 가져오기에 함께 | FR-TUT-13 (0.19) |
-| TS-06 | `importFrom` | 깨진 파일 | Invalid, 기존 파일 그대로 | FR-TUT-07 |
-| TS-07 | 탭 자판(0.35: "public 빌드" 표기 삭제) | 저장 파일의 `longDp` 바꿈 | 판정 결과 바뀌지 않음(탭 자판은 minCross만) | LLD-03 2.2 |
-| TS-08 | 판정이 dp 절댓값 | 키 폭 51 → 70(가로 화면)에서 같은 궤적 | 같은 결과 | FR-CMN-12 |
-| TS-09 | 형식 1·2 | 예시 | guideDelayMs 그대로, minCrossDp 8(0.28), longDp·posTolDp 기본값, 다시 쓰면 형식 5 | HLD 7.2 (0.19) |
-| TY-01 | `TypingStats.keystrokes` | 곡기, 과일, 까, 밖, 닭, 얘, 의, "a 1", ㄱ, ㅘ, ㄳ, "" | 5, 6, 2, 3, 4, 2, 3, 3, 1, 2, 2, 0 | FR-TUT-10 |
-| TY-02 | `accuracy` | 고기/고기, 고기/괴, 고기/고, "아이 고기"/"아이 괴기", 가/나다라 | 100, 0, 50, 80, 0 | FR-TUT-10 |
-| TY-03 | `sentence` | 곡기 6초 / 빈 줄 / 시간 0 | 50타/분·100% / "–"·0% / "–" | FR-TUT-10 "–" |
-| TY-04 | `overall` | 5타 6초, 6타 18초, 빈 줄 | 27.5타/분, 정확도 평균 66.7 / 빈 목록 null | FR-TUT-10 |
-| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, tutorAutoStarted false, 세 안내 true) | 6.1, FR-SET-03 (DCR-14) |
+| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합, 세 안내 true) | 6.1, FR-SET-03 (DCR-14) |
 | SS-02 | 〃 | `lastMode` 저장 뒤 다시 읽기 | 같은 값 | FR-CMN-10 |
 | SS-03 | 〃 | 저장된 `last_mode`가 모르는 이름 | `lastMode` = 없음(null) | LLD-07 4절 (0.35: public `lastMode = SWIPE` 사례는 FR-CMN-03b와 함께 삭제, 이슈 #251) |
 | SS-04 | 〃 | 저장된 `row_height_dp` 30 / 70 / 44 / 40 / 64 | 40 / 64 / 44 / 40 / 64 (40~47도 그대로 허용) | FR-SET-06, TBD-16 (DCR-14), D-33 |
-| SS-05 | 〃 | `setTutorAutoStarted(true)` 뒤 다시 읽기 | true | FR-TUT-01 |
+| SS-05 | 〃 | `setPracticeListShown(true)` 뒤 다시 읽기 | true | FR-TUT-01 (0.36) |
+| SS-07 | 〃 | `markPracticeDone`(swipe, upper, swipe) 뒤 다시 읽기 | {swipe, upper} | SWIPE 10.0 ✓ (0.36) |
 | EL-01 | `ErrorLog.record` | `IllegalStateException("ㄱ 입력")` | 줄에 "ㄱ 입력" 없음, 클래스 이름·위치 있음 | NFR-05 |
 | EL-02 | 〃 | `enabled = false` | 파일 변화 없음 | FR-CMN-08 |
 | EL-03 | 〃 | 64KB 넘김 | 앞 절반 버림, 크기 ≤ 64KB | HLD 7.3 |
@@ -947,11 +863,31 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | CS-01 | `CenterConsonantPainter.textFor`(0.21) | ㄱ / ㄲ / null / 튜터(입력창 없음) ㄴ | "ㄱ" / "ㄲ" / null / "ㄴ" | SWIPE 9.5, FR-DSP-10 (0.21) |
 | CS-02 | 〃 | 비밀번호 입력창 / 학습 금지 입력창 | null / "ㄱ"(그림) | FR-CMN-08 ①② (0.21) |
 | CS-03 | `CenterConsonantPainter.sizeFor` | C 81.6 × 96, 글자 폭 0.8 / 1.2 / 0 | 96 / 68 / 96 | SWIPE 9.5 "자리와 크기" (0.21) |
-| TU-62 | `SwipePracticeEcho.center`·C 판정 | 빈 상태, ㄱ탭, C 옆 가로 점, 미리보기 ㅣ, ㅣ, ㄴ탭, C 위 세로 | null, (ㄱ, C), ㄱㆍ, "ㅓ", 거·ㄱ 그대로, 건·ㄴ, 무시(오류) | SWIPE 9.5, TBD-24 (0.21) |
 | MOD-01 | 빌드 | `./gradlew assembleDebug` | 성공 | 이슈 #251 (0.35) |
 | MOD-02 | 소스 검사(시험 코드가 파일을 읽음) | `app/src/main`(`kbd/app/swipe/impl` 제외) | `import kbd.gesture` 없음 | LLD-03 2절(모듈 경계), 0.35 |
 | MOD-03 | 〃 | `gesture-engine`, `recognizer` | `kbd.hangul.compose` import 없음 | LLD-03 1.1 |
-| MOD-04 | `SwipeModuleProvider.get()` | – | `SwipeEngineModule` 싱글턴, `tutorSteps()` 있음 | LLD-03 2절, 0.35 |
+| MOD-04 | `SwipeModuleProvider.get()` | – | `SwipeEngineModule` 싱글턴 | LLD-03 2절, 0.35 (0.36: `tutorSteps()` 없음) |
+
+### 7.6 입력 연습 (LLD-07 2절, SWIPE 10장, FSS#17, 0.36)
+
+| ID | 대상 | 입력 | 기대 | 근거 |
+|---|---|---|---|---|
+| PR-01 | `PracticeTopics` | 주제·항목 | upper·symbol·graffiti·swipe, 3·6·4·6 = 19항목, 항목 글자·연습 자판이 SWIPE 10.1 표대로, 쓰는 법은 `<목표> = `로 시작 | SWIPE 10.1 |
+| PR-02 | `PracticeItemJudge.text`(OK) | "" / O / Ok / OK / OKK | 대기 / 대기 / ✗ / ✓ / ✗ | SWIPE 10.2, 오너 결정 A |
+| PR-03 | `PracticeItemJudge.step`(긋기 가) | (0, ㄱ) / (0, ㄱ, 진동) / (1, ㄱ) / (2, 가) / (3, 가) | 대기 / ✗ / ✗ / ✓ / ✗ | SWIPE 10.2 |
+| PR-04 | 탭 자판(`PracticeInput` + `TapKeyResolver`) + `PracticeFlow` | a ↑ / h ↑, o 탭, ⌫, 스페이스, i 탭 | A ✓ / ✗와 쓰는 법(비우지 않음), 누름 뒤에도 ✗, ⌫로 ✗ 사라짐(시도 그대로), 스페이스는 글자 안 바꿈, ✓ | FR-TUT-09, 12, 오너 결정 A |
+| PR-05 | 탭 자판 | 1 ↑ / / ↑ / i ← | ! / ? / [ | SWIPE 10.1 ② |
+| PR-06 | `PracticeFlow`(긋기 가) | ㄴ / 누름 / ㄱ, (기, 진동, 위로) / 누름, ㄱ 기 가 | ✗, 입력 표시 ㄴ, 새 시도 / ✓·✗·표시 지움, 쓰는 법 남음 / 덧붙임 / ✓, 쓰는 법·덧붙임 지움, 다음 항목 | SWIPE 10.2 |
+| PR-07 | `PracticeFlow`(그래피티 가) | ㄴ / ㄱ 기 가 | 강조 칸 ㄱ·ㅏ / 강조 지움 | SWIPE 10.1 ③ |
+| PR-08 | `PracticeFlow` | 목록 → upper 열기 → 시작 → A Hi OK / 그만 → swipe 시작 → 그만 | 끝 화면, `markDone(upper)` 한 번 / 목록, 표시 더 없음 | SWIPE 10.0 |
+| PR-09 | `PracticeLaunchPolicy` | 처음 / `practiceListShown` true | 표시 저장 1, 목록 열기 1 / 아무것도 안 함 | FR-TUT-01, D-34 |
+| PR-10 | 긋기 항목(실제 매퍼·분류기·조합기, 350 × 6 × 50dp, t 20) | ④ 가·고·아·과·의를 필순대로 | 동작마다 편집기 글자열 = `steps`, 끝 ✓ | SWIPE 10.1 ④, D-65 |
+| PR-11 | 〃 | 천지인 가: ㄱ 탭, 천지인 키 ↑, 천지인 키 탭 | ㄱ, 기, 가 → ✓ | 〃 |
+| PR-12 | 〃 | ② 긋기: 2 ↑, . ←, / ↑ | @ / ( / ? → ✓ | SWIPE 10.1 ② |
+| PR-13 | 〃 | 가에 ㄴ 탭 / ㄱ 탭 뒤 ㅣ를 위로 | ✗ / 오류 진동, ✗ | SWIPE 10.2 |
+| PR-20 | 그래피티 항목(실제 템플릿·`GraffitiInputHandler`) | 가: ko_g, ↓, 탭 / 고: ko_g, 탭, → / a: en_a / 1: 숫자 영역 ↓ | ㄱ 기 가 / ㄱ ㄱㆍ 고 / a / 1, 모두 ✓ | SWIPE 10.1 ③, D-65 |
+| PR-21 | 〃 | 템플릿에 없는 지그재그(a 차례) | ✗ | FR-GRF-08, SWIPE 10.2 |
+| TH-10 | `ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth` | 51 / 처음 / 50 / 101.6 | 20.4 / 20 / 20 / 40.64, `minCrossDp`는 8 그대로 | HLD 7.2, PM 결정 B |
 
 ## 8. 실기기 시험 (D)
 
@@ -967,7 +903,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | DV-08 | 가로 화면 | 같은 배치, 줄 높이 같음, 전체 화면 모드 아님. 3버튼 내비게이션 막대가 옆이면 그 폭만큼 옆 여백(배경색)이 생기고 자판은 남은 폭에 같은 배치(0.7) | FR-CMN-12, #93 OD-3 A |
 | DV-09 | 화면 끝 뒤로 가기 제스처 | 1·7·8·9·0 키 안쪽 밀기 관찰 | R1, TBD-7 |
 | DV-10 | TalkBack | 쿼티·두벌식 키 읽기·입력 | NFR-07 |
-| DV-11 | 설정·튜터·내보내기 | 설치 뒤 처음 앱을 열면 튜터가 한 번 자동으로 뜸, 건너뛰고 다시 열면 뜨지 않음, 설정에서 다시 실행, 기본값 동작 중 안내가 어디에도 없음, 줄 높이 40~64dp, 파일 내보내기·가져오기 | FR-TUT-01, 05, 06, 07, FR-SET-03·06 |
+| DV-11 | 설정·입력 연습(0.36) | 설치 뒤 처음 앱을 열면 입력 연습의 주제 목록만 한 번 뜸([닫기] 한 번으로 나감, 다시 열어도 안 뜸). 설정 "입력 연습"으로 열림. 기준값 초기화·내보내기·가져오기 메뉴 없음 | FR-TUT-01, 06, FR-SET-04 |
 | DV-12 | q 윗첨자 글꼴 | 𐞥 표시 여부 | D-14 |
 | DV-13 | 여러 손가락 | 겹쳐 친 글자 순서, ⌫ 누른 채 입력 | FR-CMN-11 |
 | DV-14 | 비밀번호 입력창 | 현재 글자 크게 안 보임, 그래피티 인식 글자 표시 안 됨(그래피티로 바꿔 확인), 오류 기록 안 됨 | FR-CMN-08, FR-GRF-07 |
@@ -980,7 +916,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | DV-21 | 처리 시점·취소 | 키를 누르는 순간 진동(뗄 때 아님), 기본 진동 켬·소리 끔, 획 도중 알림창 내리기 등으로 `ACTION_CANCEL` → 입력 없음 | FR-CMN-11a, FR-SET-03 |
 | DV-22 | 그래피티 인식 실패·보조 줄 | 낙서 획 → 입력 없음 + 오류 진동, 보조 줄 모드 키가 탭 자판 모드 키와 같은 위치·폭 | FR-GRF-08, FR-GRF-01 |
 | DV-23 | 쌍자음 키·긋기 = 자음 + 모음(0.18, 이슈 #168) | 곡기·고끼·밖가·박까·닭·돼지·꽤를 실제 손으로(속도와 상관없이 같은 결과), 쌍자음 줄 키의 오타 빈도 관찰 | SWIPE 5장 |
-| DV-24 | 튜터 과(0.10) | 과마다 설명 → 연습 시작, 짝을 번갈아 쓰는 순서, 문구에 측정이라는 말 없음, 5과 문장마다 [다음]에서 타수·정확도, 끝에 전체 값, public은 1-1만 | FR-TUT-02, 09, 10 |
+| DV-24 | 입력 연습(0.36, FSS#17) | 주제 넷을 차례로: 설명 → [시작] → 항목마다 ✓·✗, ✗ 때 쓰는 법(그래피티는 안내표 칸 강조), 탭 자판 항목은 ⌫로 고치면 ✗가 사라짐, 긋기 자판에 안내·가운데 자음, 끝 화면 → 주제 목록에 ✓, [그만]은 언제든. 태블릿·가로 화면에서 긋기 모음이 실제 키 폭대로 판정됨 | FR-TUT-02, 09, 11, 12, HLD 7.2 |
 | DV-26 | 맨 윗줄 위 긋기(HLD 10장 R2, 0.18) | 숫자 2에서 위로 창 밖까지 긋기 = @, ㄲ 키에서 ㅙ(위·오른쪽·위로 창 밖까지) = 꽤. 에뮬레이터(Medium_Phone_API_36) 2026-10-31 확인: 둘 다 맞음(`_workspace/reports/168/`), 투명 여백 줄 필요 없음 | SWIPE 2.1, 11장 |
 | DV-27 | 손글씨 모음(0.19, 이슈 #173) | 가·각·곡기·고끼·과·의·돼지 입력, ㅘ 그리는 중 획 자국 캡처(`_workspace/reports/173/`) | SWIPE 3·9.4 |
 | DV-25 | 그래피티 패드 상태 표시(0.11) | 그래피티로 바꾸면 문자 영역 왼쪽 위에 점과 흐린 "한", 구석 탭 → "A"로 바로 바뀜, 시프트·캡스록·구두점·확장 시프트 대기 때 오른쪽 위에 ⇧·⇪·•·↘(글꼴에 기호가 있는지 포함), 비밀번호 칸에서도 보임 | FR-GRF-05d |
@@ -996,19 +932,11 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | `KeyboardRootView` | FB-03 |
 | `Feedback`(`SettingsStore` 기본값과 함께) | FB-04 |
 | `SwipeKeyboardView` | SW-01~SW-04, SW-08 |
-| `PracticeKeyboardView` + `SwipePracticeGuide` | PG-01~PG-05 (0.35: PG-06 삭제) |
 | `GraffitiPadView`(기록용 `Canvas`, 0.11, 이슈 #136) | PI-01~PI-07 |
 | `RepeatTimer`(가짜 `Handler`) | RT-05 |
 
-### 9.1 안내 설정과 튜터 연습 자판의 안내 (0.11, 이슈 #135)
+### 9.1 안내 설정 (0.11, 이슈 #135; 0.36: 연습 자판은 실제 `SwipeKeyboardView`라 SW-08이 같음)
 
 | ID | 대상·입력 | 기대 | 근거 |
 |---|---|---|---|
 | SW-08 | `SwipeKeyboardView`: `showCurrentChar = false`로 ㄴ 누르고 슬롭 넘게 이동 / 세 설정 모두 끄고 같은 획 | `GuideView`(방향 true, 현재 false, 다음 true) / SHOWING이지만 모두 false(그릴 것 없음) | FR-DSP-08 |
-| PG-01 | 연습 자판 안내(미리보기 주입): ㄴ 누름 → ↓ 60 → 뗌 | SHOWING, current ㅣ, IDLE, 획 1개 | FR-TUT-11 (0.19) |
-| PG-02 | 〃: ㄱ 누르고 그대로(표시 지연, 900ms) | 표시 지연 뒤 SHOWING·current ㄱ, 그 뒤에도 current ㄱ | FR-TUT-11 (0.12, 이슈 #142 오너 결정) |
-| PG-03 | 〃(5과 배치): ㄴ 짧은 탭 | 한 번도 SHOWING 아님 | FR-DSP-07 |
-| PG-04 | 〃: 세 설정 끔, ㄴ ↑ | 모두 false, 튜터에 획 1개 | FR-DSP-08, FR-TUT-11 |
-| PG-05 | 〃: `showCurrentChar = false` | 방향·다음 true, 현재 false | FR-DSP-08 |
-| ~~PG-06~~ | 쿼티 1-1 배치 | 안내 없음(`guide == null`) | FR-TUT-11(public 튜터 없음) | (0.35 삭제, 이슈 #251)
-| PG-07 | 〃: ㄲ(쌍자음 키) 누르고 표시 지연 | SHOWING, current ㄲ, 튜터에 획 1개 | FR-TUT-11, FR-DSP-01 (0.18: 모든 자음 키) |

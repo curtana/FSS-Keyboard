@@ -1,7 +1,8 @@
 # LLD-04 긋기 입력 처리
 
 - 대응 HLD 절: 4장(4.1 한 획의 흐름, 4.2 StrokeClassifier, 4.3 SwipeInputMapper, 4.4 HangulComposer)
-- 버전 **0.30** (2026-11-02)
+- 버전 **0.31** (2026-11-02)
+- 0.31(FSS#17): 입력 연습의 긋기 자판은 실제 `SwipeKeyboardView`다(LLD-07 2.3). 튜터 연습 자판(`PracticeEcho`·`SwipePracticeEcho`)의 미리보기·가운데 자음 경로는 없어졌다. `SwipeKeyboardView.rebuildGeometry`가 `SwipeInputMapper.setKeyWidth(폭 / 7)`로 t = 키 폭 × 0.4를 넣는다(HLD 7.2).
 - 0.30(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 긋기 뷰·`SwipeTouchLogic`·`SwipeMapperState`·연습 부분(`kbd.app.swipe.impl`)은 app main 소스 세트에 있다(9절의 "personal"은 이 판부터 "app"으로 읽는다).
 - 0.29(이슈 #242 오너 결정(두벌식 겹받침 한 번에), 조합기 7절): `HangulComposer`가 겹받침 자모 하나(`Consonant(ㄺ)` 등)를 받는다 — 초성·중성만 있는 글자면 그 받침으로 두 자음 단위(`Consonant(ㄹ)`, `Consonant(ㄱ)`)를 저장해 두 번 치기와 같다(갉 + ㅏ = 갈가, ⌫ = 갈 — 둘째 자음만, PM 채택 2026-11-02; 낱자 ㄺ ⌫ = 통째). 그 밖(조합 없음, 받침 있음, 초성만)은 지금 글자를 확정하고 겹받침 낱자(ㄺ)로 선다. 낱자 뒤 모음은 둘째 자음이 가져간다(ㄺ + ㅏ = ㄹ가). 긋기 자판은 겹받침 자모를 내지 않는다.
 - 0.28(이슈 #237 후속, SRS 0.60 FR-SWP-45 설계 결정): 테두리 닿음은 **그 방향으로 누른 점에서 `minCrossDp` 이상 움직였을 때만** 센다(3.2, `EdgeCrossingTracker.start`) — 테두리 근처 탭·흔들림, 반대쪽으로 긋다 옆 테두리를 스친 대각선은 나감이 아니다. "바깥 변 = 기록 없음" 낡은 문장을 새 규칙으로 고침.
@@ -286,7 +287,7 @@ data class ProgressState(
 - 표시 방향은 그 결과를 내려고 **손가락이 다음에 움직일 방향**이다(SWIPE 9.2 "그 동작 방향"). RUB는 손가락이 밖이면 먼저 되돌아와야 하므로 e1.dir의 반대("되돌아오는 쪽", SWIPE 9.2 표), 이미 안으로 돌아왔으면(예: R45 L45 = 가, 다음에 나가면 갸) 다시 나가는 e1.dir이다. 거리는 두 경우 모두 e1 변까지다.
 - 고리 바깥 거리(D-37)는 SWIPE 9.1 "영어·숫자·기호 키는 각자의 배치표 글자를 같은 자리에 표시"에 따라 자음 키 OUTER(변에서 longDp)와 같은 자리에 둔다. 0.23부터 기호 키에는 단계 탐침이 없어 RING만 뜨고, 나간 뒤에는 RUB 탐침 결과가 현재와 같아 다음 글자 안내가 없다(SWIPE 9.2).
 - 결과 표시 문자열(`StrokeClassifier.textOf`): 자음 키 `Tap` = 그 키의 자음, `Stroke` = 조립기에 이 획을 이었을 때 보일 글자(모음 또는 ㆍ·‥, 생성자의 `preview`, 0.18), `Reverse`·무시될 획 = "". 숫자·기호 키는 `Text.text`, 천지인 키는 요소.
-  - `StrokeClassifier(key, th, geom, preview: (VowelStroke) -> String? = { null })`: 긋기 자판은 `mapper::preview`, 튜터 연습 자판은 입력 표시(`PracticeEcho.preview`)를 넘긴다.
+  - `StrokeClassifier(key, th, geom, preview: (VowelStroke) -> String? = { null })`: 긋기 자판은 `mapper::preview`를 넘긴다(0.31: 튜터 연습 자판의 미리보기는 없음).
 - `current`와 후보는 **이번 획 하나의 `classify*` 결과**다. 조합 결과는 넣지 않는다(각 다음 ㄱ 키 → 획 중 `current` = "가", 뗀 뒤 편집기도 "각가", 0.17. SRS FR-DSP-03, SWIPE 9.2, HLD 4.2, DCR-16 결정. 0.15부터 긋기는 병합하지 않는다). `ProgressState`는 조합기를 보지 않고, 자음 키의 글자만 매퍼의 미리보기(조립 결과)로 얻는다(0.18). 안내는 모든 자음 키에서 띄운다(9.3, LLD-06).
 - 숫자 키의 ←·→ 문지르기·나갔다 돌아옴과 기호 키·기호2 키의 나갔다 돌아옴·문지르기는 결과가 그 방향 나감과 같으므로(4.4·4.5) 탐침 결과가 현재와 같아 후보로 뜨지 않는다.
 - SWIPE 9.2 표의 9행이 이 탐침으로 나오는지를 PS-01~PS-09로 시험한다.
@@ -567,7 +568,7 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `onMeasure` | 폭 = 부모 폭, 높이 = `SwipeLayout.ROWS`(6, 0.17) × 줄 높이 | SRS 3.3 |
-| `onLayout`/`rebuildGeometry()` | `SwipeLayout.KEYS`로 `KeyGeom`(dp)과 `KeyHitTester`를 만든다. 창 크기는 루트 뷰 크기(LLD-08 7절)로 바깥 변을 계산 | FR-SWP-45, FR-CMN-12 |
+| `onLayout`/`rebuildGeometry()` | `SwipeLayout.KEYS`로 `KeyGeom`(dp)과 `KeyHitTester`를 만든다. 창 크기는 루트 뷰 크기(LLD-08 7절)로 바깥 변을 계산. 0.31: `mapper.setKeyWidth(폭 / 7)`(위치 허용 오차 t = 키 폭 × 0.4, HLD 7.2) | FR-SWP-45, FR-CMN-12 |
 | `onDraw` | 키 배경·글자. 둘레 숫자 키 글자는 배치표 그대로(변 가운데), 기호·기호2 키는 가운데 탭 기호 + 변 가운데 배정 기호(8.3, 0.27) | FR-SWP-50, 43a |
 | `onTouchEvent` | 아래 9.3 | FR-CMN-11 |
 
@@ -650,7 +651,7 @@ dropStroke(): classifier = null; guide.onUp()                        // 매퍼�
 - **층:** `onDraw`에서 키(배경·라벨·둘레 글자) → 가운데 자음 → 획 자국. 안내 팝업은 뷰 위의 창이라 그 위.
 - **바뀌는 때:** 뷰는 그릴 때마다 `centerConsonant`를 읽는다. 조합기는 손을 뗄 때(탭·받아들인 획·천지인 키)와 기능키 누름에서만 바뀌므로 긋는 동안에는 그대로다. 모음 획·천지인 키는 마지막 자음을 바꾸지 않는다(가 → "ㄱ" 그대로). 다시 그리는 때는 0.20과 같다(모든 터치 사건, ⌫ 되풀이 콜백, 감싼 `reset()`의 `postInvalidate`). 조합이 비면 null이라 지워진다.
 - **판정 C:** 같은 9.3 down에서 `centerConsonant != null`이면 매퍼에 C를 준다(비밀번호 입력창에서도 — 그리지만 않음, SWIPE 9.5 "판정 C는 그대로").
-- **튜터 연습 자판:** `PracticeEcho.center: CenterMark?`(`CenterMark(consonant, box)`, 기본 null; `SwipePracticeEcho` = 조합기 `lastConsonant()` + 실제 긋기 기하의 C)를 `TutorFlow.center` → `PracticeKeyboard(center = …)`로 넘긴다. 연습 자판은 입력창이 없어 `textFor(…, null)`. 판정도 같은 C를 쓴다(`SwipePracticeEcho`가 획마다·미리보기마다 `mapper.consonant`를 넣음, 3-1 판정은 `PracticeEcho.consonantPlace`, LLD-07 2.3·2.5). 터치 없이 바뀌는 때는 `redraw = tick`(0.20과 같음).
+- ~~**튜터 연습 자판:**~~ (0.31 삭제, FSS#17) 입력 연습은 실제 `SwipeKeyboardView`라 가운데 자음도 이 절 그대로다(연습 호스트의 `centerConsonant` = 조합기 `lastConsonant()`).
 - 표시 전용: 터치·조립에 영향 없음. 시험: CS-01~CS-03(글자·비밀번호/학습 금지·크기), SW-14~SW-17(뷰: C 자리·키 뒤·자국 아래, 모음 획에 그대로·다음 자음에서 바뀜, 비밀번호에서만 끔, 터치 로직이 C를 매퍼에 줌), TU-62(연습 자판의 C와 판정).
 
 ### 9.6 조합 중 모드 키 ↑·스페이스·천지인 키 (SWIPE 9.5 표, 0.21, 0.22)

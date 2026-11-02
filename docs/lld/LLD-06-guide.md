@@ -1,7 +1,8 @@
 # LLD-06 안내 표시
 
 - 대응 HLD 절: 6장(안내 표시)
-- 버전 **0.22** (2026-11-02)
+- 버전 **0.23** (2026-11-02)
+- 0.23(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): 4절 — 연습 자판이 실제 긋기 뷰라 연습 전용 안내(`SwipePracticeGuide`)를 지웠다.
 - 0.22(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 안내는 모든 빌드에 있다. 아래 "personal"은 이 판부터 지운다.
 - 0.21(이슈 #179, SRS 0.44 FR-CMN-08 ①/②): `GuideFlags.bigCurrentOn`은 비밀번호 입력창에서만 끈다(학습 금지 칸은 켬, 2절). 자음 키 획 안내의 미리보기는 매퍼의 C(LLD-04 6.1·9.3)를 쓴다.
 - 0.18(이슈 #173, SWIPE 9.1·9.2): 한글 자음 키는 **획 안내**다: ↓·→ 점과 긴 획(`ProbeKind.DOT`·`LONG`, LLD-04 5.2)의 결과(조립기 미리보기: 이어질 모음 또는 ㆍ)를 보이고, 이어질 수 없는 획은 보이지 않는다. 현재 글자 = 이 획을 이었을 때 보일 모음(또는 ㆍ·‥), 반대 방향이면 빈 글자. 숫자·기호·천지인 키는 그대로. 튜터 연습 자판의 안내는 입력 표시의 미리보기를 받는다(`SwipePracticeGuide(preview)`, `PracticeLayouts.guide(..., preview)`). 다음 획 시작 자리 표시(SRS FR-DSP-01 "다음 획을 시작할 자리")는 이 판에서 하지 않았다(코드 후속, README 6.19).
@@ -26,7 +27,7 @@
 
 ```kotlin
 data class GuideFlags(val directionOn: Boolean, val nextCharOn: Boolean, val bigCurrentOn: Boolean) {
-    companion object { fun of(s: Settings, field: FieldInfo?): GuideFlags }   // field null = 튜터 연습 자판(0.11)
+    companion object { fun of(s: Settings, field: FieldInfo?): GuideFlags }   // field null = 입력창 없음(0.23: 연습 자판은 연습 호스트의 보통 입력창을 넘김)
 }
 enum class GuidePhase { IDLE, PRESSED_WAITING, SHOWING }
 data class GuideView(val showDirection: Boolean, val showCurrent: Boolean, val showNext: Boolean)   // 그릴 것
@@ -94,32 +95,6 @@ class GuideOverlay(private val anchor: View, private val logic: GuideTimerLogic,
 - 성능: 그리기는 `onDraw`에서 미리 만든 `Paint`만 쓴다(할당 없음). NFR-01은 실기기 DV-02로 잰다.
 - 시험: 실기기 DV-01~DV-04, 단위 GT-*(2절).
 
-## 4. 튜터 연습 자판의 안내 (0.11, 이슈 #135)
+## 4. 연습 자판의 안내 (0.23, FSS#17)
 
-FR-TUT-11, HLD 7.1: 튜터의 긋기 연습 자판(`SWIPE_CONSONANT_KEY`·`SWIPE_SENTENCE`)에 실제 긋기 키보드와 같은 안내를 보인다. 같은 `GuideOverlay`·`GuideTimerLogic`을 쓰고, 이 절은 그것을 연습 자판의 터치로 움직이는 얇은 연결만 정한다.
-
-```kotlin
-// app main (kbd.app.tutor) — LLD-07 2.3
-interface PracticeGuide {
-    fun down(p: StrokePoint, widthDp: Float)   // 연습 획 시작(키 위치는 실제 긋기 배치)
-    fun move(ps: List<StrokePoint>)
-    fun up()                                   // 뗌·취소: 숨김, 타이머 취소
-    fun dismiss()                              // 자판이 사라짐: 창도 닫음
-}
-// PracticeLayoutSource.practiceGuide(layout, anchor, th, settings): PracticeGuide?   (긋기 배치만, 쿼티 1-1은 null. 0.17: anchorKeyId 인자 지움)
-
-// kbd.app.swipe.impl
-class SwipePracticeGuide(anchor: View, th: Thresholds, flags: GuideFlags, rowHeightDp: Float,
-                         handler: Handler) : PracticeGuide
-```
-
-| 함수 | 처리 |
-|---|---|
-| `down(p, w)` | 이전 획 정리(`up`). `SwipeGeometry.build(w, rowHeightDp)`(폭이 같으면 다시 씀)에서 `indexAt(p)`. **자음 키(쌍자음 키 포함)와 천지인 키**(`kind == CONSONANT || kind == CHEONJIIN`, 0.17): `StrokeClassifier(key, th, geom).begin(p)`, `overlay.onDown(key, 키 사각형 px, p)`, `overlay.onProgress(ProgressState.of(c), p)`(LLD-04 9.3 `down`과 같음). 그 밖의 키(스페이스·⌫ 등)는 안내 없음. 0.16: 튜터 연습 자판은 천지인 키도 연습 키다(LLD-07 2.2) |
-| `move(ps)` | 점마다 `c.update(p)` → `overlay.onProgress(ps, p)`. 예외면 `up()`(실제 키보드가 그 획을 버리는 것과 같음, 안내만 닫힘) |
-| `up()` / `dismiss()` | `overlay.onUp()` / `overlay.dismiss()` |
-
-- 표시 전용이다: 연습 획·표본·"입력: …" 줄은 `PracticeStrokeCollector`·`PracticeEcho`가 그대로 받는다(FR-TUT-09, FR-TUT-02·03). 분류기 예외는 `runCatching`으로 삼킨다(안내만 안 보임, `EngineGuard`는 키보드 서비스의 것이라 쓰지 않음).
-- flags = `GuideFlags.of(설정, null)`(2절). 설정은 튜터 시작 때 한 번 읽는다(튜터 중에는 설정 화면을 열 수 없음). 기준값은 "입력: …" 줄과 같은 시작 때 저장값.
-- 창은 연습 자판 뷰를 anchor로 띄운다(3절 그대로: 자판 위 2줄까지 덮음, 터치 받지 않음). 뷰가 창에서 떨어질 때(`onDetachedFromWindow`) `dismiss()`.
-- 시험: PG-01~PG-07(LLD-11 9절, PG-07 = 쌍자음 키도 안내, 0.17).
+FR-TUT-11, HLD 7.1: 입력 연습의 긋기 연습 자판은 **실제 `SwipeKeyboardView`**다(LLD-07 2.3). 그래서 안내도 이 문서 2·3절 그대로 같은 `GuideOverlay`·`GuideTimerLogic`이 같은 시점에 띄운다. `GuideFlags.of(settings, field)`의 `field`는 연습 호스트의 보통 글자 입력창(비밀번호·학습 금지 아님)이라 설정 세 스위치만 안내를 끈다. 0.22까지의 연습 전용 안내(`PracticeGuide`, `SwipePracticeGuide`, `PracticeLayoutSource.practiceGuide`)와 시험 PG-01~PG-07은 지웠다.
