@@ -18,6 +18,7 @@ import kbd.hangul.stroke.StrokePush
 import kbd.hangul.stroke.StrokeSnapshot
 import kbd.hangul.stroke.VowelStroke
 import kbd.hangul.stroke.VowelStrokeAssembler
+import kbd.stroke.threshold.ThresholdDefaults
 import kbd.stroke.threshold.Thresholds
 
 /** What one finished stroke gives (LLD-04 §6.1). */
@@ -54,10 +55,24 @@ data class SwipeMapperSnapshot(
  * [CheonjiinAssembler]. The two assemblies never mix: any other input closes the open one first. A
  * vowel assembly closed with strokes that made no vowel yet drops them with the error vibration.
  */
-class SwipeInputMapper(val th: Thresholds) {
+class SwipeInputMapper(th: Thresholds) {
+
+    /** The thresholds in use; [setKeyWidth] replaces their `posTolDp`. */
+    var th: Thresholds = th
+        private set
 
     private val cj = CheonjiinAssembler()
     private val vs = VowelStrokeAssembler(th.posTolDp)
+
+    /**
+     * The swipe keys are [keyWidthDp] wide as drawn now: t = key width × 0.4 from the next stroke on (SRS 1.3, HLD 7.2,
+     * PM decision 2026-11-02, FSS#17 — tablets, landscape and a width setting follow the real key size).
+     */
+    fun setKeyWidth(keyWidthDp: Float) {
+        val t = ThresholdDefaults.posTolFor(keyWidthDp)
+        th = th.copy(posTolDp = t)
+        vs.tol = t
+    }
 
     /**
      * The drawn consonant's place C while a consonant is composing, else null (SWIPE 3.6.3, 9.5, TBD-24):

@@ -68,7 +68,8 @@ class SettingsStoreTest {
         assertTrue(s.haptic)
         assertFalse(s.sound)
         assertEquals(48f, s.rowHeightDp)
-        assertFalse(s.tutorAutoStarted)
+        assertFalse(s.practiceListShown)
+        assertTrue(s.practiceDone.isEmpty())
         assertTrue(s.showDirectionGuide)
         assertTrue(s.showNextChar)
         assertTrue(s.showCurrentChar)   // #135: default on
@@ -100,9 +101,20 @@ class SettingsStoreTest {
     }
 
     @Test
-    fun `SS-05 setTutorAutoStarted true reads back`() {
-        runBlocking { SettingsStore(open()).setTutorAutoStarted(true) }
-        assertTrue(SettingsStore(reopen()).loadBlocking().tutorAutoStarted)
+    fun `SS-05 setPracticeListShown true reads back`() {
+        runBlocking { SettingsStore(open()).setPracticeListShown(true) }
+        assertTrue(SettingsStore(reopen()).loadBlocking().practiceListShown)
+    }
+
+    @Test
+    fun `SS-07 practice topics marked done read back as a set`() {
+        runBlocking {
+            val st = SettingsStore(open())
+            st.markPracticeDone("swipe")
+            st.markPracticeDone("upper")
+            st.markPracticeDone("swipe")
+        }
+        assertEquals(setOf("swipe", "upper"), SettingsStore(reopen()).loadBlocking().practiceDone)
     }
 
     @Test
@@ -116,7 +128,8 @@ class SettingsStoreTest {
             sound = true,
             rowHeightDp = 56f,
             graffitiLetterRatio = 0.5f,
-            tutorAutoStarted = true,
+            practiceListShown = true,
+            practiceDone = setOf("graffiti"),
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())

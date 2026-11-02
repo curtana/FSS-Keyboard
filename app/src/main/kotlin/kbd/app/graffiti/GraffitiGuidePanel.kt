@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import kbd.app.feedback.FeedbackPort
 import kbd.graffiti.guide.GuideCatalog
+import kbd.graffiti.guide.GuideGroup
 import kbd.graffiti.guide.GuideShape
 import kbd.graffiti.recognize.TemplateSet
 import kotlin.math.atan2
@@ -23,11 +24,16 @@ import kotlin.math.sin
  * CON-6). Every touch on it is consumed with no input. A drag scrolls; the fixed ✕ at the top-right closes
  * it on release inside the ✕ ([onClose]), with key feedback on press. Nothing is stored; drawn in password
  * fields too (FR-GRF-09d).
+ *
+ * The input practice (SWIPE 10.1 ③, LLD-07 §2.3) shows it always open above the pad, not over it: [groups] = only the
+ * item's sections, [showClose] = false (no ✕), and [highlight] marks the target's cells after a ✗.
  */
 class GraffitiGuidePanel(
     context: Context,
     private val templates: TemplateSet,
     private val feedback: FeedbackPort,
+    private val groups: List<GuideGroup> = GuideCatalog.groups,
+    private val showClose: Boolean = true,
     private val onClose: () -> Unit,
 ) : View(context) {
 
@@ -37,6 +43,14 @@ class GraffitiGuidePanel(
     /** Scroll offset in dp, 0..[GraffitiGuideLayout.maxScrollDp]. */
     var scrollDp: Float = 0f
         private set
+
+    /** Labels of the cells drawn highlighted (the practice's ✗, SWIPE 10.1 ③); the first one is scrolled into view. */
+    var highlight: Set<String> = emptySet()
+        set(v) {
+            field = v
+            scrollToHighlight()
+            invalidate()
+        }
 
     /** The pointer this panel follows (the first one down); others are consumed and ignored. */
     private var pointer = NONE
@@ -65,6 +79,9 @@ class GraffitiGuidePanel(
         color = 0xFFFFFFFF.toInt(); style = Paint.Style.STROKE; strokeWidth = 2 * density; strokeCap = Paint.Cap.ROUND
     }
     private val closeBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3A3A3A.toInt() }
+    private val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = HIGHLIGHT; style = Paint.Style.STROKE; strokeWidth = 3 * density
+    }
     private val rect = RectF()
     private val box = RectF()
     private val path = Path()
@@ -75,8 +92,15 @@ class GraffitiGuidePanel(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        layout = GraffitiGuideLayout(w / density, GuideCatalog.groups)
+        layout = GraffitiGuideLayout(w / density, groups)
         scrollDp = scrollDp.coerceIn(0f, maxScroll())
+        scrollToHighlight()
+    }
+
+    private fun scrollToHighlight() {
+        val l = layout ?: return
+        val c = l.cells.firstOrNull { it.cell.label in highlight } ?: return
+        scrollDp = (c.rect.top - GraffitiGuideLayout.PAD_DP).coerceIn(0f, maxScroll())
     }
 
     private fun maxScroll(): Float = layout?.maxScrollDp(height / density) ?: 0f
@@ -97,6 +121,7 @@ class GraffitiGuidePanel(
             if (rect.top > viewH || rect.bottom < 0) continue
             drawCell(canvas, c.cell, rect)
         }
+        if (!showClose) return
         // ✕ last: fixed at the top-right, over the scrolled content (FR-GRF-09).
         val x = l.closeRect(width / density)
         rect.set(x.left * density, x.top * density, x.right * density, x.bottom * density)
@@ -109,6 +134,7 @@ class GraffitiGuidePanel(
     private fun drawCell(canvas: Canvas, cell: kbd.graffiti.guide.GuideCell, r: RectF) {
         val m = CELL_MARGIN_DP * density
         canvas.drawRoundRect(r.left + m, r.top + m, r.right - m, r.bottom - m, 3 * density, 3 * density, cellPaint)
+        if (cell.label in highlight) canvas.drawRoundRect(r.left + m, r.top + m, r.right - m, r.bottom - m, 3 * density, 3 * density, highlightPaint)
         val label = cell.label + when (cell.alt) { 1 -> " ①"; 2 -> " ②"; else -> "" }
         val note = listOfNotNull(cell.note, if (cell.interim) INTERIM else null).joinToString(" · ").ifEmpty { null }
         if (cell.marks.isEmpty()) {   // text only: vowel order, unsettled symbols
@@ -200,6 +226,7 @@ class GraffitiGuidePanel(
     }
 
     private fun inClose(xPx: Float, yPx: Float): Boolean {
+        if (!showClose) return false
         val r = (layout ?: return false).closeRect(width / density)
         val x = xPx / density
         val y = yPx / density
@@ -227,6 +254,8 @@ class GraffitiGuidePanel(
         /** Opaque cover (owner correction #189: "입력기 위에 불투명으로"). */
         const val BACKGROUND = 0xFF161616.toInt()
         const val INTERIM = "임시"
+        /** The practice's ✗ cell mark (SWIPE 10.1 ③): amber, readable on the dark panel. */
+        private const val HIGHLIGHT = 0xFFFFB300.toInt()
         private const val CELL_MARGIN_DP = 2f
         private const val GLYPH_DP = 48f
         private const val GLYPH_TOP_DP = 4f

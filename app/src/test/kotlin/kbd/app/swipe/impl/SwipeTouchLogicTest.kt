@@ -11,7 +11,6 @@ import kbd.app.store.Settings
 import kbd.app.swipe.SwipeEngineState
 import kbd.app.swipe.SwipeHost
 import kbd.app.swipe.SwipeModuleProvider
-import kbd.app.tutor.ThresholdField
 import kbd.gesture.classify.SwipeKeyKind
 import kbd.gesture.input.SwipeInputMapper
 import kbd.gesture.input.SwipeMapperSnapshot

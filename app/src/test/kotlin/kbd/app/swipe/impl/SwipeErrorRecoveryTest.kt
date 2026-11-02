@@ -7,13 +7,6 @@ import kbd.app.ime.EditorPort
 import kbd.app.ime.InputDispatcher
 import kbd.app.ime.InputMode
 import kbd.app.ime.ModeController
-import kbd.app.tutor.HowTo
-import kbd.app.tutor.TutorSteps
-import kbd.app.tutor.PracticeLayouts
-import kbd.app.tutor.RawStroke
-import kbd.app.tutor.TutorFlow
-import kbd.app.tutor.TutorSession
-import kbd.app.tutor.TypingStats
 import kbd.gesture.classify.StrokeClassifier
 import kbd.gesture.input.MapResult
 import kbd.gesture.input.SwipeInputMapper
@@ -29,11 +22,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * LLD-11 §7.5 TU-55..TU-57, ID-34 (issues #165, #168): after a wrong input — a stray tap, a swipe on another
- * key, a cheonjiin element that cannot extend — the next swipe types its syllable, in the tutor's lesson 5
- * and on the real keyboard; lesson 5 has a working ⌫ (one jamo at a time).
+ * LLD-11 ID-34 (issues #165, #168): after a wrong input — a stray tap, a swipe on another key, a cheonjiin
+ * element that cannot extend — the next swipe types its syllable on the real keyboard. (TU-55..TU-57, the
+ * old tutor's lesson 5, went with the practice rework, FSS#17.)
  */
 class SwipeErrorRecoveryTest {
+
+    /** One touch: its points in keyboard dp. */
+    private class RawStroke(val points: List<StrokePoint>)
+
+    private companion object {
+        const val CHEONJIIN_KEY = "ㆍ ㅡ ㅣ"
+    }
 
     private val width = 350f   // column width 50 dp
     private val rowH = 50f
@@ -49,7 +49,7 @@ class SwipeErrorRecoveryTest {
         clock += 1000
         val pts = listOf(StrokePoint(cx, cy, clock), StrokePoint(cx + dx / 2 + 0.5f, cy + dy / 2, clock + 20), StrokePoint(cx + dx, cy + dy, clock + 40))
         clock += 40
-        return RawStroke(r, pts, null, space = label == "스페이스", key = label, backspace = label == "⌫")
+        return RawStroke(pts)
     }
 
     /** A stroke from (x0, y0) to (x1, y1) in keyboard dp; the key under its start is the key pressed. */
@@ -58,7 +58,8 @@ class SwipeErrorRecoveryTest {
         clock += 1000
         val pts = listOf(StrokePoint(x0, y0, clock), StrokePoint((x0 + x1) / 2, (y0 + y1) / 2, clock + 20), StrokePoint(x1, y1, clock + 40))
         clock += 40
-        return RawStroke(geo.geoms[i].rect, pts, null, key = geo.keys[i].label)
+        check(i >= 0)
+        return RawStroke(pts)
     }
 
     /*
@@ -94,66 +95,6 @@ class SwipeErrorRecoveryTest {
         assertTrue("dot: at C's height", dotStroke[1] < b)
         for ((x, y) in listOf(iStroke[0] to iStroke[1], dotStroke[0] to dotStroke[1], iStroke[2] to iStroke[3]))
             assertEquals(SwipeKeyKind.CONSONANT, geo.keys[geo.indexAt(x, y)].kind)
-    }
-
-    private fun lesson5(): TutorFlow {
-        val flow = TutorFlow(TutorSession(TutorSteps.ALL.filter { it.id == "5-1" }, ThresholdDefaults.VALUES), {
-            PracticeLayouts.echo(it, SwipeEngineModule, ThresholdDefaults.VALUES, rowH)
-        }) {}
-        flow.startPractice()
-        return flow
-    }
-
-    private fun TutorFlow.type(label: String) = onStroke(stroke(label), width)
-
-    private fun TutorFlow.write(v: Char) = strokes(v).forEach { onStroke(it, width) }
-
-    @Test
-    fun `TU-55 lesson 5 - a stray tap and a reversed stroke do not stop the next syllable`() {
-        val f = lesson5()
-        f.type("ㄴ"); f.write('ㅏ')
-        assertEquals("나", f.echoText)
-        f.type("ㅇ")                                             // a stray tap: a final consonant
-        assertEquals("낭", f.echoText)
-        f.onStroke(reversed(iStroke), width)                     // ↑ at ㅣ's place: ignored for its direction (SWIPE 3.2)
-        assertEquals("낭", f.echoText)
-        f.write('ㅏ')                                             // ㅏ after the final: dokkaebibul
-        assertEquals("나아", f.echoText)
-        f.type("ㄱ"); f.write('ㅣ')
-        assertEquals("나아기", f.echoText)   // the final moves to the new vowel (dokkaebibul, SWIPE 5.3 가기)
-    }
-
-    @Test
-    fun `TU-56 lesson 5 - a dropped cheonjiin element and an unfinished stroke do not stop the next syllable, a double key types`() {
-        val f = lesson5()
-        f.type("ㅇ"); f.write('ㅏ')
-        f.onStroke(stroke(HowTo.CHEONJIIN_KEY, 0f, -50f), width)   // cheonjiin ㅣ after a vowel: a lone ㅣ
-        f.onStroke(stroke(HowTo.CHEONJIIN_KEY, 0f, -50f), width)   // ㅣ + ㅣ cannot extend: dropped
-        f.type("ㄴ"); f.write('ㅏ')
-        assertEquals("아ㅣ나", f.echoText)
-        f.onStroke(line(dotStroke), width)                       // a first dot right of C: no vowel yet (ㅓ's ①)
-        f.type("ㄲ"); f.write('ㅏ')                               // the tap drops it
-        assertEquals("아ㅣ나까", f.echoText)
-    }
-
-    @Test
-    fun `TU-57 lesson 5 backspace - one stroke while open, the stats use the final text`() {
-        val f = lesson5()
-        f.type("ㅇ"); f.write('ㅏ'); f.type("ㄱ"); f.write('ㅏ')     // 아가
-        assertEquals("아가", f.echoText)
-        f.type("⌫")                                             // the open ㅏ: one stroke back → 기
-        assertEquals("아기", f.echoText)
-        f.type("⌫")                                             // ㅣ → ㄱ
-        assertEquals("아ㄱ", f.echoText)
-        f.type("⌫"); f.type("⌫")                                // ㄱ, then the committed 아
-        assertEquals("", f.echoText)
-        f.type("ㅇ"); f.write('ㅏ'); f.type("ㅇ"); f.write('ㅣ')
-        assertEquals("아이", f.echoText)
-        f.nextSentence()
-        val s = f.sentenceStats.last()
-        // Speed and accuracy count the final line only (PM decision, issue #165): 아이 = 4 keystrokes.
-        assertEquals(TypingStats.accuracy("아이가 고기를 먹어요", "아이"), s.accuracy, 1e-9)
-        assertEquals(4, s.keystrokes)
     }
 
     // --- the real keyboard (InputDispatcher + SwipeInputMapper) ------------------------------------
@@ -204,7 +145,7 @@ class SwipeErrorRecoveryTest {
         type("ㄴ"); write('ㅏ'); type("ㅇ")                                // 낭: a stray tap is a final consonant
         feed(reversed(iStroke))                                           // ↑ at ㅣ's place: ignored, error 1
         write('ㅏ')                                                        // 나아
-        feed(stroke(HowTo.CHEONJIIN_KEY, 0f, -50f)); feed(stroke(HowTo.CHEONJIIN_KEY, 0f, -50f))   // ㅣ, ㅣ dropped: error 2
+        feed(stroke(CHEONJIIN_KEY, 0f, -50f)); feed(stroke(CHEONJIIN_KEY, 0f, -50f))   // ㅣ, ㅣ dropped: error 2
         type("ㄱ"); write('ㅏ')
         assertEquals("나아ㅣ가", port.shown)
         assertEquals(2, errors[0])

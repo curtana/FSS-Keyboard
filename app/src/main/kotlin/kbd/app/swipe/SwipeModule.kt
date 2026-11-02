@@ -7,23 +7,19 @@ import kbd.app.error.EngineGuard
 import kbd.app.feedback.FeedbackPort
 import kbd.app.ime.FieldInfo
 import kbd.app.store.Settings
-import kbd.app.tutor.TutorStep
 import kbd.hangul.event.JamoEvent
 import kbd.hangul.jamo.Jamo
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.threshold.Thresholds
 
 /**
- * The swipe engine as the rest of the app reaches it (LLD-03 §2.2, HLD 3.1): the swipe view and the tutor's
- * lessons. One edition since issue #251 (owner): every build has it (`SwipeModuleProvider`); the 0.x public stub
- * with no swipe engine and its `available` flag are gone.
+ * The swipe engine as the rest of the app reaches it (LLD-03 §2.2): the swipe view. One edition since issue #251
+ * (owner): every build has it (`SwipeModuleProvider`). The input practice (FSS#17) shows the same view through its
+ * own [SwipeHost]; the old tutor lessons (`tutorSteps`) are gone.
  */
 interface SwipeModule {
     /** Builds the swipe keyboard view. */
     fun createSwipeView(context: Context, host: SwipeHost): View
-
-    /** Lessons 1, 2, 3 and 5 (LLD-07 §2.2, lesson 4 removed in issue #150). */
-    fun tutorSteps(): List<TutorStep>
 }
 
 /** Implemented by `KeyboardService`, called by the swipe view (LLD-03 §2.2). */

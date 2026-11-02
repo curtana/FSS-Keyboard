@@ -11,6 +11,5 @@ class SwipeModuleProviderTest {
         val m = SwipeModuleProvider.get()
         assertTrue(m === kbd.app.swipe.impl.SwipeEngineModule)
         assertTrue(m === SwipeModuleProvider.get())   // singleton
-        assertTrue(m.tutorSteps().isNotEmpty())
     }
 }

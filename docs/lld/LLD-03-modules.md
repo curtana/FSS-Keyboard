@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.27** (2026-11-02)
+- 버전 **0.28** (2026-11-02)
+- 0.28(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): `kbd.app.tutor` → `kbd.app.practice`(LLD-07 2절), `ThresholdStore` 삭제. `SwipeModule.tutorSteps()` 삭제(연습은 같은 `createSwipeView`를 연습용 `SwipeHost`로 부름). 기준값은 고정 상수(3.4), `posTolDp`는 실행 때 키 폭 × 0.4(`ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth`).
 - 0.27(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59 — CON-5·NFR-11·FR-CMN-03b·FR-TUT-08·HLD 3.1 삭제): 2절 제목을 "빌드와 SwipeModule"로. HLD가 `SwipeModule`을 LLD 표기로 따르므로 인터페이스 이름은 그대로 둔다. 빌드 변형(productFlavors) 삭제, 빌드 하나(`assembleDebug`, 앱 ID `kbd.app`), `gesture-engine`은 일반 `implementation`. `app/src/personal`·`public`·`testPersonal`·`testPublic`를 `main`·`test`로 합침. `SwipeModule`에서 `available`·`thresholdFields()`와 public `NoSwipeModule`을 지움, `PersonalSwipeModule` → `SwipeEngineModule`, `PersonalTutorSteps` → `TutorSteps`. 공개판 튜터 1-1(`MinCrossOnQwertyStep`, `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`)과 긋기를 빼는 모드 순서도 지움. 아래 표·코드는 이 판 기준이고, 0.26까지의 변형 설명은 이 줄로 대신한다.
 - 0.26(이슈 #242 오너 결정(두벌식 겹받침 한 번에)): `TapKeyDef.compoundJamo: Map<Dir, Char>`(두벌식 글자 키의 방향별 겹받침, 기본 빈 맵), core-hangul `JamoTables.SPLIT_JONG`(겹받침 → 두 자음). 겹받침 자모(`GS` 등)도 `JamoEvent.Consonant`로 들어올 수 있다(조합기가 나눔, LLD-04 7절).
 - 0.25(이슈 #237): `KeyGeom.topAtWindow`(위 변이 창 위 끝과 같은 맨 윗줄 키, `build`가 정함)와 `windowEdges`(= `outerEdges` + 위). 플랫폼이 창 밖으로 나간 터치를 창 테두리에 붙여 보내므로 `EdgeCrossingTracker`가 테두리에 닿은 점을 그 변을 최소 통과 거리만큼 넘은 것으로 친다 — **네 테두리 모두**(바깥 변도 테두리에 닿으면 나감, 0.24까지의 "바깥 변은 기록 없음" 대체, LLD-04 3.2). `TapKeyResolver.edgeHints(key)`(그어서 나오는 글자 중 탭과 다른 것, 자판 표시용, LLD-05A 3.4).
@@ -70,8 +71,8 @@ core-hangul ──► (없음)
 | app | `kbd.app.graffiti` | `GraffitiInputHandler`, `GraffitiPadView`, `InkCollector` | [LLD-05-graffiti.md#6](LLD-05-graffiti.md#6-graffitiinputhandler-app) |
 | app | `kbd.app.view` | `KeyboardRootView`, `TapKeyboardView`, `TapKeyAccessHelper`, `MultiPointerQueue`, `RepeatTimer`, `RepeatSchedule` | [LLD-05A-tap-keyboard.md](LLD-05A-tap-keyboard.md), [LLD-08-service-mode.md#7](LLD-08-service-mode.md#7-keyboardrootview-창-높이-고정바닥-정렬) |
 | app | `kbd.app.feedback` | `Feedback` | [LLD-08-service-mode.md#8](LLD-08-service-mode.md#8-feedback) |
-| app | `kbd.app.store` | `ThresholdStore`, `SettingsStore`, `Settings`, `RowHeight`, `ErrorLog` | [LLD-07-tutor-store.md](LLD-07-tutor-store.md) |
-| app | `kbd.app.tutor` | `TutorActivity`, `TutorSession`, `TutorStep`, `ThresholdEstimator`, `TutorLaunchPolicy` | [LLD-07-tutor-store.md#2](LLD-07-tutor-store.md#2-튜터-모드) |
+| app | `kbd.app.store` | `SettingsStore`, `Settings`, `RowHeight`, `ErrorLog`(0.28: `ThresholdStore` 삭제) | [LLD-07-tutor-store.md](LLD-07-tutor-store.md) |
+| app | `kbd.app.practice`(0.28) | `PracticeActivity`, `PracticeFlow`, `PracticeInput`, `PracticeItemJudge`, `PracticeTopics`, `PracticeLaunchPolicy` | [LLD-07-tutor-store.md#2](LLD-07-tutor-store.md#2-입력-연습-hld-71-swipe-10장-fss17) |
 | app | `kbd.app.settings` | `SettingsActivity` | [LLD-07-tutor-store.md#7](LLD-07-tutor-store.md#7-settingsactivity) |
 | app | `kbd.app.error` | `EngineGuard` | [LLD-09-errors.md](LLD-09-errors.md) |
 | app | `kbd.app.swipe` | `SwipeModule`, `SwipeHost`, `SwipeEngineState`, `SwipeModuleProvider`(소스 세트별) | 이 문서 2.2 |
@@ -100,7 +101,7 @@ dependencies {
 
 | 소스 세트 | 경로 | 담는 것 |
 |---|---|---|
-| main | `app/src/main/kotlin` | 모든 코드(0.27). `kbd.gesture.*`는 `kbd.app.swipe.impl`(긋기 뷰·튜터 연습 부분, `SwipeEngineModule`)에서만 import한다 |
+| main | `app/src/main/kotlin` | 모든 코드(0.27). `kbd.gesture.*`는 `kbd.app.swipe.impl`(긋기 뷰, `SwipeEngineModule`)에서만 import한다 |
 | test | `app/src/test/kotlin` | 모든 앱 시험(0.27: `testPersonal`·`testPublic` 합침) |
 
 - **경계:** 앱의 나머지는 `SwipeModule` 인터페이스로만 긋기 엔진을 본다. 시험 `MOD-01`은 `assembleDebug`가 성공하는지, `MOD-02`는 `kbd.app.swipe.impl` 밖 main 소스에 `import kbd.gesture`가 없는지 검사한다(0.27).
@@ -111,7 +112,6 @@ dependencies {
 ```kotlin
 interface SwipeModule {
     fun createSwipeView(context: Context, host: SwipeHost): View   // 0.27: available·thresholdFields()와 null 반환 없음
-    fun tutorSteps(): List<TutorStep>                        // 1~5과의 단계
 }
 
 interface SwipeHost {                 // KeyboardService가 구현, 긋기 뷰가 부른다
@@ -145,7 +145,7 @@ object SwipeModuleProvider { fun get(): SwipeModule }   // = SwipeEngineModule(0
 |---|---|---|---|---|---|
 | `SwipeModuleProvider.get()` | 없음 | `SwipeEngineModule` 싱글턴(0.27) | 없음 | 이슈 #251 | MOD-01, MOD-04 |
 | `createSwipeView` | 없음 | `SwipeKeyboardView`(LLD-04 9절)를 만들어 돌려준다 | 없음 | FR-SWP-50 | MOD-04 |
-| `tutorSteps()` | 없음 | 1-1, 1-2, 3-1, 3-4, 5-1(LLD-07 2.2, 4-1은 이슈 #150로, 3-3은 이슈 #156로, 2-1은 이슈 #168로, 3-2는 이슈 #173로 삭제, 3-4는 이슈 #160로 추가)(0.27: 공개판 1-1 없음) | 없음 | FR-TUT-02 | TU-01, TU-02 |
+| ~~`tutorSteps()`~~ | – | 0.28 삭제(FSS#17): 연습 주제·항목은 LLD-07 2.2 `PracticeTopics` | – | – | – |
 
 - 모드 순서는 모든 모드다(0.27: 긋기를 건너뛰는 공개판 순서 없음, [LLD-08-service-mode.md#5](LLD-08-service-mode.md#5-modecontroller)).
 
@@ -240,10 +240,10 @@ object ThresholdDefaults { const val MIN_CROSS_DP = 8f; val VALUES: Thresholds }
 | `minCrossDp` | **8, 고정**(0.24, 이슈 #217 오너 결정. 튜터 측정·저장 값 안 씀) | 한글 자음 키 탭/획(LLD-04 4.3 ①), 숫자·기호·천지인 키 변 통과(LLD-04 3절), 탭 자판(LLD-05A 2절), 그래피티 모드 키 |
 | `longDp` | 51 | 모음 획 점/긴 획(LLD-04 4.3 ④, 0.18: 축 방향 길이) |
 | `guideDelayMs` | 120 | 표시 지연 타이머 |
-| `posTolDp` | 20 | 모음 획 위치 관계의 허용 오차 t(LLD-04 6.3, SRS 1.3: 키 폭 51 × 0.4, 고정·측정 안 함, 0.18) |
-| `keySizeWDp`·`keySizeHDp` | 51, 48 | 다시 측정 권유 판단만 |
+| `posTolDp` | 20(뷰가 폭을 알기 전) | 모음 획 위치 관계의 허용 오차 t(LLD-04 6.3, SRS 1.3). 0.28: **실행 때 긋기 키 폭 × 0.4** — `SwipeKeyboardView.rebuildGeometry`가 `SwipeInputMapper.setKeyWidth(폭 / 7)`, `ThresholdDefaults.posTolFor(w) = w × POS_TOL_RATIO(0.4)` (PM 결정, FSS#17) |
+| `keySizeWDp`·`keySizeHDp` | 51, 48 | 쓰는 곳 없음(0.28: 다시 측정 권유 없음) |
 
-- 기본값은 HLD 7.2 예시값이며, FR-TUT-05·TBD-6에 따라 튜터 실측 뒤 바꾼다(값 자체를 LLD가 정하지 않음). 단 `minCrossDp`는 오너 결정으로 8dp 고정이다(0.24).
+- 0.28: 모든 값이 **코드 상수**(`ThresholdDefaults.VALUES`)이고 측정·저장·다시 읽기가 없다(HLD 7.2, FSS#17 오너 결정 ①). `minCrossDp`는 8dp(0.24), `guideDelayMs` 120ms, `posTolDp`만 실행 때 키 폭을 따른다.
 - 0.18(이슈 #173)에서 지운 칸: `addIDp`·`returnLongDp`·`turnAngleDeg`(한 획 복모음 규칙이 없어짐, HLD 7.2 형식 5).
 - 0.17(이슈 #168)에서 지운 칸: `doubleTapWindowMs`(쌍자음 시간 창. 쌍자음이 전용 키가 되어 시간 판정이 없다, HLD 7.2 형식 4). 긋기 입력의 시간 기준값은 이제 없다.
 - 0.14(이슈 #150)에서 지운 칸: `mergeWindowMs`, `mergeRefGapMs`, `doubleRefGapMs`, `incomingRefGapMs`, `breakRatio`, `breakMinDeltaMs`(병합 시간 창, 끊는 간격, 받침 우선이 없어짐, HLD 7.2 형식 3).
@@ -270,7 +270,7 @@ PROCESS_ROLES 10장에 따라 설치하지 않고 요청만 한다. 구현 착�
 | Kotlin 표준 라이브러리, Kotlin Gradle 플러그인 | 전체 | CON-1 | Apache 2.0 |
 | Android Gradle Plugin, AndroidX Core | app | CON-1 | Apache 2.0 |
 | AndroidX DataStore Preferences | `SettingsStore` | HLD 7.3 | Apache 2.0 |
-| Jetpack Compose(UI, Material3), Activity Compose | `SettingsActivity`, `TutorActivity` | HLD 2장, 12장 | Apache 2.0 |
+| Jetpack Compose(UI, Material3), Activity Compose | `SettingsActivity`, `PracticeActivity` | HLD 2장, 12장 | Apache 2.0 |
 | AndroidX CustomView (`ExploreByTouchHelper`) | `TapKeyAccessHelper` | HLD 5A, NFR-07 | Apache 2.0 |
 | kotlinx-serialization-json | 기준값 JSON, 템플릿 JSON, 시험 궤적 JSON(JVM 모듈에서도 써야 해서 `org.json` 불가) | HLD 7.3, 5장 | Apache 2.0 |
 | JUnit 4.13 | 모든 모듈 단위 시험 | NFR-08 | EPL 1.0 |

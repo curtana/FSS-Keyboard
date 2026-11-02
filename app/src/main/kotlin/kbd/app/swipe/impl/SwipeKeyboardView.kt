@@ -107,6 +107,7 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
         val wDp = width / density
         if (g != null && g.widthDp == wDp && g.rowHeightDp == rowHeightDp) return
         logic.geometry = SwipeGeometry.build(wDp, rowHeightDp)
+        mapper.setKeyWidth(wDp / SwipeLayout.COLS)   // t = the drawn key width × 0.4 (HLD 7.2, FSS#17)
         labelPaint.textSize = rowHeightDp * density * LABEL_SCALE
         sidePaint.textSize = rowHeightDp * density * SIDE_SCALE
         invalidate()
