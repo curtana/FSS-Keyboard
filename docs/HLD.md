@@ -1,9 +1,9 @@
 # 상위 수준 설계 (HLD)
 
-- 문서: HLD, 버전 **0.61** (2026-11-02)
+- 문서: HLD, 버전 **0.62** (2026-11-02)
 - 상태: 초안. LLD 0.1이 올린 설계 변경 요청 DCR-01~21(오너 승인 2026-10-27)을 반영했다.
-- 요구사항: [SRS.md](SRS.md) 0.68
-- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.48, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
+- 요구사항: [SRS.md](SRS.md) 0.69
+- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.49, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
 
 ## 1. 설계 원칙
 
@@ -253,6 +253,7 @@ GraffitiGuidePanel: 안내표가 열려 있으면 패드·보조 줄 위에 불�
 PracticeActivity(옛 TutorActivity)
   └─ 주제 목록 = ①②③④ (SWIPE 10.1)
        │     주제마다 이름·한 줄 설명·어림 시간·해 본 표시(✓, SettingsStore의 값, 판정에 안 씀)
+       │     그 모드가 키보드에서 꺼져 있으면 ③·④에 "꺼져 있음" 표시(할 수는 있음, SRS FR-CMN-03f ⑦)
        ├─ 주제 설명(한 화면) → [시작]
        ├─ 항목을 정해진 순서로 한 번씩(되풀이·표본 없음). 다 맞히면 끝 화면 → 주제 목록. [그만]은 언제든 주제 목록으로
        ├─ 연습 자판 = 주제·항목이 정함(실제 키보드와 같은 뷰·엔진·고정 기준값):
@@ -296,15 +297,15 @@ PracticeActivity(옛 TutorActivity)
 | 데이터 | 형식 | 위치 |
 |---|---|---|
 | ~~기준값~~ | – | 삭제(FSS#17): 고정값은 코드 상수(7.2), 내보내기·가져오기 없음 |
-| 설정(마지막 모드, 표시, 피드백, 줄 높이 등) | 키-값 | Jetpack DataStore(Preferences) |
+| 설정(마지막 모드, 켜진 모드(그래피티·긋기, 기본 켬, FSS#31), 표시, 피드백, 줄 높이 등) | 키-값 | Jetpack DataStore(Preferences) |
 | 오류 기록 | 텍스트 | 앱 내부 저장소, 크기 제한 순환. **오류 종류·코드 위치만**, 입력 글자·좌표 없음. 비밀번호·학습 금지 입력창에서는 기록 안 함(NFR-05) |
 
 ## 8. 입력기 생명주기와 플랫폼 처리
 
 | 시점 | 처리 |
 |---|---|
-| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드)의 입력 뷰 생성(FR-CMN-10) |
-| `onStartInputView(info)` | **자판 선택:** 클래스가 숫자·전화·날짜시간이거나 비밀번호(아래 판별, 학습 금지 플래그만 있는 경우는 제외)면 **숫자류 입력창** → `ModeController.enterNumericField()`(영문 쿼티로 시작), 아니면 `leaveNumericField()`(돌아갈 모드로 복귀). 8.1, FR-CMN-04·04b. **비밀번호 판별(클래스와 변형을 함께):** (클래스 = `TYPE_CLASS_TEXT`이고 변형 ∈ {`TYPE_TEXT_VARIATION_PASSWORD`, `VISIBLE_PASSWORD`, `WEB_PASSWORD`}) 또는 (클래스 = `TYPE_CLASS_NUMBER`이고 변형 = `TYPE_NUMBER_VARIATION_PASSWORD`) → 표시 제한·기록 안 함(FR-CMN-08 ①). `imeOptions`에 `IME_FLAG_NO_PERSONALIZED_LEARNING`만 있으면 → 기록 안 함(학습·통계·오류 기록), 표시는 평소대로(FR-CMN-08 ②). 변형 값만 비교하면 안 된다(`NUMBER_VARIATION_PASSWORD`와 `TEXT_VARIATION_URI`가 같은 값 0x10). 조합 확정, BlockParser·천지인 조립기 초기화, `ModeController.typed = false`(previous 유지, FR-CMN-03e) |
+| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드. 꺼진 모드면 순서상 다음 켜진 모드, FR-CMN-03f ③)의 입력 뷰 생성(FR-CMN-10) |
+| `onStartInputView(info)` | **자판 선택:** 클래스가 숫자·전화·날짜시간이거나 비밀번호(아래 판별, 학습 금지 플래그만 있는 경우는 제외)면 **숫자류 입력창** → `ModeController.enterNumericField()`(영문 쿼티로 시작), 아니면 `leaveNumericField()`(돌아갈 모드로 복귀). 8.1, FR-CMN-04·04b. **비밀번호 판별(클래스와 변형을 함께):** (클래스 = `TYPE_CLASS_TEXT`이고 변형 ∈ {`TYPE_TEXT_VARIATION_PASSWORD`, `VISIBLE_PASSWORD`, `WEB_PASSWORD`}) 또는 (클래스 = `TYPE_CLASS_NUMBER`이고 변형 = `TYPE_NUMBER_VARIATION_PASSWORD`) → 표시 제한·기록 안 함(FR-CMN-08 ①). `imeOptions`에 `IME_FLAG_NO_PERSONALIZED_LEARNING`만 있으면 → 기록 안 함(학습·통계·오류 기록), 표시는 평소대로(FR-CMN-08 ②). 변형 값만 비교하면 안 된다(`NUMBER_VARIATION_PASSWORD`와 `TEXT_VARIATION_URI`가 같은 값 0x10). 조합 확정, BlockParser·천지인 조립기 초기화, `ModeController.typed = false`(previous 유지, FR-CMN-03e). 이어서 `ModeController.applyEnabled(켜진 모드)`(FR-CMN-03f, 8.1) |
 | `onUpdateSelection(oldSel, newSel, candStart, candEnd)` | 조합 중이고 **새 커서가 조합 구간 끝(candEnd)과 다르거나 입력기가 마지막으로 기대한 위치와 다를 때만** 사용자 커서 이동으로 보고 확정·초기화. 입력기 자신의 `setComposingText`·`commitText`로 생긴 변화는 무시(FR-CMN-06) |
 | `onFinishInput` | 조합 확정 |
 | `onEvaluateFullscreenMode` | 항상 `false`(전체 화면 입력 모드 안 씀, FR-CMN-12) |
@@ -319,7 +320,9 @@ PracticeActivity(옛 TutorActivity)
 
 ```
 상태: current, previous(없을 수 있음), typed
-순서: SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → SWIPE … (빌드에 없는 모드는 건너뜀)
+순서: SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → SWIPE … (설정에서 꺼진 모드는 건너뜀, FR-CMN-03f)
+켜진 모드: enabled ⊇ {QWERTY, DUBEOLSIK}(늘 켜짐), GRAFFITI·SWIPE는 SettingsStore 값(기본 켬, FR-SET-08)
+nextEnabled(m) = 순서상 m 다음의 첫 켜진 모드
 
 입력 이벤트(글자·숫자·기호, 그래피티 천지인 요소 획, 스페이스, 엔터, 탭, 지우기) → typed = true
   (방향키, 모드 키, 그래피티 한영 전환·시프트·캡스록·확장 시프트·'J' 확정 획 → 입력 아님, DCR-17)
@@ -329,17 +332,24 @@ PracticeActivity(옛 TutorActivity)
     current = QWERTY                       (previous·마지막 모드 저장 안 바꿈)
   아니면 leaveNumericField():
     if returnMode != null: current = returnMode; returnMode = null   (previous 안 바꿈)
-프로세스 시작 → current = 저장된 마지막 모드, previous = 없음, typed = false, returnMode = 없음
+applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면 곧바로)와 onStartInputView마다    // FR-CMN-03f ②~④
+  if previous ∉ enabled: previous = null
+  if returnMode != null and returnMode ∉ enabled: returnMode = nextEnabled(returnMode); 마지막 모드 저장(= returnMode)
+  if current ∉ enabled: 확정·조립기 초기화(FR-CMN-03d); current = nextEnabled(current)   (typed·previous 안 바꿈)
+                        if returnMode == null: 마지막 모드 저장
+프로세스 시작 → current = 저장된 마지막 모드(꺼져 있으면 nextEnabled로 고치고 마지막 모드로 저장), previous = 없음, typed = false, returnMode = 없음
 모드 키 →
   확정(finishComposingText, 입력 단위 목록은 확정으로 소멸), SwipeInputMapper의 모음 획 조립기·천지인 조립기 초기화   // FR-CMN-03d
-  if typed and previous != null and previous != current:  next = previous
-  else:                                                    next = 순서상 current 다음
+  if typed and previous != null and previous != current:  next = previous      (previous는 늘 켜진 모드, applyEnabled)
+  else:                                                    next = nextEnabled(current)
   if typed: previous = current
   current = next; typed = false
   if returnMode == null: 마지막 모드 저장(DataStore)   // 숫자류 입력창 안에서 바꾼 모드는 저장 안 함, FR-CMN-04b
 ```
 
-- 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행과 숫자류 입력창 사례 표 7행을 단위 시험한다.
+- 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 8행(FR-CMN-03f)을 단위 시험한다. 켜진 모드 집합은 밖(`SettingsStore`)에서 받아 넣는다.
+- **설정 변경 전달:** `KeyboardService`가 `SettingsStore`의 켜진 모드 값(Flow)을 구독한다. 값이 바뀌면 `applyEnabled`를 부르고, 입력 뷰가 떠 있는 동안 `current`가 바뀌었으면 입력 뷰를 새 모드의 뷰로 바꾼다(`setInputView`, 모드 전환과 같은 경로). 떠 있지 않으면 다음 `onStartInputView`의 `applyEnabled`가 맡는다.
+- 그래피티 안의 한영 상태(`GraffitiState`, 5장)는 `ModeController`와 따로이고 켜진 모드와 상관없다(FR-CMN-03f ⑥).
 - 숫자류 입력창 안에서도 모드 키는 위 규칙 그대로다(typed·previous 포함). 마지막 모드 저장만 하지 않으므로, 숫자류 입력창 안에서 프로세스가 다시 시작되면 저장된 마지막 모드(= 돌아갈 모드)를 `returnMode`로 삼아 다시 쿼티로 시작한다(사례 표 7행).
 - 위 "모드 키 →"는 모드 키의 **탭** 결과(8.2절의 `ModeKeyTap`)일 때만이다. ↑(설정 열기)는 `ModeController`를 거치지 않는다.
 
@@ -394,7 +404,7 @@ PracticeActivity(옛 TutorActivity)
 | 단위(JVM) | `stroke-core` | 궤적 + 키 사각형 → 변 통과 기록, 테두리 변 닿음 = 나감(누른 점에서 minCross 미만이면 아님, 이슈 #237), 탭 자판 동작 표 |
 | 단위(JVM) | `gesture-engine` | 궤적 JSON(점, 시각) + 기준값 → 기대 결과. 한글 자음 키: 시작점 → 끝점 변위로 Tap / 세로 획 / 가로 획 / Reverse(최소 통과 거리 경계 ± 1dp, 대각선 |x| = |y|, 시작 키 무관, 중간 경로 무관, **길이를 바꿔도 획 종류 같음**). `VowelStrokeAssembler`: SWIPE 3.3절 21모음 전부를 3.6.2 다음 후보 표대로, 임시 상태 셋(세로 획 둘, 가로 획 둘, ㅜ + 가로 점), 후보 밖·구역 밖 획 = 무시 + 진동, 조립 끝(탭 등)에서 마지막 모음 상태로 되돌림 + 진동, 획 하나로 닫기 = ㅣ / ㅡ, ⌫ 획 하나씩·닫힌 모음 다시 안 엶. `SwipeInputMapper`: SWIPE 5.3 표 전체(가, 거, 고, 구, 각, 가기, 곡기, 고끼, 까, 밖, 박가, 바까, 박까, 아빠, 안녕, 했다, 닭, 과, 괴, 의, ㄱㄱ, ㅋㅋ), 쌍자음 키 = 일반 자음 키, 두 번 탭 = 자음 둘(시간 무관), 오래 누름 = 탭, 닫힌 모음 ⌫(곡 ⌫ = 고 → ㄱ). 천지인 키: 모음 획과 섞지 않음. **자음 기준 C(SWIPE 3.6.5 (가) 전부: 역할 표, ㅏ / ㅗ·ㅜ / ㅓ·ㅢ 경계 근처, 상대 크기와 부딪치는 두 사례, C 왼쪽·위 = 무시, 점 하나로 닫기 = 버림)**, **낱모음 연결 위치(SWIPE 3.6.5 (나) 전부):** 떨어진 획(ㅏ·ㅓ·ㅗ·ㅜ·ㅢ), 길이만 바꾼 짝(결과 같음), 짧은 ㅡ의 ㅜ, ㅓ/ㅢ 3등분·가로지름(가로 획 어느 부분이든)·짧은 가로 예외(TBD-22 확정, 가로 < ㅣ × 0.5), ㅏ / ㅗ 상대 크기(가로가 짧으면 ㅏ·길면 ㅗ·같으면 ㅏ, 가로지름·ㄴ 모양·시작점 점 = ㅏ, 점 위쪽 절반을 지나는 긴 가로 = 무시), ㅢ로 보인 뒤 ③ = 게, ㅕ·ㅛ·ㅠ·ㅟ·ㅝ·ㅚ·ㅘ·ㅙ, 점 오른쪽 ㅣ = ㅐ, 앞 ㅣ에 겹친 ㅣ = 무시, ㅡ 왼쪽 부분 가로지름 = 거, ㅡ 왼쪽 끝 바깥 = 무시, 허용 오차 경계 ± 1dp, 첫 획 역할 다시 정하기(기 → 고, 그 → 거) |
 | 단위(JVM) | `recognizer` | 획 JSON → 기대 문자. 천지인 조립(ㄱ, ㅣ, 탭 = 가; SRS FR-HGL-04d의 ㆍ 중간 상태 사례), ⌫ 뒤 조립기 동기화(가 ⌫ 탭 = 가), 초기화, 내부 언어 상태. 개발용/평가용 샘플 분리, 평가용으로 정확도 측정 |
-| 단위(JVM) | `ModeController` | SRS 모드 키 예시 표 10행 |
+| 단위(JVM) | `ModeController` | SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 8행(`applyEnabled`·`nextEnabled`) |
 | 단위(JVM) | `ModeKeyGesture` | 8.2절 변 통과 기록 → 탭 / ↑ 결과, 설정 열기 뒤 `ModeController` 상태 불변(SRS FR-CMN-13) |
 | 단위(JVM) | `PracticeItemJudge`(옛 `TutorItemJudge`) | 주제·항목마다 동작 결과 열 → ✓/✗·판정 시점(SWIPE 10.2절: 탭 자판 A·!·[와 ⌫로 고쳐 맞힘, 긋기 가·과·천지인 가, 그래피티 가·a·1, 무시된 획·인식 실패 = ✗), 안내 문구 생성(10.2절 규칙), 연습 화면 입력 표시의 임시 ㆍ·‥ |
 | 실기기 | 앱 | R1~R5, 표시 지연 표시, 모드 전환, 입력창 종류(비밀번호 포함), 여러 손가락, 가로 화면, NFR-01·02 |
@@ -418,7 +428,7 @@ PracticeActivity(옛 TutorActivity)
 
 | SRS | 구성 요소 |
 |---|---|
-| FR-CMN-01~03e, 10 | `KeyboardService`, `ModeController`(8.1) |
+| FR-CMN-01~03f, 10 | `KeyboardService`, `ModeController`(8.1, 03f = `applyEnabled`·`nextEnabled`), `SettingsStore`(켜진 모드) |
 | FR-CMN-04~04b | `KeyboardService.onStartInputView`(숫자류 입력창 판별), `ModeController`(`enterNumericField`·`leaveNumericField`·`returnMode`, 8.1) |
 | FR-CMN-05, 06, 09 | `ComposingController`, `onUpdateSelection` 조건(8장) |
 | FR-CMN-07~07c | `HangulComposer` 백스페이스 정책·입력 단위 목록, `SwipeInputMapper` 조립기 ⌫ 순서(4.3), `CheonjiinAssembler` ⌫ 순서(5장), ⌫ 반복(5A) |
@@ -442,7 +452,7 @@ PracticeActivity(옛 TutorActivity)
 | FR-SWP-60~65 | 자판 배치 데이터(천지인 키), `StrokeClassifier`(천지인 키 결과), `SwipeInputMapper`(조립 닫기, 모음 획과 섞지 않음), `core-hangul.CheonjiinAssembler`, `HangulComposer`(`ReplaceVowel`, 요소 단위 ⌫), `GuideOverlay`·`ProgressState`(천지인 키 안내), `Feedback`(무시 요소 오류 진동). FR-SWP-66(설정 키)은 이슈 #205로 삭제 |
 | FR-GRF-01~08 (05a~05d 포함) | `GraffitiPadView`(보조 줄, 패드 상태 표시), `InkCollector`, `recognizer`(Recognizer, GraffitiState), `core-hangul.CheonjiinAssembler`, `Feedback`(인식 실패 오류 진동) |
 | FR-GRF-09~09d | `recognizer.GuideCatalog`(언어와 상관없는 칸 목록 하나 = 템플릿 id·규칙 획, 임시 표시), `GraffitiGuidePanel`(불투명 덮개·✕·세로 스크롤), `KeyboardRootView`(빈 띠 안내표 버튼, 덮개 자리 터치 소비, 열 때 진행 중 패드 포인터 버림, 5장) |
-| FR-SET-02~06 | `SettingsActivity`, `SettingsStore`, `Feedback` |
+| FR-SET-02~06, 08 | `SettingsActivity`(08 = 첫 묶음 "입력 모드" 체크 상자), `SettingsStore`, `Feedback` |
 | NFR-01, 02 | 5A·6장 그리기 정책, 11장 실기기 계측 |
 | NFR-03, 05 | 9장 오류 처리, 7.3 오류 기록 규칙 |
 | NFR-04 | 1장 결정성, 4.3 시각은 `StrokeResult` 값만 씀 |
@@ -532,3 +542,4 @@ PracticeActivity(옛 TutorActivity)
 | 0.59 | 2026-11-02 | SRS 0.65·SWIPE 0.47 반영(오너 결정 2026-11-02, 이슈 #251: 공개판·개인판을 하나로 합침): 3장 의존 방향·`gesture-engine`·`app` 행, 3.1 빌드 변형 삭제, 6장 제목, 7.1 튜터 그림의 public 경로, 7.2 표 1-1, 12장 결정 표·13장 추적표의 빌드 변형 행 |
 | 0.60 | 2026-11-02 | SRS 0.66 반영(오너 결정 2026-11-02, 이슈 #254): 5장 템플릿·획 안내표 그리기의 출처 표현을 중립 표현으로 |
 | 0.61 | 2026-11-02 | (검수 반영: 3장 그림·7.1 코드 이름 `Practice…`로 통일, 11장 ⑩ 완화 칸. 오너 결정 A: 탭 자판 연습은 실제 자판 그대로·⌫ 반영 뒤 판정(7.1, 시험 표). PM 결정 B: `posTolDp` = 실행 때 실제 키 폭 × 0.4(7.1, 7.2)) SRS 0.68·SWIPE 0.48 반영(오너 방향·결정 2026-11-02, FSS#17): 7장을 입력 연습과 저장소로 — 7.1 그림(주제 목록 → 설명 → 항목 → 끝, 주제별 연습 자판, `PracticeItemJudge` 결과 판정, 재는 것·저장 없음, 첫 실행은 주제 목록만)과 빠지는 것, 7.2 고정 기준값 표(코드 상수, 저장 파일·내보내기·가져오기·초기화 없음, 옛 저장 파일은 읽지 않음), 7.3 기준값 행 삭제 |
+| 0.62 | 2026-11-02 | SRS 0.69·SWIPE 0.49 반영(오너 결정 2026-11-02, FSS#31): 8.1 `ModeController`에 켜진 모드 집합·`nextEnabled`·`applyEnabled`·설정 변경 전달(Flow 구독, 뷰 교체)(검수 반영: 돌아갈 모드·시작 때 고친 모드도 마지막 모드로 저장)(꺼진 모드 건너뜀, 이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로), 8장 `onCreateInputView`·`onStartInputView` 행, 7.1 주제 목록의 "꺼져 있음" 표시, 7.3 설정에 켜진 모드, 11장 시험, 13장 추적(FR-CMN-03f, FR-SET-08) |
