@@ -1,6 +1,6 @@
 package kbd.app.swipe
 
-import kbd.hangul.stroke.OtherRole
+import kbd.hangul.stroke.DotPlace
 import kbd.hangul.stroke.StrokePop
 import android.content.Context
 import android.view.View
@@ -38,9 +38,9 @@ interface SwipeHost {
     val centerConsonant: Jamo? get() = null
 
     /**
-     * What the swipe view draws in the place C (SWIPE 9.5, FR-DSP-10, FSS#36): the composing syllable and the
-     * bracket of a lone first stroke's other role (`InputDispatcher.centerText`); null = nothing. The default
-     * draws [centerConsonant] alone (hosts without a composer).
+     * What the swipe view draws in the place C (SWIPE 9.5, FR-DSP-10, FSS#36): the composing syllable, its pending
+     * dots drawn in place (`InputDispatcher.centerText`); null = nothing. The default draws [centerConsonant] alone
+     * (hosts without a composer).
      */
     val centerText: CenterText? get() = centerConsonant?.let { CenterText(it.compat.toString()) }
 
@@ -83,11 +83,8 @@ interface SwipeEngineState {
     /** = `SwipeInputMapper.pendingReplacesVowel()`: the glyph is shown in place of the composer's last character (bare ‥, SWIPE 0.36 3.4). */
     fun pendingReplacesVowel(): Boolean = false
 
-    /** The open vowel assembly's strokes (0 = none open); 1 after a stroke = it was the assembly's first (FSS#36). */
-    fun vowelStrokes(): Int = 0
-
-    /** = `SwipeInputMapper.otherRole()`: the lone first stroke's other role, the center syllable's bracket (SWIPE 9.5, FSS#36). */
-    fun otherRole(): OtherRole? = null
+    /** = `SwipeInputMapper.pendingDots()`: the pending vowel-stroke dots and their places, drawn in the center place (SWIPE 9.5, FSS#36). */
+    fun pendingDots(): List<DotPlace> = emptyList()
 
     /** = `SwipeInputMapper.popElement()`: ⌫ takes back one vowel stroke or cheonjiin element first (SWIPE 3.5, FR-SWP-64). */
     fun popElement(): StrokePop = StrokePop.Empty

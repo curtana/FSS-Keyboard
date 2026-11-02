@@ -1,5 +1,6 @@
 package kbd.app.view
 
+import android.graphics.PointF
 import android.graphics.RectF
 import kbd.app.ime.FieldClass
 import kbd.app.ime.FieldInfo
@@ -11,7 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** LLD-11 §6.6 CS-01..CS-04: what the center syllable shows and how big (SWIPE 9.5, FR-DSP-10, issue #180, FSS#36). */
+/** LLD-11 §6.6 CS-01..CS-04: what the center syllable shows, how big and where its dots go (SWIPE 9.5, FR-DSP-10, issue #180, FSS#36). */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [ViewTestSdk.SDK])
 class CenterConsonantPainterTest {
@@ -20,8 +21,8 @@ class CenterConsonantPainterTest {
 
     @Test
     fun `CS-01 the host's center text as it is, nothing when none`() {
-        val ga = CenterText("기", "ㄱ", DotPlace.UNDER)
-        assertEquals(ga, CenterConsonantPainter.textFor(ga, text))
+        val go = CenterText("ㄱ", listOf(DotPlace.UNDER))
+        assertEquals(go, CenterConsonantPainter.textFor(go, text))
         assertEquals(CenterText("ㄲ"), CenterConsonantPainter.textFor(CenterText("ㄲ"), text))
         assertNull(CenterConsonantPainter.textFor(null, text))                    // nothing composing, or a bare vowel
         assertEquals(CenterText("ㄴ"), CenterConsonantPainter.textFor(CenterText("ㄴ"), null))   // no field
@@ -43,13 +44,32 @@ class CenterConsonantPainterTest {
     }
 
     @Test
-    fun `CS-04 the bracket sits right above C - half a row high, centred, 1_5 C wide (FSS#36)`() {
-        val c = RectF(139.2f, 76f, 220.8f, 172f)   // C on 360 × 48 dp at density 1
+    fun `CS-04 dots in place - under in a row, right in a column, the syllable beside them (FSS#36)`() {
+        val c = RectF(139.2f, 76f, 220.8f, 172f)   // C on 360 × 48 dp at density 1: 81.6 × 96
         val r = RectF()
-        CenterConsonantPainter.otherBox(c, r)
-        assertEquals(52f, r.top, 0.01f)            // 24 px = half a row: the room above C since FSS#37 (row 1 starts at 48)
-        assertEquals(76f, r.bottom, 0.01f)
-        assertEquals(180f, r.centerX(), 0.01f)
-        assertEquals(122.4f, r.width(), 0.01f)
+        val p = ArrayList<PointF>()
+        CenterConsonantPainter.textBox(c, emptyList(), r)
+        same(c, r)                                                           // no dots: all of C
+        CenterConsonantPainter.textBox(c, listOf(DotPlace.UNDER, DotPlace.UNDER), r)
+        same(RectF(139.2f, 76f, 220.8f, 76f + 96f * 0.7f), r)                // the top 70 %, as ㄱ in 고
+        CenterConsonantPainter.textBox(c, listOf(DotPlace.RIGHT), r)
+        same(RectF(139.2f, 76f, 139.2f + 81.6f * 0.7f, 172f), r)             // the left 70 %, as ㄱ in 거
+        CenterConsonantPainter.dotCenters(c, listOf(DotPlace.UNDER), p)
+        assertEquals(1, p.size)                                              // 고: one under the middle
+        assertEquals(180f, p[0].x, 0.01f)
+        assertEquals(76f + 96f * 0.85f, p[0].y, 0.01f)
+        CenterConsonantPainter.dotCenters(c, listOf(DotPlace.UNDER, DotPlace.UNDER), p)
+        assertEquals(p[0].y, p[1].y, 0.01f)                                  // 교: side by side (··)
+        assertEquals(81.6f * 0.3f, p[1].x - p[0].x, 0.01f)
+        assertEquals(180f, (p[0].x + p[1].x) / 2, 0.01f)
+        CenterConsonantPainter.dotCenters(c, listOf(DotPlace.RIGHT, DotPlace.RIGHT), p)
+        assertEquals(p[0].x, p[1].x, 0.01f)                                  // 겨: one above the other (:)
+        assertEquals(139.2f + 81.6f * 0.85f, p[0].x, 0.01f)
+        assertEquals(96f * 0.3f, p[1].y - p[0].y, 0.01f)
+        assertEquals(124f, (p[0].y + p[1].y) / 2, 0.01f)
+    }
+
+    private fun same(want: RectF, got: RectF) {
+        for ((w, g) in listOf(want.left to got.left, want.top to got.top, want.right to got.right, want.bottom to got.bottom)) assertEquals(w, g, 0.01f)
     }
 }

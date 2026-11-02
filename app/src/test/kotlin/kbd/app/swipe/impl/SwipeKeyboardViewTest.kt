@@ -291,26 +291,24 @@ class SwipeKeyboardViewTest {
         assertEquals(listOf("center:ㄴ:${CenterConsonantPainter.COLOR}"), center(draw()))
     }
 
-    /** FSS#36 SWIPE 9.5: the composing syllable big in C, a first stroke's other role small in brackets right above C, its dot placed. */
+    /** FSS#36 SWIPE 9.5: one syllable, no candidates; pending dots drawn in place in C, as ㅛ·ㅕ's dots stand. */
     @Test
-    fun `SW-14b the center syllable with its bracket - the dot under the consonant, above C`() {
-        host.center = CenterText("기", "ㄱ", DotPlace.UNDER)
-        val canvas = RecordingCanvas().also { view.draw(it) }
-        assertEquals(listOf("center:기:${CenterConsonantPainter.COLOR}"), center(canvas.ops))
+    fun `SW-14b pending dots in C - under in a row, right in a column, none once a vowel is made`() {
         val c = SwipeLayout.consonantBox(WIDTH, ROW)
-        val small = canvas.textAt.filter { it.first in listOf("(", "ㄱ", ")") }.takeLast(3)
-        assertEquals(listOf("(", "ㄱ", ")"), small.map { it.first })
-        for ((_, _, y) in small) assertTrue("$y above C.top ${c.top * density}", y <= c.top * density && y > (c.top - ROW / 2) * density)
-        val dot = canvas.circles.single()
-        assertEquals(CenterConsonantPainter.COLOR, dot.third)
-        assertTrue("dot $dot under the bracket's ㄱ", dot.second > small[1].third - ROW / 2 * density && dot.first > small[1].second)
-        host.center = CenterText("그", "ㄱ", DotPlace.RIGHT)
+        host.center = CenterText("ㄱ", listOf(DotPlace.UNDER, DotPlace.UNDER))
+        val under = RecordingCanvas().also { view.draw(it) }
+        assertEquals(listOf("center:ㄱ:${CenterConsonantPainter.COLOR}"), center(under.ops))
+        assertEquals(2, under.circles.size)
+        assertEquals(under.circles[0].second, under.circles[1].second, 0.01f)                // side by side
+        assertTrue(under.circles.all { it.third == CenterConsonantPainter.COLOR && it.second > under.centerAt.single().second && it.second < c.bottom * density })
+        host.center = CenterText("ㄱ", listOf(DotPlace.RIGHT, DotPlace.RIGHT))
         val right = RecordingCanvas().also { view.draw(it) }
-        val k = right.textAt.filter { it.first == "ㄱ" }.last()
-        val close = right.textAt.last { it.first == ")" }
-        assertTrue("dot right of ㄱ, before ')'", right.circles.single().first in k.second..close.second)
-        host.center = CenterText("가")
-        assertEquals(0, RecordingCanvas().also { view.draw(it) }.circles.size)   // no bracket once settled
+        assertEquals(right.circles[0].first, right.circles[1].first, 0.01f)                  // one above the other
+        assertTrue(right.circles.all { it.first > right.centerAt.single().first && it.first < c.right * density })
+        host.center = CenterText("고")
+        val made = RecordingCanvas().also { view.draw(it) }
+        assertEquals(listOf("center:고:${CenterConsonantPainter.COLOR}"), center(made.ops))
+        assertEquals(0, made.circles.size)                                                   // no dots, no candidates
     }
 
     /** #180 FR-CMN-08 ①: not in password fields; ② no-learning fields draw it; FR-DSP-08: the guide settings do not matter. */

@@ -57,16 +57,11 @@ sealed interface StrokePop {
     data class Popped(val undoComposer: Boolean) : StrokePop
 }
 
-/** Where a dot stands beside the consonant (SWIPE 9.5 bracket, owner 2026-11-02, FSS#36): ㅗ·ㅛ's under it, ㅓ·ㅕ's right of it. */
+/**
+ * Where a pending dot stands beside the syllable in the center place (SWIPE 9.5, owner 2026-11-02, FSS#36): a vertical
+ * stroke's dot (ㅗ·ㅛ's) under it, two side by side; a horizontal stroke's dot (ㅓ·ㅕ's) right of it, two one above the other.
+ */
 enum class DotPlace { UNDER, RIGHT }
-
-/** The role a lone first stroke would have if it were not the one shown (SWIPE 3.6.3 two roles, 9.5 bracket, FSS#36). */
-sealed interface OtherRole {
-    /** ㅣ or ㅡ: the composer would take this vowel. */
-    data class Vowel(val v: Jamo) : OtherRole
-    /** A dot: no vowel yet, the dot drawn at [place]. */
-    data class Dot(val place: DotPlace) : OtherRole
-}
 
 /** Value copy for error recovery (LLD-09): the strokes and the C they were judged against. */
 data class StrokeSnapshot(val strokes: List<VowelStroke>, val consonant: ConsonantBox? = null)
@@ -160,20 +155,15 @@ class VowelStrokeAssembler(var tol: Float) {
     val pendingReplacesVowel: Boolean get() = reading(seq, consonant)?.hidesVowel ?: false
 
     /**
-     * The other role of a lone first stroke with C (SWIPE 3.6.3: it keeps both until the second stroke), for the
-     * center syllable's bracket (SWIPE 9.5, FSS#36): a vertical shown as ㅣ could be ㅗ·ㅛ's dot under the consonant
-     * and one shown as a dot could be ㅣ; a horizontal shown as ㅡ could be ㅓ·ㅕ's dot right of it and one shown as a
-     * dot could be ㅡ. Null with no C, no stroke or more than one.
+     * The dots [pendingGlyph] stands for, one per stroke, for the center place (SWIPE 9.5, owner 2026-11-02, FSS#36):
+     * a vertical stroke is ㅗ·ㅛ's dot ([DotPlace.UNDER]), a horizontal one ㅓ·ㅕ's ([DotPlace.RIGHT]). In the ‥ states
+     * that hide the composer's vowel ([pendingReplacesVowel]) both strokes are dots. Empty when no dot is pending.
      */
-    val otherRole: OtherRole?
+    val pendingDots: List<DotPlace>
         get() {
-            val c = consonant ?: return null
-            val s = seq.singleOrNull() ?: return null
-            val ul = underLeft(s, c)
-            return when {
-                s.vertical -> if (ul) OtherRole.Vowel(Jamo.I) else OtherRole.Dot(DotPlace.UNDER)
-                else -> if (ul) OtherRole.Dot(DotPlace.RIGHT) else OtherRole.Vowel(Jamo.EU)
-            }
+            val r = reading(seq, consonant) ?: return emptyList()
+            val n = if (r.hidesVowel) seq.size else r.pending
+            return seq.takeLast(n).map { if (it.vertical) DotPlace.UNDER else DotPlace.RIGHT }
         }
 
     fun snapshot(): StrokeSnapshot = StrokeSnapshot(seq.toList(), consonant)

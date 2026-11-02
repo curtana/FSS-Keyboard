@@ -444,17 +444,18 @@ class VowelStrokeAssemblerTest {
     }
 
     @Test
-    fun `VS-15 a lone first stroke's other role with C - the center syllable's bracket (FSS#36)`() {
-        assertEquals(OtherRole.Dot(DotPlace.UNDER), write(C, v(237, 80, 174)).otherRole)    // shows ㅣ; could be ㅗ·ㅛ's dot
-        assertEquals(OtherRole.Vowel(Jamo.I), write(C, v(177, 176, 199)).otherRole)         // shows a dot; could be ㅣ
-        assertEquals(OtherRole.Dot(DotPlace.RIGHT), write(C, h(184, 137, 247)).otherRole)   // shows ㅡ; could be ㅓ·ㅕ's dot
-        assertEquals(OtherRole.Vowel(Jamo.EU), write(C, h(124, 227, 247)).otherRole)        // shows a dot; could be ㅡ
-        assertNull(asm().otherRole)                                                          // no stroke
-        assertNull(write(v(100, 40, 160)).otherRole)                                         // bare: no C
-        val two = write(C, v(237, 80, 174), h(124, 237, 262))
-        assertNull(two.otherRole)                                                            // the second stroke settled it
-        two.pop()
-        assertEquals(OtherRole.Dot(DotPlace.UNDER), two.otherRole)                          // ⌫ back to one: both roles again
+    fun `VS-15 pending dots and their places for the center syllable - under for 고 교, right for 거 겨 (FSS#36)`() {
+        val U = DotPlace.UNDER
+        val R = DotPlace.RIGHT
+        assertEquals(listOf(U), write(C, v(177, 176, 199)).pendingDots)                          // ㄱ + a dot under it → 고
+        assertEquals(listOf(U, U), write(C, v(167, 176, 196), v(192, 176, 196)).pendingDots)     // two side by side → 교
+        assertEquals(listOf(R), write(C, h(124, 227, 247)).pendingDots)                          // a dot right of it → 거
+        assertEquals(listOf(R, R), write(C, h(114, 227, 252), h(144, 227, 252)).pendingDots)     // two, one above the other → 겨
+        assertEquals(listOf(R, R), write(C, h(184, 137, 227), h(204, 137, 227)).pendingDots)     // 그 re-read as two dots (‥ hides the ㅡ)
+        assertEquals(listOf(R), write(C, h(184, 137, 247), v(177, 192, 219), h(209, 187, 212)).pendingDots)   // 구 + ㅝ's dot
+        assertEquals(emptyList<DotPlace>(), write(C, v(237, 80, 174)).pendingDots)               // 기: a vowel, no dot (no candidates)
+        assertEquals(emptyList<DotPlace>(), write(C, v(177, 176, 199), h(209, 137, 247)).pendingDots)   // 고 made
+        assertEquals(emptyList<DotPlace>(), asm().pendingDots)
     }
 
     @Test

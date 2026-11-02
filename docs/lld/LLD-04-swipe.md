@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 4장(4.1 한 획의 흐름, 4.2 StrokeClassifier, 4.3 SwipeInputMapper, 4.4 HangulComposer)
 - 버전 **0.32** (2026-11-02)
-- 0.32(FSS#36·FSS#37, SWIPE 0.50 9.5·3.6.5, SRS 0.70 FR-DSP-10, HLD 0.63 6장): ① 가운데 자리 C를 **반 키 높이 아래로** — `consonantBox` 위 끝 = `(1 + 0.5) × 줄 높이 + 4dp`(상수 `C_DROP_ROWS = 0.5`, 줄 높이를 따라감), 360dp·48dp에서 ≈ (139.2, 76)–(220.8, 172)(8.1). 그림과 판정이 같은 함수라 판정 C도 같이 내려간다. ② 9.5를 **가운데 글자**로: 그릴 것은 `SwipeHost.centerText`(= `InputDispatcher.centerText()`, LLD-08 6.1) — 지금 조합 중인 한 글자(편집기에 보이는 조합 글자 그대로, 임시 ㆍ·‥ 포함, 낱모음이면 null) + 첫 획 하나가 두 역할을 가진 동안 다른 역할의 글자(괄호, 점이면 자리에 찍음). 조립기 `otherRole`(6.3), 매퍼 `otherRole()`(6.1). 이름 `CenterConsonantPainter`는 그대로. ③ 10.1 시퀀스의 가운데 표시. 획 안내의 "다음 획 자리"는 0.18부터 그리지 않았고 이제 할 일도 아니다(SRS FR-DSP-01, 5.2 0.18 끝 문장).
+- 0.32(FSS#36·FSS#37, SWIPE 0.51 9.5·3.6.5, SRS 0.71 FR-DSP-10, HLD 0.64 6장): ① 가운데 자리 C를 **반 키 높이 아래로** — `consonantBox` 위 끝 = `(1 + 0.5) × 줄 높이 + 4dp`(상수 `C_DROP_ROWS = 0.5`, 줄 높이를 따라감), 360dp·48dp에서 ≈ (139.2, 76)–(220.8, 172)(8.1). 그림과 판정이 같은 함수라 판정 C도 같이 내려간다. ② 9.5를 **가운데 글자**로: 그릴 것은 `SwipeHost.centerText`(= `InputDispatcher.centerText()`, LLD-08 6.1) — 지금 조합 중인 한 글자(후보 표시 없음, 낱모음이면 null), 아직 모음이 아닌 모음 획은 획마다 점을 자리에 찍음(세로 획 = 자음 아래 수평 나란히, 가로 획 = 자음 오른쪽 수직, 오너 보충 2026-11-02). 조립기 `pendingDots`(6.3), 매퍼 `pendingDots()`(6.1). 이름 `CenterConsonantPainter`는 그대로. ③ 10.1 시퀀스의 가운데 표시. 획 안내의 "다음 획 자리"는 0.18부터 그리지 않았고 이제 할 일도 아니다(SRS FR-DSP-01, 5.2 0.18 끝 문장).
 - 0.31(FSS#17): 입력 연습의 긋기 자판은 실제 `SwipeKeyboardView`다(LLD-07 2.3). 튜터 연습 자판(`PracticeEcho`·`SwipePracticeEcho`)의 미리보기·가운데 자음 경로는 없어졌다. `SwipeKeyboardView.rebuildGeometry`가 `SwipeInputMapper.setKeyWidth(폭 / 7)`로 t = 키 폭 × 0.4를 넣는다(HLD 7.2).
 - 0.30(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 긋기 뷰·`SwipeTouchLogic`·`SwipeMapperState`·연습 부분(`kbd.app.swipe.impl`)은 app main 소스 세트에 있다(9절의 "personal"은 이 판부터 "app"으로 읽는다).
 - 0.29(이슈 #242 오너 결정(두벌식 겹받침 한 번에), 조합기 7절): `HangulComposer`가 겹받침 자모 하나(`Consonant(ㄺ)` 등)를 받는다 — 초성·중성만 있는 글자면 그 받침으로 두 자음 단위(`Consonant(ㄹ)`, `Consonant(ㄱ)`)를 저장해 두 번 치기와 같다(갉 + ㅏ = 갈가, ⌫ = 갈 — 둘째 자음만, PM 채택 2026-11-02; 낱자 ㄺ ⌫ = 통째). 그 밖(조합 없음, 받침 있음, 초성만)은 지금 글자를 확정하고 겹받침 낱자(ㄺ)로 선다. 낱자 뒤 모음은 둘째 자음이 가져간다(ㄺ + ㅏ = ㄹ가). 긋기 자판은 겹받침 자모를 내지 않는다.
@@ -319,7 +319,7 @@ class SwipeInputMapper(val th: Thresholds) {
     fun pendingReplacesVowel(): Boolean        // 0.21 2회차: 낱모음 ‥ 상태면 true — 앱이 조합기 글자의 마지막 글자(ㅣ / ㅡ) 자리에 ‥를 보임(LLD-08 4절 `show(…, replacesLast)`, SWIPE 0.36 3.4)
     fun preview(s: VowelStroke): String?       // 획 안내·현재 글자(5.2): 이 획을 이었을 때 보일 글자, null = 무시될 획
     val strokes: List<VowelStroke>             // 열린 모음 획(획 자국 9.4가 그 수에 맞춤)
-    fun otherRole(): OtherRole?                // 0.32: = vs.otherRole — 가운데 글자의 괄호(9.5, FSS#36)
+    fun pendingDots(): List<DotPlace>          // 0.32: = vs.pendingDots — 가운데 글자에 찍을 점(9.5, FSS#36)
     fun popElement(): StrokePop                // ⌫: 열린 조립에서 하나 빼기
     fun snapshot(): SwipeMapperSnapshot; fun restore(s: SwipeMapperSnapshot)
 }
@@ -367,13 +367,12 @@ class VowelStrokeAssembler(var tol: Float) {   // tol = posTolDp(SRS 1.3, 기본
     fun push(s, c: ConsonantBox? = null): StrokePush; fun preview(s, c: ConsonantBox? = null): String?
     fun pop(): StrokePop; fun close(): Boolean
     val vowel: Jamo?; val pendingStrokes: Int; fun pendingGlyph(): String; val strokes; snapshot/restore
-    val otherRole: OtherRole?                    // 0.32: C가 있고 획이 하나뿐일 때 그 획의 다른 역할, 아니면 null
+    val pendingDots: List<DotPlace>              // 0.32: 임시 ㆍ·‥가 뜻하는 점, 획마다 하나
 }
 enum class DotPlace { UNDER, RIGHT }            // 0.32: 점 자리 — ㅗ·ㅛ의 점은 자음 아래, ㅓ·ㅕ의 점은 자음 오른쪽(오너 보충 2026-11-02, FSS#36)
-sealed interface OtherRole { data class Vowel(val v: Jamo); data class Dot(val place: DotPlace) }
 ```
 
-- **`otherRole`(0.32, SWIPE 3.6.3 두 역할·9.5 괄호, FSS#36):** 첫 획 하나는 둘째 획이 올 때까지 두 역할을 다 후보로 둔다. 보이는 역할은 구역(아래 왼쪽 / 오른쪽 위)이 정하고, 다른 역할은 — 세로 오른쪽 위(보임 ㅣ) = `Dot(UNDER)`(ㅗ·ㅛ의 점), 세로 아래 왼쪽(보임 점) = `Vowel(ㅣ)`, 가로 아래 왼쪽(보임 ㅡ) = `Dot(RIGHT)`(ㅓ·ㅕ의 점), 가로 오른쪽 위(보임 점) = `Vowel(ㅡ)`. C가 없거나(낱모음) 획이 0개·2개 이상이면 null(괄호 없음). ⌫로 둘째 획을 빼면 다시 하나라 괄호가 돌아온다. 시험 VS-15(LLD-11 2.3), CT-02·CT-04(LLD-11 7.4).
+- **`pendingDots`(0.32, SWIPE 9.5, 오너 보충·확인 2026-11-02, FSS#36):** `pendingGlyph()`의 ㆍ·‥가 뜻하는 점을 획마다 하나 — 모음 뒤에 남은 `pending`개 획(낱모음 ‥처럼 조합기 모음을 숨기는 상태 `pendingReplacesVowel`이면 두 획 모두)의 축으로 정한다: 세로 획 = `UNDER`(ㅗ·ㅛ의 점), 가로 획 = `RIGHT`(ㅓ·ㅕ의 점). 예: C 아래 세로 점 = [UNDER], 세로 점 둘(ㅛ ②) = [UNDER, UNDER], C 오른쪽 가로 점 = [RIGHT], 가로 점 둘(ㅕ ②) = [RIGHT, RIGHT], ㅡ 뒤 밑 가로 획(첫 ㅡ를 점으로 다시 정함) = [RIGHT, RIGHT], ㅜ + 가로 점(ㅝ 가는 길) = [RIGHT]. 모음이 다 되었거나 획이 없으면 빈 목록. 다른 역할(후보)은 내지 않는다(후보 표시 없음, 오너 결정 2026-11-02). 시험 VS-15(LLD-11 2.3), CT-02·CT-03(LLD-11 7.4).
 
 - **상태 = 획 열 + C**(받아들인 획만, C는 조립의 첫 획 때 받은 값). 화면 글자는 이 둘의 순수 함수다(⌫·복구가 쉬움). C는 자음 탭·⌫·조립 닫기에서만 바뀌므로(SWIPE 9.5) 열린 조립 동안 고정한다. 획이 다 빠지거나 닫으면 C도 비운다.
 - **상태 기계(SWIPE 3.6.2 다음 후보 표 정본, 0.21):** 획마다 지금 상태 + 새 획 → 다음 상태 또는 없음(= `Ignored`). 상태 하나에 후보 집합이 하나이고, 같은 획 열이 둘 이상의 상태가 될 수 없으므로 보이는 모음은 늘 많아야 하나다(0.20의 "완성 모음 하나" 검사 VS-13은 구조로 대신함). 상태와 보이는 모음:
@@ -653,17 +652,19 @@ dropStroke(): classifier = null; guide.onUp()                        // 매퍼�
 
 0.20의 가운데 음절(`CenterSyllablePainter`, 조합 중 글자 전체를 자판 가운데에 3줄 높이)은 SWIPE 0.35 9.5(이슈 #180 후속)로 버렸다. 0.21~0.31은 마지막 자음 하나를 그렸고, 0.32(FSS#36)부터 **지금 조합 중인 한 글자**를 그린다(클래스 이름은 그대로).
 
-- **그릴 것(0.32):** `SwipeHost.centerText: CenterText?`. `data class CenterText(val text: String, val other: String? = null, val otherDot: DotPlace? = null)`(app `kbd.app.view`). 기본 구현은 `centerConsonant`만 글자로(조합기 없는 호스트·뷰 시험). `KeyboardService`·`PracticeInput`은 `dispatcher.centerText()`(LLD-08 6.1):
-  - `text` = 편집기에 보이는 조합 글자 그대로 = `composer.composingText()`에 매퍼의 `pendingGlyph()`(`pendingReplacesVowel`이면 마지막 글자 자리에) — "ㄱ", "가", "각", "ㄱㆍ", "ㄱ‥", "각ㆍ". 조합기는 지금 조합 중인 글자만 가지므로 도깨비불(각 + ㅏ → 가 확정 + 가)이면 "가"만. 조합기에 자음이 없으면(`lastConsonant() == null`: 조합 없음·낱모음) null — 그리지 않는다.
-  - `other` = 매퍼 `otherRole()`이 null이 아니면(첫 획 하나가 두 역할, 6.3) 다른 역할로 본 글자. `Vowel(v)`(보임이 점이라 조합기는 그 획을 받지 않았음): 조합기 사본에 `Vowel(v)`를 넣은 조합 글자(ㄱ → "기"·"그", 각 → 가 확정 뒤 "기"). `Dot(place)`(보임이 ㅣ / ㅡ): 그 모음을 받기 **전** 조합기의 글자에 점(각 + ㅣ 보임 "기" → "각" + 점. 그 전 상태는 디스패처가 첫 획 사건 직전에 떠 둔 `strokeBase`, 없으면 사본의 `undoLast()`), `otherDot = place`.
+- **그릴 것(0.32):** `SwipeHost.centerText: CenterText?`. `data class CenterText(val text: String, val dots: List<DotPlace> = emptyList())`(app `kbd.app.view`). 기본 구현은 `centerConsonant`만 글자로(조합기 없는 호스트·뷰 시험). `KeyboardService`·`PracticeInput`은 `dispatcher.centerText()`(LLD-08 6.1):
+  - 조합기에 자음이 없으면(`lastConsonant() == null`: 조합 없음·낱모음) null — 그리지 않는다.
+  - 매퍼 `pendingDots()`가 비어 있지 않으면(모음 획이 아직 모음이 아님, 6.3) `text` = `composer.composingText()`(`pendingReplacesVowel`이면 조합기 사본에서 마지막 단위(그 ㅣ / ㅡ)를 뺀 글자 — 그 + 밑 가로 획 = "ㄱ"), `dots` = 그 점들. 편집기에는 3.4대로 "ㄱㆍ"·"ㄱ‥"가 보이고 가운데만 점을 자리에 찍는다.
+  - 그 밖에는 `text` = `composingText()` + 매퍼 `pendingGlyph()`(남는 것은 천지인 ㆍ·‥뿐 — 획이 아니라 편집기와 같은 글자), `dots` 없음.
+  - 조합기는 지금 조합 중인 글자만 가지므로 도깨비불(각 + ㅏ → 가 확정 + 가)이면 "가"만. **후보 표시는 없다**(오너 결정 2026-11-02): 첫 획 하나가 두 역할을 가진 동안에도 조립기가 보인 글자(C 구역의 보임, 6.3) 하나뿐이고, 둘째 획이 역할을 정하면 그때 바뀐다.
   - `CenterConsonantPainter.textFor(t, fieldInfo)` = `fieldInfo.hidesDisplay`(비밀번호 입력창, FR-CMN-08 ①)면 null, 아니면 `t`. **학습 금지 입력창에서는 그린다**(②, 오너 2026-11-01). 안내 설정(FR-DSP-08)은 보지 않는다.
-- **자리·모양:** C = `SwipeGeometry.consonantBox`(8.1, dp) × 밀도. `text` 크기 = `min(C 높이, C 너비 / 글자 폭(크기 1))`(`sizeFor`), C 가운데 정렬(글자가 둘 이상이면 너비에 맞춰 줄어듦). 색은 획 자국과 같은 흰색 40%(`TrailPainter.COLOR`).
-- **괄호(0.32, SWIPE 9.5 "괄호의 크기·자리는 LLD"):** `otherBox(C)` = C 바로 위, 높이 C × 0.25(`OTHER_HEIGHT`, 기본 24dp = FSS#37로 C 위에 생긴 반 키 높이), 너비 C × 1.5(`OTHER_WIDTH`), 가로 가운데. 그 안에 "(" + `other` + ")"를 맞춰(`sizeFor`) 작게, 같은 색. 다른 역할이 점이면 점을 글자로 적지 않고 **자리에 찍는다**(오너 보충 2026-11-02, FSS#36): `UNDER` = 괄호 속 글자 아래 가운데(가운데 높이 + 크기 × 0.5), `RIGHT` = 괄호 속 글자 오른쪽(크기 × 0.3 틈의 가운데, 가운데 높이), 반지름 크기 × 0.08. 괄호를 C 오른쪽·아래에 두지 않은 이유: 그 자리는 모음 획을 긋는 곳(획 자국과 겹침)이다.
-- **층:** `onDraw`에서 키(배경·라벨·둘레 글자) → 가운데 글자(괄호 포함) → 획 자국. 안내 팝업은 뷰 위의 창이라 그 위.
+- **자리·모양:** C = `SwipeGeometry.consonantBox`(8.1, dp) × 밀도. 글자 칸 `textBox(C, dots)` = 점이 없으면 C 전체, 아래 점이면 C 위쪽 `TEXT_SHARE`(0.7), 오른쪽 점이면 C 왼쪽 0.7(실제 글자에서 자음이 모음 옆에 차지하는 몫처럼). 글자 크기 = `min(칸 높이, 칸 너비 / 글자 폭(크기 1))`(`sizeFor`), 칸 가운데 정렬. 색은 획 자국과 같은 흰색 40%(`TrailPainter.COLOR`).
+- **점(0.32, 오너 보충·확인 2026-11-02, SWIPE 9.5 "점의 크기·간격은 LLD"):** `dotCenters(C, dots)` — 아래 점은 C 높이의 `DOT_LINE`(0.85)에서 가로로 나란히(가운데 기준, 간격 C 너비 × `DOT_GAP` 0.3), 오른쪽 점은 C 너비의 0.85에서 세로로(가운데 기준, 간격 C 높이 × 0.3). ㅛ의 두 점(··)·ㅕ의 두 점(:)과 같은 배열. 반지름 = C의 짧은 변 × `DOT_RADIUS`(0.04, 약 3dp), 같은 색 `drawCircle`. 점은 C 안에 있다(C 오른쪽·아래는 모음 획을 긋는 곳이라 비움).
+- **층:** `onDraw`에서 키(배경·라벨·둘레 글자) → 가운데 글자(점 포함) → 획 자국. 안내 팝업은 뷰 위의 창이라 그 위.
 - **바뀌는 때:** 뷰는 그릴 때마다 `centerText`를 읽는다. 조합기와 매퍼는 손을 뗄 때(탭·받아들인 획·천지인 요소)와 기능키 누름(⌫·스페이스 등)·앱의 초기화에서만 바뀌므로 **긋는 동안(ACTION_MOVE)에는 그대로**고, 무시된 획(`MapResult.Ignored`)은 아무것도 바꾸지 않는다(SWIPE 9.5 "바뀌는 때"). 다시 그리는 때는 0.20과 같다(모든 터치 사건, ⌫ 되풀이 콜백, 감싼 `reset()`의 `postInvalidate`). 조합이 비면 null이라 지워진다. 자음이 다시 들어와도 지우지 않고 조합 글자로 바뀐다(가 + ㄱ = "각").
-- **판정 C:** 같은 9.3 down에서 `centerConsonant != null`이면 매퍼에 C를 준다(비밀번호 입력창에서도 — 그리지만 않음, SWIPE 9.5 "판정 C는 그대로"). 그리는 글자가 무엇이든 C는 자리 상자다(FSS#36).
+- **판정 C:** 같은 9.3 down에서 `centerConsonant != null`이면 매퍼에 C를 준다(비밀번호 입력창에서도 — 그리지만 않음, SWIPE 9.5 "판정 C는 그대로"). 그리는 글자·점이 무엇이든 C는 자리 상자다(FSS#36).
 - ~~**튜터 연습 자판:**~~ (0.31 삭제, FSS#17) 입력 연습은 실제 `SwipeKeyboardView`라 가운데 글자도 이 절 그대로다(연습 호스트의 `centerText` = 디스패처 `centerText()`).
-- 표시 전용: 터치·조립에 영향 없음. 시험: CS-01~CS-04(글자·비밀번호/학습 금지·크기·괄호 자리), SW-14~SW-17·SW-14b(뷰: C 자리·키 뒤·자국 아래, 긋는 동안 그대로·뗄 때 바뀜, 비밀번호에서만 끔, 터치 로직이 C를 매퍼에 줌, 괄호와 점 자리), CT-01~CT-07(실제 매퍼·조합기: ㄱ → 가 → 각 → 가, 두 역할 괄호, 무시된 획, ⌫, 낱모음·천지인, 확정, 되돌리기), TU-62(연습 자판의 C와 판정).
+- 표시 전용: 터치·조립에 영향 없음. 시험: CS-01~CS-04(글자·비밀번호/학습 금지·크기·점 자리), SW-14~SW-17·SW-14b(뷰: C 자리·키 뒤·자국 아래, 긋는 동안 그대로·뗄 때 바뀜, 비밀번호에서만 끔, 터치 로직이 C를 매퍼에 줌, 점 배열), VS-15, CT-01~CT-06(실제 매퍼·조합기: ㄱ → 가 → 각 → 가, 고·교·거·겨의 점, 둘째 획이 바꿈, 무시된 획·⌫, 낱모음·천지인, 확정), TU-62(연습 자판의 C와 판정).
 
 ### 9.6 조합 중 모드 키 ↑·스페이스·천지인 키 (SWIPE 9.5 표, 0.21, 0.22)
 
@@ -683,8 +684,8 @@ dropStroke(): classifier = null; guide.onUp()                        // 매퍼�
 ```
 ㄱ 탭:  StrokeClassifier.finish → Tap → mapper.accept → Jamo([Consonant ㄱ]) → 조합기 "ㄱ", 가운데 글자 "ㄱ"(C 자리)
 자음 키 아무 데서 C 오른쪽·C 높이로 ↓: down에서 mapper.consonant = C → classifyConsonant → Stroke(세로) → vs.push(s, C): V1, 가운데 점이 오른쪽 위 → 보임 ㅣ → Started(ㅣ) → "기", trail.keep
-        긋는 동안 가운데 글자 "ㄱ" 그대로, 뗄 때 "기" + 괄호 "(ㄱ)"와 ㄱ 아래 점(otherRole = Dot(UNDER), 0.32)
-ㅣ 오른쪽으로 →(길이 무관): Stroke(가로) → V1 + 오른쪽(밑줄은 안 맞음) → A → Changed(ㅏ) → "가", trail 2개. 가운데 글자 "가"(괄호 없음)
+        긋는 동안 가운데 글자 "ㄱ" 그대로, 뗄 때 "기"(후보 표시 없음, 0.32). C 아래에 세로 점을 그었다면 "ㄱ" + 아래 점 하나(pendingDots = [UNDER])
+ㅣ 오른쪽으로 →(길이 무관): Stroke(가로) → V1 + 오른쪽(밑줄은 안 맞음) → A → Changed(ㅏ) → "가", trail 2개. 가운데 글자 "가"
 ㄴ 탭:  vs.close(모음 성립, 진동 없음), Jamo([Consonant ㄴ]) → "간", trail.sync(0), 가운데 글자 "간"
 ```
 
