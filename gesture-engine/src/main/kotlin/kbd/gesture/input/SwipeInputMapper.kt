@@ -13,6 +13,7 @@ import kbd.hangul.cheonjiin.CjState
 import kbd.hangul.event.JamoEvent
 import kbd.hangul.jamo.Jamo
 import kbd.hangul.stroke.ConsonantBox
+import kbd.hangul.stroke.DotPlace
 import kbd.hangul.stroke.StrokePop
 import kbd.hangul.stroke.StrokePush
 import kbd.hangul.stroke.StrokeSnapshot
@@ -90,8 +91,11 @@ class SwipeInputMapper(th: Thresholds) {
     /** What vowel stroke [s] would show now, null if it would be ignored (the guide, SWIPE 9). */
     fun preview(s: VowelStroke): String? = vs.preview(s, consonant)
 
-    /** The open vowel strokes (the guide's next-stroke places, SWIPE 9.1). */
+    /** The open vowel strokes (the trail, SWIPE 9.4). */
     val strokes: List<VowelStroke> get() = vs.strokes
+
+    /** = `VowelStrokeAssembler.pendingDots`: the vowel strokes' pending dots and their places, for the center place (SWIPE 9.5, FSS#36). */
+    fun pendingDots(): List<DotPlace> = vs.pendingDots
 
     // Debug text for the personal debug build's stroke log (issue #217); never judged with.
 

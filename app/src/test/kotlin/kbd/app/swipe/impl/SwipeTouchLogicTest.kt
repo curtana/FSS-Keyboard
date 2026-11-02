@@ -214,8 +214,8 @@ class SwipeTouchLogicTest {
     @Test
     fun `vowel strokes from any consonant key write the vowel, with the stroke guide, and leave a trail`() {
         tap("ㄱ", 0)
-        // Any consonant key (issue #173) right of C at C's height: C = consonantBox(357, 48) ≈ (137.7, 52)–(219.3, 148)
-        // (centred, issue #213), so ㅣ needs x ≥ C.R − t/2 ≈ 209 and a start above b = 138 (SWIPE 3.6.3, 9.5) — the ㄲ
+        // Any consonant key (issue #173) right of C at C's height: C = consonantBox(357, 48) ≈ (137.7, 76)–(219.3, 172)
+        // (centred, issue #213, FSS#37), so ㅣ needs x ≥ C.R − t/2 ≈ 209 and a start above b = 162 (SWIPE 3.6.3, 9.5) — the ㄲ
         // key (x 229.5, y 72).
         val c = centre("ㄲ").copy(t = 500)
         assertTrue(logic.down(0, c))

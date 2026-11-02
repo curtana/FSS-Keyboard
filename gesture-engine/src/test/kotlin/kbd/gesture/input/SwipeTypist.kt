@@ -121,7 +121,7 @@ class SwipeTypist(val th: Thresholds = ThresholdDefaults.VALUES) {
         fun v(x: Float, y0: Float, y1: Float) = VowelStroke(StrokeAxis.VERTICAL, x, y0, x, y1)
         fun h(y: Float, x0: Float, x1: Float) = VowelStroke(StrokeAxis.HORIZONTAL, x0, y, x1, y)
 
-        /** C of the 360 dp portrait swipe view with 48 dp rows (SWIPE 9.5, centred, issue #213): ≈ (139, 52)–(221, 148). */
+        /** C of the 360 dp portrait swipe view with 48 dp rows (SWIPE 9.5, centred, issue #213, half a row down, FSS#37): ≈ (139, 76)–(221, 172). */
         val C: ConsonantBox = SwipeLayout.consonantBox(360f, 48f)
 
         private val I = v(100f, 40f, 160f)
@@ -129,31 +129,31 @@ class SwipeTypist(val th: Thresholds = ThresholdDefaults.VALUES) {
 
         /** Strokes of each vowel written beside C after a consonant (SWIPE 3.6.3, 9.5 space check; t = 20). */
         val SHAPES_C: Map<String, List<VowelStroke>> = mapOf(
-            "ㅣ" to listOf(v(235f, 56f, 150f)),
-            "ㅡ" to listOf(h(160f, 135f, 245f)),
-            "ㅏ" to listOf(v(235f, 56f, 150f), h(100f, 235f, 260f)),
-            "ㅑ" to listOf(v(235f, 56f, 150f), h(90f, 235f, 260f), h(120f, 235f, 260f)),
-            "ㅐ" to listOf(v(235f, 56f, 150f), h(100f, 235f, 260f), v(270f, 56f, 150f)),
-            "ㅒ" to listOf(v(235f, 56f, 150f), h(90f, 235f, 260f), h(120f, 235f, 260f), v(270f, 56f, 150f)),
-            "ㅓ" to listOf(h(100f, 225f, 250f), v(255f, 56f, 160f)),
-            "ㅕ" to listOf(h(90f, 225f, 250f), h(120f, 225f, 250f), v(255f, 56f, 160f)),
-            "ㅔ" to listOf(h(100f, 225f, 250f), v(255f, 56f, 160f), v(280f, 56f, 160f)),
-            "ㅖ" to listOf(h(90f, 225f, 250f), h(120f, 225f, 250f), v(255f, 56f, 160f), v(280f, 56f, 160f)),
-            "ㅗ" to listOf(v(175f, 152f, 175f), h(185f, 135f, 245f)),
-            "ㅛ" to listOf(v(165f, 152f, 172f), v(190f, 152f, 172f), h(185f, 135f, 225f)),
-            "ㅜ" to listOf(h(160f, 135f, 245f), v(175f, 168f, 195f)),
-            "ㅠ" to listOf(h(160f, 135f, 245f), v(175f, 168f, 195f), v(200f, 168f, 195f)),
-            "ㅚ" to listOf(v(175f, 152f, 175f), h(185f, 135f, 245f), v(260f, 56f, 200f)),
-            "ㅘ" to listOf(v(175f, 152f, 175f), h(185f, 135f, 245f), v(260f, 56f, 200f), h(110f, 260f, 285f)),
-            "ㅙ" to listOf(v(175f, 152f, 175f), h(185f, 135f, 245f), v(260f, 56f, 200f), h(110f, 260f, 285f), v(300f, 56f, 200f)),
-            "ㅝ" to listOf(h(160f, 135f, 245f), v(175f, 168f, 195f), h(185f, 185f, 210f), v(225f, 56f, 220f)),
-            "ㅞ" to listOf(h(160f, 135f, 245f), v(175f, 168f, 195f), h(185f, 185f, 210f), v(225f, 56f, 220f), v(255f, 56f, 220f)),
-            "ㅟ" to listOf(h(160f, 135f, 245f), v(185f, 168f, 195f), v(260f, 56f, 200f)),
-            "ㅢ" to listOf(h(160f, 135f, 225f), v(240f, 56f, 180f)),
+            "ㅣ" to listOf(v(235f, 80f, 174f)),
+            "ㅡ" to listOf(h(184f, 135f, 245f)),
+            "ㅏ" to listOf(v(235f, 80f, 174f), h(124f, 235f, 260f)),
+            "ㅑ" to listOf(v(235f, 80f, 174f), h(114f, 235f, 260f), h(144f, 235f, 260f)),
+            "ㅐ" to listOf(v(235f, 80f, 174f), h(124f, 235f, 260f), v(270f, 80f, 174f)),
+            "ㅒ" to listOf(v(235f, 80f, 174f), h(114f, 235f, 260f), h(144f, 235f, 260f), v(270f, 80f, 174f)),
+            "ㅓ" to listOf(h(124f, 225f, 250f), v(255f, 80f, 184f)),
+            "ㅕ" to listOf(h(114f, 225f, 250f), h(144f, 225f, 250f), v(255f, 80f, 184f)),
+            "ㅔ" to listOf(h(124f, 225f, 250f), v(255f, 80f, 184f), v(280f, 80f, 184f)),
+            "ㅖ" to listOf(h(114f, 225f, 250f), h(144f, 225f, 250f), v(255f, 80f, 184f), v(280f, 80f, 184f)),
+            "ㅗ" to listOf(v(175f, 176f, 199f), h(209f, 135f, 245f)),
+            "ㅛ" to listOf(v(165f, 176f, 196f), v(190f, 176f, 196f), h(209f, 135f, 225f)),
+            "ㅜ" to listOf(h(184f, 135f, 245f), v(175f, 192f, 219f)),
+            "ㅠ" to listOf(h(184f, 135f, 245f), v(175f, 192f, 219f), v(200f, 192f, 219f)),
+            "ㅚ" to listOf(v(175f, 176f, 199f), h(209f, 135f, 245f), v(260f, 80f, 224f)),
+            "ㅘ" to listOf(v(175f, 176f, 199f), h(209f, 135f, 245f), v(260f, 80f, 224f), h(134f, 260f, 285f)),
+            "ㅙ" to listOf(v(175f, 176f, 199f), h(209f, 135f, 245f), v(260f, 80f, 224f), h(134f, 260f, 285f), v(300f, 80f, 224f)),
+            "ㅝ" to listOf(h(184f, 135f, 245f), v(175f, 192f, 219f), h(209f, 185f, 210f), v(225f, 80f, 244f)),
+            "ㅞ" to listOf(h(184f, 135f, 245f), v(175f, 192f, 219f), h(209f, 185f, 210f), v(225f, 80f, 244f), v(255f, 80f, 244f)),
+            "ㅟ" to listOf(h(184f, 135f, 245f), v(185f, 192f, 219f), v(260f, 80f, 224f)),
+            "ㅢ" to listOf(h(184f, 135f, 225f), v(240f, 80f, 204f)),
         )
 
         /** C's horizontal dot (ㅓ·ㅕ's first stroke beside C): no vowel yet, "ㄱㆍ". */
-        val DOT_C: VowelStroke = h(100f, 225f, 245f)
+        val DOT_C: VowelStroke = h(124f, 225f, 245f)
 
         /** Canonical strokes of each bare vowel (no consonant composing: no C; SWIPE 3.6.3 "앞 획 기준", t = 20). */
         val SHAPES: Map<String, List<VowelStroke>> = mapOf(
