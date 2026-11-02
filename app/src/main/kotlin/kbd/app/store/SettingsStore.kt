@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import java.io.IOException
 import kbd.app.ime.InputMode
 import kotlinx.coroutines.flow.Flow
@@ -52,12 +53,19 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[SOUND] = s.sound
             p[ROW_HEIGHT_DP] = s.rowHeightDp
             p[GRAFFITI_LETTER_RATIO] = s.graffitiLetterRatio
-            p[TUTOR_AUTO_STARTED] = s.tutorAutoStarted
+            p[TUTOR_AUTO_STARTED] = s.practiceListShown
+            p[PRACTICE_DONE] = s.practiceDone
         }
     }
 
-    suspend fun setTutorAutoStarted(v: Boolean) {
+    /** FR-TUT-01: stored before the topic list opens on the first app open (D-34). */
+    suspend fun setPracticeListShown(v: Boolean) {
         ds.edit { it[TUTOR_AUTO_STARTED] = v }
+    }
+
+    /** The practice topic [id] was done to the end (SWIPE 10.0 ✓). */
+    suspend fun markPracticeDone(id: String) {
+        ds.edit { it[PRACTICE_DONE] = (it[PRACTICE_DONE] ?: emptySet()) + id }
     }
 
     private fun decode(p: Preferences): Settings {
@@ -72,7 +80,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             // D-33: out-of-range stored values snap to the nearest end; 40–47 dp are kept (TBD-16).
             rowHeightDp = RowHeight.clamp(p[ROW_HEIGHT_DP] ?: d.rowHeightDp),
             graffitiLetterRatio = p[GRAFFITI_LETTER_RATIO] ?: d.graffitiLetterRatio,
-            tutorAutoStarted = p[TUTOR_AUTO_STARTED] ?: d.tutorAutoStarted,
+            practiceListShown = p[TUTOR_AUTO_STARTED] ?: d.practiceListShown,
+            practiceDone = p[PRACTICE_DONE] ?: d.practiceDone,
         )
     }
 
@@ -85,6 +94,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         val SOUND = booleanPreferencesKey("sound")
         val ROW_HEIGHT_DP = floatPreferencesKey("row_height_dp")
         val GRAFFITI_LETTER_RATIO = floatPreferencesKey("graffiti_letter_ratio")
+        /** Kept under its old name (FSS#17): an install that already ran the old tutor does not open the list again. */
         val TUTOR_AUTO_STARTED = booleanPreferencesKey("tutor_auto_started")
+        val PRACTICE_DONE = stringSetPreferencesKey("practice_done")
     }
 }

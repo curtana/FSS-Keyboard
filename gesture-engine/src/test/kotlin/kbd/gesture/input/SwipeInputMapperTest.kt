@@ -201,4 +201,16 @@ class SwipeInputMapperTest {
         assertEquals(MapResult.Jamo(listOf(JamoEvent.Vowel(Jamo.EO))), e(CjElement.I))
         assertEquals(MapResult.Ignored, e(CjElement.DOT))
     }
+
+    @Test
+    fun `TH-10 the position tolerance follows the drawn key width`() {
+        assertEquals(20.4f, ThresholdDefaults.posTolFor(51f), 1e-4f)
+        val m = SwipeInputMapper(ThresholdDefaults.VALUES)
+        assertEquals(20f, m.th.posTolDp, 0f)                // until the view knows its width
+        m.setKeyWidth(50f)
+        assertEquals(20f, m.th.posTolDp, 1e-4f)
+        m.setKeyWidth(101.6f)                                // a 711 dp tablet: t follows the key (PM decision, FSS#17)
+        assertEquals(40.64f, m.th.posTolDp, 1e-4f)
+        assertEquals(ThresholdDefaults.VALUES.minCrossDp, m.th.minCrossDp, 0f)   // the other values stay absolute dp
+    }
 }

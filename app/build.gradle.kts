@@ -15,15 +15,36 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "0.1"
+        versionName = "0.1.0-alpha"
     }
 
     // One edition (owner, issue #251): the swipe engine is in every build; no product flavors.
+
+    // Release signing (FSS#28): the key and passwords come only from the Gradle properties below, normally in the
+    // user's ~/.gradle/gradle.properties — never from this repository. Without all four the release build is left
+    // unsigned as before; debug builds and tests never read them.
+    val keystore = providers.gradleProperty("FSS_KEYSTORE").orNull
+    val keystorePassword = providers.gradleProperty("FSS_KEYSTORE_PASSWORD").orNull
+    val keyAlias = providers.gradleProperty("FSS_KEY_ALIAS").orNull
+    val keyPassword = providers.gradleProperty("FSS_KEY_PASSWORD").orNull
+    val releaseSigning = listOf(keystore, keystorePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }
+
+    signingConfigs {
+        if (releaseSigning) {
+            create("release") {
+                storeFile = file(keystore!!)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseSigning) signingConfig = signingConfigs.getByName("release")
         }
     }
 

@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.25** (2026-11-02)
+- 버전 **0.26** (2026-11-02)
+- 0.26(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): 기준값은 코드 상수(`thresholds = ThresholdDefaults.VALUES`), `ThresholdStore` 읽기와 `onStartInputView`의 다시 읽기 삭제.
 - 0.25(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): `KeyboardService`는 `ModeController`에 모든 모드를 넘긴다(긋기를 빼는 공개판 순서 없음, 5절). `createSwipeView`는 늘 뷰를 준다.
 - 0.24(이슈 #189, SRS 0.45 FR-GRF-09·09a, HLD 0.41 5장·5A): **그래피티 획 안내표의 버튼과 덮개는 `KeyboardRootView`가 가진다**(새 7.1). 빈 띠 오른쪽 끝 1줄 × 1줄 버튼(누를 때 피드백·토글), 패드 + 보조 줄 위 덮개(`GraffitiGuidePanel`, LLD-05 10절), 열 때 모드 뷰의 진행 중 터치 취소와 그 제스처의 나머지 가로채기. `setModeView`는 모드 뷰만 바꾼다(버튼·덮개는 남음). 서비스: `showModeView`에서 그래피티면 `enableGuide`, 아니면 `disableGuide`, `onWindowHidden`·`onFinishInputView(false)`에서 `closeGuide`(3절). 창 높이·인셋은 그대로.
 - 0.23(이슈 #205, 오너 결정 2026-11-02): **모드 키 ↑ = 설정**(네 모드 모두). 뷰가 모드 키를 뗄 때 판정해(LLD-05A 4절, LLD-04 9.3, LLD-05 8절) 위로 나갔으면 `onSettingsStroke()`: `finishAll()`(조합 중이면 먼저 확정) → `resetParsers(MODE_CHANGED)`(버린 획 = 진동) → `onOpenSettings()`. 입력 아님, 모드 그대로. 그 밖(탭·다른 방향)은 지금처럼 `onFunctionDown(MODE)` = `onModeKey()`, 다만 누를 때가 아니라 뗄 때 온다. 긋기 ⚙ 키(`FunctionKey.SETTINGS`)와 `onSettingsKey()`의 조합 중 한 글자 완성(0.18, 0.21)은 지웠다(6.1).
@@ -68,7 +69,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `th = ThresholdStore.load()`, `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode)`(0.25: 모든 모드, 이슈 #251). `dispatcher = InputDispatcher(…)`. 설정 `flow`를 모아 바뀌면 `applySettings()` | FR-CMN-10, HLD 7.3 |
+| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode)`(0.25: 모든 모드, 이슈 #251). `dispatcher = InputDispatcher(…)`. 설정 `flow`를 모아 바뀌면 `applySettings()` | FR-CMN-10, HLD 7.3 |
 | `onCreateInputView()` | `root = KeyboardRootView(…)`. `showModeView(modes.current)` | FR-CMN-10 |
 | `onStartInputView(info, restarting)` | 아래 3.1 | FR-CMN-03e, 04, 04b, 08 |
 | `onUpdateSelection(oldS, oldE, newS, newE, candS, candE)` | `r = composing.onUpdateSelection(newS, newE, candS, candE)`. `USER_MOVED` → `dispatcher.onCursorMoved(newS, newE, candS, candE)`. `OTHER_MOVED` → `dispatcher.onCursorMovedNoComposing()` | FR-CMN-06, HLD 8장, R4 |
@@ -92,7 +93,6 @@ if f.numericLike: modes.enterNumericField()   // 영문 쿼티로 시작, 돌아
 else:             modes.leaveNumericField()   // 돌아갈 모드가 있으면 그 모드로(5절)
 errorLog.enabled = !f.noRecord             // NFR-05, FR-CMN-08 ①② (0.21)
 composing.onStart(info.initialSelStart, info.initialSelEnd)
-th = ThresholdStore가 바뀌었으면 다시 읽기(LLD-07 4절)
 showModeView(modes.current, f)
 if modes.current == GRAFFITI && before != GRAFFITI: dispatcher.graffiti?.enterMode()   // → GraffitiState.enterMode()(LLD-05 6절, G6)   // 그래피티에 새로 들어옴(HLD 5장 초기화, FR-GRF-05a)
 ```

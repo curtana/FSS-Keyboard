@@ -1,13 +1,10 @@
 package kbd.app.settings
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings as SystemSettings
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
@@ -41,18 +38,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import java.io.IOException
 import kbd.app.R
-import kbd.app.store.ImportResult
 import kbd.app.store.RowHeight
 import kbd.app.store.Settings
-import kbd.app.tutor.TutorActivity
-import kbd.app.tutor.TutorLaunchPolicy
+import kbd.app.practice.PracticeActivity
+import kbd.app.practice.PracticeLaunchPolicy
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /** Light or dark Material colours following the system (no colour rule in the LLD; UI self-check). */
 @Composable
@@ -71,26 +64,20 @@ internal val GRAFFITI_RATIOS = listOf(
 )
 
 /**
- * The launcher screen (LLD-07 §7). On open the first-run policy may start the tutor once (LLD-07 §2.3,
- * D-34); afterwards "튜터 다시 실행" is the only way to it (FR-TUT-06). No tutor or threshold status (FR-TUT-05).
+ * The launcher screen (LLD-07 §7). On the first open it opens the input practice's topic list once (FR-TUT-01, LLD-07
+ * §2.5, D-34); afterwards "입력 연습" is the only way to it (FR-TUT-06). No threshold status, no threshold menus
+ * (FSS#17: the values are fixed code constants).
  */
 class SettingsActivity : ComponentActivity() {
 
     private lateinit var stores: AppStores
 
-    private val exportDoc = registerForActivityResult(ActivityResultContracts.CreateDocument(JSON_MIME)) { uri ->
-        if (uri != null) io(uri, export = true)
-    }
-    private val importDoc = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) io(uri, export = false)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         stores = AppStores(this)
         lifecycleScope.launch {
-            // The flag is stored before the tutor starts (D-34): finishing, skipping or closing never repeats it.
-            TutorLaunchPolicy.onAppOpen(stores.settings.flow.first(), { stores.settings.setTutorAutoStarted(true) }, ::startTutor)
+            // The flag is stored before the list opens (D-34): closing it never opens it again.
+            PracticeLaunchPolicy.onAppOpen(stores.settings.flow.first(), { stores.settings.setPracticeListShown(true) }, ::openPractice)
         }
         setContent {
             KeyboardAppTheme {
@@ -99,69 +86,22 @@ class SettingsActivity : ComponentActivity() {
                     update = { f -> lifecycleScope.launch { stores.settings.update(f) } },
                     actions = SettingsActions(
                         openImeSettings = { startActivity(Intent(SystemSettings.ACTION_INPUT_METHOD_SETTINGS)) },
-                        rerunTutor = ::startTutor,
-                        resetThresholds = ::resetThresholds,
-                        exportThresholds = { exportDoc.launch(EXPORT_NAME) },
-                        importThresholds = { importDoc.launch(IMPORT_MIMES) },
+                        openPractice = ::openPractice,
                     ),
                 )
             }
         }
     }
 
-    private fun startTutor() {
-        startActivity(Intent(this, TutorActivity::class.java))
-    }
-
-    private fun resetThresholds() {
-        lifecycleScope.launch {
-            withContext(Dispatchers.IO) { stores.thresholds.resetToDefault() }
-            toast(R.string.settings_reset_done)
-        }
-    }
-
-    /** LLD-07 §5: export to the `ACTION_CREATE_DOCUMENT` URI, import from the `ACTION_OPEN_DOCUMENT` URI (FR-TUT-07). */
-    private fun io(uri: Uri, export: Boolean) {
-        lifecycleScope.launch {
-            val msg = withContext(Dispatchers.IO) {
-                try {
-                    if (export) {
-                        checkNotNull(contentResolver.openOutputStream(uri)).use { stores.thresholds.exportTo(it) }
-                        R.string.settings_export_done
-                    } else {
-                        val r = checkNotNull(contentResolver.openInputStream(uri)).use { stores.thresholds.importFrom(it) }
-                        if (r == ImportResult.Ok) R.string.settings_import_done else R.string.settings_import_invalid
-                    }
-                } catch (e: IOException) {
-                    stores.errorLog.record(if (export) SITE_EXPORT else SITE_IMPORT, e)
-                    if (export) R.string.settings_export_failed else R.string.settings_import_invalid
-                } catch (e: IllegalStateException) {   // the provider gave no stream
-                    stores.errorLog.record(if (export) SITE_EXPORT else SITE_IMPORT, e)
-                    if (export) R.string.settings_export_failed else R.string.settings_import_invalid
-                }
-            }
-            toast(msg)
-        }
-    }
-
-    private fun toast(msg: Int) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-
-    private companion object {
-        const val JSON_MIME = "application/json"
-        const val EXPORT_NAME = "keyboard-thresholds.json"
-        val IMPORT_MIMES = arrayOf(JSON_MIME, "text/plain")
-        const val SITE_EXPORT = "SettingsActivity.export"
-        const val SITE_IMPORT = "SettingsActivity.import"
+    private fun openPractice() {
+        startActivity(Intent(this, PracticeActivity::class.java))
     }
 }
 
-/** Buttons of the settings screen that leave it or touch files. */
+/** Buttons of the settings screen that leave it. */
 class SettingsActions(
     val openImeSettings: () -> Unit,
-    val rerunTutor: () -> Unit,
-    val resetThresholds: () -> Unit,
-    val exportThresholds: () -> Unit,
-    val importThresholds: () -> Unit,
+    val openPractice: () -> Unit,
 )
 
 /** The LLD-07 §7 items in order. */
@@ -187,11 +127,8 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
             RowHeightRow(settings.rowHeightDp) { v -> update { it.copy(rowHeightDp = v) } }
             GraffitiRatioRow(settings.graffitiLetterRatio) { v -> update { it.copy(graffitiLetterRatio = v) } }
 
-            Section(R.string.settings_section_tutor)
-            ActionRow(R.string.settings_tutor_rerun, null, actions.rerunTutor)
-            ActionRow(R.string.settings_reset_thresholds, null, actions.resetThresholds)
-            ActionRow(R.string.settings_export, null, actions.exportThresholds)
-            ActionRow(R.string.settings_import, null, actions.importThresholds)
+            Section(R.string.settings_section_practice)
+            ActionRow(R.string.settings_practice_open, R.string.settings_practice_open_summary, actions.openPractice)   // FR-TUT-06, FR-SET-04
         }
     }
 }

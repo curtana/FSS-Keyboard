@@ -13,7 +13,10 @@ data class Settings(
     val sound: Boolean,
     val rowHeightDp: Float,
     val graffitiLetterRatio: Float,
-    val tutorAutoStarted: Boolean,
+    /** The topic list of the input practice was shown once on the first app open (FR-TUT-01; stored key `tutor_auto_started`). */
+    val practiceListShown: Boolean,
+    /** Ids of the practice topics done to the end (the ✓ of the topic list, SWIPE 10.0); never used for judgement. */
+    val practiceDone: Set<String> = emptySet(),
 ) {
     companion object {
         /** LLD-07 §6.1 defaults: vibration on, sound off (DCR-14), row 48 dp, letters 2 : numbers 1. */
@@ -26,7 +29,7 @@ data class Settings(
             sound = false,
             rowHeightDp = RowHeight.DEFAULT_DP,
             graffitiLetterRatio = 2f / 3f,
-            tutorAutoStarted = false,
+            practiceListShown = false,
         )
     }
 }
