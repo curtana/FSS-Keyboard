@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
 - 버전 **0.28** (2026-11-03)
-- 0.28(FSS#44): 설정 화면의 세로·가로 키 크기·정렬 넷 가운데 **지금 화면 방향의 두 줄**은 제목 뒤에 "· 지금 화면"을 붙이고 강조색으로 보인다(7절). 세로 화면에서 "가로 화면 정렬"을 바꾸면 지금 자판이 움직이지 않아 헷갈린 사례(실기, 저장 값 세로 중앙·가로 왼손).
+- 0.28(FSS#44): 설정 화면의 세로·가로 키 크기·정렬 넷 가운데 **지금 화면 방향의 두 줄**은 제목을 강조색으로 하고 그 아래에 "지금 화면"을 한 줄 더 보인다(7절). 세로 화면에서 "가로 화면 정렬"을 바꾸면 지금 자판이 움직이지 않아 헷갈린 사례(실기, 저장 값 세로 중앙·가로 왼손).
 - 0.27(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): 설정 `portraitWidth`·`landscapeWidth`(`WidthSetting(keyDp, align)` — 키 한 칸 폭, 없음 = 기본값, `KeyboardWidth.FULL` = 꽉 채움; 키 `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`, 6.1), 설정 화면 "자판" 묶음의 세로·가로 키 크기 슬라이더·전체 폭 미리보기·정렬(7절), 연습 자판 `BoardFrame`의 폭·정렬·여백(2.3). 계산 `KeyboardWidth`는 LLD-08 7.2.
 - 0.26(FSS#36·FSS#37, SWIPE 0.52 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 점 자리)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
 - 0.25(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f ⑦, HLD 0.62 7.1·7.3, SWIPE 0.49 10.0): **쓸 입력 모드.** `Settings`에 `graffitiEnabled`·`swipeEnabled`(기본 켬)와 `enabledModes`, 키 `graffiti_enabled`·`swipe_enabled`(6.1). 설정 화면 첫 묶음 "입력 모드"(체크 상자 넷, 영문·한글은 체크된 채 바꿀 수 없음, 7절). `PracticeTopic.mode`·`offInKeyboard`: 그래피티·긋기 주제는 그 모드가 꺼져도 보이고 할 수 있으며 목록에 "키보드에서 꺼져 있음"(2.1, 2.3). 기호 주제의 긋기 자판 항목은 그대로.
@@ -217,7 +217,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 입력 연습(0.24) | `PracticeActivity` 열기(설명 "영문 대문자 · 기호 · 그래피티 · 긋기를 골라서 짧게 연습"). 첫 실행의 주제 목록은 2.5 | FR-TUT-06, FR-SET-04 |
 | 그래피티 영역 비율 | `graffiti_letter_ratio`. 라디오 단추 셋: 1 : 1 / 2 : 1(기본) / 3 : 1 → 1/2 / 2/3 / 3/4 저장(6.1) | FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | 줄 높이 | `row_height_dp`(40~64dp, 기본 48dp) | FR-SET-06, TBD-16 |
-| 세로·가로 화면 키 크기·정렬(0.27) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 넷: "세로 화면 키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음), "세로 화면 정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면 키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리), "가로 화면 정렬". 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음. **지금 화면 방향**(`LocalConfiguration.orientation`, 가로가 아니면 세로)의 키 크기·정렬 두 줄은 제목 뒤 "· 지금 화면", 제목 강조색(흐린 줄은 흐림 우선), 순서는 그대로(0.28, FSS#44, `isPresentOrientation`) | FR-SET-09, FR-CMN-14 |
+| 세로·가로 화면 키 크기·정렬(0.27) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 넷: "세로 화면 키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음), "세로 화면 정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면 키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리), "가로 화면 정렬". 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음. **지금 화면 방향**(`LocalConfiguration.orientation`, 가로가 아니면 세로)의 키 크기·정렬 두 줄은 제목 강조색(흐린 줄은 흐림 우선)과 제목 아래 작은 줄 "지금 화면"(한글은 음절마다 줄이 바뀔 수 있어 제목 뒤에 붙이지 않음), 순서는 그대로(0.28, FSS#44, `isPresentOrientation`) | FR-SET-09, FR-CMN-14 |
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
 
 - 0.25: 묶음 순서는 입력 모드 → 입력기 → 안내 표시 → 피드백 → 자판 → 입력 연습. 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.

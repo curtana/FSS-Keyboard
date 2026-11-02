@@ -31,8 +31,7 @@ class WidthRowsNowTest {
     }
 
     @Test
-    fun `WN-02 the marked title reads "· 지금 화면"`() {
-        val r = RuntimeEnvironment.getApplication().resources
-        assertEquals("세로 화면 정렬 · 지금 화면", r.getString(R.string.settings_now, r.getString(R.string.settings_align_portrait)))
+    fun `WN-02 the mark under the present orientation's titles reads "지금 화면"`() {
+        assertEquals("지금 화면", RuntimeEnvironment.getApplication().getString(R.string.settings_now))
     }
 }

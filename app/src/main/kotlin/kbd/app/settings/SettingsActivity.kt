@@ -256,19 +256,22 @@ private fun KeyboardWidthRows(settings: Settings, update: ((Settings) -> Setting
 internal fun isPresentOrientation(landscapeRows: Boolean, orientation: Int): Boolean =
     landscapeRows == (orientation == Configuration.ORIENTATION_LANDSCAPE)
 
-/** A width row's title; the present orientation's ([now]) gets "· 지금 화면" and the accent colour (FSS#44). */
+/**
+ * A width row's title; the present orientation's ([now]) is in the accent colour with a "지금 화면" line under it
+ * (FSS#44). The mark is a line of its own: Korean text wraps between any two syllables, so a suffix would split.
+ */
 @Composable
 private fun WidthTitle(title: Int, now: Boolean, enabled: Boolean, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
-    Text(
-        if (now) stringResource(R.string.settings_now, stringResource(title)) else stringResource(title),
-        style = MaterialTheme.typography.bodyLarge, modifier = modifier,
-        color = when {
-            !enabled -> c.onSurface.copy(alpha = DISABLED_ALPHA)
-            now -> c.primary
-            else -> c.onSurface
-        },
-    )
+    val color = when {
+        !enabled -> c.onSurface.copy(alpha = DISABLED_ALPHA)
+        now -> c.primary
+        else -> c.onSurface
+    }
+    Column(modifier) {
+        Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, color = color)
+        if (now) Text(stringResource(R.string.settings_now), style = MaterialTheme.typography.labelMedium, color = color)
+    }
 }
 
 /**

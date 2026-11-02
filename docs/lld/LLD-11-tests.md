@@ -949,7 +949,7 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KR-05 | 키 40 왼손, `enableGuide` | 안내표 버튼 오른쪽 끝 = 400, 왼쪽 = 400 − 줄 높이, 덮개 left 0·폭 400 | FR-CMN-14 ⑥, FR-GRF-09 |
 | KR-06 | 가로 화면(구성 `w800dp-h400dp-land`), 가로 기본 / 가로 `FULL`·세로 키 40 왼손 | 폭 400(짧은 변), left 200 / 폭 800(꽉 채움, 세로 값은 안 씀) | FR-CMN-12, FR-CMN-14 ③ |
 | WN-01 | `isPresentOrientation`: 세로·가로 줄 × 세로·가로·미정 구성 | 그 방향 줄만 참, 미정은 세로 줄 | LLD-07 7절, FSS#44 |
-| WN-02 | 문자열 `settings_now`("세로 화면 정렬") | "세로 화면 정렬 · 지금 화면" | LLD-07 7절, FSS#44 |
+| WN-02 | 문자열 `settings_now` | "지금 화면"(제목 아래 따로 한 줄) | LLD-07 7절, FSS#44 |
 | OP-01 | `OffKeyboardPointers`(자판 = x < 100) | 자판 안 DOWN | 원래 이벤트 그대로, 버린 것 없음 | LLD-08 7.2 |
 | OP-02 | 〃 | 자판 밖 DOWN → 자판 안 POINTER_DOWN → 밖 손가락 POINTER_UP | null / `ACTION_DOWN`(포인터 1개, id 유지, downTime = 그 때) / null, 버린 것 없음 | FR-CMN-14 ⑤ |
 | OP-03 | 〃 | 자판 안·밖 두 손가락, 묶인 표본 1개가 있는 MOVE | `ACTION_MOVE`, 포인터 1개, history 1개(x·시각 보존), 현재 값 보존 | 획이 history를 읽음 |

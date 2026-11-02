@@ -34,7 +34,7 @@
     <string name="settings_align_center">중앙모드</string>
     <string name="settings_align_right">오른손모드</string>
     <!-- The present orientation's key size and alignment rows (FSS#44) -->
-    <string name="settings_now">%1$s · 지금 화면</string>
+    <string name="settings_now">지금 화면</string>
     <string name="settings_graffiti_ratio">그래피티 영역 비율 (문자 : 숫자)</string>
     <string name="settings_graffiti_ratio_1_1">1 : 1</string>
     <string name="settings_graffiti_ratio_2_1">2 : 1</string>
