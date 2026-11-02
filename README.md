@@ -15,7 +15,7 @@ An Android keyboard (IME) written in Kotlin with four ways to type:
 | `stroke-core` | Kotlin/JVM | Shared touch geometry, tap keyboard layouts, tap/stroke judgement |
 | `gesture-engine` | Kotlin/JVM | Swipe keyboard layout and the swipe input engine |
 | `recognizer` | Kotlin/JVM | Single-stroke handwriting recognizer and its stroke templates |
-| `app` | Android | Input method service, keyboard views, settings, tutor |
+| `app` | Android | Input method service, keyboard views, settings, input practice |
 
 ## Build and test
 
@@ -25,6 +25,11 @@ Requires JDK 17 and the Android SDK (minSdk 26).
 ./gradlew :app:assembleDebug     # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew testDebugUnitTest      # unit tests of every module
 ```
+
+A release build is signed only when all four Gradle properties `FSS_KEYSTORE` (path to the keystore file),
+`FSS_KEYSTORE_PASSWORD`, `FSS_KEY_ALIAS` and `FSS_KEY_PASSWORD` are set, for example in your own
+`~/.gradle/gradle.properties` (never in this repository). Without them `./gradlew :app:assembleRelease` builds an
+unsigned APK; debug builds and tests do not need them.
 
 ## Design documents
 
@@ -53,7 +58,7 @@ Kotlin으로 만든 안드로이드 키보드(IME)다. 입력 방식은 넷이�
 | `stroke-core` | Kotlin/JVM | 공통 터치 기하, 탭 자판 배치, 탭/획 판정 |
 | `gesture-engine` | Kotlin/JVM | 긋기 자판 배치와 긋기 입력 엔진 |
 | `recognizer` | Kotlin/JVM | 한 획 손글씨 인식기와 획 템플릿 |
-| `app` | Android | 입력기 서비스, 자판 화면, 설정, 튜터 |
+| `app` | Android | 입력기 서비스, 자판 화면, 설정, 입력 연습 |
 
 ## 빌드와 시험
 
@@ -63,6 +68,10 @@ JDK 17과 Android SDK(minSdk 26)가 필요하다.
 ./gradlew :app:assembleDebug     # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew testDebugUnitTest      # 모든 모듈의 단위 시험
 ```
+
+release 빌드는 Gradle 속성 네 개 `FSS_KEYSTORE`(키 저장소 파일 경로), `FSS_KEYSTORE_PASSWORD`, `FSS_KEY_ALIAS`,
+`FSS_KEY_PASSWORD`가 모두 있을 때만 서명된다. 이 값은 저장소가 아니라 자기 `~/.gradle/gradle.properties`에 둔다.
+없으면 `./gradlew :app:assembleRelease`는 서명 안 된 APK를 만들고, 디버그 빌드와 시험에는 필요 없다.
 
 ## 설계 문서
 
