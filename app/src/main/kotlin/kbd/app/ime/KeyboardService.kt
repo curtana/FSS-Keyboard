@@ -87,10 +87,12 @@ class KeyboardService : InputMethodService(), SwipeHost {
         settingsStore = SettingsStore(settingsDataStore, errorLog)
         settings = settingsStore.loadBlocking()   // once at start (D-24)
         swipe = SwipeModuleProvider.get()
-        modes = ModeController(InputMode.entries.toList(), settings.lastMode)   // every mode in every build (issue #251)
+        // Every mode in every build (issue #251); the settings turn graffiti and swipe off (FR-SET-08).
+        modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)
+        modes.fixedStart?.let(::saveLastMode)   // the last mode was off (FR-CMN-03f ③)
         feedback = Feedback({ if (::root.isInitialized) root else null }, getSystemService(AudioManager::class.java), { settings })
         composing = ComposingController(AndroidEditorPort(this))
-        dispatcher = InputDispatcher(modes, composing, feedback) { m -> scope.launch { settingsStore.setLastMode(m) } }
+        dispatcher = InputDispatcher(modes, composing, feedback, ::saveLastMode)
         dispatcher.onShowMode = { m -> showModeView(m, dispatcher.field) }
         dispatcher.onOpenSettings = {   // mode key up stroke, all modes (issue #205)
             startActivity(android.content.Intent(this, kbd.app.settings.SettingsActivity::class.java)
@@ -125,6 +127,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
         modes.onFieldChanged()   // FR-CMN-03e
         val before = modes.current
         if (f.numericLike) modes.enterNumericField() else modes.leaveNumericField()   // FR-CMN-04, 04b
+        modes.applyEnabled(settings.enabledModes)?.let(::saveLastMode)   // FR-CMN-03f; committed above
         errorLog.enabled = !f.noRecord   // NFR-05, FR-CMN-08 ① ②
         composing.onStart(info.initialSelStart, info.initialSelEnd)
         showModeView(modes.current, f)
@@ -255,6 +258,27 @@ class KeyboardService : InputMethodService(), SwipeHost {
             root.rowHeightDp = s.rowHeightDp
             root.relayout()
         }
+        applyEnabledModes(s.enabledModes)
+    }
+
+    /**
+     * FR-CMN-03f ④, HLD 8.1: the mode in use was turned off. While the keyboard is up it switches at once
+     * (commit first, then the new view, as on the mode key); otherwise the next `onStartInputView` shows it.
+     */
+    private fun applyEnabledModes(on: Set<InputMode>) {
+        val before = modes.current
+        if (before !in on && isInputViewShown) {
+            dispatcher.finishAll()   // FR-CMN-03d
+            dispatcher.resetParsers()
+        }
+        modes.applyEnabled(on)?.let(::saveLastMode)
+        if (modes.current == before || !isInputViewShown) return
+        showModeView(modes.current, dispatcher.field)
+        if (modes.current == InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
+    }
+
+    private fun saveLastMode(m: InputMode) {
+        scope.launch { settingsStore.setLastMode(m) }
     }
 
     /** D-09 via the composer callback (G5). The text is not logged (NFR-05). */

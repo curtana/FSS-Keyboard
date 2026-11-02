@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.37** (2026-11-02)
+- 버전 **0.38** (2026-11-02)
+- 0.38(FSS#31, LLD-08 0.27·LLD-07 0.25): OM-01~OM-09 꺼진 모드(SRS FR-CMN-03f 사례 표 8행 + 정규화, 7.2b), SS-08 켜진 모드 저장, PR-14 주제 목록의 "키보드에서 꺼져 있음".
 - 0.37(FSS#33): GR-33~GR-35 닫힌 고리 인식(LLD-05 0.27 3.2 4a).
 - 0.36(FSS#17, LLD-07 0.24): 튜터를 입력 연습으로 바꾸며 튜터·기준값 저장 시험을 지웠다: PG-01, PG-02, PG-03, PG-04, PG-05, PG-06, PG-07, TE-01, TE-02, TE-03, TE-04, TE-05, TE-06, TE-07, TE-08, TE-09, TE-10, TJ-01, TJ-02, TJ-03, TJ-04, TJ-05, TJ-06, TJ-07, TJ-08, TJ-09, TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08, TS-09, TS-10, TS-11, TU-01, TU-02, TU-03, TU-04, TU-05, TU-06, TU-07, TU-08, TU-09, TU-10, TU-11, TU-12, TU-13, TU-14, TU-15, TU-16, TU-17, TU-18, TU-18b, TU-19, TU-20, TU-21, TU-22, TU-23, TU-27, TU-28, TU-29, TU-30, TU-31, TU-32, TU-33, TU-34, TU-40, TU-41, TU-42, TU-43, TU-44, TU-45, TU-46, TU-47, TU-48, TU-49, TU-50, TU-51, TU-52, TU-53, TU-54, TU-55, TU-56, TU-57, TU-58, TU-59, TU-62, TY-01, TY-02, TY-03, TY-04. 새 시험은 7.6 입력 연습(PR-01~PR-13, PR-20·PR-21), TH-10(위치 허용 오차 = 키 폭 × 0.4), SS-05 이름 바꿈·SS-07. 9장의 `PracticeKeyboardView` 행과 9.1의 연습 자판 안내 행을 지웠다(연습 자판은 실제 `SwipeKeyboardView`라 SW-08이 같은 것을 본다). DV-11·DV-24를 입력 연습으로 고쳤다. MOD-04에서 `tutorSteps()`를 뺐다.
 - 0.35(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59): MC-11·MC-13 삭제, SS-03은 모르는 저장 이름 사례만, TS-07·MOD 행의 public·HLD 3.1 표기 정리(CON-5·NFR-11·FR-CMN-03b·FR-TUT-08 삭제). 앱 시험은 한 번만 돈다(`testDebugUnitTest`, `testPersonal`·`testPublic` 합침). MOD-01 = `assembleDebug`, MOD-02 = `kbd.app.swipe.impl` 밖 main에 `import kbd.gesture` 없음, MOD-04 = 제공자가 `SwipeEngineModule`. 공개판 튜터 시험 삭제: TU-02, TU-07, TU-30, TU-33, TU-40, TU-41(public 1-1), PG-06(쿼티 1-1 안내 없음), 쿼티 연습 echo 시험 셋, 개인판 쿼티 연습 자판 대체 시험.
@@ -765,6 +766,24 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 
 - 사례 표의 "보이는 자판"은 `current`로 본다(`showModeView`, LLD-08 3.1). 실기기 확인은 DV-20.
 
+### 7.2b 꺼진 모드 (SRS 꺼진 모드 사례 표 8행, FR-CMN-03f·FR-SET-08, HLD 8.1, 0.38)
+
+`ModeController(ALL, 저장된 모드, 켜진 모드)`. "설정 바뀜"은 `applyEnabled(켜진 모드)`(LLD-08 3.2, 돌려준 값 = 저장), "입력창 시작"은 7.2a 순서 뒤 `applyEnabled`(LLD-08 3.1). 그래피티 꺼짐 = {SWIPE, QWERTY, DUBEOLSIK}, 둘 다 꺼짐 = {QWERTY, DUBEOLSIK}.
+
+| ID | 사례 표 행 | 조작 | 기대 current / returnMode / previous / 저장 |
+|---|---|---|---|
+| OM-01 | 1 그래피티 꺼짐, 한글, 입력 안 함 | 모드 키 | SWIPE / – / null |
+| OM-02 | 2 둘 다 꺼짐, 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / – / null |
+| OM-03 | 3 둘 다 꺼짐, 한글, 입력 안 함 | 모드 키, 다시 모드 키 | QWERTY / – / null, 이어서 DUBEOLSIK(영문 ↔ 한글만, ⑤) |
+| OM-04 | 4 넷 다 켜짐, 한글, previous GRAFFITI → 그래피티를 끔 | 설정 바뀜, `onInput`, 모드 키 | 설정 뒤 previous null. 모드 키 뒤 SWIPE / null / DUBEOLSIK |
+| OM-05 | 5 그래피티로 쓰다(previous DUBEOLSIK, typed) 그래피티를 끔 | 설정 바뀜 | SWIPE / null / DUBEOLSIK / SWIPE 1회. typed 그대로(참) |
+| OM-06 | 6 긋기로 쓰다 둘 다 끔 | 설정 바뀜(previous DUBEOLSIK / previous GRAFFITI 두 번) | QWERTY / null / DUBEOLSIK / QWERTY 1회, 이어서 QWERTY / null / **null** / QWERTY 1회 |
+| OM-07 | 7 긋기 꺼짐, 저장된 마지막 모드 SWIPE로 프로세스 시작 | 생성 | QWERTY / null / null, typed false, `fixedStart` = QWERTY. 켜져 있으면 `fixedStart` null, 저장된 모드 없이 둘 다 꺼짐이면 QWERTY·`fixedStart` null |
+| OM-08 | 8 그래피티 → 숫자 입력창(돌아갈 모드 GRAFFITI) → 그래피티를 끔 → 문자 입력창 | (가) 숫자 입력창 안에서 설정 바뀜, 문자 입력창 시작 (나) 설정이 문자 입력창 시작 때 처음 반영 | (가) 설정 뒤 QWERTY / SWIPE / null / SWIPE 1회, 문자 입력창 뒤 SWIPE / null / null / 더 없음 (나) SWIPE / null / null / SWIPE 1회 |
+| OM-09 | (정규화) | `applyEnabled(빈 집합)`, `applyEnabled(넷)`, `nextEnabled(GRAFFITI)`, `ModeController(listOf(SWIPE), SWIPE, 둘 다 꺼짐)` | 켜진 모드 {QWERTY, DUBEOLSIK}, 저장 없음 / 넷, 저장 없음 / SWIPE(처음으로 돎) / SWIPE(연습 자판의 한 모드) |
+
+- 키보드가 떠 있을 때의 즉시 뷰 교체(LLD-08 3.2)는 안드로이드 생명주기라 실기기에서 본다(DV-20과 함께: 그래피티로 쓰다 모드 키 ↑로 설정을 열어 그래피티를 끄고 돌아오면 긋기 자판).
+
 ### 7.3 ComposingController (가짜 `EditorPort`)
 
 | ID | 입력 | 기대 호출 | 근거 |
@@ -853,6 +872,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | SS-04 | 〃 | 저장된 `row_height_dp` 30 / 70 / 44 / 40 / 64 | 40 / 64 / 44 / 40 / 64 (40~47도 그대로 허용) | FR-SET-06, TBD-16 (DCR-14), D-33 |
 | SS-05 | 〃 | `setPracticeListShown(true)` 뒤 다시 읽기 | true | FR-TUT-01 (0.36) |
 | SS-07 | 〃 | `markPracticeDone`(swipe, upper, swipe) 뒤 다시 읽기 | {swipe, upper} | SWIPE 10.0 ✓ (0.36) |
+| SS-08 | 〃 | 빈 저장소 / `graffitiEnabled = false` 뒤 다시 읽기 / 이어서 `swipeEnabled = false` | 둘 다 true·`enabledModes` 넷 / 그래피티 뺀 셋 / {QWERTY, DUBEOLSIK} | FR-SET-08 (0.38) |
 | EL-01 | `ErrorLog.record` | `IllegalStateException("ㄱ 입력")` | 줄에 "ㄱ 입력" 없음, 클래스 이름·위치 있음 | NFR-05 |
 | EL-02 | 〃 | `enabled = false` | 파일 변화 없음 | FR-CMN-08 |
 | EL-03 | 〃 | 64KB 넘김 | 앞 절반 버림, 크기 ≤ 64KB | HLD 7.3 |
@@ -889,6 +909,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | PR-11 | 〃 | 천지인 가: ㄱ 탭, 천지인 키 ↑, 천지인 키 탭 | ㄱ, 기, 가 → ✓ | 〃 |
 | PR-12 | 〃 | ② 긋기: 2 ↑, . ←, / ↑ | @ / ( / ? → ✓ | SWIPE 10.1 ② |
 | PR-13 | 〃 | 가에 ㄴ 탭 / ㄱ 탭 뒤 ㅣ를 위로 | ✗ / 오류 진동, ✗ | SWIPE 10.2 |
+| PR-14 | `PracticeTopic.offInKeyboard` | 기본 설정 / 그래피티·긋기 끔 / 긋기만 끔 | 표시 없음 / graffiti·swipe / swipe(기호 주제는 긋기 항목이 있어도 표시 없음) | FR-CMN-03f ⑦, SWIPE 10.0 (0.38) |
 | PR-20 | 그래피티 항목(실제 템플릿·`GraffitiInputHandler`) | 가: ko_g, ↓, 탭 / 고: ko_g, 탭, → / a: en_a / 1: 숫자 영역 ↓ | ㄱ 기 가 / ㄱ ㄱㆍ 고 / a / 1, 모두 ✓ | SWIPE 10.1 ③, D-65 |
 | PR-21 | 〃 | 템플릿에 없는 지그재그(a 차례) | ✗ | FR-GRF-08, SWIPE 10.2 |
 | TH-10 | `ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth` | 51 / 처음 / 50 / 101.6 | 20.4 / 20 / 20 / 40.64, `minCrossDp`는 8 그대로 | HLD 7.2, PM 결정 B |

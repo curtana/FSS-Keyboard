@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -111,6 +113,16 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
         Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
 
+            Section(R.string.settings_section_modes)   // FR-SET-08: the first group
+            Text(
+                stringResource(R.string.settings_modes_summary), style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
+            CheckRow(R.string.settings_mode_dubeolsik, checked = true, onChange = null)
+            CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
+            CheckRow(R.string.settings_mode_swipe, settings.swipeEnabled) { v -> update { it.copy(swipeEnabled = v) } }
+
             Section(R.string.settings_section_input)
             ActionRow(R.string.settings_ime, R.string.settings_ime_summary, actions.openImeSettings)
 
@@ -158,6 +170,18 @@ private fun SwitchRow(title: Int, checked: Boolean, onChange: (Boolean) -> Unit)
     ) {
         Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+/** A mode check box (FR-SET-08); [onChange] null = always on, checked and disabled with "늘 켜짐". */
+@Composable
+private fun CheckRow(title: Int, checked: Boolean, onChange: ((Boolean) -> Unit)?) {
+    val base = Modifier.fillMaxWidth()
+    val row = if (onChange == null) base else base.toggleable(checked, role = Role.Checkbox) { onChange(it) }
+    Row(row.padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = null, enabled = onChange != null)
+        Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp).weight(1f))
+        if (onChange == null) Text(stringResource(R.string.settings_mode_always_on), style = MaterialTheme.typography.bodySmall)
     }
 }
 

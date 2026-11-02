@@ -55,6 +55,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[GRAFFITI_LETTER_RATIO] = s.graffitiLetterRatio
             p[TUTOR_AUTO_STARTED] = s.practiceListShown
             p[PRACTICE_DONE] = s.practiceDone
+            p[GRAFFITI_ENABLED] = s.graffitiEnabled
+            p[SWIPE_ENABLED] = s.swipeEnabled
         }
     }
 
@@ -82,6 +84,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             graffitiLetterRatio = p[GRAFFITI_LETTER_RATIO] ?: d.graffitiLetterRatio,
             practiceListShown = p[TUTOR_AUTO_STARTED] ?: d.practiceListShown,
             practiceDone = p[PRACTICE_DONE] ?: d.practiceDone,
+            graffitiEnabled = p[GRAFFITI_ENABLED] ?: d.graffitiEnabled,
+            swipeEnabled = p[SWIPE_ENABLED] ?: d.swipeEnabled,
         )
     }
 
@@ -97,5 +101,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         /** Kept under its old name (FSS#17): an install that already ran the old tutor does not open the list again. */
         val TUTOR_AUTO_STARTED = booleanPreferencesKey("tutor_auto_started")
         val PRACTICE_DONE = stringSetPreferencesKey("practice_done")
+        /** FR-SET-08 (FSS#31): absent = on. */
+        val GRAFFITI_ENABLED = booleanPreferencesKey("graffiti_enabled")
+        val SWIPE_ENABLED = booleanPreferencesKey("swipe_enabled")
     }
 }

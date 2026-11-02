@@ -69,6 +69,7 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | ~~FR-CMN-03b~~ | SRS 0.65에서 삭제(이슈 #251) | ~~MC-11, MC-13~~ |
 | FR-CMN-03d | LLD-08 6.1 `onModeKey`·`finishAll`·`resetParsers` | ID-08, GH-12 |
 | FR-CMN-03e | LLD-08 5절 `onFieldChanged`, 3.1 | MC-10, MC-12, ID-12 |
+| FR-CMN-03f | LLD-08 5절 `applyEnabled`·`nextEnabled`·`fixedStart`, 3.1, 3.2 `applyEnabledModes`, LLD-07 2.3(주제 목록 표시) | OM-01~OM-09, PR-14, DV-20 |
 | FR-CMN-04 | LLD-08 2절 `FieldInfo.numericLike`, 3.1, 5절 `enterNumericField`, LLD-05A 3.5 | FI-01~FI-07, FI-11, FI-12, NF-01, NF-04, DV-20 |
 | FR-CMN-04a | (SRS에서 삭제: 숫자 키패드 없음) | – |
 | FR-CMN-04b | LLD-08 5절 `returnMode`·`enterNumericField`·`leaveNumericField`, 6.1 `onModeKey`(저장 제외), 3.1(같은 칸 재표시) | NF-01~NF-09, ID-11, ID-23, FI-06 |
@@ -148,6 +149,7 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | FR-SET-02, 04, 05 | LLD-07 6.1, 7절 | SS-01, GT-10, DV-11 |
 | FR-SET-03 | LLD-07 6.1(진동 켬·소리 끔), LLD-08 8절(누를 때) | SS-01, FB-04, DV-21 |
 | FR-SET-06 | LLD-07 6.1 `RowHeight`(40~64dp), LLD-08 7절 | SS-04, DV-11 |
+| FR-SET-08 | LLD-07 6.1 `graffiti_enabled`·`swipe_enabled`, 7절 "입력 모드" | SS-08, OM-07, DV-11 |
 | NFR-01 | LLD-06 3절 | DV-02 |
 | NFR-02 | LLD-04 4.6 | PF-01, DV-15 |
 | NFR-03 | LLD-09 | EG-01~EG-06, CC-20~CC-22, ID-19, EL-04 |

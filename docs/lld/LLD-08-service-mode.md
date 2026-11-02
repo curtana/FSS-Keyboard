@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.26** (2026-11-02)
+- 버전 **0.27** (2026-11-02)
+- 0.27(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f, HLD 0.62 8.1·8장): **켜진 모드.** `ModeController`에 켜진 모드 집합 `enabled`(영문 쿼티·한글 두벌식은 늘 켬), `nextEnabled`(`nextInOrder` 대신), `applyEnabled`(이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로, 저장할 모드를 돌려줌), `fixedStart`(시작 때 고친 모드)(5절). 서비스: 생성 때 켜진 모드를 넘기고 `fixedStart`를 저장, `onStartInputView`에서 `applyEnabled`(3.1), 설정 `flow`가 바뀌면 `applyEnabledModes` — 키보드가 떠 있으면 곧바로 확정하고 새 모드의 뷰로 바꿈(3.2).
 - 0.26(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): 기준값은 코드 상수(`thresholds = ThresholdDefaults.VALUES`), `ThresholdStore` 읽기와 `onStartInputView`의 다시 읽기 삭제.
 - 0.25(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): `KeyboardService`는 `ModeController`에 모든 모드를 넘긴다(긋기를 빼는 공개판 순서 없음, 5절). `createSwipeView`는 늘 뷰를 준다.
 - 0.24(이슈 #189, SRS 0.45 FR-GRF-09·09a, HLD 0.41 5장·5A): **그래피티 획 안내표의 버튼과 덮개는 `KeyboardRootView`가 가진다**(새 7.1). 빈 띠 오른쪽 끝 1줄 × 1줄 버튼(누를 때 피드백·토글), 패드 + 보조 줄 위 덮개(`GraffitiGuidePanel`, LLD-05 10절), 열 때 모드 뷰의 진행 중 터치 취소와 그 제스처의 나머지 가로채기. `setModeView`는 모드 뷰만 바꾼다(버튼·덮개는 남음). 서비스: `showModeView`에서 그래피티면 `enableGuide`, 아니면 `disableGuide`, `onWindowHidden`·`onFinishInputView(false)`에서 `closeGuide`(3절). 창 높이·인셋은 그대로.
@@ -13,7 +14,7 @@
 - 0.16(이슈 #160): 긋기 천지인 키. `onJamoEvents`는 매퍼의 임시 글자(ㆍ·‥)를 조합 글자 뒤에 보이고(빈 이벤트 목록도 보임), `backspace()`는 긋기면 매퍼의 조립기에 먼저 묻는다(6.1). 천지인 키 요소는 입력이다(6.2).
 - 0.14(이슈 #150): `BlockParser` → `SwipeInputMapper`(`SwipeEngineState`). `SwipeHost.hasJong` 삭제. `backspace()`는 조합기 다음 `swipeState.onBackspace(composer.lastConsonant())`로 ⌫ 뒤 기준 키를 정하고 편집기를 마지막에 쓴다(FR-SWP-39). 기준 키 밖 긋기의 오류 진동은 뷰가 `feedback.error()`로 낸다(8절 진동 설정을 따름).
 - `InputMode`·`FunctionKey`는 [LLD-03-modules.md#35-모드와-기능키](LLD-03-modules.md#35-모드와-기능키), 조합기는 [LLD-04-swipe.md#7](LLD-04-swipe.md#7-hangulcomposer-core-hangul)에 있다.
-- 요구: FR-CMN-01~12(04·04b·11a 포함), FR-TAP-04, 10, 11a, FR-CMN-09, FR-GRF-08, NFR-05.
+- 요구: FR-CMN-01~12(03f·04·04b·11a 포함), FR-SET-08, FR-TAP-04, 10, 11a, FR-CMN-09, FR-GRF-08, NFR-05.
 
 ## 1. 범위
 
@@ -69,7 +70,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode)`(0.25: 모든 모드, 이슈 #251). `dispatcher = InputDispatcher(…)`. 설정 `flow`를 모아 바뀌면 `applySettings()` | FR-CMN-10, HLD 7.3 |
+| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.25: 모든 모드, 이슈 #251. 0.27: 켜진 모드). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`. 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
 | `onCreateInputView()` | `root = KeyboardRootView(…)`. `showModeView(modes.current)` | FR-CMN-10 |
 | `onStartInputView(info, restarting)` | 아래 3.1 | FR-CMN-03e, 04, 04b, 08 |
 | `onUpdateSelection(oldS, oldE, newS, newE, candS, candE)` | `r = composing.onUpdateSelection(newS, newE, candS, candE)`. `USER_MOVED` → `dispatcher.onCursorMoved(newS, newE, candS, candE)`. `OTHER_MOVED` → `dispatcher.onCursorMovedNoComposing()` | FR-CMN-06, HLD 8장, R4 |
@@ -91,6 +92,7 @@ modes.onFieldChanged()                     // typed = false, previous 유지(FR-
 before = modes.current
 if f.numericLike: modes.enterNumericField()   // 영문 쿼티로 시작, 돌아갈 모드 기억(5절, FR-CMN-04·04b)
 else:             modes.leaveNumericField()   // 돌아갈 모드가 있으면 그 모드로(5절)
+modes.applyEnabled(settings.enabledModes)?.let(saveLastMode)   // 0.27: 꺼진 모드를 고침(FR-CMN-03f ②~④). 확정은 위에서 함
 errorLog.enabled = !f.noRecord             // NFR-05, FR-CMN-08 ①② (0.21)
 composing.onStart(info.initialSelStart, info.initialSelEnd)
 showModeView(modes.current, f)
@@ -98,6 +100,22 @@ if modes.current == GRAFFITI && before != GRAFFITI: dispatcher.graffiti?.enterMo
 ```
 - 같은 숫자류 입력창에서 키보드가 다시 떠도(`onStartInputView` 다시 호출) 이 순서를 그대로 탄다. 그래서 다시 영문 쿼티로 시작하고 돌아갈 모드는 그대로다(FR-CMN-04b).
 - 자동으로 바뀌는 모드(쿼티로 시작, 돌아가기)는 `previous`와 마지막 모드 저장을 바꾸지 않는다(5절, FR-CMN-04b).
+
+- 0.27: `applyEnabled`는 enter·leave 다음이다. 그래서 숫자류 입력창 안이면 `current`(= QWERTY, 늘 켬)는 그대로이고 돌아갈 모드만 고쳐지며, 문자 입력창으로 돌아온 뒤 돌아갈 모드가 꺼져 있었으면 그 다음 켜진 모드가 된다(사례 표 8행).
+
+### 3.2 `applyEnabledModes(on)` (0.27, FSS#31)
+설정 `flow`의 값이 올 때마다(`applySettings`의 끝, 메인 스레드) 부른다. `on = settings.enabledModes`.
+```
+before = modes.current
+if before ∉ on && isInputViewShown:  dispatcher.finishAll(); dispatcher.resetParsers()   // 바꾸기 전에 확정(FR-CMN-03d)
+modes.applyEnabled(on)?.let(saveLastMode)
+if modes.current == before || !isInputViewShown: return      // 떠 있지 않으면 다음 onStartInputView의 showModeView가 보임
+showModeView(modes.current, dispatcher.field)                   // 모드 키와 같은 길(뷰 교체)
+if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모드의 다음 켜진 모드는 그래피티가 될 수 없지만 같은 규칙을 둠)
+```
+- `resetParsers()`는 기본 이유(`FIELD_CHANGED`)다: 사용자가 누른 키가 아니므로 버린 획에 진동하지 않는다(D-57과 같음).
+- 자동 전환이라 `typed`·`previous`는 바꾸지 않는다(5절). 저장은 `applyEnabled`가 돌려준 모드만 한다(숫자류 입력창 안이면 고친 돌아갈 모드, 밖이면 새 모드).
+- `Settings.enabledModes` = {QWERTY, DUBEOLSIK} ∪ (`graffitiEnabled`면 GRAFFITI) ∪ (`swipeEnabled`면 SWIPE)(LLD-07 6.1).
 
 #### `showModeView(mode, f)`
 | 조건 | 보이는 뷰 |
@@ -180,27 +198,34 @@ USER_MOVED 일 때: predictedSel = newE; expected.clear()   // composeStart는 f
 ## 5. ModeController
 
 ```kotlin
-class ModeController(private val available: List<InputMode>, saved: InputMode?) {
+class ModeController(private val available: List<InputMode>, saved: InputMode?, enabled: Set<InputMode> = available.toSet()) {
+    var enabled: Set<InputMode>; private set           // 0.27: 켜진 모드(정규화, 아래)
     var current: InputMode; var previous: InputMode? = null; var typed = false
     var returnMode: InputMode? = null                  // 숫자류 입력창에 들어가기 직전의 모드(돌아갈 모드). null = 숫자류 입력창 밖
     val inNumericField: Boolean get() = returnMode != null
+    val fixedStart: InputMode?                         // 0.27: 저장된 모드가 꺼져 있어 고친 시작 모드(저장할 값). 아니면 null
     fun onInput()
     fun onFieldChanged()
     fun onModeKey(): InputMode
     fun enterNumericField()
     fun leaveNumericField()
+    fun applyEnabled(modes: Set<InputMode>): InputMode?   // 0.27: 저장할 마지막 모드 또는 null
+    fun nextEnabled(m: InputMode): InputMode
+    companion object { val ALWAYS_ON = setOf(QWERTY, DUBEOLSIK) }
 }
 ```
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| 생성 | `current = saved`가 `available`에 있으면 그 값, 아니면 `available[0]`(= SWIPE, 0.25: 모든 빌드가 모든 모드). `previous = null`, `typed = false`, `returnMode = null`(프로세스 시작) | FR-CMN-10, 03b, 03e, HLD 8.1 |
+| 생성 | `enabled = 정규화(enabled)`. `current = saved`가 `available`에 있으면 그 값(꺼져 있으면 `nextEnabled(saved)`), 없으면 `available[0]`(= SWIPE, 0.25: 모든 빌드가 모든 모드. 꺼져 있으면 `nextEnabled(available[0])`). `fixedStart = saved != null && saved != current`면 `current`, 아니면 null(저장된 모드가 없을 때 고친 첫 모드는 저장하지 않음). `previous = null`, `typed = false`, `returnMode = null`(프로세스 시작) | FR-CMN-10, 03b, 03e, 03f ③, HLD 8.1 |
 | `onInput()` | `typed = true` | FR-CMN-03a |
 | `onFieldChanged()` | `typed = false`(previous·returnMode 유지) | FR-CMN-03e |
-| `onModeKey()` | HLD 8.1 그대로: `next = if (typed && previous != null && previous != current) previous else nextInOrder(current)`; `if (typed) previous = current`; `current = next`; `typed = false`; `return next`. 숫자류 입력창 안에서도 같다(`returnMode`는 바꾸지 않음) | FR-CMN-03, 03c, 04b |
+| `onModeKey()` | HLD 8.1 그대로: `next = if (typed && previous != null && previous != current) previous else nextEnabled(current)`; `if (typed) previous = current`; `current = next`; `typed = false`; `return next`. 숫자류 입력창 안에서도 같다(`returnMode`는 바꾸지 않음). `previous`는 늘 켜진 모드다(`applyEnabled`가 꺼진 것을 비움) | FR-CMN-03, 03c, 03f ①②, 04b |
 | `enterNumericField()` | `if (returnMode == null) returnMode = current`; `current = QWERTY`. `previous`·`typed`는 바꾸지 않는다 | FR-CMN-04, 04b, HLD 8.1 |
 | `leaveNumericField()` | `if (returnMode != null) { current = returnMode; returnMode = null }`. `previous`·`typed`는 바꾸지 않는다. 숫자류 입력창 밖에서 부르면 아무것도 하지 않는다 | FR-CMN-04b, HLD 8.1 |
-| `nextInOrder(m)` | `available`에서 m 다음, 끝이면 처음(SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → …) | FR-CMN-03, 03b |
+| `applyEnabled(modes)` (0.27) | `enabled = 정규화(modes)`; `if (previous ∉ enabled) previous = null`; `if (returnMode != null && returnMode ∉ enabled) { returnMode = nextEnabled(returnMode); 저장 = returnMode }`; `if (current ∉ enabled) { current = nextEnabled(current); if (returnMode == null) 저장 = current }`. `typed`는 바꾸지 않는다. 돌려주는 값 = 저장(없으면 null). 확정·뷰 교체는 서비스(3.1, 3.2) | FR-CMN-03f ②~④, HLD 8.1 |
+| `nextEnabled(m)` (0.27, `nextInOrder` 대신) | `available`에서 m 다음부터 돌며(끝이면 처음) 처음 만나는 `enabled`의 모드(SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → …, 꺼진 모드 건너뜀). m 말고 켜진 것이 없으면 m | FR-CMN-03, 03b, 03f ① |
+| 정규화 (0.27) | `available` 가운데 `modes`에 있거나 `ALWAYS_ON`(QWERTY·DUBEOLSIK)인 것. 비면 `available` 전부(연습 자판의 한 모드짜리 `ModeController(listOf(mode), mode)`가 그대로 동작) | FR-SET-08, FR-CMN-03f ⑤ |
 
 - `QWERTY`는 늘 `available`에 있다. 그래서 `enterNumericField`는 늘 쿼티로 간다.
 - **돌아갈 모드의 수명:** 숫자류 입력창에서 다른 숫자류 입력창으로 옮기면 `enterNumericField`가 다시 불려도 `returnMode`는 처음 값 그대로이고 `current`는 다시 QWERTY다(사례 표 4행). 같은 숫자류 입력창에서 키보드가 다시 떠도 같다(FR-CMN-04b). 숫자류 입력창이 아닌 입력창으로 옮길 때만 `returnMode`로 돌아가고 비운다(사례 3·5행).
@@ -208,7 +233,8 @@ class ModeController(private val available: List<InputMode>, saved: InputMode?) 
 - `returnMode`는 저장하지 않는다(프로세스 시작 때 null, HLD 8.1).
 - 확정·초기화·저장 같은 부수 효과는 `InputDispatcher.onModeKey()`와 `KeyboardService.onStartInputView`가 한다(6절, 3.1). 이 클래스는 상태 기계만 둔다(HLD 8.1 "순수 Kotlin 상태 기계").
 - `onInput()`을 부르는 곳과 부르지 않는 곳은 6.2 표.
-- 시험: MC-01~MC-10(SRS 모드 키 예시 10행), MC-11~MC-13, NF-01~NF-09(SRS 숫자류 입력창 사례 7행 + 재표시·저장).
+- **켜진 모드(0.27):** 켜진 모드 집합은 밖(`SettingsStore`)에서 받는다. 이 클래스는 저장하지 않고 저장할 값만 돌려준다(`applyEnabled`, `fixedStart`). 영문 쿼티·한글 두벌식은 끌 수 없으므로 순환에는 늘 둘 이상이 있고, `enterNumericField`의 QWERTY도 늘 켜져 있다.
+- 시험: MC-01~MC-10(SRS 모드 키 예시 10행), MC-11~MC-13, NF-01~NF-09(SRS 숫자류 입력창 사례 7행 + 재표시·저장), OM-01~OM-09(SRS 꺼진 모드 사례 8행 + 정규화, 0.27).
 
 ## 6. InputDispatcher
 
