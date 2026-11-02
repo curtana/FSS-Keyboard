@@ -101,6 +101,32 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `SS-08 width defaults, read back, null landscape ratio removes the key`() {
+        val d = SettingsStore(open()).loadBlocking()
+        assertEquals(WidthSetting(1f, KeyboardAlign.CENTER), d.portraitWidth)   // FR-CMN-14 ③
+        assertEquals(WidthSetting(null, KeyboardAlign.CENTER), d.landscapeWidth)
+        val p = WidthSetting(0.75f, KeyboardAlign.LEFT)
+        val l = WidthSetting(0.6f, KeyboardAlign.RIGHT)
+        runBlocking { SettingsStore(reopen()).update { it.copy(portraitWidth = p, landscapeWidth = l) } }
+        val s = SettingsStore(reopen())
+        assertEquals(p, s.loadBlocking().portraitWidth)
+        assertEquals(l, s.loadBlocking().landscapeWidth)
+        runBlocking { s.update { it.copy(landscapeWidth = it.landscapeWidth.copy(ratio = null)) } }
+        assertEquals(WidthSetting(null, KeyboardAlign.RIGHT), SettingsStore(reopen()).loadBlocking().landscapeWidth)
+    }
+
+    @Test
+    fun `SS-09 stored width snaps to 5 percent steps of 50 to 100, unknown alignment reads as centre`() {
+        val cases = listOf(0.2f to 0.5f, 1.3f to 1f, 0.66f to 0.65f, 0.55f to 0.55f)
+        for ((stored, expected) in cases) {
+            runBlocking { reopen().edit { it[SettingsStore.WIDTH_PORTRAIT] = stored } }
+            assertEquals("stored $stored", expected, SettingsStore(reopen()).loadBlocking().portraitWidth.ratio)
+        }
+        runBlocking { reopen().edit { it[SettingsStore.ALIGN_LANDSCAPE] = "UP" } }
+        assertEquals(KeyboardAlign.CENTER, SettingsStore(reopen()).loadBlocking().landscapeWidth.align)
+    }
+
+    @Test
     fun `SS-05 setPracticeListShown true reads back`() {
         runBlocking { SettingsStore(open()).setPracticeListShown(true) }
         assertTrue(SettingsStore(reopen()).loadBlocking().practiceListShown)
@@ -130,6 +156,8 @@ class SettingsStoreTest {
             graffitiLetterRatio = 0.5f,
             practiceListShown = true,
             practiceDone = setOf("graffiti"),
+            portraitWidth = WidthSetting(0.8f, KeyboardAlign.RIGHT),
+            landscapeWidth = WidthSetting(0.5f, KeyboardAlign.LEFT),
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())

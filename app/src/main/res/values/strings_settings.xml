@@ -15,6 +15,16 @@
     <string name="settings_section_layout">자판</string>
     <string name="settings_row_height">줄 높이</string>
     <string name="settings_row_height_value">%1$d dp</string>
+    <!-- Keyboard width and alignment (FR-SET-09, FSS#25) -->
+    <string name="settings_width_portrait">세로 화면 폭</string>
+    <string name="settings_width_landscape">가로 화면 폭</string>
+    <string name="settings_width_value">%1$d%%</string>
+    <string name="settings_width_same">세로와 같은 크기 (약 %1$d%%)</string>
+    <string name="settings_align_portrait">세로 화면 정렬</string>
+    <string name="settings_align_landscape">가로 화면 정렬</string>
+    <string name="settings_align_left">왼손모드</string>
+    <string name="settings_align_center">중앙모드</string>
+    <string name="settings_align_right">오른손모드</string>
     <string name="settings_graffiti_ratio">그래피티 영역 비율 (문자 : 숫자)</string>
     <string name="settings_graffiti_ratio_1_1">1 : 1</string>
     <string name="settings_graffiti_ratio_2_1">2 : 1</string>

@@ -1,6 +1,7 @@
 package kbd.app.view
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -13,7 +14,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kbd.app.feedback.FeedbackPort
 import kbd.app.graffiti.GraffitiGuidePanel
+import kbd.app.store.KeyboardSpan
+import kbd.app.store.KeyboardWidth
 import kbd.app.store.RowHeight
+import kbd.app.store.WidthSetting
 import kbd.graffiti.recognize.TemplateSet
 
 /**
@@ -31,6 +35,12 @@ import kbd.graffiti.recognize.TemplateSet
  * 1 × 1 row guide button at its right end. It toggles, on press, an opaque [GraffitiGuidePanel] over the
  * mode view; while it is open the mode view gets no touch (the touch in progress is cancelled when it opens).
  * The open state is view state only: a new root starts closed.
+ *
+ * Keyboard width (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2, FSS#25): the mode view, the guide panel and the band's
+ * guide button sit in a [KeyboardWidth.place] span of the width left by the system bar padding, with the setting of
+ * the screen's orientation. The rest is margin like the band: [BACKGROUND_COLOR], touches taken with no input, and a
+ * finger that comes down there is not given to the mode view even while another finger is on it
+ * ([OffKeyboardPointers]).
  */
 class KeyboardRootView(context: Context) : FrameLayout(context) {
 
@@ -38,6 +48,21 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
     /** Row height setting (FR-SET-06, 40–64 dp). Call [relayout] after changing it. */
     var rowHeightDp: Float = RowHeight.DEFAULT_DP
+
+    /** Width settings (FR-SET-09); the one of the current orientation is used. Call [relayout] after changing them. */
+    var portraitWidth: WidthSetting = WidthSetting.PORTRAIT_DEFAULT
+    var landscapeWidth: WidthSetting = WidthSetting.LANDSCAPE_DEFAULT
+
+    /** The keyboard's span in the available width, set by [onMeasure]. */
+    private var span = KeyboardSpan(0, 0)
+
+    /** Left end of the keyboard in this view, px (tests). */
+    internal val keyboardLeft: Int get() = paddingLeft + span.left
+
+    /** Width of the keyboard, px (tests). */
+    internal val keyboardWidth: Int get() = span.width
+
+    private val offKeyboard = OffKeyboardPointers(::onChild)
 
     private var rows = WINDOW_ROWS
     private var modeView: View? = null
@@ -163,13 +188,39 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         return swallowGesture
     }
 
+    /** The children get the event without the pointers that came down off them (FR-CMN-14 ⑤, LLD-08 §7.2). */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val e = offKeyboard.filter(ev) ?: return true   // only off-keyboard pointers: taken, no input
+        val handled = super.dispatchTouchEvent(e)
+        if (e !== ev) e.recycle()
+        return handled || offKeyboard.active
+    }
+
+    /** True when ([x], [y]) is on a shown child: the mode view, the open guide panel or the guide button. */
+    private fun onChild(x: Float, y: Float): Boolean {
+        for (i in 0 until childCount) {
+            val c = getChildAt(i)
+            if (c.visibility == VISIBLE && x >= c.left && x < c.right && y >= c.top && y < c.bottom) return true
+        }
+        return false
+    }
+
+    /**
+     * Height = [WINDOW_ROWS] rows + the bottom padding. Children of `MATCH_PARENT` width (the mode view and the guide
+     * panel) get the keyboard width of the orientation's setting (FR-CMN-14 ④); the available width is the measured
+     * width less the side padding (system bars), the portrait width is the screen's short side (③).
+     */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         val h = px(WINDOW_ROWS * rowHeightDp) + paddingBottom
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val dm = resources.displayMetrics
+        span = KeyboardWidth.place(w - paddingLeft - paddingRight, minOf(dm.widthPixels, dm.heightPixels), density,
+            if (landscape) landscapeWidth else portraitWidth)
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             val lp = c.layoutParams
-            val cw = if (lp.width >= 0) lp.width else w - paddingLeft - paddingRight
+            val cw = if (lp.width >= 0) lp.width else span.width
             c.measure(
                 MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(lp.height.coerceAtLeast(0), MeasureSpec.EXACTLY),
@@ -178,7 +229,28 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         setMeasuredDimension(w, h)
     }
 
-    /** Touches the children did not take (the blank band) are consumed with no input (SRS 3.3, FR-CMN-11a ②). */
+    /**
+     * The mode view and the guide panel at the bottom of the rows, at the keyboard's left end; the guide button at the
+     * top, at the keyboard's right end (FR-CMN-14 ⑥, FR-GRF-09).
+     */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        val x = keyboardLeft
+        val rowsBottom = bottom - top - paddingBottom
+        for (i in 0 until childCount) {
+            val c = getChildAt(i)
+            if (c.visibility == GONE) continue
+            if (c === guideButton) {
+                c.layout(x + span.width - c.measuredWidth, paddingTop, x + span.width, paddingTop + c.measuredHeight)
+            } else {
+                c.layout(x, rowsBottom - c.measuredHeight, x + c.measuredWidth, rowsBottom)
+            }
+        }
+    }
+
+    /**
+     * Touches the children did not take (the blank band, the side margins, the system bar padding) are consumed with
+     * no input (SRS 3.3, FR-CMN-14 ⑤, FR-CMN-11a ②).
+     */
     override fun onTouchEvent(event: MotionEvent): Boolean = true
 
     private fun px(dp: Float): Int = Math.round(dp * density)

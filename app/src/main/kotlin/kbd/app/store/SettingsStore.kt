@@ -1,6 +1,7 @@
 package kbd.app.store
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -55,6 +56,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[GRAFFITI_LETTER_RATIO] = s.graffitiLetterRatio
             p[TUTOR_AUTO_STARTED] = s.practiceListShown
             p[PRACTICE_DONE] = s.practiceDone
+            writeWidth(p, s.portraitWidth, WIDTH_PORTRAIT, ALIGN_PORTRAIT)
+            writeWidth(p, s.landscapeWidth, WIDTH_LANDSCAPE, ALIGN_LANDSCAPE)
         }
     }
 
@@ -82,8 +85,23 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             graffitiLetterRatio = p[GRAFFITI_LETTER_RATIO] ?: d.graffitiLetterRatio,
             practiceListShown = p[TUTOR_AUTO_STARTED] ?: d.practiceListShown,
             practiceDone = p[PRACTICE_DONE] ?: d.practiceDone,
+            portraitWidth = readWidth(p, d.portraitWidth, WIDTH_PORTRAIT, ALIGN_PORTRAIT),
+            landscapeWidth = readWidth(p, d.landscapeWidth, WIDTH_LANDSCAPE, ALIGN_LANDSCAPE),
         )
     }
+
+    /** A null ratio removes the key (the landscape default, FR-CMN-14 ③). */
+    private fun writeWidth(p: MutablePreferences, s: WidthSetting, ratio: Preferences.Key<Float>, align: Preferences.Key<String>) {
+        val r = s.ratio
+        if (r == null) p.remove(ratio) else p[ratio] = r
+        p[align] = s.align.name
+    }
+
+    /** Stored ratios snap to the 5 % steps of 50–100 % (as D-33); an unknown alignment name reads as the default. */
+    private fun readWidth(p: Preferences, d: WidthSetting, ratio: Preferences.Key<Float>, align: Preferences.Key<String>) = WidthSetting(
+        ratio = p[ratio]?.let(KeyboardWidth::snap) ?: d.ratio,
+        align = p[align]?.let { name -> KeyboardAlign.entries.firstOrNull { it.name == name } } ?: d.align,
+    )
 
     companion object {
         val LAST_MODE = stringPreferencesKey("last_mode")
@@ -97,5 +115,9 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         /** Kept under its old name (FSS#17): an install that already ran the old tutor does not open the list again. */
         val TUTOR_AUTO_STARTED = booleanPreferencesKey("tutor_auto_started")
         val PRACTICE_DONE = stringSetPreferencesKey("practice_done")
+        val WIDTH_PORTRAIT = floatPreferencesKey("width_portrait")
+        val ALIGN_PORTRAIT = stringPreferencesKey("align_portrait")
+        val WIDTH_LANDSCAPE = floatPreferencesKey("width_landscape")
+        val ALIGN_LANDSCAPE = stringPreferencesKey("align_landscape")
     }
 }

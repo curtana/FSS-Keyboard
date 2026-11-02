@@ -17,6 +17,10 @@ data class Settings(
     val practiceListShown: Boolean,
     /** Ids of the practice topics done to the end (the ✓ of the topic list, SWIPE 10.0); never used for judgement. */
     val practiceDone: Set<String> = emptySet(),
+    /** Keyboard width and alignment on the portrait screen (FR-CMN-14, FR-SET-09, FSS#25). */
+    val portraitWidth: WidthSetting = WidthSetting.PORTRAIT_DEFAULT,
+    /** The same on the landscape screen; the default ratio null = the portrait key size (FR-CMN-14 ③). */
+    val landscapeWidth: WidthSetting = WidthSetting.LANDSCAPE_DEFAULT,
 ) {
     companion object {
         /** LLD-07 §6.1 defaults: vibration on, sound off (DCR-14), row 48 dp, letters 2 : numbers 1. */

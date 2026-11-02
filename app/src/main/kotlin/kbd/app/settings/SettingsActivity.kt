@@ -34,11 +34,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import kbd.app.R
+import kbd.app.store.KeyboardAlign
+import kbd.app.store.KeyboardWidth
 import kbd.app.store.RowHeight
 import kbd.app.store.Settings
 import kbd.app.practice.PracticeActivity
@@ -125,6 +128,7 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
 
             Section(R.string.settings_section_layout)
             RowHeightRow(settings.rowHeightDp) { v -> update { it.copy(rowHeightDp = v) } }
+            KeyboardWidthRows(settings, update)   // FR-SET-09, FSS#25
             GraffitiRatioRow(settings.graffitiLetterRatio) { v -> update { it.copy(graffitiLetterRatio = v) } }
 
             Section(R.string.settings_section_practice)
@@ -180,6 +184,82 @@ private fun RowHeightRow(stored: Float, onChange: (Float) -> Unit) {
         )
     }
 }
+
+private val ALIGNS = listOf(
+    KeyboardAlign.LEFT to R.string.settings_align_left,
+    KeyboardAlign.CENTER to R.string.settings_align_center,
+    KeyboardAlign.RIGHT to R.string.settings_align_right,
+)
+
+/**
+ * Width and alignment of the portrait and the landscape screen (FR-SET-09, LLD-07 §7, FSS#25). The landscape default
+ * "세로와 같은 크기" is one more slider stop, at its approximate share here (the screen's short side over its long
+ * side; the keyboard computes the exact width, FR-CMN-14 ③). The alignment is greyed out at 100 % (no rest to place).
+ */
+@Composable
+private fun KeyboardWidthRows(settings: Settings, update: ((Settings) -> Settings) -> Unit) {
+    val dm = LocalContext.current.resources.displayMetrics
+    val approx = minOf(dm.widthPixels, dm.heightPixels).toFloat() / maxOf(dm.widthPixels, dm.heightPixels)
+    val p = settings.portraitWidth
+    val l = settings.landscapeWidth
+    WidthRow(R.string.settings_width_portrait, KeyboardWidth.RATIOS, p.ratio, approx) { v -> update { it.copy(portraitWidth = it.portraitWidth.copy(ratio = v)) } }
+    AlignRow(R.string.settings_align_portrait, p.align, enabled = (p.ratio ?: approx) < 1f) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
+    WidthRow(R.string.settings_width_landscape, KeyboardWidth.landscapeChoices(approx), l.ratio, approx) { v -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(ratio = v)) } }
+    AlignRow(R.string.settings_align_landscape, l.align, enabled = (l.ratio ?: approx) < 1f) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
+}
+
+/** A slider over [choices] (null = the landscape default, shown with [approx]); stored when the slider is released. */
+@Composable
+private fun WidthRow(title: Int, choices: List<Float?>, stored: Float?, approx: Float, onChange: (Float?) -> Unit) {
+    var dragging by remember { mutableStateOf<Int?>(null) }
+    val shown = dragging ?: choices.indexOf(stored).coerceAtLeast(0)
+    val v = choices[shown]
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Text(
+                if (v == null) stringResource(R.string.settings_width_same, (approx * 100).roundToInt())
+                else stringResource(R.string.settings_width_value, (v * 100).roundToInt()),
+            )
+        }
+        Slider(
+            value = shown.toFloat(),
+            onValueChange = { dragging = it.roundToInt().coerceIn(0, choices.size - 1) },
+            onValueChangeFinished = { dragging?.let { onChange(choices[it]) }; dragging = null },
+            valueRange = 0f..(choices.size - 1).toFloat(),
+            steps = choices.size - 2,
+        )
+    }
+}
+
+/** 왼손모드 · 중앙모드 · 오른손모드 in one row. */
+@Composable
+private fun AlignRow(title: Int, stored: KeyboardAlign, enabled: Boolean, onChange: (KeyboardAlign) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(
+            stringResource(title), style = MaterialTheme.typography.bodyLarge,
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA),
+        )
+        Row(Modifier.fillMaxWidth()) {
+            ALIGNS.forEach { (a, label) ->
+                val selected = stored == a
+                Row(
+                    Modifier.weight(1f).selectable(selected, enabled = enabled, role = Role.RadioButton) { onChange(a) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = selected, onClick = null, enabled = enabled)
+                    Text(
+                        stringResource(label), modifier = Modifier.padding(start = 4.dp),
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Material's disabled content alpha. */
+private const val DISABLED_ALPHA = 0.38f
 
 @Composable
 private fun GraffitiRatioRow(stored: Float, onChange: (Float) -> Unit) {

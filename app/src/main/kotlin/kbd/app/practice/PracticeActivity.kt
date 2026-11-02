@@ -1,6 +1,7 @@
 package kbd.app.practice
 
 import android.content.Context
+import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Bundle
 import android.view.MotionEvent
@@ -51,8 +52,13 @@ import kbd.app.graffiti.GraffitiPadView
 import kbd.app.settings.AppStores
 import kbd.app.settings.KeyboardAppTheme
 import kbd.app.store.ErrorLog
+import kbd.app.store.KeyboardSpan
+import kbd.app.store.KeyboardWidth
 import kbd.app.store.Settings
+import kbd.app.store.WidthSetting
 import kbd.app.swipe.SwipeModuleProvider
+import kbd.app.view.KeyboardRootView
+import kbd.app.view.OffKeyboardPointers
 import kbd.app.view.TapKeyboardView
 import kbd.graffiti.guide.GuideCatalog
 import kbd.graffiti.guide.GuideSection
@@ -116,7 +122,7 @@ private class BoardFactory(
         fun px(dp: Float) = Math.round(dp * density)
         val row = settings.rowHeightDp
         var before = ""
-        val frame = BoardFrame(context, ThresholdDefaults.MIN_CROSS_DP * density, onDown = {
+        val frame = BoardFrame(context, ThresholdDefaults.MIN_CROSS_DP * density, settings.portraitWidth, settings.landscapeWidth, onDown = {
             input.errored = false
             before = input.editor.text
             flow.onPress()
@@ -177,17 +183,57 @@ private class BoardFactory(
  * down; on each release,
  * after the view has handled it, [onUp] is posted (so an engine that posts its own work is done too). [onUp] gets
  * whether the released touch went up or left by more than [slopPx] (a reversed swipe stroke, SWIPE 10.2 덧붙임).
+ *
+ * The board has the keyboard width and alignment of the screen's orientation (SRS FR-CMN-14 ⑥, LLD-07 §2.3, FSS#25):
+ * the frame's width is the available width, the board sits in its [KeyboardWidth.place] span, and the rest is
+ * keyboard-coloured margin whose touches are taken with no input and are no action of the practice.
  */
 private class BoardFrame(
     context: Context,
     private val slopPx: Float,
+    private val portraitWidth: WidthSetting,
+    private val landscapeWidth: WidthSetting,
     private val onDown: () -> Unit,
     private val onUp: (reversed: Boolean) -> Unit,
 ) : FrameLayout(context) {
 
     private val starts = HashMap<Int, Pair<Float, Float>>()
+    private var span = KeyboardSpan(0, 0)
+    private val offBoard = OffKeyboardPointers { x, y -> x >= span.left && x < span.left + span.width && y >= 0 && y < height }
 
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+    init {
+        setBackgroundColor(KeyboardRootView.BACKGROUND_COLOR)
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val avail = MeasureSpec.getSize(widthMeasureSpec)
+        val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val dm = resources.displayMetrics
+        span = KeyboardWidth.place(avail, minOf(dm.widthPixels, dm.heightPixels), dm.density, if (landscape) landscapeWidth else portraitWidth)
+        super.onMeasure(MeasureSpec.makeMeasureSpec(span.width, MeasureSpec.EXACTLY), heightMeasureSpec)
+        setMeasuredDimension(avail, measuredHeight)
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        for (i in 0 until childCount) {
+            val c = getChildAt(i)
+            c.layout(span.left, 0, span.left + c.measuredWidth, c.measuredHeight)
+        }
+    }
+
+    /** The margin beside the board takes its touches with no input (FR-CMN-14 ⑤). */
+    override fun onTouchEvent(event: MotionEvent): Boolean = true
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        val ev = offBoard.filter(event) ?: return true   // a finger on the margin: no input, no practice action
+        try {
+            return dispatchOnBoard(ev) || offBoard.active
+        } finally {
+            if (ev !== event) ev.recycle()
+        }
+    }
+
+    private fun dispatchOnBoard(ev: MotionEvent): Boolean {
         val i = ev.actionIndex
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
