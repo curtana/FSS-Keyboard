@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 PR-01..PR-09 (FSS#17, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
+/** LLD-11 PR-01..PR-09, PR-14 (FSS#17, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
 class PracticeFlowTest {
 
     @get:Rule
@@ -34,6 +34,16 @@ class PracticeFlowTest {
             PracticeBoard.SWIPE, PracticeBoard.SWIPE, PracticeBoard.SWIPE), PracticeTopics.SYMBOL.items.map { it.board })
         assertTrue(PracticeTopics.GRAFFITI.items.all { it.board == PracticeBoard.GRAFFITI && it.guideCells.isNotEmpty() })
         assertTrue(t.all { it.intro.isNotEmpty() && it.items.all { i -> i.howTo.startsWith(i.target + " = ") } })
+    }
+
+    @Test
+    fun `PR-14 graffiti and swipe topics show off in keyboard when their mode is off`() {
+        val on = Settings.DEFAULT.enabledModes
+        assertTrue(PracticeTopics.ALL.none { it.offInKeyboard(on) })
+        val off = Settings.DEFAULT.copy(graffitiEnabled = false, swipeEnabled = false).enabledModes
+        assertEquals(listOf("graffiti", "swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(off) }.map { it.id })
+        val noSwipe = Settings.DEFAULT.copy(swipeEnabled = false).enabledModes
+        assertEquals(listOf("swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(noSwipe) }.map { it.id })   // symbol's swipe items stay
     }
 
     @Test

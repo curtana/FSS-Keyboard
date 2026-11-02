@@ -1,8 +1,9 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.25** (2026-11-02)
-- 0.25(FSS#36·FSS#37, SWIPE 0.50 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 괄호)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
+- 버전 **0.26** (2026-11-02)
+- 0.26(FSS#36·FSS#37, SWIPE 0.50 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 괄호)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
+- 0.25(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f ⑦, HLD 0.62 7.1·7.3, SWIPE 0.49 10.0): **쓸 입력 모드.** `Settings`에 `graffitiEnabled`·`swipeEnabled`(기본 켬)와 `enabledModes`, 키 `graffiti_enabled`·`swipe_enabled`(6.1). 설정 화면 첫 묶음 "입력 모드"(체크 상자 넷, 영문·한글은 체크된 채 바꿀 수 없음, 7절). `PracticeTopic.mode`·`offInKeyboard`: 그래피티·긋기 주제는 그 모드가 꺼져도 보이고 할 수 있으며 목록에 "키보드에서 꺼져 있음"(2.1, 2.3). 기호 주제의 긋기 자판 항목은 그대로.
 - 0.24(FSS#17 오너 결정 "권장안대로"·오너 결정 A·PM 결정 B, SRS 0.68·HLD 0.61·SWIPE 0.48): **튜터를 입력 연습으로 다시 짰다.** 측정하는 튜터(1·3·5과, `TutorSession`·`TutorStep`·`TutorSteps`, `TutorFlow`, `TutorItemJudge`·`HowTo`, `PracticeEcho`·`PracticeKeyboard`·`PracticeLayouts`, `TypingStats`, `TutorMeasure`, `ThresholdEstimator`)와 기준값 저장(`ThresholdStore`·`ThresholdCodec`, 기준값 JSON 형식, 내보내기·가져오기·초기화 메뉴, `calibration` 쓰기)을 지웠다. 새 구성은 2절: 주제 넷·19항목(`PracticeTopics`), 실제 자판 뷰를 그대로 쓰는 연습 자판(`PracticeInput`이 실제 `InputDispatcher`를 메모리 편집기에 연결), 결과 판정 `PracticeItemJudge`(탭 자판 항목은 ⌫ 반영 글자열), 화면 `PracticeActivity`·`PracticeFlow`, 첫 실행 `PracticeLaunchPolicy`(주제 목록만). 기준값은 코드 상수(3절), 위치 허용 오차는 실행 때 긋기 키 폭 × 0.4. 옛 저장 파일 `thresholds.json`은 읽지 않고 지우지도 않는다(4절). 0.23까지의 기록은 아래 이력과 git에 남는다.
 - 0.23(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 공개판 튜터를 지웠다 — 1-1 쿼티(`MinCrossOnQwertyStep`), `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`, `PracticeLayouts.QWERTY`, `TutorSession`의 `personal` 구분과 1-1 한쪽 분포 규칙(`ONE_SIDED_DISTANCE`), `TutorMeasure.jitter`·`jitterSample`. `PersonalTutorSteps` → `TutorSteps`. 이 문서의 "public …" 설명은 0.22 이전 기록이고, "personal"은 모든 빌드로 읽는다. `ThresholdEstimator.oneSidedDistance`는 남겼다(쓰는 곳 없음, 튜터 정리 이슈 #224에서).
 - 0.22(이슈 #217 오너 결정): **`minCrossDp` = 8dp 고정.** 탭 겹침 안내(`Message.OVERLAP_TAP`, `tutor_overlap_tap`) 삭제(2.3). 튜터는 이 값을 바꾸지 않는다 — public 1-1·personal 1-2의 `MIN_CROSS` 규칙은 표본 수(`NotEnough`)만 보고 값은 그대로, 탭 ↔ 점 겹침은 1-2를 다시 하게 하지 않는다(기록 `calibration.tapDot`에는 남음, 2.2). 저장 파일의 `minCrossDp`는 읽지 않고(없어도·범위 밖이어도 됨) 8을 쓰며, 쓰기는 8을 그대로 적는다(옛 판 호환, 4절).
@@ -44,7 +45,10 @@ data class PracticeItem(
     val lang: GraffitiLang? = null,        // 그래피티 항목의 패드 언어
 )
 data class PracticeTopic(val id: String, val title: String, val summary: String, val time: String,
-                         val intro: List<String>, val items: List<PracticeItem>)
+                         val intro: List<String>, val items: List<PracticeItem>,
+                         val mode: InputMode? = null) {   // 0.25: 끌 수 있는 키보드 모드의 주제(graffiti = GRAFFITI, swipe = SWIPE)
+    fun offInKeyboard(enabled: Set<InputMode>): Boolean    // mode != null && mode ∉ enabled
+}
 enum class Verdict { PENDING, RIGHT, WRONG }
 ```
 
@@ -84,7 +88,7 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 
 **한 시도 `PracticeInput(board, feedback, errorLog, settings) : SwipeHost`:** 실제 `InputDispatcher`·`ComposingController`·`ModeController(모드 하나)`와 모드의 조합기(긋기 `ComposePolicy.SWIPE`, 그래피티 `GRAFFITI`, 쿼티 없음)를 `PracticeEditor`에 잇는다. 기준값은 `ThresholdDefaults.VALUES`(3절). 오류 진동(`FeedbackPort.error`)을 지나며 `errored`를 켠다 — SWIPE 10.2의 ✗ 조건(무시된 획·천지인 요소, 버린 임시 획, 인식 실패)이 모두 이 진동이다.
 - `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫만** 넘긴다. 스페이스·↵·화살표·Esc·Del·Tab·모드 키·설정 획은 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
-- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`(C 기준 판정), `centerText` = `dispatcher.centerText()`(0.25, 가운데 글자)라 실제와 같다.
+- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`(C 기준 판정), `centerText` = `dispatcher.centerText()`(0.26, 가운데 글자)라 실제와 같다.
 - `graffiti(templates, lang, flash, redraw)`: 실제 `GraffitiInputHandler`(인식기·`GraffitiState`·천지인 조립기)를 만들고 패드 언어를 항목의 `lang`으로 둔다(한영 전환 획은 연습하지 않음, SWIPE 10.1 ③).
 
 **연습 자판(`BoardFactory.build`, 시도마다 새로):** 실제 뷰를 `BoardFrame` 안에 둔다.
@@ -94,7 +98,8 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 - **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이 바뀌었거나 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
-- 시험: PR-02~PR-08, PR-10~PR-13, PR-20·PR-21, 실기기 DV-11·DV-24.
+- **꺼진 모드 표시(0.25, FR-CMN-03f ⑦, SWIPE 10.0):** 주제 목록은 설정 `flow`의 `enabledModes`로 `offInKeyboard`가 참인 주제(그래피티·긋기)의 한 줄 설명 아래에 `practice_mode_off`("키보드에서 꺼져 있음", 작은 글자·`outline` 색)를 붙인다. 주제는 그대로 열고 할 수 있다(연습 자판은 앱 안의 화면). 기호 주제(②)의 긋기 자판 항목은 그대로 둔다(표시도 없음).
+- 시험: PR-02~PR-08, PR-10~PR-14, PR-20·PR-21, 실기기 DV-11·DV-24.
 
 ### 2.4 항목 판정 `PracticeItemJudge` (FR-TUT-12, SWIPE 10.2, 안드로이드 없음)
 
@@ -138,7 +143,11 @@ object PracticeItemJudge {
 data class Settings(val lastMode: InputMode?, val showDirectionGuide: Boolean, val showNextChar: Boolean,
                     val showCurrentChar: Boolean,   // 0.11, 이슈 #135
                     val haptic: Boolean, val sound: Boolean, val rowHeightDp: Float,
-                    val graffitiLetterRatio: Float, val tutorAutoStarted: Boolean)
+                    val graffitiLetterRatio: Float, val tutorAutoStarted: Boolean,
+                    val practiceDone: Set<String> = emptySet(),
+                    val graffitiEnabled: Boolean = true, val swipeEnabled: Boolean = true) {   // 0.25, FR-SET-08
+    val enabledModes: Set<InputMode>   // {QWERTY, DUBEOLSIK} ∪ 켜진 GRAFFITI·SWIPE (LLD-08 5절 applyEnabled에 넘김)
+}
 class SettingsStore(private val ds: DataStore<Preferences>) {
     val flow: Flow<Settings>
     fun loadBlocking(): Settings                    // runBlocking { flow.first() } — 서비스 시작 때 한 번(D-24)
@@ -162,12 +171,15 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `graffiti_letter_ratio` | 2/3 (문자 2 : 숫자 1). 고를 수 있는 값은 1/2(1 : 1)·2/3(2 : 1)·3/4(3 : 1) 셋뿐 | FR-GRF-01, FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | `tutor_auto_started` | false | FR-TUT-01: 첫 실행에 주제 목록을 보였는가(2.5). 값 이름은 `practiceListShown`, 키 이름은 옛 것 그대로라 옛 튜터를 이미 연 설치본은 목록을 다시 열지 않는다 |
 | `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
+| `graffiti_enabled` (0.25) | **true** | FR-SET-08(오너 결정 2026-11-02, FSS#31): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절) |
+| `swipe_enabled` (0.25) | **true** | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
 
 - 저장된 `lastMode` 이름이 모르는 값이면 없음으로 본다(FR-CMN-10; 0.23: 모든 빌드가 네 모드라 FR-CMN-03b의 "빌드에 없는 모드" 경우는 없음, 이슈 #251).
 - `graffiti_letter_ratio`는 Float 하나로 저장한다(`floatPreferencesKey`). 값은 패드 폭 가운데 **문자 영역의 몫**이다: 1 : 1 = 1/2, 2 : 1 = 2/3, 3 : 1 = 3/4(문자 : 숫자 = r : 1 − r). 설정 화면은 세 값만 쓴다(`GRAFFITI_RATIOS`, 7절). 읽을 때는 검사하지 않는다: 저장값이 없으면 기본값 2/3, 있으면 목록 밖 값이라도 그대로 `GraffitiPadGeometry`에 넘겨 그 몫으로 패드를 나누고, 설정 화면은 어느 선택지도 고르지 않은 상태(세 값과의 차가 모두 0.001 이상)로 보인다. 사용자가 하나를 고르면 그 값으로 덮어쓴다. 앱이 목록 밖 값을 쓰는 길은 없으므로(설정 화면이 유일한 쓰기) 이 경우는 저장 파일이 손상되거나 바깥에서 고친 때뿐이다.
 - `row_height_dp`는 읽을 때 `RowHeight.clamp`로 40~64 안에 둔다(범위 밖 저장값은 가까운 끝값, D-33). 48dp 미만(40~47dp)도 사용자가 고른 값이면 그대로 쓴다(NFR-06은 기본 줄 높이 기준, TBD-16).
 - 0.1의 `tutor_done`은 없앴다. 연습을 했는지는 키보드 동작을 바꾸지 않는다(안내 없음, FR-TUT-05).
-- 시험: SS-01~SS-05, SS-07(0.24).
+- 켜진 모드 값이 바뀌면 키보드 서비스가 같은 `flow`로 받아 곧바로 반영한다(LLD-08 3.2). 키가 없으면 켬이다(옛 설치본도 지금 동작 그대로).
+- 시험: SS-01~SS-05, SS-07(0.24), SS-08(0.25).
 
 ### 6.2 ErrorLog
 
@@ -190,6 +202,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 
 | 항목 | 저장 | 근거 |
 |---|---|---|
+| **입력 모드**(0.25, 첫 묶음) | 체크 상자 넷, 이 순서: 영문(쿼티) · 한글(두벌식) · 그래피티(한 획 손글씨) · 긋기 입력. 영문·한글은 체크된 채 흐리게(바꿀 수 없음) 오른쪽에 "늘 켜짐", 그래피티 → `graffiti_enabled`, 긋기 → `swipe_enabled`. 묶음 제목 아래 설명 "끈 모드는 모드 키로 넘길 때 건너뜁니다" | FR-SET-08, FR-CMN-03f |
 | 방향 안내 켜기·끄기 | `show_direction_guide` | FR-DSP-08, FR-SET-02 |
 | 다음 글자 안내 켜기·끄기 | `show_next_char` | 〃 |
 | 현재 글자 크게 보기 켜기·끄기(0.11) | `show_current_char` | FR-DSP-08, FR-SET-02(이슈 #135). 셋 다 끄면 안내가 전혀 보이지 않음(실제 키보드·연습 자판) |
@@ -199,6 +212,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 줄 높이 | `row_height_dp`(40~64dp, 기본 48dp) | FR-SET-06, TBD-16 |
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
 
+- 0.25: 묶음 순서는 입력 모드 → 입력기 → 안내 표시 → 피드백 → 자판 → 입력 연습. 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.
 - 0.24: "튜터 다시 실행"은 "입력 연습"으로, 기준값 초기화·내보내기·가져오기는 삭제(FSS#17 오너 결정 ①, FR-TUT-07 삭제).
 - 안내 표시 항목(방향 안내·다음 글자·현재 글자)은 늘 보인다(0.23, 이슈 #251). 줄 높이는 40~64dp 범위에서 고른다(FR-SET-06, DCR-14 결정). 설정 화면에는 기준값 상태 안내를 두지 않는다(FR-TUT-05).
 - 시험: 실기기 DV-11.
