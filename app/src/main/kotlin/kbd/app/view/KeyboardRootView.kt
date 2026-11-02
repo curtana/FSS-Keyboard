@@ -49,9 +49,12 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     /** Row height setting (FR-SET-06, 40–64 dp). Call [relayout] after changing it. */
     var rowHeightDp: Float = RowHeight.DEFAULT_DP
 
-    /** Width settings (FR-SET-09); the one of the current orientation is used. Call [relayout] after changing them. */
-    var portraitWidth: WidthSetting = WidthSetting.PORTRAIT_DEFAULT
-    var landscapeWidth: WidthSetting = WidthSetting.LANDSCAPE_DEFAULT
+    /**
+     * Key size settings (FR-SET-09): the orientation's one is used, the landscape default being the portrait key size.
+     * Call [relayout] after changing them.
+     */
+    var portraitWidth: WidthSetting = WidthSetting.DEFAULT
+    var landscapeWidth: WidthSetting = WidthSetting.DEFAULT
 
     /** The keyboard's span in the available width, set by [onMeasure]. */
     private var span = KeyboardSpan(0, 0)
@@ -216,7 +219,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val dm = resources.displayMetrics
         span = KeyboardWidth.place(w - paddingLeft - paddingRight, minOf(dm.widthPixels, dm.heightPixels), density,
-            if (landscape) landscapeWidth else portraitWidth)
+            portraitWidth, landscapeWidth, landscape)
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             val lp = c.layoutParams

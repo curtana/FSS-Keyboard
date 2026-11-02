@@ -1,5 +1,6 @@
 package kbd.app.practice
 
+import kbd.app.ime.InputMode
 import kbd.graffiti.ink.GraffitiLang
 
 /** The practice keyboard of an item (SWIPE 10.1, HLD 7.1): the real view, the real engine, the fixed thresholds. */
@@ -36,7 +37,10 @@ data class PracticeItem(
     }
 }
 
-/** One topic of the topic list (SWIPE 10.0, 10.1): its name, one-line summary, rough time, explanation and items. */
+/**
+ * One topic of the topic list (SWIPE 10.0, 10.1): its name, one-line summary, rough time, explanation and items.
+ * [mode] is the keyboard mode the topic is about, if it can be turned off (FR-SET-08); null for the others.
+ */
 data class PracticeTopic(
     val id: String,
     val title: String,
@@ -44,7 +48,11 @@ data class PracticeTopic(
     val time: String,
     val intro: List<String>,
     val items: List<PracticeItem>,
-)
+    val mode: InputMode? = null,
+) {
+    /** "키보드에서 꺼져 있음" on the topic list (FR-CMN-03f ⑦); the topic can still be done. */
+    fun offInKeyboard(enabled: Set<InputMode>): Boolean = mode != null && mode !in enabled
+}
 
 /** The four topics and 19 items of SWIPE 0.48 10.1 (the items are the design's recommendation). */
 object PracticeTopics {
@@ -103,6 +111,7 @@ object PracticeTopics {
             graffiti("a", GraffitiLang.EN, "a = 안내표의 A 칸처럼", listOf("A"), "a", note = "영문"),
             graffiti("1", GraffitiLang.EN, "1 = 안내표의 1 칸처럼, 숫자 영역에", listOf("1"), "1", note = "숫자 영역"),
         ),
+        InputMode.GRAFFITI,
     )
 
     val SWIPE = PracticeTopic(
@@ -125,6 +134,7 @@ object PracticeTopics {
             swipe("의", "의 = ㅇ 탭 → 자음 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 ㅡ가 아래쪽에 오게 아래로", "ㅇ", "으", "의"),
             swipe("가", "가 = ㄱ 탭 → 천지인 키에서 위로 긋기 → 천지인 키 탭", "ㄱ", "기", "가", note = "천지인 키"),
         ),
+        InputMode.SWIPE,
     )
 
     /** In the order of SWIPE 10.1; any can be done first. */

@@ -7,6 +7,7 @@ import kbd.app.error.GuardedState
 import kbd.app.feedback.FeedbackPort
 import kbd.app.store.ErrorLog
 import kbd.app.store.KeyboardAlign
+import kbd.app.store.KeyboardWidth
 import kbd.app.store.WidthSetting
 import kbd.graffiti.recognize.TemplateSet
 import kbd.stroke.layout.FunctionKey
@@ -147,13 +148,13 @@ class KeyboardRootViewTest {
     fun `KR-01 a narrowed keyboard is placed left, centre or right, the mode view at its width`() {
         val child = root.getChildAt(0)
         for ((align, left) in listOf(KeyboardAlign.LEFT to 0f, KeyboardAlign.CENTER to 200f, KeyboardAlign.RIGHT to 400f)) {
-            root.portraitWidth = WidthSetting(0.5f, align)
+            root.portraitWidth = WidthSetting(40f, align)
             layoutAt(800f)
             assertEquals("$align", px(left), child.left)
             assertEquals("$align", px(400f), child.width)
             assertEquals(px(KeyboardRootView.WINDOW_ROWS * ROW), root.height)   // height unchanged (FR-CMN-14 ⑥)
         }
-        root.portraitWidth = WidthSetting.PORTRAIT_DEFAULT
+        root.portraitWidth = WidthSetting.DEFAULT
         layoutAt(800f)
         assertEquals(0, child.left)
         assertEquals(px(800f), child.width)
@@ -161,7 +162,7 @@ class KeyboardRootViewTest {
 
     @Test
     fun `KR-02 a touch on the side margin is taken with no feedback and no input`() {
-        root.portraitWidth = WidthSetting(0.5f, KeyboardAlign.CENTER)
+        root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
         layoutAt(800f)
         touch.down(0, 100 * density, keyY)
         assertTrue(touch.lastHandled)
@@ -173,7 +174,7 @@ class KeyboardRootViewTest {
 
     @Test
     fun `KR-03 a second finger on the margin gives nothing while the first is on a key`() {
-        root.portraitWidth = WidthSetting(0.5f, KeyboardAlign.CENTER)
+        root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
         layoutAt(800f)
         touch.down(0, 400 * density, keyY)
         touch.down(1, 700 * density, keyY)
@@ -186,7 +187,7 @@ class KeyboardRootViewTest {
 
     @Test
     fun `KR-04 a finger resting on the margin does not stop another finger's key`() {
-        root.portraitWidth = WidthSetting(0.5f, KeyboardAlign.CENTER)
+        root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
         layoutAt(800f)
         touch.down(0, 50 * density, keyY)
         touch.down(1, 400 * density, keyY)
@@ -198,7 +199,7 @@ class KeyboardRootViewTest {
 
     @Test
     fun `KR-05 the guide button sits at the narrowed keyboard's right end`() {
-        root.portraitWidth = WidthSetting(0.5f, KeyboardAlign.LEFT)
+        root.portraitWidth = WidthSetting(40f, KeyboardAlign.LEFT)
         root.enableGuide(TemplateSet(emptyMap()), feedback)
         layoutAt(800f)
         val button = root.getChildAt(root.childCount - 1)
@@ -216,8 +217,8 @@ class KeyboardRootViewTest {
         layoutAt(800f)
         assertEquals(px(400f), child.width)   // the screen's short side
         assertEquals(px(200f), child.left)
-        root.landscapeWidth = WidthSetting(1f, KeyboardAlign.CENTER)
-        root.portraitWidth = WidthSetting(0.5f, KeyboardAlign.LEFT)   // not used in landscape
+        root.landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.CENTER)
+        root.portraitWidth = WidthSetting(40f, KeyboardAlign.LEFT)   // not used in landscape
         layoutAt(800f)
         assertEquals(px(800f), child.width)
     }

@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -114,6 +116,16 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
         Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
 
+            Section(R.string.settings_section_modes)   // FR-SET-08: the first group
+            Text(
+                stringResource(R.string.settings_modes_summary), style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
+            CheckRow(R.string.settings_mode_dubeolsik, checked = true, onChange = null)
+            CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
+            CheckRow(R.string.settings_mode_swipe, settings.swipeEnabled) { v -> update { it.copy(swipeEnabled = v) } }
+
             Section(R.string.settings_section_input)
             ActionRow(R.string.settings_ime, R.string.settings_ime_summary, actions.openImeSettings)
 
@@ -165,6 +177,18 @@ private fun SwitchRow(title: Int, checked: Boolean, onChange: (Boolean) -> Unit)
     }
 }
 
+/** A mode check box (FR-SET-08); [onChange] null = always on, checked and disabled with "늘 켜짐". */
+@Composable
+private fun CheckRow(title: Int, checked: Boolean, onChange: ((Boolean) -> Unit)?) {
+    val base = Modifier.fillMaxWidth()
+    val row = if (onChange == null) base else base.toggleable(checked, role = Role.Checkbox) { onChange(it) }
+    Row(row.padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = null, enabled = onChange != null)
+        Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp).weight(1f))
+        if (onChange == null) Text(stringResource(R.string.settings_mode_always_on), style = MaterialTheme.typography.bodySmall)
+    }
+}
+
 /** 40–64 dp in 1 dp steps (FR-SET-06, TBD-16); stored when the slider is released. */
 @Composable
 private fun RowHeightRow(stored: Float, onChange: (Float) -> Unit) {
@@ -192,42 +216,59 @@ private val ALIGNS = listOf(
 )
 
 /**
- * Width and alignment of the portrait and the landscape screen (FR-SET-09, LLD-07 §7, FSS#25). The landscape default
- * "세로와 같은 크기" is one more slider stop, at its approximate share here (the screen's short side over its long
- * side; the keyboard computes the exact width, FR-CMN-14 ③). The alignment is greyed out at 100 % (no rest to place).
+ * Key size and alignment of the portrait and the landscape screen (FR-SET-09, LLD-07 §7, FSS#25). Each slider goes from
+ * 32 dp in 1 dp steps to the first key size that fills about this screen's width in that orientation (its short or
+ * long side; the keyboard computes the exact width, FR-CMN-14 ④); that top stop is "꽉 채움": no key size on the
+ * portrait screen, [KeyboardWidth.FULL] on the landscape one. Until it is moved the landscape slider sits at the
+ * portrait key size (FR-CMN-14 ③). The alignment is greyed out when the keyboard fills (no rest to place).
  */
 @Composable
 private fun KeyboardWidthRows(settings: Settings, update: ((Settings) -> Settings) -> Unit) {
     val dm = LocalContext.current.resources.displayMetrics
-    val approx = minOf(dm.widthPixels, dm.heightPixels).toFloat() / maxOf(dm.widthPixels, dm.heightPixels)
+    val shortDp = minOf(dm.widthPixels, dm.heightPixels) / dm.density
+    val longDp = maxOf(dm.widthPixels, dm.heightPixels) / dm.density
+    val pTop = KeyboardWidth.fullKeyDp(shortDp)
+    val lTop = KeyboardWidth.fullKeyDp(longDp)
     val p = settings.portraitWidth
     val l = settings.landscapeWidth
-    WidthRow(R.string.settings_width_portrait, KeyboardWidth.RATIOS, p.ratio, approx) { v -> update { it.copy(portraitWidth = it.portraitWidth.copy(ratio = v)) } }
-    AlignRow(R.string.settings_align_portrait, p.align, enabled = (p.ratio ?: approx) < 1f) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
-    WidthRow(R.string.settings_width_landscape, KeyboardWidth.landscapeChoices(approx), l.ratio, approx) { v -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(ratio = v)) } }
-    AlignRow(R.string.settings_align_landscape, l.align, enabled = (l.ratio ?: approx) < 1f) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
+    // The slider position of a key size: a whole dp, the full mark and anything that fills at the top.
+    fun stop(k: Float?, top: Int): Int = if (k == null || k == KeyboardWidth.FULL) top else k.roundToInt().coerceAtMost(top)
+    val pKey = stop(p.keyDp, pTop)
+    val lKey = when {
+        l.keyDp != null -> stop(l.keyDp, lTop)
+        p.keyDp == null || p.keyDp == KeyboardWidth.FULL -> (shortDp / KeyboardWidth.UNITS).roundToInt().coerceAtMost(lTop)
+        else -> stop(p.keyDp, lTop)
+    }
+    KeyRow(R.string.settings_key_portrait, pKey, pTop, shortDp) { k -> update { it.copy(portraitWidth = it.portraitWidth.copy(keyDp = if (k >= pTop) null else k.toFloat())) } }
+    AlignRow(R.string.settings_align_portrait, p.align, enabled = pKey < pTop) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
+    KeyRow(R.string.settings_key_landscape, lKey, lTop, longDp) { k -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = if (k >= lTop) KeyboardWidth.FULL else k.toFloat())) } }
+    AlignRow(R.string.settings_align_landscape, l.align, enabled = lKey < lTop) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
 }
 
-/** A slider over [choices] (null = the landscape default, shown with [approx]); stored when the slider is released. */
+/**
+ * A key size slider from 32 dp to [top] (= fills about [availDp]) with the keyboard width beside it: "키 36 dp · 전체
+ * 360 dp", or at the top "꽉 채움 · 키 약 71 dp · 711 dp". Stored when the slider is released.
+ */
 @Composable
-private fun WidthRow(title: Int, choices: List<Float?>, stored: Float?, approx: Float, onChange: (Float?) -> Unit) {
+private fun KeyRow(title: Int, stored: Int, top: Int, availDp: Float, onChange: (Int) -> Unit) {
     var dragging by remember { mutableStateOf<Int?>(null) }
-    val shown = dragging ?: choices.indexOf(stored).coerceAtLeast(0)
-    val v = choices[shown]
+    val shown = dragging ?: stored
+    val min = KeyboardWidth.MIN_KEY_DP.toInt()
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
             Text(
-                if (v == null) stringResource(R.string.settings_width_same, (approx * 100).roundToInt())
-                else stringResource(R.string.settings_width_value, (v * 100).roundToInt()),
+                if (shown >= top) stringResource(R.string.settings_key_full, (availDp / KeyboardWidth.UNITS).roundToInt(), availDp.roundToInt())
+                else stringResource(R.string.settings_key_value, shown, shown * KeyboardWidth.UNITS),
             )
         }
         Slider(
             value = shown.toFloat(),
-            onValueChange = { dragging = it.roundToInt().coerceIn(0, choices.size - 1) },
-            onValueChangeFinished = { dragging?.let { onChange(choices[it]) }; dragging = null },
-            valueRange = 0f..(choices.size - 1).toFloat(),
-            steps = choices.size - 2,
+            onValueChange = { dragging = it.roundToInt().coerceIn(min, top) },
+            onValueChangeFinished = { dragging?.let(onChange); dragging = null },
+            valueRange = min.toFloat()..maxOf(top, min + 1).toFloat(),
+            steps = maxOf(top - min - 1, 0),
+            enabled = top > min,   // a screen of 320 dp or less: the keyboard fills anyway
         )
     }
 }

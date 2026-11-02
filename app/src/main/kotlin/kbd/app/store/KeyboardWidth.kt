@@ -1,62 +1,76 @@
 package kbd.app.store
 
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 /** Where a narrowed keyboard sits in the available width (SRS FR-CMN-14 ②): 왼손모드, 중앙모드, 오른손모드. */
 enum class KeyboardAlign { LEFT, CENTER, RIGHT }
 
 /**
- * One screen orientation's keyboard width setting (FR-SET-09, LLD-07 §6.1). [ratio] is the share of the available width
- * (0.50–1.00 in 0.05 steps); null = the same key size as the portrait screen (the landscape default, FR-CMN-14 ③).
+ * One screen orientation's keyboard size setting (FR-SET-09, LLD-07 §6.1): [keyDp] is the width of one key cell, the
+ * keyboard being [KeyboardWidth.UNITS] cells wide (FR-CMN-14 ②). null = the default: the full width on the portrait
+ * screen, the portrait key size on the landscape screen (FR-CMN-14 ③).
  */
-data class WidthSetting(val ratio: Float?, val align: KeyboardAlign) {
+data class WidthSetting(val keyDp: Float?, val align: KeyboardAlign) {
     companion object {
-        /** Portrait default: the full width (FR-CMN-14 ③). */
-        val PORTRAIT_DEFAULT = WidthSetting(1f, KeyboardAlign.CENTER)
-
-        /** Landscape default: the portrait key size, centred (FR-CMN-14 ③). */
-        val LANDSCAPE_DEFAULT = WidthSetting(null, KeyboardAlign.CENTER)
+        val DEFAULT = WidthSetting(null, KeyboardAlign.CENTER)
     }
 }
 
 /** The keyboard's place in the available width, in px from the left end of that width. */
 data class KeyboardSpan(val left: Int, val width: Int)
 
-/** Keyboard width and alignment (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2). No Android: unit tested. */
+/** Keyboard width from the key size, and alignment (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2). No Android: unit tested. */
 object KeyboardWidth {
-    const val MIN_PERCENT = 50
-    const val MAX_PERCENT = 100
-    const val STEP_PERCENT = 5
+    /** Key cells in a row: the layout unit 360 is ten 36 dp letter keys (FR-CMN-14 ②). */
+    const val UNITS = 10
+
+    /** The smallest key, the keyboard then being 320 dp (FR-CMN-14 ④). */
+    const val MIN_KEY_DP = 32f
+
+    /** Upper end for stored values (a 1600 dp wide screen); the keyboard stops at the available width anyway. */
+    const val MAX_KEY_DP = 160f
 
     /** The keyboard is never narrower than this, unless the available width is (FR-CMN-14 ④). */
-    const val MIN_DP = 320f
-
-    /** The selectable ratios, 0.50 to 1.00 (FR-SET-09). */
-    val RATIOS: List<Float> = (MIN_PERCENT..MAX_PERCENT step STEP_PERCENT).map { it / 100f }
-
-    /** A stored ratio to the nearest selectable one; out-of-range values go to the nearest end (as D-33). */
-    fun snap(r: Float): Float {
-        val pct = (r * 100).coerceIn(MIN_PERCENT.toFloat(), MAX_PERCENT.toFloat())
-        return ((pct / STEP_PERCENT).roundToInt() * STEP_PERCENT) / 100f
-    }
+    const val MIN_DP = MIN_KEY_DP * UNITS
 
     /**
-     * The landscape width choices (FR-SET-09): [RATIOS] with the default (null, the portrait key size) put where its
-     * approximate share [approx] of the landscape width falls, first when that is below 50 %.
+     * "꽉 채움" as a key size: the slider's top stop is stored as this mark, not as a number, so the keyboard still fills
+     * after a rotation or a system bar change (FR-SET-09).
      */
-    fun landscapeChoices(approx: Float): List<Float?> {
-        val i = RATIOS.count { it < approx }
-        return RATIOS.subList(0, i) + listOf(null) + RATIOS.subList(i, RATIOS.size)
-    }
+    const val FULL = Float.POSITIVE_INFINITY
+
+    /** A stored key size to whole dp inside [MIN_KEY_DP]..[MAX_KEY_DP] (1 dp steps, FR-SET-09; as D-33); [FULL] stays. */
+    fun snap(k: Float): Float = if (k == FULL) FULL else k.roundToInt().toFloat().coerceIn(MIN_KEY_DP, MAX_KEY_DP)
+
+    /** The slider's top stop for an available width of about [availDp]: the first whole key size that fills it. */
+    fun fullKeyDp(availDp: Float): Int = ceil(availDp / UNITS - 1e-3f).toInt().coerceIn(MIN_KEY_DP.toInt(), MAX_KEY_DP.toInt())
 
     /**
-     * The keyboard in an available width of [availPx] (FR-CMN-14 ①③④⑤). [portraitPx] is the portrait available width
-     * (the screen's short side), used when the ratio is null. The width is at least [MIN_DP] and at most [availPx];
-     * the alignment leaves the rest on the right (LEFT), on both sides (CENTER) or on the left (RIGHT).
+     * The keyboard in an available width of [availPx] (FR-CMN-14 ①③④⑤). The orientation's key size gives a width of
+     * [UNITS] keys, [FULL] the whole of [availPx]; with no key size the portrait keyboard fills [availPx] and the
+     * landscape one takes the portrait key size ([portrait]'s, or a tenth of [portraitAvailPx], the screen's short side,
+     * when that is the full width).
+     * The width is at least [MIN_DP] and at most [availPx]; the alignment leaves the rest on the right (LEFT), on both
+     * sides (CENTER) or on the left (RIGHT).
      */
-    fun place(availPx: Int, portraitPx: Int, density: Float, s: WidthSetting): KeyboardSpan {
+    fun place(
+        availPx: Int,
+        portraitAvailPx: Int,
+        density: Float,
+        portrait: WidthSetting,
+        landscape: WidthSetting,
+        isLandscape: Boolean,
+    ): KeyboardSpan {
         if (availPx <= 0) return KeyboardSpan(0, 0)
-        val wanted = s.ratio?.let { (availPx * it).roundToInt() } ?: portraitPx
+        val s = if (isLandscape) landscape else portrait
+        fun keys(keyDp: Float, full: Int) = if (keyDp == FULL) full else (keyDp * UNITS * density).roundToInt()
+        val wanted = when {
+            s.keyDp != null -> keys(s.keyDp, availPx)
+            !isLandscape -> availPx
+            portrait.keyDp != null -> keys(portrait.keyDp, portraitAvailPx)
+            else -> portraitAvailPx
+        }
         val width = maxOf(wanted, (MIN_DP * density).roundToInt()).coerceAtMost(availPx)
         val rest = availPx - width
         val left = when (s.align) {

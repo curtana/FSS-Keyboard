@@ -10,7 +10,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** MC-01..MC-10, MC-12 (MC-11, MC-13 went with the public edition, issue #251), NF-01, NF-02, NF-04..NF-09 (LLD-11 §7.2, §7.2a; LLD-08 §5, §3.1). NF-03 is T31. */
+/** MC-01..MC-10, MC-12 (MC-11, MC-13 went with the public edition, issue #251), NF-01, NF-02, NF-04..NF-09, OM-01..OM-09 (LLD-11 §7.2, §7.2a, §7.2b; LLD-08 §5, §3.1). NF-03 is T31. */
 class ModeControllerTest {
 
     private companion object {
@@ -209,5 +209,123 @@ class ModeControllerTest {
         mc.startField(numericLike = true) // onStartInputView again on the same field
         assertState(mc, QWERTY, GRAFFITI, null)
         assertTrue(saved.isEmpty())
+    }
+
+    // --- OM: SRS FR-CMN-03f modes turned off, case table rows 1..8 (FSS#31) ---
+
+    private val noGraffiti = setOf(SWIPE, QWERTY, DUBEOLSIK)
+    private val tapOnly = setOf(QWERTY, DUBEOLSIK)
+
+    /** `KeyboardService.applyEnabledModes` / `onStartInputView` mode part: the returned mode is saved. */
+    private fun ModeController.apply(on: Set<InputMode>) {
+        applyEnabled(on)?.let { saved += it }
+    }
+
+    @Test
+    fun `OM-01 graffiti off, dubeolsik not typed, mode key skips graffiti to swipe`() {
+        val mc = ModeController(ALL, DUBEOLSIK, noGraffiti)
+        assertEquals(SWIPE, mc.modeKey())
+        assertNull(mc.previous)
+    }
+
+    @Test
+    fun `OM-02 graffiti and swipe off, qwerty not typed, mode key goes to dubeolsik`() {
+        val mc = ModeController(ALL, QWERTY, tapOnly)
+        assertEquals(DUBEOLSIK, mc.modeKey())
+        assertNull(mc.previous)
+    }
+
+    @Test
+    fun `OM-03 graffiti and swipe off, dubeolsik not typed, mode key goes to qwerty`() {
+        val mc = ModeController(ALL, DUBEOLSIK, tapOnly)
+        assertEquals(QWERTY, mc.modeKey())
+        assertNull(mc.previous)
+        assertEquals(DUBEOLSIK, mc.modeKey()) // English and Korean only (FR-CMN-03f ⑤)
+    }
+
+    @Test
+    fun `OM-04 turning graffiti off clears previous graffiti, typed mode key goes in order`() {
+        val mc = ModeController(ALL, DUBEOLSIK)
+        mc.previous = GRAFFITI
+        mc.apply(noGraffiti)
+        assertNull(mc.previous)
+        assertEquals(DUBEOLSIK, mc.current)
+        mc.onInput()
+        assertEquals(SWIPE, mc.modeKey())
+        assertEquals(DUBEOLSIK, mc.previous)
+    }
+
+    @Test
+    fun `OM-05 graffiti in use turned off switches to swipe, saves it, keeps typed and previous`() {
+        val mc = ModeController(ALL, GRAFFITI)
+        mc.previous = DUBEOLSIK
+        mc.onInput()
+        mc.apply(noGraffiti)
+        assertState(mc, SWIPE, null, DUBEOLSIK)
+        assertTrue(mc.typed)
+        assertEquals(listOf(SWIPE), saved)
+    }
+
+    @Test
+    fun `OM-06 swipe in use with graffiti and swipe off switches to qwerty, previous kept or cleared`() {
+        val mc = ModeController(ALL, SWIPE)
+        mc.previous = DUBEOLSIK
+        mc.apply(tapOnly)
+        assertState(mc, QWERTY, null, DUBEOLSIK)
+        assertEquals(listOf(QWERTY), saved)
+
+        saved.clear()
+        val g = ModeController(ALL, SWIPE)
+        g.previous = GRAFFITI
+        g.apply(tapOnly)
+        assertState(g, QWERTY, null, null)
+        assertEquals(listOf(QWERTY), saved)
+    }
+
+    @Test
+    fun `OM-07 process restart with saved swipe off starts in qwerty and saves it`() {
+        val mc = ModeController(ALL, SWIPE, setOf(QWERTY, DUBEOLSIK, GRAFFITI))
+        assertState(mc, QWERTY, null, null)
+        assertFalse(mc.typed)
+        assertEquals(QWERTY, mc.fixedStart)
+        assertNull(ModeController(ALL, SWIPE).fixedStart) // on: nothing to save
+        assertNull(ModeController(ALL, null, tapOnly).fixedStart) // nothing saved: first mode on, not saved
+        assertEquals(QWERTY, ModeController(ALL, null, tapOnly).current)
+    }
+
+    @Test
+    fun `OM-08 return mode graffiti turned off returns to swipe`() {
+        // The settings change reaches the service while the keyboard is down in the numeric field.
+        val mc = nfStart()
+        mc.startField(numericLike = true)
+        mc.apply(noGraffiti)
+        assertState(mc, QWERTY, SWIPE, null)
+        assertEquals(listOf(SWIPE), saved) // the fixed return mode is the last mode (FR-CMN-03f ③)
+        mc.startField(numericLike = false)
+        mc.apply(noGraffiti)
+        assertState(mc, SWIPE, null, null)
+        assertEquals(listOf(SWIPE), saved)
+
+        // It reaches it only at the next onStartInputView (leave first, then applyEnabled).
+        saved.clear()
+        val late = nfStart()
+        late.startField(numericLike = true)
+        late.startField(numericLike = false)
+        late.apply(noGraffiti)
+        assertState(late, SWIPE, null, null)
+        assertEquals(listOf(SWIPE), saved)
+    }
+
+    @Test
+    fun `OM-09 always-on modes cannot be turned off and nothing changes when all stay on`() {
+        val mc = ModeController(ALL, DUBEOLSIK)
+        mc.previous = GRAFFITI
+        assertNull(mc.applyEnabled(emptySet()))
+        assertEquals(setOf(QWERTY, DUBEOLSIK), mc.enabled)
+        assertEquals(DUBEOLSIK, mc.current)
+        assertNull(mc.applyEnabled(ALL.toSet()))
+        assertEquals(ALL.toSet(), mc.enabled)
+        assertEquals(SWIPE, mc.nextEnabled(GRAFFITI)) // wraps
+        assertEquals(SWIPE, ModeController(listOf(SWIPE), SWIPE, tapOnly).current) // a practice board's one mode
     }
 }

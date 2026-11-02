@@ -49,6 +49,7 @@ import kbd.app.feedback.Feedback
 import kbd.app.graffiti.GraffitiGuidePanel
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
+import kbd.app.ime.InputMode
 import kbd.app.settings.AppStores
 import kbd.app.settings.KeyboardAppTheme
 import kbd.app.store.ErrorLog
@@ -209,7 +210,7 @@ private class BoardFrame(
         val avail = MeasureSpec.getSize(widthMeasureSpec)
         val landscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val dm = resources.displayMetrics
-        span = KeyboardWidth.place(avail, minOf(dm.widthPixels, dm.heightPixels), dm.density, if (landscape) landscapeWidth else portraitWidth)
+        span = KeyboardWidth.place(avail, minOf(dm.widthPixels, dm.heightPixels), dm.density, portraitWidth, landscapeWidth, landscape)
         super.onMeasure(MeasureSpec.makeMeasureSpec(span.width, MeasureSpec.EXACTLY), heightMeasureSpec)
         setMeasuredDimension(avail, measuredHeight)
     }
@@ -271,13 +272,14 @@ private fun PracticeScreen(
     val redraw: () -> Unit = remember { { tick++ } }
     val now by settingsFlow.collectAsState(start)   // the topic ✓ marks as stored (SWIPE 10.0)
     val done = now.practiceDone
+    val enabled = now.enabledModes   // "키보드에서 꺼져 있음" (FR-CMN-03f ⑦)
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             @Suppress("UNUSED_EXPRESSION") tick   // read so every bump recomposes
             Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.practice_title), style = MaterialTheme.typography.headlineSmall)
                 when (flow.screen) {
-                    PracticeFlow.Screen.LIST -> TopicList(flow, done, redraw, close)
+                    PracticeFlow.Screen.LIST -> TopicList(flow, done, enabled, redraw, close)
                     PracticeFlow.Screen.INTRO -> Intro(flow, redraw)
                     PracticeFlow.Screen.ITEM -> Item(flow, redraw)
                     PracticeFlow.Screen.DONE -> Finished(flow, redraw)
@@ -297,7 +299,7 @@ private fun PracticeScreen(
 }
 
 @Composable
-private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, redraw: () -> Unit, close: () -> Unit) {
+private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled: Set<InputMode>, redraw: () -> Unit, close: () -> Unit) {
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.practice_list_hint), style = MaterialTheme.typography.bodyMedium)
         for (t in flow.topics) {
@@ -309,6 +311,9 @@ private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, redraw:
                     Text(t.time, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 12.dp))
                 }
                 Text(t.summary, style = MaterialTheme.typography.bodyMedium)
+                if (t.offInKeyboard(enabled)) {
+                    Text(stringResource(R.string.practice_mode_off), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                }
             }
         }
     }

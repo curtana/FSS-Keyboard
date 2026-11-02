@@ -56,8 +56,10 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[GRAFFITI_LETTER_RATIO] = s.graffitiLetterRatio
             p[TUTOR_AUTO_STARTED] = s.practiceListShown
             p[PRACTICE_DONE] = s.practiceDone
-            writeWidth(p, s.portraitWidth, WIDTH_PORTRAIT, ALIGN_PORTRAIT)
-            writeWidth(p, s.landscapeWidth, WIDTH_LANDSCAPE, ALIGN_LANDSCAPE)
+            p[GRAFFITI_ENABLED] = s.graffitiEnabled
+            p[SWIPE_ENABLED] = s.swipeEnabled
+            writeWidth(p, s.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT)
+            writeWidth(p, s.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE)
         }
     }
 
@@ -85,21 +87,23 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             graffitiLetterRatio = p[GRAFFITI_LETTER_RATIO] ?: d.graffitiLetterRatio,
             practiceListShown = p[TUTOR_AUTO_STARTED] ?: d.practiceListShown,
             practiceDone = p[PRACTICE_DONE] ?: d.practiceDone,
-            portraitWidth = readWidth(p, d.portraitWidth, WIDTH_PORTRAIT, ALIGN_PORTRAIT),
-            landscapeWidth = readWidth(p, d.landscapeWidth, WIDTH_LANDSCAPE, ALIGN_LANDSCAPE),
+            graffitiEnabled = p[GRAFFITI_ENABLED] ?: d.graffitiEnabled,
+            swipeEnabled = p[SWIPE_ENABLED] ?: d.swipeEnabled,
+            portraitWidth = readWidth(p, d.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT),
+            landscapeWidth = readWidth(p, d.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE),
         )
     }
 
-    /** A null ratio removes the key (the landscape default, FR-CMN-14 ③). */
-    private fun writeWidth(p: MutablePreferences, s: WidthSetting, ratio: Preferences.Key<Float>, align: Preferences.Key<String>) {
-        val r = s.ratio
-        if (r == null) p.remove(ratio) else p[ratio] = r
+    /** A null key size removes the key (the default, FR-CMN-14 ③); [KeyboardWidth.FULL] is stored as it is. */
+    private fun writeWidth(p: MutablePreferences, s: WidthSetting, keyDp: Preferences.Key<Float>, align: Preferences.Key<String>) {
+        val k = s.keyDp
+        if (k == null) p.remove(keyDp) else p[keyDp] = k
         p[align] = s.align.name
     }
 
-    /** Stored ratios snap to the 5 % steps of 50–100 % (as D-33); an unknown alignment name reads as the default. */
-    private fun readWidth(p: Preferences, d: WidthSetting, ratio: Preferences.Key<Float>, align: Preferences.Key<String>) = WidthSetting(
-        ratio = p[ratio]?.let(KeyboardWidth::snap) ?: d.ratio,
+    /** Stored key sizes snap to whole dp in 32–160 (as D-33); an unknown alignment name reads as the default. */
+    private fun readWidth(p: Preferences, d: WidthSetting, keyDp: Preferences.Key<Float>, align: Preferences.Key<String>) = WidthSetting(
+        keyDp = p[keyDp]?.let(KeyboardWidth::snap) ?: d.keyDp,
         align = p[align]?.let { name -> KeyboardAlign.entries.firstOrNull { it.name == name } } ?: d.align,
     )
 
@@ -115,9 +119,12 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         /** Kept under its old name (FSS#17): an install that already ran the old tutor does not open the list again. */
         val TUTOR_AUTO_STARTED = booleanPreferencesKey("tutor_auto_started")
         val PRACTICE_DONE = stringSetPreferencesKey("practice_done")
-        val WIDTH_PORTRAIT = floatPreferencesKey("width_portrait")
+        /** FR-SET-08 (FSS#31): absent = on. */
+        val GRAFFITI_ENABLED = booleanPreferencesKey("graffiti_enabled")
+        val SWIPE_ENABLED = booleanPreferencesKey("swipe_enabled")
+        val KEY_PORTRAIT = floatPreferencesKey("key_portrait_dp")
         val ALIGN_PORTRAIT = stringPreferencesKey("align_portrait")
-        val WIDTH_LANDSCAPE = floatPreferencesKey("width_landscape")
+        val KEY_LANDSCAPE = floatPreferencesKey("key_landscape_dp")
         val ALIGN_LANDSCAPE = stringPreferencesKey("align_landscape")
     }
 }

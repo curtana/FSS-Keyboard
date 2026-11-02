@@ -2,6 +2,14 @@
 <resources>
     <!-- Settings screen (LLD-07 §7). No threshold status text (FR-TUT-05). -->
     <string name="settings_title">키보드 설정</string>
+    <!-- FR-SET-08 (FSS#31): QWERTY and Dubeolsik are always on. -->
+    <string name="settings_section_modes">입력 모드</string>
+    <string name="settings_mode_qwerty">영문(쿼티)</string>
+    <string name="settings_mode_dubeolsik">한글(두벌식)</string>
+    <string name="settings_mode_graffiti">그래피티(한 획 손글씨)</string>
+    <string name="settings_mode_swipe">긋기 입력</string>
+    <string name="settings_mode_always_on">늘 켜짐</string>
+    <string name="settings_modes_summary">끈 모드는 모드 키로 넘길 때 건너뜁니다</string>
     <string name="settings_section_input">입력기</string>
     <string name="settings_ime">입력기 켜기·고르기</string>
     <string name="settings_ime_summary">시스템 입력기 설정 화면을 엽니다</string>
@@ -15,11 +23,11 @@
     <string name="settings_section_layout">자판</string>
     <string name="settings_row_height">줄 높이</string>
     <string name="settings_row_height_value">%1$d dp</string>
-    <!-- Keyboard width and alignment (FR-SET-09, FSS#25) -->
-    <string name="settings_width_portrait">세로 화면 폭</string>
-    <string name="settings_width_landscape">가로 화면 폭</string>
-    <string name="settings_width_value">%1$d%%</string>
-    <string name="settings_width_same">세로와 같은 크기 (약 %1$d%%)</string>
+    <!-- Key size (the keyboard is ten keys wide) and alignment (FR-SET-09, FSS#25) -->
+    <string name="settings_key_portrait">세로 화면 키 크기</string>
+    <string name="settings_key_landscape">가로 화면 키 크기</string>
+    <string name="settings_key_value">키 %1$d dp · 전체 %2$d dp</string>
+    <string name="settings_key_full">꽉 채움 · 키 약 %1$d dp · %2$d dp</string>
     <string name="settings_align_portrait">세로 화면 정렬</string>
     <string name="settings_align_landscape">가로 화면 정렬</string>
     <string name="settings_align_left">왼손모드</string>
@@ -37,6 +45,7 @@
     <string name="practice_title">입력 연습</string>
     <string name="practice_list_hint">주제를 골라 보세요. 어느 것부터 해도 돼요.</string>
     <string name="practice_close">닫기</string>
+    <string name="practice_mode_off">키보드에서 꺼져 있음</string>
     <string name="practice_start">시작</string>
     <string name="practice_stop">그만</string>
     <string name="practice_item">%1$d / %2$d</string>
