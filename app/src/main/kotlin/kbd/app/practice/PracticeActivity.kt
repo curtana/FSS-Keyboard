@@ -123,17 +123,21 @@ private class BoardFactory(
         fun px(dp: Float) = Math.round(dp * density)
         val row = settings.rowHeightDp
         var before = ""
+        var beforeComposing = ""
         val frame = BoardFrame(context, ThresholdDefaults.MIN_CROSS_DP * density, settings.portraitWidth, settings.landscapeWidth, onDown = {
             input.errored = false
             before = input.editor.text
+            beforeComposing = input.editor.composing
             flow.onPress()
             redraw()
         }) { reversed ->
             val text = input.editor.text
-            // Off the tap keyboard an action counts when it typed something or vibrated (a touch on a key that does
-            // nothing here, or a scroll of the guide, is not an action).
-            if (item.board == PracticeBoard.TAP_QWERTY || text != before || input.errored) {
-                flow.onAction(text, input.editor.display, input.errored, reversed)
+            val composing = input.editor.composing
+            // Off the tap keyboard an action counts when it typed something, committed something (the graffiti finish
+            // stroke commits without typing, FSS#43) or vibrated (a touch on a key that does nothing here, or a scroll
+            // of the guide, is not an action).
+            if (item.board == PracticeBoard.TAP_QWERTY || text != before || composing != beforeComposing || input.errored) {
+                flow.onAction(text, input.editor.display, input.errored, reversed, composing)
                 redraw()
             }
         }

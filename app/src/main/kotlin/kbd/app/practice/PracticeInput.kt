@@ -46,8 +46,8 @@ class PracticeEditor : EditorPort {
     /** Everything the item typed so far: what the judgement compares (SWIPE 10.2). */
     val text: String get() = committed.toString() + composing
 
-    /** The input display (FR-TUT-09): the composing syllable as shown ("ㄱㆍ" too), else the last typed character. */
-    val display: String get() = composing.ifEmpty { PracticeItemJudge.lastChar(committed.toString()) }
+    /** The input display (FR-TUT-09): the composing syllable as shown ("ㄱㆍ" too), else the last typed character (a space is none). */
+    val display: String get() = composing.ifEmpty { PracticeItemJudge.lastChar(committed.toString().trimEnd()) }
 
     override fun commitText(text: String) {
         composing = ""
@@ -80,10 +80,12 @@ class PracticeEditor : EditorPort {
  * engines writing into a [PracticeEditor], at the fixed thresholds. Android-free; the practice screen gives
  * [tapSink] to the tap keyboard and graffiti views and this object (a [SwipeHost]) to the swipe view.
  *
- * Only what the item practises reaches the dispatcher: letters, digits, symbols, swipe strokes, graffiti strokes and,
- * on the tap keyboard, ⌫ (owner decision A, FSS#17). The other function keys (space, ↵, arrows, the mode key, the
- * swipe keyboard's ⌫) are shown as on the keyboard but do nothing here (SWIPE 10.2: the swipe keyboard and the pad
- * have no edit keys in practice; the edit row's other keys are not judged).
+ * Only what the item practises reaches the dispatcher: letters, digits, symbols, swipe strokes, graffiti strokes, on
+ * the tap keyboard ⌫ (owner decision A, FSS#17), and on the swipe keyboard and the graffiti pad the space, which
+ * commits the composing syllable for judging (PM decision A, FSS#43). The other function keys (↵, arrows, the mode
+ * key, the tap keyboard's space, the swipe keyboard's and the pad's ⌫) are shown as on the keyboard but do nothing
+ * here (SWIPE 10.2: the swipe keyboard and the pad have no edit keys in practice; the edit row's other keys are not
+ * judged).
  */
 class PracticeInput(
     val board: PracticeBoard,
@@ -129,6 +131,7 @@ class PracticeInput(
 
         override fun onFunctionDown(key: FunctionKey) {
             if (key == FunctionKey.BACKSPACE && board == PracticeBoard.TAP_QWERTY) dispatcher.onFunctionDown(key)
+            if (key == FunctionKey.SPACE && board == PracticeBoard.GRAFFITI) dispatcher.onFunctionDown(key)   // commits (FSS#43)
         }
 
         override fun onFunctionUp(key: FunctionKey) = Unit
@@ -160,7 +163,10 @@ class PracticeInput(
 
     override fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean) = dispatcher.onJamoEvents(events, errorVibe)
     override fun onSwipeText(text: String, errorVibe: Boolean) = dispatcher.onSwipeText(text, errorVibe)
-    override fun onFunctionKey(key: FunctionKey) = Unit
+    /** The swipe keyboard's space commits the composing syllable as on the keyboard (FSS#43); its other function keys do nothing. */
+    override fun onFunctionKey(key: FunctionKey) {
+        if (key == FunctionKey.SPACE) dispatcher.onFunctionDown(key)
+    }
     override fun onFunctionKeyUp(key: FunctionKey) = Unit
     override fun onSettingsStroke() = Unit
 
