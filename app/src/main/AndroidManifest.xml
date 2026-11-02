@@ -6,7 +6,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true">
 
-        <!-- Launcher: the settings screen, which starts the tutor once on the first open (LLD-07 §2.3, §7). -->
+        <!-- Launcher: the settings screen, which opens the practice topic list once on the first open (LLD-07 §2.5, §7). -->
         <activity
             android:name=".settings.SettingsActivity"
             android:exported="true"
@@ -18,12 +18,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Tutor (LLD-07 §2.3). Not recreated on rotation, so the session in progress is kept. -->
+        <!-- Input practice (LLD-07 §2.3, FSS#17). Not recreated on rotation, so the item in progress is kept. -->
         <activity
-            android:name=".tutor.TutorActivity"
+            android:name=".practice.PracticeActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:exported="false"
-            android:label="@string/tutor_title"
+            android:label="@string/practice_title"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <!-- The input method (LLD-08 §3, FR-CMN-01). -->

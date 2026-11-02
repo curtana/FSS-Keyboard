@@ -21,7 +21,6 @@ import kbd.app.graffiti.GraffitiPadView
 import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.store.SettingsStore
-import kbd.app.store.ThresholdStore
 import kbd.app.swipe.SwipeEngineState
 import kbd.app.swipe.SwipeHost
 import kbd.app.swipe.SwipeModule
@@ -63,10 +62,8 @@ class KeyboardService : InputMethodService(), SwipeHost {
 
     private lateinit var errorLog: ErrorLog
     private lateinit var settingsStore: SettingsStore
-    private lateinit var thresholdStore: ThresholdStore
     private lateinit var swipe: SwipeModule
     private lateinit var composing: ComposingController
-    private var thresholdsMtime = 0L
 
     /** Graffiti handler, one per service: language and caps lock survive field changes (FR-GRF-05a, LLD-05 §6). */
     private lateinit var graffiti: GraffitiInputHandler
@@ -75,8 +72,8 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /** The built-in templates, also drawn by the stroke guide (FR-GRF-09c, LLD-05 §10). */
     private var templates: TemplateSet = TemplateSet(emptyMap())
 
-    override var thresholds: Thresholds = ThresholdDefaults.VALUES
-        private set
+    /** Fixed code constants (HLD 7.2, FSS#17): no stored file, nothing measured. */
+    override val thresholds: Thresholds = ThresholdDefaults.VALUES
     override var settings: Settings = Settings.DEFAULT
         private set
     override val fieldInfo: FieldInfo get() = dispatcher.field
@@ -89,8 +86,6 @@ class KeyboardService : InputMethodService(), SwipeHost {
         errorLog = ErrorLog(File(filesDir, ERROR_LOG_FILE))
         settingsStore = SettingsStore(settingsDataStore, errorLog)
         settings = settingsStore.loadBlocking()   // once at start (D-24)
-        thresholdStore = ThresholdStore(filesDir, errorLog)
-        reloadThresholds()
         swipe = SwipeModuleProvider.get()
         modes = ModeController(InputMode.entries.toList(), settings.lastMode)   // every mode in every build (issue #251)
         feedback = Feedback({ if (::root.isInitialized) root else null }, getSystemService(AudioManager::class.java), { settings })
@@ -132,7 +127,6 @@ class KeyboardService : InputMethodService(), SwipeHost {
         if (f.numericLike) modes.enterNumericField() else modes.leaveNumericField()   // FR-CMN-04, 04b
         errorLog.enabled = !f.noRecord   // NFR-05, FR-CMN-08 ① ②
         composing.onStart(info.initialSelStart, info.initialSelEnd)
-        if (thresholdStore.lastModified() != thresholdsMtime) reloadThresholds()   // D-22
         showModeView(modes.current, f)
         if (modes.current == InputMode.GRAFFITI && before != InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
     }
@@ -261,11 +255,6 @@ class KeyboardService : InputMethodService(), SwipeHost {
             root.rowHeightDp = s.rowHeightDp
             root.relayout()
         }
-    }
-
-    private fun reloadThresholds() {
-        thresholdsMtime = thresholdStore.lastModified()
-        thresholds = thresholdStore.load().thresholds
     }
 
     /** D-09 via the composer callback (G5). The text is not logged (NFR-05). */
