@@ -114,7 +114,11 @@ class KeyboardService : InputMethodService(), SwipeHost {
     }
 
     override fun onCreateInputView(): View {
-        root = KeyboardRootView(this).also { it.rowHeightDp = settings.rowHeightDp }
+        root = KeyboardRootView(this).also {
+            it.rowHeightDp = settings.rowHeightDp
+            it.portraitWidth = settings.portraitWidth   // FR-CMN-14
+            it.landscapeWidth = settings.landscapeWidth
+        }
         showModeView(modes.current, dispatcher.field)
         return root
     }
@@ -175,7 +179,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /** FR-CMN-12. */
     override fun onEvaluateFullscreenMode(): Boolean = false
 
-    /** Same layout at the new width, same row height (FR-CMN-12). */
+    /** Same layout with the new orientation's keyboard width (FR-CMN-12, FR-CMN-14 ⑩), same row height. */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (::root.isInitialized) root.relayout()
@@ -254,10 +258,13 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /** Settings flow → current settings and window size (LLD-07 §6.1). */
     private fun applySettings(s: Settings) {
         val rowChanged = s.rowHeightDp != settings.rowHeightDp
+        val widthChanged = s.portraitWidth != settings.portraitWidth || s.landscapeWidth != settings.landscapeWidth
         settings = s
         pad?.let { if (it.letterRatio != s.graffitiLetterRatio) it.letterRatio = s.graffitiLetterRatio }
-        if (rowChanged && ::root.isInitialized) {
+        if ((rowChanged || widthChanged) && ::root.isInitialized) {
             root.rowHeightDp = s.rowHeightDp
+            root.portraitWidth = s.portraitWidth   // FR-CMN-14 ⑩: placed again at once
+            root.landscapeWidth = s.landscapeWidth
             root.relayout()
         }
         applyEnabledModes(s.enabledModes)

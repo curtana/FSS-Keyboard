@@ -1,6 +1,7 @@
 package kbd.app.store
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -57,6 +58,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[PRACTICE_DONE] = s.practiceDone
             p[GRAFFITI_ENABLED] = s.graffitiEnabled
             p[SWIPE_ENABLED] = s.swipeEnabled
+            writeWidth(p, s.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT)
+            writeWidth(p, s.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE)
         }
     }
 
@@ -86,8 +89,23 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             practiceDone = p[PRACTICE_DONE] ?: d.practiceDone,
             graffitiEnabled = p[GRAFFITI_ENABLED] ?: d.graffitiEnabled,
             swipeEnabled = p[SWIPE_ENABLED] ?: d.swipeEnabled,
+            portraitWidth = readWidth(p, d.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT),
+            landscapeWidth = readWidth(p, d.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE),
         )
     }
+
+    /** A null key size removes the key (the default, FR-CMN-14 ③); [KeyboardWidth.FULL] is stored as it is. */
+    private fun writeWidth(p: MutablePreferences, s: WidthSetting, keyDp: Preferences.Key<Float>, align: Preferences.Key<String>) {
+        val k = s.keyDp
+        if (k == null) p.remove(keyDp) else p[keyDp] = k
+        p[align] = s.align.name
+    }
+
+    /** Stored key sizes snap to whole dp in 32–160 (as D-33); an unknown alignment name reads as the default. */
+    private fun readWidth(p: Preferences, d: WidthSetting, keyDp: Preferences.Key<Float>, align: Preferences.Key<String>) = WidthSetting(
+        keyDp = p[keyDp]?.let(KeyboardWidth::snap) ?: d.keyDp,
+        align = p[align]?.let { name -> KeyboardAlign.entries.firstOrNull { it.name == name } } ?: d.align,
+    )
 
     companion object {
         val LAST_MODE = stringPreferencesKey("last_mode")
@@ -104,5 +122,9 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         /** FR-SET-08 (FSS#31): absent = on. */
         val GRAFFITI_ENABLED = booleanPreferencesKey("graffiti_enabled")
         val SWIPE_ENABLED = booleanPreferencesKey("swipe_enabled")
+        val KEY_PORTRAIT = floatPreferencesKey("key_portrait_dp")
+        val ALIGN_PORTRAIT = stringPreferencesKey("align_portrait")
+        val KEY_LANDSCAPE = floatPreferencesKey("key_landscape_dp")
+        val ALIGN_LANDSCAPE = stringPreferencesKey("align_landscape")
     }
 }

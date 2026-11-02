@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
@@ -101,6 +102,34 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `SS-10 key size defaults, read back with the full mark, null removes the key`() {
+        val d = SettingsStore(open()).loadBlocking()
+        assertEquals(WidthSetting(null, KeyboardAlign.CENTER), d.portraitWidth)   // FR-CMN-14 ③: fills
+        assertEquals(WidthSetting(null, KeyboardAlign.CENTER), d.landscapeWidth)   // the portrait key size
+        val p = WidthSetting(40f, KeyboardAlign.LEFT)
+        val l = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.RIGHT)
+        runBlocking { SettingsStore(reopen()).update { it.copy(portraitWidth = p, landscapeWidth = l) } }
+        val s = SettingsStore(reopen())
+        assertEquals(p, s.loadBlocking().portraitWidth)
+        assertEquals(l, s.loadBlocking().landscapeWidth)
+        runBlocking { s.update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = null)) } }
+        val r = reopen()
+        assertEquals(WidthSetting(null, KeyboardAlign.RIGHT), SettingsStore(r).loadBlocking().landscapeWidth)
+        assertNull(runBlocking { r.data.first()[SettingsStore.KEY_LANDSCAPE] })
+    }
+
+    @Test
+    fun `SS-11 stored key size snaps to whole dp in 32 to 160, unknown alignment reads as centre`() {
+        val cases = listOf(10f to 32f, 400f to 160f, 36.4f to 36f, 36.6f to 37f)
+        for ((stored, expected) in cases) {
+            runBlocking { reopen().edit { it[SettingsStore.KEY_PORTRAIT] = stored } }
+            assertEquals("stored $stored", expected, SettingsStore(reopen()).loadBlocking().portraitWidth.keyDp)
+        }
+        runBlocking { reopen().edit { it[SettingsStore.ALIGN_LANDSCAPE] = "UP" } }
+        assertEquals(KeyboardAlign.CENTER, SettingsStore(reopen()).loadBlocking().landscapeWidth.align)
+    }
+
+    @Test
     fun `SS-05 setPracticeListShown true reads back`() {
         runBlocking { SettingsStore(open()).setPracticeListShown(true) }
         assertTrue(SettingsStore(reopen()).loadBlocking().practiceListShown)
@@ -145,6 +174,8 @@ class SettingsStoreTest {
             practiceDone = setOf("graffiti"),
             graffitiEnabled = false,
             swipeEnabled = false,
+            portraitWidth = WidthSetting(44f, KeyboardAlign.RIGHT),
+            landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.LEFT),
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())
