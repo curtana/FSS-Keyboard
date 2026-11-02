@@ -685,9 +685,9 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 | PI-05 | EN 문자 영역 탭, 보조 줄 ⌫, ↘, 보조 줄 ⌫ | "•", 없음, "↘", 없음 | FR-GRF-05d ②, FR-GRF-05c ⑤ |
 | PI-06 | `sink.hidesDisplay = true`에서 진입, 구석 탭, ↑ | "한", "A"와 "⇧"(비밀번호 칸에서도 그림) | FR-GRF-05d ③, FR-CMN-08 |
 | PI-07 | ↘ 뒤 `reset(CURSOR_MOVED)` / `restore` / `enterMode` | `redraw` 1회·대기 표시 없음 / `redraw` 1회 / `redraw` 1회 | LLD-05 6절·8.1, HLD 5장 초기화 |
-| PI-09 | 진입 / `sink.hidesDisplay = true` | 테두리(STROKE 둥근 사각형) 둘: 문자 (4.5, 4.5)–(235.5, 187.5)dp, 숫자 (244.5, 4.5)–(355.5, 187.5)dp(4dp 안 + 선 반 두께), 반지름 6dp. 구석 점·언어 글자·대기 표시(⇧)가 문자·숫자 테두리 안. 비밀번호 칸에서도 같음 | FR-GRF-01a, LLD-05 8.1 |
-| PI-10 | `letterRatio` = 1/2 / 3/4 | 테두리 경계 x = 180 ± 4dp / 270 ± 4dp | FR-GRF-01a, FR-SET-05 |
 | PI-08 | `GraffitiPadGeometry(360, 240, 비율)`, 비율 1/2 · 2/3 · 3/4 | `cornerRect` = (0, 0, 문자 영역 폭 × 0.15, 192 × 0.15) | FR-GRF-05a, LLD-05 8.1 |
+| PI-09 | 진입 / `sink.hidesDisplay = true` | 테두리(STROKE 둥근 사각형) 둘: 문자 (4.5, 4.5)–(235.5, 187.5)dp, 숫자 (244.5, 4.5)–(355.5, 187.5)dp(4dp 안 + 선 반 두께), 반지름 6dp. 구석 점·언어 글자·대기 표시(⇧)가 문자·숫자 테두리 안. 비밀번호 칸에서도 같음 | FR-GRF-01a, LLD-05 8.1 |
+| PI-10 | `letterRatio` = 1/2 / 3/4 | 테두리 경계 x = 180 ± 4.5dp / 270 ± 4.5dp(4dp + 선 반 두께) | FR-GRF-01a, FR-SET-05 |
 
 ### 6.6 그래피티 획 안내표 (FR-GRF-09~09d, 0.26, 이슈 #189)
 
