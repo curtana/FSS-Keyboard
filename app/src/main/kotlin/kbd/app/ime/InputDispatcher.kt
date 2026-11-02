@@ -7,7 +7,9 @@ import kbd.app.graffiti.GraffitiSnapshot
 import kbd.app.graffiti.InputSink
 import kbd.app.graffiti.ResetReason
 import kbd.app.swipe.SwipeEngineState
+import kbd.app.view.CenterText
 import kbd.app.view.TapSink
+import kbd.hangul.stroke.OtherRole
 import kbd.hangul.stroke.StrokePop
 import kbd.hangul.compose.BackspaceResult
 import kbd.hangul.compose.ComposerSnapshot
@@ -58,9 +60,45 @@ class InputDispatcher(
     fun onJamoEvents(ev: List<JamoEvent>, errorVibe: Boolean = false) {
         val c = composer ?: return
         if (errorVibe) feedback.error()
+        val before = c.snapshot()
         out.show(c.applyAll(ev), swipeState?.pendingGlyph() ?: "", swipeState?.pendingReplacesVowel() == true)
+        when (swipeState?.vowelStrokes()) {
+            1 -> strokeBase = before   // this was the assembly's first stroke
+            0, null -> strokeBase = null
+            else -> Unit               // a later stroke: the base stays the first stroke's
+        }
         markInput()
     }
+
+    /** The composer before the open vowel assembly's first stroke: the bracket's dot goes on it (SWIPE 9.5, FSS#36). */
+    private var strokeBase: ComposerSnapshot? = null
+
+    /**
+     * What the swipe view draws in C (SWIPE 9.5, FR-DSP-10, FSS#36): the composing syllable as the editor shows it
+     * (with ㆍ·‥ of a vowel not made yet), and while a lone first stroke keeps both roles, the syllable of its other
+     * role (bracket). Null when nothing composes or no consonant does (a bare vowel). Read only; it changes only
+     * when the composer or the assemblies do (a tap, a released stroke, a cheonjiin element, ⌫, a reset).
+     */
+    fun centerText(): CenterText? {
+        val c = composer ?: return null
+        if (c.lastConsonant() == null) return null
+        val sw = swipeState
+        val glyph = sw?.pendingGlyph() ?: ""
+        val base = c.composingText()
+        val text = (if (sw?.pendingReplacesVowel() == true && glyph.isNotEmpty()) base.dropLast(1) else base) + glyph
+        return when (val o = sw?.otherRole()) {
+            null -> CenterText(text)
+            // Shown as a dot: the composer has not taken the stroke; as ㅣ / ㅡ it would (도깨비불 commits leave only the new syllable).
+            is OtherRole.Vowel -> CenterText(text, copyOf(c).apply { apply(JamoEvent.Vowel(o.v)) }.composingText())
+            // Shown as ㅣ / ㅡ: the dot goes on the syllable before that vowel (가 + ㄱ + ㅣ shown 기 → 각 with the dot).
+            is OtherRole.Dot -> {
+                val b = strokeBase?.let { s -> HangulComposer(c.policy).also { it.restore(s) } } ?: copyOf(c).apply { undoLast() }
+                CenterText(text, b.composingText(), o.place)
+            }
+        }
+    }
+
+    private fun copyOf(c: HangulComposer) = HangulComposer(c.policy).also { it.restore(c.snapshot()) }
 
     /** Closes the swipe assemblies for a key the user pressed; unfinished vowel strokes dropped = the error vibration (SWIPE 3.3). */
     private fun closeSwipe() {
@@ -222,10 +260,11 @@ class InputDispatcher(
     override val hidesDisplay: Boolean get() = this.field.hidesDisplay   // `this.`: bare `field` is the backing-field keyword here
 
     /** Composer input units, the `SwipeInputMapper` state and the graffiti assembler and state (LLD-09 §2, LLD-08 §6.1). */
-    override fun snapshot(): Any = Snapshot(composer?.snapshot(), swipeState?.snapshot(), graffiti?.snapshot())
+    override fun snapshot(): Any = Snapshot(composer?.snapshot(), swipeState?.snapshot(), graffiti?.snapshot(), strokeBase)
 
     override fun restore(s: Any) {
         val snap = s as Snapshot
+        strokeBase = snap.strokeBase
         snap.composer?.let { composer?.restore(it) }
         snap.swipe?.let { swipeState?.restore(it) }
         snap.graffiti?.let { graffiti?.restore(it) }
@@ -245,5 +284,5 @@ class InputDispatcher(
         out.editKey(k)
     }
 
-    private data class Snapshot(val composer: ComposerSnapshot?, val swipe: Any?, val graffiti: GraffitiSnapshot?)
+    private data class Snapshot(val composer: ComposerSnapshot?, val swipe: Any?, val graffiti: GraffitiSnapshot?, val strokeBase: ComposerSnapshot?)
 }

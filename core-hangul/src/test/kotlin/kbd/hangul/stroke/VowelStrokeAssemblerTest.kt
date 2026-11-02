@@ -19,8 +19,8 @@ class VowelStrokeAssemblerTest {
     private fun v(x: Int, y0: Int, y1: Int) = v(x.toFloat(), y0.toFloat(), y1.toFloat())
     private fun h(y: Int, x0: Int, x1: Int) = h(y.toFloat(), x0.toFloat(), x1.toFloat())
 
-    /** SWIPE 3.6.5 (가) and 9.5: C of the 360 × 288 dp portrait layout, centred (issue #213), rounded (C.L = 139, C.R = 221); b = 138. */
-    private val C = ConsonantBox(139f, 52f, 221f, 148f)
+    /** SWIPE 3.6.5 (가) and 9.5: C of the 360 × 288 dp portrait layout, centred (issue #213), half a row lower (FSS#37), rounded (C.L = 139, C.R = 221). */
+    private val C = ConsonantBox(139f, 76f, 221f, 172f)
 
     private fun asm() = VowelStrokeAssembler(20f)
 
@@ -63,42 +63,42 @@ class VowelStrokeAssemblerTest {
     private fun line(x0: Float, y0: Float, x1: Float, y1: Float) = VowelStroke(StrokeAxis.HORIZONTAL, x0, y0, x1, y1)
 
     private val withC: List<Triple<String, List<VowelStroke>, Want>> = listOf(   // SWIPE 0.43 (issue #217: two zones, first stroke two roles)
-        Triple("가 ① ㅣ ② right", listOf(v(237, 56, 150), h(100, 237, 262)), Is(Jamo.A)),
-        Triple("고 ① dot under C ② underline", listOf(v(177, 152, 175), h(185, 137, 247)), Is(Jamo.O)),
-        Triple("고 dot starting inside C (the device's 노)", listOf(v(177, 133, 168), h(185, 137, 247)), Is(Jamo.O)),
-        Triple("가 short ㅣ, longer line (zone breaks the tie)", listOf(v(237, 56, 100), h(80, 237, 337)), Is(Jamo.A)),
-        Triple("고 long dot, shorter line (zone breaks the tie)", listOf(v(177, 150, 200), h(205, 147, 187)), Is(Jamo.O)),
-        Triple("가 dot re-read as ㅣ: the line fits only ㅏ's right", listOf(v(177, 152, 175), h(160, 177, 200)), Is(Jamo.A)),
-        Triple("고 ㅣ re-read as a dot: the line fits only the underline", listOf(v(237, 56, 150), h(170, 200, 300)), Is(Jamo.O)),
-        Triple("구 dot under C near ㅡ's right end", listOf(h(160, 137, 247), v(227, 168, 200)), Is(Jamo.U)),
-        Triple("의 ㅣ right of C, r 0.84", listOf(h(160, 137, 227), v(242, 56, 180)), Is(Jamo.UI)),
-        Triple("의 ㅣ over C's right part", listOf(h(160, 137, 227), v(200, 56, 180)), Is(Jamo.UI)),
-        Triple("의 ㅣ crosses ㅡ", listOf(h(160, 137, 277), v(227, 56, 180)), Is(Jamo.UI)),
-        Triple("거 ㅣ crosses C's dot", listOf(h(100, 227, 277), v(247, 56, 160)), Is(Jamo.EO)),
-        Triple("거 ㅣ from just below the dot", listOf(h(100, 227, 277), v(247, 110, 160)), Is(Jamo.EO)),
-        Triple("거 C's dot then ㅣ", listOf(h(100, 227, 247), v(252, 56, 160)), Is(Jamo.EO)),
-        Triple("거 dot over C's right part", listOf(h(100, 170, 230), v(235, 56, 160)), Is(Jamo.EO)),
-        Triple("거 low short dot, 0.5 exception", listOf(h(145, 227, 242), v(247, 56, 150)), Is(Jamo.EO)),
-        Triple("거 boundary right-up", listOf(h(160, 137, 227), v(227, 130, 178)), Is(Jamo.EO)),
-        Triple("구 boundary under-left", listOf(h(160, 137, 227), v(227, 131, 179)), Is(Jamo.U)),
-        Triple("거 long ㅣ, P right-up", listOf(h(160, 137, 227), v(227, 57, 220)), Is(Jamo.EO)),
-        Triple("의 ㅣ from C's middle height, P right-up", listOf(h(160, 137, 227), v(227, 100, 177)), Is(Jamo.UI)),
-        Triple("구 vertical through C is under-left = a dot (nothing dropped)", listOf(h(160, 137, 227), v(170, 56, 180)), Is(Jamo.U)),
-        Triple("구 low ㅡ, dot from above it", listOf(h(185, 137, 247), v(187, 150, 200)), Is(Jamo.U)),
-        Triple("규 low ㅡ", listOf(h(185, 137, 247), v(177, 150, 200), v(202, 150, 200)), Is(Jamo.YU)),
-        Triple("구 ㅡ a little high and slanted (the device's 뚜)", listOf(line(129f, 139f, 225f, 135f), v(180, 150, 175)), Is(Jamo.U)),
-        Triple("그 horizontal over C's left part, under-left", listOf(h(110, 137, 197)), Is(Jamo.EU)),
-        Triple("ㄱㆍ horizontal in C's upper left, right-up: a dot, dropped on closing", listOf(h(90, 137, 197)), Closed(null, true)),
-        Triple("ㄱㆍ vertical left of C, under-left: a dot, dropped on closing", listOf(v(80, 56, 150)), Closed(null, true)),
-        Triple("겨 the second horizontal re-reads ㅡ as a dot", listOf(h(160, 137, 227), h(180, 137, 227), v(240, 56, 200)), Is(Jamo.YEO)),
-        Triple("기 second vertical ignored", listOf(v(237, 56, 150), v(262, 56, 150)), LastIgnored(Jamo.I)),
-        Triple("교", listOf(v(167, 152, 172), v(192, 152, 172), h(185, 137, 227)), Is(Jamo.YO)),
-        Triple("귀", listOf(h(160, 137, 247), v(187, 168, 195), v(262, 56, 200)), Is(Jamo.WI)),
-        Triple("규", listOf(h(160, 137, 247), v(177, 168, 195), v(202, 168, 195)), Is(Jamo.YU)),
-        Triple("긴 ㅣ closed", listOf(v(237, 56, 150)), Closed(Jamo.I, false)),
-        Triple("ㄱㄴ dot under C closed", listOf(v(177, 152, 175)), Closed(null, true)),
-        Triple("근 ㅡ closed", listOf(h(160, 137, 247)), Closed(Jamo.EU, false)),
-        Triple("ㄱㄴ dot beside C closed", listOf(h(100, 227, 247)), Closed(null, true)),
+        Triple("가 ① ㅣ ② right", listOf(v(237, 80, 174), h(124, 237, 262)), Is(Jamo.A)),
+        Triple("고 ① dot under C ② underline", listOf(v(177, 176, 199), h(209, 137, 247)), Is(Jamo.O)),
+        Triple("고 dot starting inside C (the device's 노)", listOf(v(177, 157, 192), h(209, 137, 247)), Is(Jamo.O)),
+        Triple("가 short ㅣ, longer line (zone breaks the tie)", listOf(v(237, 80, 124), h(104, 237, 337)), Is(Jamo.A)),
+        Triple("고 long dot, shorter line (zone breaks the tie)", listOf(v(177, 174, 224), h(229, 147, 187)), Is(Jamo.O)),
+        Triple("가 dot re-read as ㅣ: the line fits only ㅏ's right", listOf(v(177, 176, 199), h(184, 177, 200)), Is(Jamo.A)),
+        Triple("고 ㅣ re-read as a dot: the line fits only the underline", listOf(v(237, 80, 174), h(194, 200, 300)), Is(Jamo.O)),
+        Triple("구 dot under C near ㅡ's right end", listOf(h(184, 137, 247), v(227, 192, 224)), Is(Jamo.U)),
+        Triple("의 ㅣ right of C, r 0.84", listOf(h(184, 137, 227), v(242, 80, 204)), Is(Jamo.UI)),
+        Triple("의 ㅣ over C's right part", listOf(h(184, 137, 227), v(200, 80, 204)), Is(Jamo.UI)),
+        Triple("의 ㅣ crosses ㅡ", listOf(h(184, 137, 277), v(227, 80, 204)), Is(Jamo.UI)),
+        Triple("거 ㅣ crosses C's dot", listOf(h(124, 227, 277), v(247, 80, 184)), Is(Jamo.EO)),
+        Triple("거 ㅣ from just below the dot", listOf(h(124, 227, 277), v(247, 134, 184)), Is(Jamo.EO)),
+        Triple("거 C's dot then ㅣ", listOf(h(124, 227, 247), v(252, 80, 184)), Is(Jamo.EO)),
+        Triple("거 dot over C's right part", listOf(h(124, 170, 230), v(235, 80, 184)), Is(Jamo.EO)),
+        Triple("거 low short dot, 0.5 exception", listOf(h(169, 227, 242), v(247, 80, 174)), Is(Jamo.EO)),
+        Triple("거 boundary right-up", listOf(h(184, 137, 227), v(227, 154, 202)), Is(Jamo.EO)),
+        Triple("구 boundary under-left", listOf(h(184, 137, 227), v(227, 155, 203)), Is(Jamo.U)),
+        Triple("거 long ㅣ, P right-up", listOf(h(184, 137, 227), v(227, 81, 244)), Is(Jamo.EO)),
+        Triple("의 ㅣ from C's middle height, P right-up", listOf(h(184, 137, 227), v(227, 124, 201)), Is(Jamo.UI)),
+        Triple("구 vertical through C is under-left = a dot (nothing dropped)", listOf(h(184, 137, 227), v(170, 80, 204)), Is(Jamo.U)),
+        Triple("구 low ㅡ, dot from above it", listOf(h(209, 137, 247), v(187, 174, 224)), Is(Jamo.U)),
+        Triple("규 low ㅡ", listOf(h(209, 137, 247), v(177, 174, 224), v(202, 174, 224)), Is(Jamo.YU)),
+        Triple("구 ㅡ a little high and slanted (the device's 뚜)", listOf(line(129f, 163f, 225f, 159f), v(180, 174, 199)), Is(Jamo.U)),
+        Triple("그 horizontal over C's left part, under-left", listOf(h(134, 137, 197)), Is(Jamo.EU)),
+        Triple("ㄱㆍ horizontal in C's upper left, right-up: a dot, dropped on closing", listOf(h(114, 137, 197)), Closed(null, true)),
+        Triple("ㄱㆍ vertical left of C, under-left: a dot, dropped on closing", listOf(v(80, 80, 174)), Closed(null, true)),
+        Triple("겨 the second horizontal re-reads ㅡ as a dot", listOf(h(184, 137, 227), h(204, 137, 227), v(240, 80, 224)), Is(Jamo.YEO)),
+        Triple("기 second vertical ignored", listOf(v(237, 80, 174), v(262, 80, 174)), LastIgnored(Jamo.I)),
+        Triple("교", listOf(v(167, 176, 196), v(192, 176, 196), h(209, 137, 227)), Is(Jamo.YO)),
+        Triple("귀", listOf(h(184, 137, 247), v(187, 192, 219), v(262, 80, 224)), Is(Jamo.WI)),
+        Triple("규", listOf(h(184, 137, 247), v(177, 192, 219), v(202, 192, 219)), Is(Jamo.YU)),
+        Triple("긴 ㅣ closed", listOf(v(237, 80, 174)), Closed(Jamo.I, false)),
+        Triple("ㄱㄴ dot under C closed", listOf(v(177, 176, 199)), Closed(null, true)),
+        Triple("근 ㅡ closed", listOf(h(184, 137, 247)), Closed(Jamo.EU, false)),
+        Triple("ㄱㄴ dot beside C closed", listOf(h(124, 227, 247)), Closed(null, true)),
     )
 
     @Test
@@ -211,27 +211,27 @@ class VowelStrokeAssemblerTest {
 
     /** The same 21 vowels written beside C (SWIPE 9.5 space check). */
     private val shapesC: Map<Jamo, List<VowelStroke>> = mapOf(
-        Jamo.I to listOf(v(237, 56, 150)),
-        Jamo.EU to listOf(h(160, 137, 247)),
-        Jamo.A to listOf(v(237, 56, 150), h(100, 237, 262)),
-        Jamo.YA to listOf(v(237, 56, 150), h(90, 237, 262), h(120, 237, 262)),
-        Jamo.AE to listOf(v(237, 56, 150), h(100, 237, 262), v(272, 56, 150)),
-        Jamo.YAE to listOf(v(237, 56, 150), h(90, 237, 262), h(120, 237, 262), v(272, 56, 150)),
-        Jamo.EO to listOf(h(100, 227, 252), v(257, 56, 160)),
-        Jamo.YEO to listOf(h(90, 227, 252), h(120, 227, 252), v(257, 56, 160)),
-        Jamo.E to listOf(h(100, 227, 252), v(257, 56, 160), v(282, 56, 160)),
-        Jamo.YE to listOf(h(90, 227, 252), h(120, 227, 252), v(257, 56, 160), v(282, 56, 160)),
-        Jamo.O to listOf(v(177, 152, 175), h(185, 137, 247)),
-        Jamo.YO to listOf(v(167, 152, 172), v(192, 152, 172), h(185, 137, 227)),
-        Jamo.OE to listOf(v(177, 152, 175), h(185, 137, 247), v(262, 56, 200)),
-        Jamo.WA to listOf(v(177, 152, 175), h(185, 137, 247), v(262, 56, 200), h(110, 262, 287)),
-        Jamo.WAE to listOf(v(177, 152, 175), h(185, 137, 247), v(262, 56, 200), h(110, 262, 287), v(302, 56, 200)),
-        Jamo.U to listOf(h(160, 137, 247), v(177, 168, 195)),
-        Jamo.YU to listOf(h(160, 137, 247), v(177, 168, 195), v(202, 168, 195)),
-        Jamo.WI to listOf(h(160, 137, 247), v(187, 168, 195), v(262, 56, 200)),
-        Jamo.WEO to listOf(h(160, 137, 247), v(177, 168, 195), h(185, 187, 212), v(227, 56, 220)),
-        Jamo.WE to listOf(h(160, 137, 247), v(177, 168, 195), h(185, 187, 212), v(227, 56, 220), v(257, 56, 220)),
-        Jamo.UI to listOf(h(160, 137, 227), v(242, 56, 180)),
+        Jamo.I to listOf(v(237, 80, 174)),
+        Jamo.EU to listOf(h(184, 137, 247)),
+        Jamo.A to listOf(v(237, 80, 174), h(124, 237, 262)),
+        Jamo.YA to listOf(v(237, 80, 174), h(114, 237, 262), h(144, 237, 262)),
+        Jamo.AE to listOf(v(237, 80, 174), h(124, 237, 262), v(272, 80, 174)),
+        Jamo.YAE to listOf(v(237, 80, 174), h(114, 237, 262), h(144, 237, 262), v(272, 80, 174)),
+        Jamo.EO to listOf(h(124, 227, 252), v(257, 80, 184)),
+        Jamo.YEO to listOf(h(114, 227, 252), h(144, 227, 252), v(257, 80, 184)),
+        Jamo.E to listOf(h(124, 227, 252), v(257, 80, 184), v(282, 80, 184)),
+        Jamo.YE to listOf(h(114, 227, 252), h(144, 227, 252), v(257, 80, 184), v(282, 80, 184)),
+        Jamo.O to listOf(v(177, 176, 199), h(209, 137, 247)),
+        Jamo.YO to listOf(v(167, 176, 196), v(192, 176, 196), h(209, 137, 227)),
+        Jamo.OE to listOf(v(177, 176, 199), h(209, 137, 247), v(262, 80, 224)),
+        Jamo.WA to listOf(v(177, 176, 199), h(209, 137, 247), v(262, 80, 224), h(134, 262, 287)),
+        Jamo.WAE to listOf(v(177, 176, 199), h(209, 137, 247), v(262, 80, 224), h(134, 262, 287), v(302, 80, 224)),
+        Jamo.U to listOf(h(184, 137, 247), v(177, 192, 219)),
+        Jamo.YU to listOf(h(184, 137, 247), v(177, 192, 219), v(202, 192, 219)),
+        Jamo.WI to listOf(h(184, 137, 247), v(187, 192, 219), v(262, 80, 224)),
+        Jamo.WEO to listOf(h(184, 137, 247), v(177, 192, 219), h(209, 187, 212), v(227, 80, 244)),
+        Jamo.WE to listOf(h(184, 137, 247), v(177, 192, 219), h(209, 187, 212), v(227, 80, 244), v(257, 80, 244)),
+        Jamo.UI to listOf(h(184, 137, 227), v(242, 80, 204)),
     )
 
     @Test
@@ -249,12 +249,12 @@ class VowelStrokeAssemblerTest {
     @Test
     fun `VS-03 composer events - started, changed, pending - and a bare second stroke re-reads the first`() {
         val a = asm()
-        assertEquals(StrokePush.Pending, a.push(v(177, 152, 175), C))             // C's vertical dot: no vowel yet
+        assertEquals(StrokePush.Pending, a.push(v(177, 176, 199), C))             // C's vertical dot: no vowel yet
         assertEquals("ㆍ", a.pendingGlyph())
-        assertEquals(StrokePush.Started(Jamo.O), a.push(h(185, 137, 247), C))
-        assertEquals(StrokePush.Changed(Jamo.OE), a.push(v(262, 56, 200), C))
-        assertEquals(StrokePush.Changed(Jamo.WA), a.push(h(110, 262, 287), C))
-        assertEquals(StrokePush.Changed(Jamo.WAE), a.push(v(302, 56, 200), C))
+        assertEquals(StrokePush.Started(Jamo.O), a.push(h(209, 137, 247), C))
+        assertEquals(StrokePush.Changed(Jamo.OE), a.push(v(262, 80, 224), C))
+        assertEquals(StrokePush.Changed(Jamo.WA), a.push(h(134, 262, 287), C))
+        assertEquals(StrokePush.Changed(Jamo.WAE), a.push(v(302, 80, 224), C))
         // Bare 기 → 고 and 그 → 거: one stroke shows ㅣ / ㅡ; the second makes it a dot.
         val b = asm()
         assertEquals(StrokePush.Started(Jamo.I), b.push(v(100, 40, 98)))
@@ -264,18 +264,18 @@ class VowelStrokeAssemblerTest {
         assertEquals(StrokePush.Changed(Jamo.EO), g.push(v(82, 60, 160)))
         // With C the first stroke is a dot from the start: no re-reading.
         val c = asm()
-        assertEquals(StrokePush.Pending, c.push(h(100, 227, 247), C))
-        assertEquals(StrokePush.Started(Jamo.EO), c.push(v(252, 56, 160), C))
+        assertEquals(StrokePush.Pending, c.push(h(124, 227, 247), C))
+        assertEquals(StrokePush.Started(Jamo.EO), c.push(v(252, 80, 184), C))
     }
 
     @Test
     fun `VS-04 pending glyphs - C's dots, the dot after ㅜ, bare two strokes keep the first vowel`() {
-        assertEquals("ㆍ", write(C, v(177, 152, 175)).pendingGlyph())
-        assertEquals("ㆍ", write(C, h(100, 227, 247)).pendingGlyph())
-        val vv = write(C, v(167, 152, 172), v(192, 152, 172))
+        assertEquals("ㆍ", write(C, v(177, 176, 199)).pendingGlyph())
+        assertEquals("ㆍ", write(C, h(124, 227, 247)).pendingGlyph())
+        val vv = write(C, v(167, 176, 196), v(192, 176, 196))
         assertEquals("‥", vv.pendingGlyph())
         assertNull(vv.vowel)
-        val hh = write(C, h(90, 227, 252), h(120, 227, 252))
+        val hh = write(C, h(114, 227, 252), h(144, 227, 252))
         assertEquals("‥", hh.pendingGlyph())
         assertNull(hh.vowel)
         val wuDot = write(*gwoUpTo3.toTypedArray())   // ㅜ + dot
@@ -297,7 +297,7 @@ class VowelStrokeAssemblerTest {
         assertTrue(bareHh.pendingReplacesVowel)
         assertEquals("‥", write(h(80, 60, 80)).preview(h(120, 60, 80)))
         assertTrue(bareHh.close())
-        assertFalse(write(C, v(167, 152, 172), v(192, 152, 172)).pendingReplacesVowel)   // with C: no vowel to hide, plain ‥
+        assertFalse(write(C, v(167, 176, 196), v(192, 176, 196)).pendingReplacesVowel)   // with C: no vowel to hide, plain ‥
     }
 
     @Test
@@ -313,11 +313,11 @@ class VowelStrokeAssemblerTest {
         assertEquals(Jamo.AE, ae.vowel)
         assertEquals(StrokePush.Ignored, write(h(100, 50, 150)).push(v(20, 60, 85)))   // left of ㅡ
         // With C: a later vertical whose zone is not the role wanted (SWIPE 0.43: ㅛ ② must be an under-left dot, ㅚ ③ a right-up ㅣ).
-        assertEquals(StrokePush.Ignored, write(C, v(177, 152, 175)).push(v(237, 56, 150)))     // ㅛ ② must be a dot
-        assertEquals(StrokePush.Ignored, write(C, h(100, 227, 247)).push(v(150, 56, 150)))     // left of the first horizontal (x < L − t)
-        assertEquals(StrokePush.Ignored, write(C, *shapesC.getValue(Jamo.O).toTypedArray()).push(v(240, 190, 240)))   // ㅚ ③ must be ㅣ: P (240, 215), d 48 = under-left
-        assertEquals(StrokePush.Pending, write(C, h(160, 137, 247)).push(h(185, 137, 247)))      // SWIPE 0.43: ㅕ ② re-reads ㅡ as a dot (‥)
-        assertEquals(StrokePush.Ignored, write(C, h(160, 137, 247)).push(h(160, 137, 247)))      // a second ㅡ at the same height: no zone
+        assertEquals(StrokePush.Ignored, write(C, v(177, 176, 199)).push(v(237, 80, 174)))     // ㅛ ② must be a dot
+        assertEquals(StrokePush.Ignored, write(C, h(124, 227, 247)).push(v(150, 80, 174)))     // left of the first horizontal (x < L − t)
+        assertEquals(StrokePush.Ignored, write(C, *shapesC.getValue(Jamo.O).toTypedArray()).push(v(240, 214, 264)))   // ㅚ ③ must be ㅣ: P (240, 239), d 48 = under-left
+        assertEquals(StrokePush.Pending, write(C, h(184, 137, 247)).push(h(209, 137, 247)))      // SWIPE 0.43: ㅕ ② re-reads ㅡ as a dot (‥)
+        assertEquals(StrokePush.Ignored, write(C, h(184, 137, 247)).push(h(184, 137, 247)))      // a second ㅡ at the same height: no zone
     }
 
     @Test
@@ -341,10 +341,10 @@ class VowelStrokeAssemblerTest {
 
     @Test
     fun `VS-07 close drops unfinished strokes and says so, a vowel closes quietly`() {
-        assertTrue(write(C, h(100, 227, 247)).close())
+        assertTrue(write(C, h(124, 227, 247)).close())
         assertTrue(write(*gwoUpTo3.toTypedArray()).close())
         assertFalse(write(I, dotA).close())
-        val a = write(C, v(237, 56, 150))
+        val a = write(C, v(237, 80, 174))
         a.close()
         assertTrue(a.isEmpty)
         assertNull(a.consonant)
@@ -353,16 +353,16 @@ class VowelStrokeAssemblerTest {
 
     @Test
     fun `VS-08 C role and zone boundaries at 1 dp`() {
-        // SWIPE 0.43 3.6.3 (issue #217): the middle point P against the 45° line through (C.R, C.B) = (221, 148),
-        // d = (P.y − 148) − (P.x − 221); d > 0 = under-left (dot / ㅡ), d ≤ 0 = right-up (ㅣ / horizontal dot).
-        assertEquals(Jamo.I, write(C, v(221f, 138f, 158f)).vowel)                       // P (221, 148), d 0: right-up
-        assertEquals("ㆍ", write(C, v(221f, 138.2f, 158.2f)).pendingGlyph())           // d 0.2: under-left
-        assertEquals(Jamo.I, write(C, v(200f, 107f, 147f)).vowel)                       // P (200, 127), d 0
-        assertEquals("ㆍ", write(C, v(200f, 107.2f, 147.2f)).pendingGlyph())
-        assertEquals("ㆍ", write(C, h(127f, 190f, 210f)).pendingGlyph())               // P (200, 127), d 0: a horizontal dot
-        assertEquals(Jamo.EU, write(C, h(127.2f, 190f, 210f)).vowel)                    // d 0.2: ㅡ
+        // SWIPE 0.43 3.6.3 (issue #217): the middle point P against the 45° line through (C.R, C.B) = (221, 172),
+        // d = (P.y − 172) − (P.x − 221); d > 0 = under-left (dot / ㅡ), d ≤ 0 = right-up (ㅣ / horizontal dot).
+        assertEquals(Jamo.I, write(C, v(221f, 162f, 182f)).vowel)                       // P (221, 172), d 0: right-up
+        assertEquals("ㆍ", write(C, v(221f, 162.2f, 182.2f)).pendingGlyph())           // d 0.2: under-left
+        assertEquals(Jamo.I, write(C, v(200f, 131f, 171f)).vowel)                       // P (200, 151), d 0
+        assertEquals("ㆍ", write(C, v(200f, 131.2f, 171.2f)).pendingGlyph())
+        assertEquals("ㆍ", write(C, h(151f, 190f, 210f)).pendingGlyph())               // P (200, 151), d 0: a horizontal dot
+        assertEquals(Jamo.EU, write(C, h(151.2f, 190f, 210f)).vowel)                    // d 0.2: ㅡ
         // No first stroke is dropped for its place: far left, inside C, high up.
-        for (first in listOf(v(60, 56, 150), v(180, 60, 140), h(60, 140, 200), h(100, 60, 100))) assertTrue("$first", asm().push(first, C) != StrokePush.Ignored)
+        for (first in listOf(v(60, 80, 174), v(180, 84, 164), h(84, 140, 200), h(124, 60, 100))) assertTrue("$first", asm().push(first, C) != StrokePush.Ignored)
         // Bare ㅏ: the dot reaches S.x + t/2 = 110 and lies within S's height ± t/4.
         assertEquals(Jamo.A, write(I, h(100, 60, 110)).vowel)
         assertEquals(StrokePush.Ignored, write(I).push(h(100, 60, 109)))
@@ -384,11 +384,11 @@ class VowelStrokeAssemblerTest {
         for (len in listOf(15, 25, 60, 150)) {
             assertEquals("$len", Jamo.U, write(h(100, 50, 150), v(100, 100, 100 + len)).vowel)
             assertEquals("$len", Jamo.YA, write(I, h(80, 100, 125), h(120, 100, 100 + len)).vowel)
-            assertEquals("$len", Jamo.OE, write(C, v(177, 152, 175), h(185, 137, 247), v(262, 56, 56 + len)).vowel)
+            assertEquals("$len", Jamo.OE, write(C, v(177, 176, 199), h(209, 137, 247), v(262, 80, 80 + len)).vowel)
         }
         // With C the first stroke's own length does not matter either: a short ㅣ, a long dot.
-        assertEquals(Jamo.I, write(C, v(237, 56, 70)).vowel)
-        assertEquals("ㆍ", write(C, v(177, 150, 280)).pendingGlyph())
+        assertEquals(Jamo.I, write(C, v(237, 80, 94)).vowel)
+        assertEquals("ㆍ", write(C, v(177, 174, 304)).pendingGlyph())
     }
 
     @Test
@@ -406,16 +406,16 @@ class VowelStrokeAssemblerTest {
         assertEquals(Jamo.UI, e.vowel)
         assertEquals(StrokePush.Changed(Jamo.E), e.push(v(110, 40, 160)))
         // With C both go by the thirds, whatever the first horizontal's zone (SWIPE 0.43: "가로 점이면 ㅓ뿐" is gone).
-        assertEquals(Jamo.UI, write(C, h(100, 227, 277), v(247, 56, 105)).vowel)  // right-up dot, r 0.9, line 50 ≥ 24.5
-        assertEquals(Jamo.UI, write(C, h(160, 137, 227), v(242, 56, 180)).vowel)
+        assertEquals(Jamo.UI, write(C, h(124, 227, 277), v(247, 80, 129)).vowel)  // right-up dot, r 0.9, line 50 ≥ 24.5
+        assertEquals(Jamo.UI, write(C, h(184, 137, 227), v(242, 80, 204)).vowel)
     }
 
     @Test
     fun `VS-13 C is fixed by an assembly's first stroke`() {
         val a = asm()
-        assertEquals(StrokePush.Started(Jamo.I), a.push(v(237, 56, 150), C))
+        assertEquals(StrokePush.Started(Jamo.I), a.push(v(237, 80, 174), C))
         assertEquals(C, a.consonant)
-        assertEquals(StrokePush.Changed(Jamo.A), a.push(h(100, 237, 262), null))   // C stays for the open assembly
+        assertEquals(StrokePush.Changed(Jamo.A), a.push(h(124, 237, 262), null))   // C stays for the open assembly
         val b = asm()
         b.push(v(100, 40, 160))                                                     // bare
         assertNull(b.consonant)
@@ -428,44 +428,44 @@ class VowelStrokeAssemblerTest {
         assertEquals("ㅏ", a.preview(dotA))
         assertNull(a.preview(v(100, 40, 160)))
         assertEquals(listOf(I), a.strokes)
-        assertEquals("ㆍ", asm().preview(h(100, 227, 247), C))
+        assertEquals("ㆍ", asm().preview(h(124, 227, 247), C))
         assertEquals("ㅡ", asm().preview(h(100, 150, 170)))
-        assertEquals("ㆍ", asm().preview(v(137, 56, 150), C))                      // over C's left part: under-left, a dot (nothing is dropped)
+        assertEquals("ㆍ", asm().preview(v(137, 80, 174), C))                      // over C's left part: under-left, a dot (nothing is dropped)
     }
 
     @Test
     fun `VS-10 snapshot and restore keep C`() {
-        val a = write(C, v(177, 152, 175))
+        val a = write(C, v(177, 176, 199))
         val s = a.snapshot()
         a.close()
         a.restore(s)
         assertEquals(C, a.consonant)
-        assertEquals(StrokePush.Started(Jamo.O), a.push(h(185, 137, 247)))
+        assertEquals(StrokePush.Started(Jamo.O), a.push(h(209, 137, 247)))
     }
 
     @Test
     fun `debug text (issue 217) - role by C with its numbers, why a stroke would be ignored, the state and candidates`() {
         val a = asm()
         assertEquals("empty vowel=- pending=-", a.stateText())
-        // SWIPE 0.43 two zones: P = the middle point, d = (P.y − C.B) − (P.x − C.R) with C.R 221, C.B 148.
-        val through = v(170, 56, 180)                                 // P (170, 118), d = −30 + 51 = 21: under-left
-        assertEquals("first vertical under-left: shows a dot, both roles kept (P (170.0,118.0), d 21.0; C.R 221.0, C.B 148.0)",
+        // SWIPE 0.43 two zones: P = the middle point, d = (P.y − C.B) − (P.x − C.R) with C.R 221, C.B 172.
+        val through = v(170, 80, 204)                                 // P (170, 142), d = −30 + 51 = 21: under-left
+        assertEquals("first vertical under-left: shows a dot, both roles kept (P (170.0,142.0), d 21.0; C.R 221.0, C.B 172.0)",
             a.roleText(through, C))
         assertNull(a.ignoreReason(through, C))                       // nothing is dropped for its place
-        val overlap = v(177, 133, 168)                                // the device's 노 dot moved to 360 dp: P (177, 150.5), d 46.5
+        val overlap = v(177, 157, 192)                                // the device's 노 dot moved to 360 dp: P (177, 174.5), d 46.5
         assertTrue(a.roleText(overlap, C).startsWith("first vertical under-left: shows a dot"))
-        assertTrue(a.roleText(v(237, 56, 150), C).startsWith("first vertical right-up: shows ㅣ, both roles kept (P (237.0,103.0), d -61.0"))
-        assertTrue(a.roleText(h(160, 137, 247), C).startsWith("first horizontal under-left: shows ㅡ"))
-        assertTrue(a.roleText(h(100, 227, 247), C).startsWith("first horizontal right-up: shows a dot"))
-        val dot = v(180, 150, 170)
+        assertTrue(a.roleText(v(237, 80, 174), C).startsWith("first vertical right-up: shows ㅣ, both roles kept (P (237.0,127.0), d -61.0"))
+        assertTrue(a.roleText(h(184, 137, 247), C).startsWith("first horizontal under-left: shows ㅡ"))
+        assertTrue(a.roleText(h(124, 227, 247), C).startsWith("first horizontal right-up: shows a dot"))
+        val dot = v(180, 174, 194)
         assertEquals("no C (bare vowel)", a.roleText(dot))
         a.push(dot, C)
         assertEquals("V1[ㅣㅏㅑㅐㅒㅗㅛㅚㅘㅙ] vowel=- pending=ㆍ", a.stateText())
-        assertEquals("not by C (a later horizontal stroke)", a.roleText(h(185, 140, 220)))
-        assertEquals("vertical under-left = dot (P (150.0,160.0), d 83.0; C.R 221.0, C.B 148.0)", a.roleText(v(150, 150, 170)))
-        assertEquals("no vertical zone of the next candidates fits", a.ignoreReason(v(150, 150, 170)))   // left of the dot: not beside
-        assertNull(a.ignoreReason(h(185, 140, 220)))
-        a.push(h(185, 140, 220))
+        assertEquals("not by C (a later horizontal stroke)", a.roleText(h(209, 140, 220)))
+        assertEquals("vertical under-left = dot (P (150.0,184.0), d 83.0; C.R 221.0, C.B 172.0)", a.roleText(v(150, 174, 194)))
+        assertEquals("no vertical zone of the next candidates fits", a.ignoreReason(v(150, 174, 194)))   // left of the dot: not beside
+        assertNull(a.ignoreReason(h(209, 140, 220)))
+        a.push(h(209, 140, 220))
         assertEquals("O[ㅗㅚㅘㅙ] vowel=ㅗ pending=-", a.stateText())
     }
 }

@@ -78,6 +78,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
         private set
     override val fieldInfo: FieldInfo get() = dispatcher.field
     override val centerConsonant: Jamo? get() = if (::dispatcher.isInitialized) dispatcher.composer?.lastConsonant() else null
+    override val centerText: kbd.app.view.CenterText? get() = if (::dispatcher.isInitialized) dispatcher.centerText() else null
     override lateinit var guard: EngineGuard
     override lateinit var feedback: FeedbackPort
 

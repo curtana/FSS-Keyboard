@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.24** (2026-11-02)
+- 버전 **0.25** (2026-11-02)
+- 0.25(FSS#36·FSS#37, SWIPE 0.50 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 괄호)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
 - 0.24(FSS#17 오너 결정 "권장안대로"·오너 결정 A·PM 결정 B, SRS 0.68·HLD 0.61·SWIPE 0.48): **튜터를 입력 연습으로 다시 짰다.** 측정하는 튜터(1·3·5과, `TutorSession`·`TutorStep`·`TutorSteps`, `TutorFlow`, `TutorItemJudge`·`HowTo`, `PracticeEcho`·`PracticeKeyboard`·`PracticeLayouts`, `TypingStats`, `TutorMeasure`, `ThresholdEstimator`)와 기준값 저장(`ThresholdStore`·`ThresholdCodec`, 기준값 JSON 형식, 내보내기·가져오기·초기화 메뉴, `calibration` 쓰기)을 지웠다. 새 구성은 2절: 주제 넷·19항목(`PracticeTopics`), 실제 자판 뷰를 그대로 쓰는 연습 자판(`PracticeInput`이 실제 `InputDispatcher`를 메모리 편집기에 연결), 결과 판정 `PracticeItemJudge`(탭 자판 항목은 ⌫ 반영 글자열), 화면 `PracticeActivity`·`PracticeFlow`, 첫 실행 `PracticeLaunchPolicy`(주제 목록만). 기준값은 코드 상수(3절), 위치 허용 오차는 실행 때 긋기 키 폭 × 0.4. 옛 저장 파일 `thresholds.json`은 읽지 않고 지우지도 않는다(4절). 0.23까지의 기록은 아래 이력과 git에 남는다.
 - 0.23(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 공개판 튜터를 지웠다 — 1-1 쿼티(`MinCrossOnQwertyStep`), `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`, `PracticeLayouts.QWERTY`, `TutorSession`의 `personal` 구분과 1-1 한쪽 분포 규칙(`ONE_SIDED_DISTANCE`), `TutorMeasure.jitter`·`jitterSample`. `PersonalTutorSteps` → `TutorSteps`. 이 문서의 "public …" 설명은 0.22 이전 기록이고, "personal"은 모든 빌드로 읽는다. `ThresholdEstimator.oneSidedDistance`는 남겼다(쓰는 곳 없음, 튜터 정리 이슈 #224에서).
 - 0.22(이슈 #217 오너 결정): **`minCrossDp` = 8dp 고정.** 탭 겹침 안내(`Message.OVERLAP_TAP`, `tutor_overlap_tap`) 삭제(2.3). 튜터는 이 값을 바꾸지 않는다 — public 1-1·personal 1-2의 `MIN_CROSS` 규칙은 표본 수(`NotEnough`)만 보고 값은 그대로, 탭 ↔ 점 겹침은 1-2를 다시 하게 하지 않는다(기록 `calibration.tapDot`에는 남음, 2.2). 저장 파일의 `minCrossDp`는 읽지 않고(없어도·범위 밖이어도 됨) 8을 쓰며, 쓰기는 8을 그대로 적는다(옛 판 호환, 4절).
@@ -83,12 +84,12 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 
 **한 시도 `PracticeInput(board, feedback, errorLog, settings) : SwipeHost`:** 실제 `InputDispatcher`·`ComposingController`·`ModeController(모드 하나)`와 모드의 조합기(긋기 `ComposePolicy.SWIPE`, 그래피티 `GRAFFITI`, 쿼티 없음)를 `PracticeEditor`에 잇는다. 기준값은 `ThresholdDefaults.VALUES`(3절). 오류 진동(`FeedbackPort.error`)을 지나며 `errored`를 켠다 — SWIPE 10.2의 ✗ 조건(무시된 획·천지인 요소, 버린 임시 획, 인식 실패)이 모두 이 진동이다.
 - `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫만** 넘긴다. 스페이스·↵·화살표·Esc·Del·Tab·모드 키·설정 획은 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
-- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`라 가운데 자음·C 기준 판정이 실제와 같다.
+- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`(C 기준 판정), `centerText` = `dispatcher.centerText()`(0.25, 가운데 글자)라 실제와 같다.
 - `graffiti(templates, lang, flash, redraw)`: 실제 `GraffitiInputHandler`(인식기·`GraffitiState`·천지인 조립기)를 만들고 패드 언어를 항목의 `lang`으로 둔다(한영 전환 획은 연습하지 않음, SWIPE 10.1 ③).
 
 **연습 자판(`BoardFactory.build`, 시도마다 새로):** 실제 뷰를 `BoardFrame` 안에 둔다.
 - 탭 자판: `TapKeyboardView` + `TapLayouts.QWERTY`(편집 줄 포함, 오너 결정 A), 높이 = 줄 수 × 설정 줄 높이.
-- 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 자음이 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
+- 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 글자가 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
 - 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만 — 한글 / 영문 / 숫자, `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
 - **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이 바뀌었거나 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
 

@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.26** (2026-11-02)
+- 버전 **0.27** (2026-11-02)
+- 0.27(FSS#36, SWIPE 0.50 9.5, SRS 0.70 FR-DSP-10): `InputDispatcher.centerText()`(가운데 글자, 6.1)와 `strokeBase`(첫 획 직전 조합기, `onJamoEvents`에서 뜸, 스냅숏에 넣음). `KeyboardService.centerText = dispatcher.centerText()`(3절 표).
 - 0.26(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): 기준값은 코드 상수(`thresholds = ThresholdDefaults.VALUES`), `ThresholdStore` 읽기와 `onStartInputView`의 다시 읽기 삭제.
 - 0.25(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): `KeyboardService`는 `ModeController`에 모든 모드를 넘긴다(긋기를 빼는 공개판 순서 없음, 5절). `createSwipeView`는 늘 뷰를 준다.
 - 0.24(이슈 #189, SRS 0.45 FR-GRF-09·09a, HLD 0.41 5장·5A): **그래피티 획 안내표의 버튼과 덮개는 `KeyboardRootView`가 가진다**(새 7.1). 빈 띠 오른쪽 끝 1줄 × 1줄 버튼(누를 때 피드백·토글), 패드 + 보조 줄 위 덮개(`GraffitiGuidePanel`, LLD-05 10절), 열 때 모드 뷰의 진행 중 터치 취소와 그 제스처의 나머지 가로채기. `setModeView`는 모드 뷰만 바꾼다(버튼·덮개는 남음). 서비스: `showModeView`에서 그래피티면 `enableGuide`, 아니면 `disableGuide`, `onWindowHidden`·`onFinishInputView(false)`에서 `closeGuide`(3절). 창 높이·인셋은 그대로.
@@ -79,7 +80,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
 | `onEvaluateFullscreenMode()` | `false` | FR-CMN-12 |
 | `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 새 폭에, 줄 높이 유지) | FR-CMN-12 |
 | `onComputeInsets(out)` | `contentTopInsets = visibleTopInsets = 0`(입력 뷰 위 끝), `touchableInsets = TOUCHABLE_INSETS_FRAME`. 창 전체(빈 띠 포함)가 터치를 받는다 | SRS 3.3 빈 띠 |
-| `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, LLD-04 9.5) 등 | LLD-03 2.2 |
+| `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, 판정 C), `centerText = dispatcher.centerText()`(0.27, LLD-04 9.5) 등 | LLD-03 2.2 |
 
 ### 3.1 `onStartInputView(info, restarting)`
 ```
@@ -228,7 +229,8 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onJamoEvents(ev, errorVibe)` (긋기) | `if (errorVibe) feedback.error()`(0.18: 조립을 닫으며 모음이 못 된 획을 버림); `r = composer.applyAll(ev)`; `out.show(r, swipeState?.pendingGlyph() ?: "", swipeState?.pendingReplacesVowel() == true)`(ㆍ·‥ 임시 글자를 조합 글자 뒤에, 빈 이벤트도 보임); `markInput()` | HLD 4.1, SWIPE 3.3·3.4 |
+| `onJamoEvents(ev, errorVibe)` (긋기) | `if (errorVibe) feedback.error()`(0.18: 조립을 닫으며 모음이 못 된 획을 버림); `r = composer.applyAll(ev)`; `out.show(r, swipeState?.pendingGlyph() ?: "", swipeState?.pendingReplacesVowel() == true)`(ㆍ·‥ 임시 글자를 조합 글자 뒤에, 빈 이벤트도 보임); 0.27: 적용 **전** 조합기 스냅숏을 떠 두고, 적용 뒤 `swipeState.vowelStrokes()`가 1이면(이 획이 조립의 첫 획) `strokeBase` = 그 스냅숏, 0·긋기 아님이면 null, 2 이상이면 그대로; `markInput()` | HLD 4.1, SWIPE 3.3·3.4 |
+| `centerText()` (0.27, 읽기만) | 조합기가 없거나 `lastConsonant() == null`(조합 없음·낱모음)이면 null. `text` = `composingText()` + 매퍼 `pendingGlyph()`(`pendingReplacesVowel`이면 마지막 글자 자리에) — 편집기에 보이는 조합 글자와 같다. `swipeState.otherRole()`이 `Vowel(v)`면 `other` = 조합기 사본에 `Vowel(v)`를 넣은 `composingText()`, `Dot(place)`면 `other` = `strokeBase`로 되살린 조합기(없으면 사본의 `undoLast()`)의 `composingText()`, `otherDot = place`. 사본은 `HangulComposer(c.policy)` + `restore(c.snapshot())`라 실제 조합기·편집기는 그대로 | SWIPE 9.5, FR-DSP-10, FSS#36 |
 | `onSwipeText(s, vibe)` (둘레 숫자·기호) | `finishAll()`; `out.commitText(s)`; `if vibe feedback.error()`; `markInput()`. 조립기 비움은 매퍼가 이미 함(LLD-04 6.2) | FR-SWP-42, 43, D-30 |
 | `onTapOutput(key, o)` | `o.jamo != null`(두벌식 글자) → `j = Jamo.ofCompat(o.jamo)`, `composer.apply(if j.kind == CONSONANT Consonant(j) else Vowel(j))` → `out.show`. `o.text != null` → `finishAll()` 뒤 `out.commitText(o.text)`(쿼티 글자도 이 길, FR-TAP-11a). `o.errorVibe` → `feedback.error()`. `markInput()` | FR-TAP-01a~03a, 11a |
 | `onFunctionDown(BACKSPACE)` | `backspace()`; `markInput()` | FR-CMN-07 |
@@ -250,7 +252,7 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 | `error()` (그래피티 `InputSink`) | `feedback.error()`(인식 실패 오류 진동) | FR-GRF-08 |
 | `hidesDisplay` (그래피티 `InputSink`, 0.21) | `field.hidesDisplay`(비밀번호만) | FR-CMN-08 ①, FR-GRF-07 |
 | `field` (그래피티 `InputSink`) | 지금 `field`(그래피티 Enter → `out.enter(field)`, G2) | FR-CMN-09 |
-| `snapshot()` (`GuardedState`) | `Snapshot(composer?.snapshot(), swipeState?.snapshot(), graffiti?.snapshot())` — 엔진 상태만. `ComposingController`는 넣지 않는다(LLD-09 2절 스냅숏 범위, 이슈 #75) | HLD 9장, NFR-03 |
+| `snapshot()` (`GuardedState`) | `Snapshot(composer?.snapshot(), swipeState?.snapshot(), graffiti?.snapshot(), strokeBase)`(0.27: `strokeBase`도, `restore`가 되돌림) — 엔진 상태만. `ComposingController`는 넣지 않는다(LLD-09 2절 스냅숏 범위, 이슈 #75) | HLD 9장, NFR-03 |
 | `restore(s)` (`GuardedState`) | 스냅숏에 든 것만 각 객체의 `restore`로 되돌림(null 칸은 건너뜀). 편집기·`ComposingController`는 건드리지 않는다(D-32) | HLD 9장 |
 
 - 숫자류 입력창에서도 입력 분류(6.2)와 `markInput()`은 같다(SRS FR-CMN-03a "숫자류 입력창(FR-CMN-04)에서도 이 구분은 같다"). 0.1의 `keypadActive`(숫자 자판 입력은 typed를 바꾸지 않음)는 숫자 키패드가 없어져 없앴다.

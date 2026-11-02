@@ -204,22 +204,22 @@ class SwipeLayoutTest {
         assertEquals(mapOf("(" to 2, ")" to 2), counts.filterValues { it > 1 })
     }
 
-    /** LLD-11 SL-08 (SWIPE 9.5 "자리와 크기", issue #213): C at the top of the consonant area, centred across, two rows high, 0.85 wide. */
+    /** LLD-11 SL-08 (SWIPE 9.5 "자리와 크기", issue #213, FSS#37): C at the top of the consonant area half a row down, centred across, two rows high, 0.85 wide. */
     @Test
     fun `SL-08 the consonant place C - portrait, landscape, low rows`() {
         val p = SwipeLayout.consonantBox(360f, 48f)
         assertEquals(180f - 40.8f, p.left, 1e-3f)               // 139.2: centre x = 180 (the ㄸ column's centre), width 81.6
-        assertEquals(52f, p.top, 1e-3f)                         // double row top + 4
-        assertEquals(148f, p.bottom, 1e-3f)                     // 96 dp high
+        assertEquals(76f, p.top, 1e-3f)                         // double row top + 4 + half a row (FSS#37)
+        assertEquals(172f, p.bottom, 1e-3f)                     // 96 dp high
         assertEquals(180f + 40.8f, p.right, 1e-3f)              // 220.8
         assertEquals(3.5f * 360f / 7, (p.left + p.right) / 2, 1e-3f)   // = the middle column's centre
         val land = SwipeLayout.consonantBox(720f, 48f)          // wider keys, same size, still centred (SWIPE 9.5 가로 화면)
-        assertEquals(52f, land.top, 1e-3f)
+        assertEquals(76f, land.top, 1e-3f)
         assertEquals(96f, land.bottom - land.top, 1e-3f)
         assertEquals(81.6f, land.right - land.left, 1e-3f)
         assertEquals(360f, (land.left + land.right) / 2, 1e-3f)
         val low = SwipeLayout.consonantBox(360f, 40f)           // FR-SET-06: lower rows shrink C with them
-        assertEquals(44f, low.top, 1e-3f)
+        assertEquals(64f, low.top, 1e-3f)                       // 40 + 4 + 20: the half row follows the rows too
         assertEquals(80f, low.bottom - low.top, 1e-3f)
         assertEquals(180f, (low.left + low.right) / 2, 1e-3f)
         // C sits on consonant keys: its corners are inside the double row … the ㅁ row, columns ㅉ … ㄲ.

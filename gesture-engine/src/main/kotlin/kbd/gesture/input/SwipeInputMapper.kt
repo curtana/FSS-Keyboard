@@ -13,6 +13,7 @@ import kbd.hangul.cheonjiin.CjState
 import kbd.hangul.event.JamoEvent
 import kbd.hangul.jamo.Jamo
 import kbd.hangul.stroke.ConsonantBox
+import kbd.hangul.stroke.OtherRole
 import kbd.hangul.stroke.StrokePop
 import kbd.hangul.stroke.StrokePush
 import kbd.hangul.stroke.StrokeSnapshot
@@ -90,8 +91,11 @@ class SwipeInputMapper(th: Thresholds) {
     /** What vowel stroke [s] would show now, null if it would be ignored (the guide, SWIPE 9). */
     fun preview(s: VowelStroke): String? = vs.preview(s, consonant)
 
-    /** The open vowel strokes (the guide's next-stroke places, SWIPE 9.1). */
+    /** The open vowel strokes (the trail, SWIPE 9.4). */
     val strokes: List<VowelStroke> get() = vs.strokes
+
+    /** = `VowelStrokeAssembler.otherRole`: the lone first stroke's other role, for the center syllable's bracket (SWIPE 9.5, FSS#36). */
+    fun otherRole(): OtherRole? = vs.otherRole
 
     // Debug text for the personal debug build's stroke log (issue #217); never judged with.
 

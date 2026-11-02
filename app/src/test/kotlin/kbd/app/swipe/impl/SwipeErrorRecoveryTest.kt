@@ -64,7 +64,7 @@ class SwipeErrorRecoveryTest {
 
     /*
      * Vowel strokes are judged against the drawn consonant C while a consonant composes (SWIPE 3.6.3, TBD-24).
-     * Here C = consonantBox(350, 50) = (132.5, 54)–(217.5, 154) (centred, issue #213), t = 20, b = C.B − t/2 = 144
+     * Here C = consonantBox(350, 50) = (132.5, 79)–(217.5, 179) (centred, issue #213, half a row down, FSS#37), t = 20, b = C.B − t/2 = 169
      * (SWIPE 9.5). So: ㅣ starts right of C at C's height (x 230 ≥ C.R − t/2, T 60 < b) on the ㄲ key; a dot (ㅏ's,
      * or a lone first dot) lies right of C at C's height (L 230 ≥ C.R − t, y 110 < b) on the ㄱ key.
      */

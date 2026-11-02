@@ -57,6 +57,17 @@ sealed interface StrokePop {
     data class Popped(val undoComposer: Boolean) : StrokePop
 }
 
+/** Where a dot stands beside the consonant (SWIPE 9.5 bracket, owner 2026-11-02, FSS#36): ㅗ·ㅛ's under it, ㅓ·ㅕ's right of it. */
+enum class DotPlace { UNDER, RIGHT }
+
+/** The role a lone first stroke would have if it were not the one shown (SWIPE 3.6.3 two roles, 9.5 bracket, FSS#36). */
+sealed interface OtherRole {
+    /** ㅣ or ㅡ: the composer would take this vowel. */
+    data class Vowel(val v: Jamo) : OtherRole
+    /** A dot: no vowel yet, the dot drawn at [place]. */
+    data class Dot(val place: DotPlace) : OtherRole
+}
+
 /** Value copy for error recovery (LLD-09): the strokes and the C they were judged against. */
 data class StrokeSnapshot(val strokes: List<VowelStroke>, val consonant: ConsonantBox? = null)
 
@@ -147,6 +158,23 @@ class VowelStrokeAssembler(var tol: Float) {
      * character (its ㅣ / ㅡ) on screen; the composer itself keeps that vowel for ⌫ and closing.
      */
     val pendingReplacesVowel: Boolean get() = reading(seq, consonant)?.hidesVowel ?: false
+
+    /**
+     * The other role of a lone first stroke with C (SWIPE 3.6.3: it keeps both until the second stroke), for the
+     * center syllable's bracket (SWIPE 9.5, FSS#36): a vertical shown as ㅣ could be ㅗ·ㅛ's dot under the consonant
+     * and one shown as a dot could be ㅣ; a horizontal shown as ㅡ could be ㅓ·ㅕ's dot right of it and one shown as a
+     * dot could be ㅡ. Null with no C, no stroke or more than one.
+     */
+    val otherRole: OtherRole?
+        get() {
+            val c = consonant ?: return null
+            val s = seq.singleOrNull() ?: return null
+            val ul = underLeft(s, c)
+            return when {
+                s.vertical -> if (ul) OtherRole.Vowel(Jamo.I) else OtherRole.Dot(DotPlace.UNDER)
+                else -> if (ul) OtherRole.Dot(DotPlace.RIGHT) else OtherRole.Vowel(Jamo.EU)
+            }
+        }
 
     fun snapshot(): StrokeSnapshot = StrokeSnapshot(seq.toList(), consonant)
 

@@ -205,24 +205,25 @@ class SwipeDotFirstTest {
 
     @Test
     fun `the owner's tablet strokes (FSSStroke 2026-11-02, 711 dp) - 노, 뚜, two long ㅣ (SWIPE 0_43 two zones)`() {
+        // The records were made with C 24 dp higher (before FSS#37); each stroke is moved down with C (SWIPE 3.6.5: only the difference to C counts).
         val b = Board(711f)
         b.tap("ㄴ")
         assertEquals(listOf<JamoEvent>(JamoEvent.Consonant(Jamo.N)), b.host.events.last())
-        assertEquals(emptyList<JamoEvent>(), b.stroke(362f, 133f, 358f, 168f))              // P (360, 150.5), d 38.8: under-left = a dot
+        assertEquals(emptyList<JamoEvent>(), b.stroke(362f, 157f, 358f, 192f))              // P (360, 174.5), d 38.8: under-left = a dot
         assertEquals("ㆍ", b.mapper.pendingGlyph())
-        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.O)), b.stroke(320f, 185f, 400f, 185f))   // 노
+        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.O)), b.stroke(320f, 209f, 400f, 209f))   // 노
         assertEquals(0, b.host.errors)
         val dd = Board(711f)
         dd.tap("ㄸ")
-        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.EU)), dd.stroke(304.9f, 139.1f, 401.3f, 134.7f))   // P (353.1, 136.9), d 32.1: ㅡ
-        assertTrue(dd.lines.last(), dd.lines.last().contains("role=first horizontal under-left: shows ㅡ, both roles kept (P (353.1,136.9), d 32.1;"))
-        assertEquals(listOf<JamoEvent>(JamoEvent.ReplaceVowel(Jamo.U)), dd.stroke(355f, 150f, 355f, 175f))   // 뚜
+        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.EU)), dd.stroke(304.9f, 163.1f, 401.3f, 158.7f))   // P (353.1, 160.9), d 32.1: ㅡ
+        assertTrue(dd.lines.last(), dd.lines.last().contains("role=first horizontal under-left: shows ㅡ, both roles kept (P (353.1,160.9), d 32.1;"))
+        assertEquals(listOf<JamoEvent>(JamoEvent.ReplaceVowel(Jamo.U)), dd.stroke(355f, 174f, 355f, 199f))   // 뚜
         val g = Board(711f)                                                                   // after its ㄱ tap
-        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.I)), g.stroke(409f, 58f, 407f, 146f))     // P (408, 102), d −57.7: ㅣ
+        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.I)), g.stroke(409f, 82f, 407f, 170f))     // P (408, 126), d −57.7: ㅣ
         val long = Board(711f)
-        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.I)), long.stroke(445f, 58f, 443f, 170f))  // P (444, 114), d −81.7: ㅣ
+        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.I)), long.stroke(445f, 82f, 443f, 194f))  // P (444, 138), d −81.7: ㅣ
         val longer = Board(711f)
-        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.I)), longer.stroke(409f, 57f, 409f, 220f)) // P (409, 138.5), d −22.2: ㅣ
+        assertEquals(listOf<JamoEvent>(JamoEvent.Vowel(Jamo.I)), longer.stroke(409f, 81f, 409f, 244f)) // P (409, 162.5), d −22.2: ㅣ
         assertEquals(0, dd.host.errors + g.host.errors + long.host.errors + longer.host.errors)
     }
 
@@ -235,8 +236,8 @@ class SwipeDotFirstTest {
             val colW = w / 7
             val x0 = colW - 5                                  // 5 dp inside column 0
             assertEquals(if (w == 711f) 213.1f else 87.8f, b.c.left - colW, 0.1f)   // column 0 ends this far left of C (#213)
-            assertEquals("cheonjiin", b.keyAt(x0, b.c.bottom + 32))
-            assertEquals("w=$w", listOf<JamoEvent>(JamoEvent.Vowel(Jamo.EU)), b.stroke(x0, b.c.bottom + 32, b.c.right, b.c.bottom + 32))
+            assertEquals("cheonjiin", b.keyAt(x0, b.c.bottom + 10))   // the cheonjiin row (C.B + 32 is the symbol3 row since FSS#37)
+            assertEquals("w=$w", listOf<JamoEvent>(JamoEvent.Vowel(Jamo.EU)), b.stroke(x0, b.c.bottom + 10, b.c.right, b.c.bottom + 10))
             assertEquals(1, b.host.errors)                     // the dropped dot (SWIPE 3.3 "조립 끝")
             assertEquals(0, b.mapper.strokes.size)
             assertEquals(0, b.logic.trail.paths.size)          // the dot's trail went with the ㅡ
@@ -247,16 +248,16 @@ class SwipeDotFirstTest {
     fun `FSSStroke lines - the consonant tap, the role by C with its numbers and the assembly`() {
         val b = Board(711f)
         assertTrue(b.lines[0], b.lines[0].startsWith("tap key=ㄱ view=711.0x288.0"))
-        assertTrue(b.lines[0], b.lines[0].contains("C=(314.7,52.0,396.3,148.0)"))
-        b.stroke(b.cx - 20, 110f, b.cx - 20, 150f)                          // over C: its middle is under-left = a dot (SWIPE 0.43)
+        assertTrue(b.lines[0], b.lines[0].contains("C=(314.7,76.0,396.3,172.0)"))
+        b.stroke(b.cx - 20, 134f, b.cx - 20, 174f)                          // over C: its middle is under-left = a dot (SWIPE 0.43)
         val first = b.lines[1]
-        assertTrue(first, first.startsWith("stroke key=ㄷ view=711.0x288.0 from=(335.5,110.0) to=(335.5,150.0) bbox=(335.5,110.0)-(335.5,150.0)"))
-        assertTrue(first, first.contains("C=(314.7,52.0,396.3,148.0) t=20.0 center=ㄱ shape=vertical"))
-        assertTrue(first, first.contains("role=first vertical under-left: shows a dot, both roles kept (P (335.5,130.0), d 42.8; C.R 396.3, C.B 148.0) result=jamo[]"))
+        assertTrue(first, first.startsWith("stroke key=ㄷ view=711.0x288.0 from=(335.5,134.0) to=(335.5,174.0) bbox=(335.5,134.0)-(335.5,174.0)"))
+        assertTrue(first, first.contains("C=(314.7,76.0,396.3,172.0) t=20.0 center=ㄱ shape=vertical"))
+        assertTrue(first, first.contains("role=first vertical under-left: shows a dot, both roles kept (P (335.5,154.0), d 42.8; C.R 396.3, C.B 172.0) result=jamo[]"))
         assertTrue(first, first.endsWith("assembly=V1[ㅣㅏㅑㅐㅒㅗㅛㅚㅘㅙ] vowel=- pending=ㆍ"))
-        b.stroke(320f, 150f, 320f, 170f)                                     // left of the first: not beside it
-        assertTrue(b.lines[2], b.lines[2].contains("role=vertical under-left = dot (P (320.0,160.0), d 88.3; C.R 396.3, C.B 148.0) result=Ignored ignored=no vertical zone of the next candidates fits"))
-        b.stroke(20f, b.c.bottom + 32, b.c.right, b.c.bottom + 32)            // from the cheonjiin key
+        b.stroke(320f, 174f, 320f, 194f)                                     // left of the first: not beside it
+        assertTrue(b.lines[2], b.lines[2].contains("role=vertical under-left = dot (P (320.0,184.0), d 88.3; C.R 396.3, C.B 172.0) result=Ignored ignored=no vertical zone of the next candidates fits"))
+        b.stroke(20f, b.c.bottom + 10, b.c.right, b.c.bottom + 10)            // from the cheonjiin key
         assertTrue(b.lines[3], b.lines[3].contains("key=cheonjiin"))
         assertTrue(b.lines[3], b.lines[3].contains("closed: dropped 1 open stroke(s) assembly=empty"))
     }
