@@ -28,7 +28,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** SS-01..SS-05 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
+/** SS-01..SS-05, SS-07, SS-08 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
 class SettingsStoreTest {
 
     @get:Rule
@@ -118,6 +118,19 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `SS-08 modes on by default, graffiti and swipe turn off and read back`() {
+        val all = setOf(InputMode.SWIPE, InputMode.QWERTY, InputMode.DUBEOLSIK, GRAFFITI)
+        val d = SettingsStore(open()).loadBlocking()
+        assertTrue(d.graffitiEnabled)
+        assertTrue(d.swipeEnabled)
+        assertEquals(all, d.enabledModes)
+        runBlocking { SettingsStore(reopen()).update { it.copy(graffitiEnabled = false) } }
+        assertEquals(all - GRAFFITI, SettingsStore(reopen()).loadBlocking().enabledModes)
+        runBlocking { SettingsStore(reopen()).update { it.copy(swipeEnabled = false) } }
+        assertEquals(setOf(InputMode.QWERTY, InputMode.DUBEOLSIK), SettingsStore(reopen()).loadBlocking().enabledModes)
+    }
+
+    @Test
     fun `update writes every field and null lastMode removes the key`() {
         val changed = Settings(
             lastMode = GRAFFITI,
@@ -130,6 +143,8 @@ class SettingsStoreTest {
             graffitiLetterRatio = 0.5f,
             practiceListShown = true,
             practiceDone = setOf("graffiti"),
+            graffitiEnabled = false,
+            swipeEnabled = false,
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())
