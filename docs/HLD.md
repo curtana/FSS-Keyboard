@@ -1,8 +1,8 @@
 # 상위 수준 설계 (HLD)
 
-- 문서: HLD, 버전 **0.66** (2026-11-02)
+- 문서: HLD, 버전 **0.67** (2026-11-03)
 - 상태: 초안. LLD 0.1이 올린 설계 변경 요청 DCR-01~21(오너 승인 2026-10-27)을 반영했다.
-- 요구사항: [SRS.md](SRS.md) 0.73
+- 요구사항: [SRS.md](SRS.md) 0.74
 - 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.53, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
 
 ## 1. 설계 원칙
@@ -459,7 +459,7 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 | FR-SWP-60~65 | 자판 배치 데이터(천지인 키), `StrokeClassifier`(천지인 키 결과), `SwipeInputMapper`(조립 닫기, 모음 획과 섞지 않음), `core-hangul.CheonjiinAssembler`, `HangulComposer`(`ReplaceVowel`, 요소 단위 ⌫), `GuideOverlay`·`ProgressState`(천지인 키 안내), `Feedback`(무시 요소 오류 진동). FR-SWP-66(설정 키)은 이슈 #205로 삭제 |
 | FR-GRF-01~08 (05a~05d 포함) | `GraffitiPadView`(보조 줄, 패드 상태 표시), `InkCollector`, `recognizer`(Recognizer, GraffitiState), `core-hangul.CheonjiinAssembler`, `Feedback`(인식 실패 오류 진동) |
 | FR-GRF-09~09d | `recognizer.GuideCatalog`(언어와 상관없는 칸 목록 하나 = 템플릿 id·규칙 획, 임시 표시), `GraffitiGuidePanel`(불투명 덮개·✕·세로 스크롤), `KeyboardRootView`(빈 띠 안내표 버튼, 덮개 자리 터치 소비, 열 때 진행 중 패드 포인터 버림, 5장) |
-| FR-SET-02~06, 08, 09 | `SettingsActivity`(08 = 첫 묶음 "입력 모드" 체크 상자, 09 = "자판" 묶음의 세로·가로 폭·정렬), `SettingsStore`, `Feedback` |
+| FR-SET-02~06, 08, 09 | `SettingsActivity`(08 = 첫 묶음 "입력 모드" 체크 상자, 09 = "자판" 묶음의 "세로 화면"·"가로 화면" 상자 — 상자마다 키 크기·정렬, 지금 화면 방향 상자에 "지금 화면" 표시(FSS#44)), `SettingsStore`, `Feedback` |
 | NFR-01, 02 | 5A·6장 그리기 정책, 11장 실기기 계측 |
 | NFR-03, 05 | 9장 오류 처리, 7.3 오류 기록 규칙 |
 | NFR-04 | 1장 결정성, 4.3 시각은 `StrokeResult` 값만 씀 |
@@ -554,3 +554,4 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 | 0.64 | 2026-11-02 | SRS 0.71·SWIPE 0.51 반영(오너 결정 2026-11-02, FSS#25, 폭 지정 방식 변경 포함): 5A 자판 폭과 정렬(순수 함수 `KeyboardWidth` — 키 한 칸 폭 × 10, 가용 폭에서 멈춤, 루트가 모드 뷰·덮개·버튼을 W로 놓음, 남는 자리 소비, 배치·판정 코드 그대로, 테두리 = 모드 뷰 바깥 변, 다시 놓기, 입력 연습 자판 틀), 7.2 최소 통과 거리 문장, 7.3 저장 데이터, 8장 `onConfigurationChanged`, 13장 FR-CMN-14·FR-SET-09 |
 | 0.65 | 2026-11-02 | SRS 0.72·SWIPE 0.52 반영(오너 결정·보충 2026-11-02, FSS#36): 6장 가운데 글자 행 — 괄호 후보 삭제, 아직 모음이 아닌 점 상태는 점을 자리에 찍음 |
 | 0.66 | 2026-11-02 | SRS 0.73·SWIPE 0.53 반영(오너 결정·PM 결정 2026-11-02, FSS#43): 7.1 입력 연습 판정 — 긋기·그래피티는 확정된 글자로(스페이스가 마지막 글자의 끝 동작) |
+| 0.67 | 2026-11-03 | SRS 0.74 반영(오너 결정 2026-11-03, FSS#44): 13장 추적의 FR-SET-09 — 설정 화면 "자판" 묶음을 방향마다 상자(키 크기·정렬)로, 지금 화면 방향 상자에 "지금 화면" 표시 |
