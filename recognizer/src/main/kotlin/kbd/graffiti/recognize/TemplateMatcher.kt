@@ -14,7 +14,7 @@ import kotlin.math.sqrt
  * corner-count aid. Deterministic: no clock, no randomness (NFR-04).
  *
  * Closed loops (FSS#33, LLD-05 §3.2 step 4a): a hand-drawn circle seldom starts where the template does and seldom
- * closes exactly. Against a **loop template** (a closed stroke with no corners: ㅇ, o, 0, @) an input that is a
+ * closes exactly. Against a **loop template** (a closed stroke with no corners: ㅇ, o, 0, @, °) an input that is a
  * near-closed loop ([loopOf]) is also scored as one exact lap, its start shifted round to where it fits best
  * ([cyclicScore]); the better of that and the plain score counts. Direction still tells (the templates carry both).
  */
