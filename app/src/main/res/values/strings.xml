@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FSS Keyboard</string>
+    <!-- Shown in the system input method list (FR-CMN-01). -->
+    <string name="ime_name">FSS Keyboard</string>
+</resources>

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "id": "EC-11-a",
+  "key": { "kind": "CONSONANT", "label": "ㄱ", "rect": [0, 0, 51, 48], "outer": ["BOTTOM"] },
+  "thresholds": "default",
+  "t0": 0,
+  "legs": [["D", 45]],
+  "stepDp": 2, "msPerDp": 2,
+  "expect": { "crossings": [["BOTTOM", "OUT"]] }
+}

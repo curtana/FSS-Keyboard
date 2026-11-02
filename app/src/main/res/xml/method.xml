@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Input method metadata (LLD-08 §3, FR-CMN-01). T33 adds the settings activity. -->
+<input-method xmlns:android="http://schemas.android.com/apk/res/android" />

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen reader names of the tap keyboard function keys (LLD-05A §7, NFR-07). Other keys read their label. -->
+    <string name="a11y_key_esc">이스케이프</string>
+    <string name="a11y_key_tab">탭</string>
+    <string name="a11y_key_left">왼쪽 화살표</string>
+    <string name="a11y_key_up">위쪽 화살표</string>
+    <string name="a11y_key_down">아래쪽 화살표</string>
+    <string name="a11y_key_right">오른쪽 화살표</string>
+    <string name="a11y_key_delete">뒤 글자 지우기</string>
+    <string name="a11y_key_backspace">지우기</string>
+    <string name="a11y_key_space">스페이스</string>
+    <string name="a11y_key_enter">엔터</string>
+    <string name="a11y_key_mode">입력 모드 전환, 위로 밀면 설정</string>
+</resources>
