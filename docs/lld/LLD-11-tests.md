@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.40** (2026-11-02)
+- 버전 **0.41** (2026-11-03)
+- 0.41(FSS#44, LLD-07 0.28): 7.7에 WN-01·WN-02(`WidthRowsNowTest`, Robolectric) — 설정 화면의 지금 화면 방향 줄 표시.
 - 0.40(FSS#25, LLD-08 0.29 7.2, LLD-07 0.27): 자판 폭과 정렬 — 7.5에 KW-01~KW-08(`KeyboardWidthTest`, JVM)·SS-10·SS-11, 새 7.7 KR-01~KR-06(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), 9절 표, 실기기 DV-30.
 - 0.39(FSS#36·FSS#37, SWIPE 0.52 3.6.5·9.5, LLD-04 0.32): C가 반 키 높이 내려가 **C = (139, 76)–(221, 172)** — 2.3 VS-14(SWIPE 0.52 3.6.5 (가) 36행, 모든 y + 24)와 C를 쓰는 VS-01·03~13·디버그 글의 획 y + 24, VS-08 경계 P (221, 172)·(200, 151), SL-08 위 끝 76·76·64, SM-21~23·`SwipeTypist.SHAPES_C`·`DOT_C` y + 24, 실기기 태블릿 기록 시험(SwipeDotFirstTest)도 C와 함께 y + 24, 천지인 키 시작점은 C.B + 10(C.B + 32는 이제 기호3 줄). 판정 결과는 하나도 바뀌지 않는다(C와의 차이만 셈). 새 시험: VS-15(점과 자리), CS-01 새 뜻·CS-04(점 자리), SW-14b(뷰의 점 배열), CT-01~CT-06(7.4, 가운데 글자).
 - 0.38(FSS#31, LLD-08 0.27·LLD-07 0.25): OM-01~OM-09 꺼진 모드(SRS FR-CMN-03f 사례 표 8행 + 정규화, 7.2b), SS-08 켜진 모드 저장, PR-14 주제 목록의 "키보드에서 꺼져 있음".
@@ -947,6 +948,8 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KR-04 | 키 40 중앙, 여백(x 50)에 손가락을 둔 채 둘째 손가락이 키(x 400) 탭 | 피드백 1, 입력 1(여백 손가락이 자판을 막지 않음) | FR-CMN-14 ⑤ |
 | KR-05 | 키 40 왼손, `enableGuide` | 안내표 버튼 오른쪽 끝 = 400, 왼쪽 = 400 − 줄 높이, 덮개 left 0·폭 400 | FR-CMN-14 ⑥, FR-GRF-09 |
 | KR-06 | 가로 화면(구성 `w800dp-h400dp-land`), 가로 기본 / 가로 `FULL`·세로 키 40 왼손 | 폭 400(짧은 변), left 200 / 폭 800(꽉 채움, 세로 값은 안 씀) | FR-CMN-12, FR-CMN-14 ③ |
+| WN-01 | `isPresentOrientation`: 세로·가로 줄 × 세로·가로·미정 구성 | 그 방향 줄만 참, 미정은 세로 줄 | LLD-07 7절, FSS#44 |
+| WN-02 | 문자열 `settings_now`("세로 화면 정렬") | "세로 화면 정렬 · 지금 화면" | LLD-07 7절, FSS#44 |
 | OP-01 | `OffKeyboardPointers`(자판 = x < 100) | 자판 안 DOWN | 원래 이벤트 그대로, 버린 것 없음 | LLD-08 7.2 |
 | OP-02 | 〃 | 자판 밖 DOWN → 자판 안 POINTER_DOWN → 밖 손가락 POINTER_UP | null / `ACTION_DOWN`(포인터 1개, id 유지, downTime = 그 때) / null, 버린 것 없음 | FR-CMN-14 ⑤ |
 | OP-03 | 〃 | 자판 안·밖 두 손가락, 묶인 표본 1개가 있는 MOVE | `ACTION_MOVE`, 포인터 1개, history 1개(x·시각 보존), 현재 값 보존 | 획이 history를 읽음 |

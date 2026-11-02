@@ -1,6 +1,7 @@
 package kbd.app.settings
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.provider.Settings as SystemSettings
 import androidx.activity.ComponentActivity
@@ -36,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -221,10 +223,15 @@ private val ALIGNS = listOf(
  * long side; the keyboard computes the exact width, FR-CMN-14 ④); that top stop is "꽉 채움": no key size on the
  * portrait screen, [KeyboardWidth.FULL] on the landscape one. Until it is moved the landscape slider sits at the
  * portrait key size (FR-CMN-14 ③). The alignment is greyed out when the keyboard fills (no rest to place).
+ * The two rows of the screen's present orientation are marked "지금 화면" (FSS#44: the other orientation's rows do not
+ * move the keyboard now on screen).
  */
 @Composable
 private fun KeyboardWidthRows(settings: Settings, update: ((Settings) -> Settings) -> Unit) {
     val dm = LocalContext.current.resources.displayMetrics
+    val orientation = LocalConfiguration.current.orientation
+    val pNow = isPresentOrientation(landscapeRows = false, orientation)
+    val lNow = isPresentOrientation(landscapeRows = true, orientation)
     val shortDp = minOf(dm.widthPixels, dm.heightPixels) / dm.density
     val longDp = maxOf(dm.widthPixels, dm.heightPixels) / dm.density
     val pTop = KeyboardWidth.fullKeyDp(shortDp)
@@ -239,10 +246,29 @@ private fun KeyboardWidthRows(settings: Settings, update: ((Settings) -> Setting
         p.keyDp == null || p.keyDp == KeyboardWidth.FULL -> (shortDp / KeyboardWidth.UNITS).roundToInt().coerceAtMost(lTop)
         else -> stop(p.keyDp, lTop)
     }
-    KeyRow(R.string.settings_key_portrait, pKey, pTop, shortDp) { k -> update { it.copy(portraitWidth = it.portraitWidth.copy(keyDp = if (k >= pTop) null else k.toFloat())) } }
-    AlignRow(R.string.settings_align_portrait, p.align, enabled = pKey < pTop) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
-    KeyRow(R.string.settings_key_landscape, lKey, lTop, longDp) { k -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = if (k >= lTop) KeyboardWidth.FULL else k.toFloat())) } }
-    AlignRow(R.string.settings_align_landscape, l.align, enabled = lKey < lTop) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
+    KeyRow(R.string.settings_key_portrait, pNow, pKey, pTop, shortDp) { k -> update { it.copy(portraitWidth = it.portraitWidth.copy(keyDp = if (k >= pTop) null else k.toFloat())) } }
+    AlignRow(R.string.settings_align_portrait, pNow, p.align, enabled = pKey < pTop) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
+    KeyRow(R.string.settings_key_landscape, lNow, lKey, lTop, longDp) { k -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = if (k >= lTop) KeyboardWidth.FULL else k.toFloat())) } }
+    AlignRow(R.string.settings_align_landscape, lNow, l.align, enabled = lKey < lTop) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
+}
+
+/** True when the landscape ([landscapeRows]) or the portrait rows belong to the screen's present [orientation] (FSS#44). */
+internal fun isPresentOrientation(landscapeRows: Boolean, orientation: Int): Boolean =
+    landscapeRows == (orientation == Configuration.ORIENTATION_LANDSCAPE)
+
+/** A width row's title; the present orientation's ([now]) gets "· 지금 화면" and the accent colour (FSS#44). */
+@Composable
+private fun WidthTitle(title: Int, now: Boolean, enabled: Boolean, modifier: Modifier = Modifier) {
+    val c = MaterialTheme.colorScheme
+    Text(
+        if (now) stringResource(R.string.settings_now, stringResource(title)) else stringResource(title),
+        style = MaterialTheme.typography.bodyLarge, modifier = modifier,
+        color = when {
+            !enabled -> c.onSurface.copy(alpha = DISABLED_ALPHA)
+            now -> c.primary
+            else -> c.onSurface
+        },
+    )
 }
 
 /**
@@ -250,13 +276,13 @@ private fun KeyboardWidthRows(settings: Settings, update: ((Settings) -> Setting
  * 360 dp", or at the top "꽉 채움 · 키 약 71 dp · 711 dp". Stored when the slider is released.
  */
 @Composable
-private fun KeyRow(title: Int, stored: Int, top: Int, availDp: Float, onChange: (Int) -> Unit) {
+private fun KeyRow(title: Int, now: Boolean, stored: Int, top: Int, availDp: Float, onChange: (Int) -> Unit) {
     var dragging by remember { mutableStateOf<Int?>(null) }
     val shown = dragging ?: stored
     val min = KeyboardWidth.MIN_KEY_DP.toInt()
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            WidthTitle(title, now, enabled = true, modifier = Modifier.weight(1f))
             Text(
                 if (shown >= top) stringResource(R.string.settings_key_full, (availDp / KeyboardWidth.UNITS).roundToInt(), availDp.roundToInt())
                 else stringResource(R.string.settings_key_value, shown, shown * KeyboardWidth.UNITS),
@@ -275,12 +301,9 @@ private fun KeyRow(title: Int, stored: Int, top: Int, availDp: Float, onChange: 
 
 /** 왼손모드 · 중앙모드 · 오른손모드 in one row. */
 @Composable
-private fun AlignRow(title: Int, stored: KeyboardAlign, enabled: Boolean, onChange: (KeyboardAlign) -> Unit) {
+private fun AlignRow(title: Int, now: Boolean, stored: KeyboardAlign, enabled: Boolean, onChange: (KeyboardAlign) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(
-            stringResource(title), style = MaterialTheme.typography.bodyLarge,
-            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA),
-        )
+        WidthTitle(title, now, enabled)
         Row(Modifier.fillMaxWidth()) {
             ALIGNS.forEach { (a, label) ->
                 val selected = stored == a
