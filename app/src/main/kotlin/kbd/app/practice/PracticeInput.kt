@@ -15,6 +15,7 @@ import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.swipe.SwipeEngineState
 import kbd.app.swipe.SwipeHost
+import kbd.app.view.CenterText
 import kbd.app.view.TapSink
 import kbd.graffiti.ink.GraffitiLang
 import kbd.graffiti.recognize.Recognizer
@@ -155,7 +156,7 @@ class PracticeInput(
     override val thresholds: Thresholds = ThresholdDefaults.VALUES
     override val fieldInfo = FieldInfo(FieldClass.TEXT, isPassword = false, noLearning = false, multiLine = false, enterAction = null)
     override val centerConsonant: Jamo? get() = dispatcher.composer?.lastConsonant()
-    override val centerText: kbd.app.view.CenterText? get() = dispatcher.centerText()
+    override val centerText: CenterText? get() = dispatcher.centerText()
 
     override fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean) = dispatcher.onJamoEvents(events, errorVibe)
     override fun onSwipeText(text: String, errorVibe: Boolean) = dispatcher.onSwipeText(text, errorVibe)

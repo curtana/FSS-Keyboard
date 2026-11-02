@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
 - 버전 **0.29** (2026-11-02)
-- 0.29(FSS#36, SWIPE 0.51 9.5, SRS 0.71 FR-DSP-10): `SwipeHost.centerText`(가운데 글자 = 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에, LLD-04 9.5), `SwipeEngineState.pendingDots()`(2.2). `centerConsonant`는 판정 C를 줄지 정하는 데만 쓴다.
+- 0.29(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `SwipeHost.centerText`(가운데 글자 = 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에, LLD-04 9.5), `SwipeEngineState.pendingDots()`(2.2). `centerConsonant`는 판정 C를 줄지 정하는 데만 쓴다.
 - 0.28(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): `kbd.app.tutor` → `kbd.app.practice`(LLD-07 2절), `ThresholdStore` 삭제. `SwipeModule.tutorSteps()` 삭제(연습은 같은 `createSwipeView`를 연습용 `SwipeHost`로 부름). 기준값은 고정 상수(3.4), `posTolDp`는 실행 때 키 폭 × 0.4(`ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth`).
 - 0.27(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59 — CON-5·NFR-11·FR-CMN-03b·FR-TUT-08·HLD 3.1 삭제): 2절 제목을 "빌드와 SwipeModule"로. HLD가 `SwipeModule`을 LLD 표기로 따르므로 인터페이스 이름은 그대로 둔다. 빌드 변형(productFlavors) 삭제, 빌드 하나(`assembleDebug`, 앱 ID `kbd.app`), `gesture-engine`은 일반 `implementation`. `app/src/personal`·`public`·`testPersonal`·`testPublic`를 `main`·`test`로 합침. `SwipeModule`에서 `available`·`thresholdFields()`와 public `NoSwipeModule`을 지움, `PersonalSwipeModule` → `SwipeEngineModule`, `PersonalTutorSteps` → `TutorSteps`. 공개판 튜터 1-1(`MinCrossOnQwertyStep`, `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`)과 긋기를 빼는 모드 순서도 지움. 아래 표·코드는 이 판 기준이고, 0.26까지의 변형 설명은 이 줄로 대신한다.
 - 0.26(이슈 #242 오너 결정(두벌식 겹받침 한 번에)): `TapKeyDef.compoundJamo: Map<Dir, Char>`(두벌식 글자 키의 방향별 겹받침, 기본 빈 맵), core-hangul `JamoTables.SPLIT_JONG`(겹받침 → 두 자음). 겹받침 자모(`GS` 등)도 `JamoEvent.Consonant`로 들어올 수 있다(조합기가 나눔, LLD-04 7절).
