@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.28** (2026-11-02)
+- 버전 **0.29** (2026-11-03)
+- 0.29(FSS#44 오너 결정, SRS 0.74 FR-SET-09, HLD 0.67): 설정 화면 "자판" 묶음의 키 크기·정렬을 **방향마다 상자 하나**로 — "세로 화면" 상자·"가로 화면" 상자(`OutlinedCard`), 상자 안에 "키 크기"·"정렬". 지금 화면 방향(`LocalConfiguration.orientation`, 가로가 아니면 세로) 상자의 제목 줄 오른쪽 끝에 "지금 화면". 두 상자 늘 보임(7절).
 - 0.28(FSS#43 오너 결정·PM 결정, SWIPE 0.53 10.2, SRS 0.73 FR-TUT-12): **긋기·그래피티 항목은 확정된 글자로 판정.** `PracticeItemJudge.step`(동작마다 `steps`와 비교)을 `commit(item, committed, error)`로 바꿨다 — 조합 중 글자는 보지 않고, 확정된 글자열(스페이스 뺌)이 목표의 앞부분이 아니면 ✗, 목표면 ✓(2.4). `PracticeFlow.onAction`에 `composing`(조합 중인 끝부분), 동작 번호 `actions` 삭제(2.3). 끝 동작 = **스페이스**: 긋기 연습 자판의 스페이스 키(`PracticeInput.onFunctionKey`)와 그래피티 패드의 스페이스 키(`tapSink`)가 실제처럼 `InputDispatcher`의 스페이스를 부른다(D-66 바뀜). `BoardFrame`은 조합 부분이 바뀐 것도 동작으로 센다(그래피티 끝 획). 입력 표시는 끝 스페이스를 건너뛴다. 한글 항목 쓰는 법 끝에 `→ 스페이스`, ③·④ 설명에 스페이스 한 줄(2.2). `steps`는 시험이 지키는 실제 표시로 남고 판정에는 쓰지 않는다(D-65 바뀜).
 - 0.27(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): 설정 `portraitWidth`·`landscapeWidth`(`WidthSetting(keyDp, align)` — 키 한 칸 폭, 없음 = 기본값, `KeyboardWidth.FULL` = 꽉 채움; 키 `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`, 6.1), 설정 화면 "자판" 묶음의 세로·가로 키 크기 슬라이더·전체 폭 미리보기·정렬(7절), 연습 자판 `BoardFrame`의 폭·정렬·여백(2.3). 계산 `KeyboardWidth`는 LLD-08 7.2.
 - 0.26(FSS#36·FSS#37, SWIPE 0.52 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 점 자리)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
@@ -218,7 +219,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 입력 연습(0.24) | `PracticeActivity` 열기(설명 "영문 대문자 · 기호 · 그래피티 · 긋기를 골라서 짧게 연습"). 첫 실행의 주제 목록은 2.5 | FR-TUT-06, FR-SET-04 |
 | 그래피티 영역 비율 | `graffiti_letter_ratio`. 라디오 단추 셋: 1 : 1 / 2 : 1(기본) / 3 : 1 → 1/2 / 2/3 / 3/4 저장(6.1) | FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | 줄 높이 | `row_height_dp`(40~64dp, 기본 48dp) | FR-SET-06, TBD-16 |
-| 세로·가로 화면 키 크기·정렬(0.27) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 넷: "세로 화면 키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음), "세로 화면 정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면 키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리), "가로 화면 정렬". 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음 | FR-SET-09, FR-CMN-14 |
+| 세로·가로 화면 키 크기·정렬(0.27, 상자 0.29) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 **상자 둘**(`KeyboardSizeBoxes`, 0.29, FSS#44): "세로 화면" 상자 = "키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음) + "정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면" 상자 = "키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리) + "정렬". 지금 화면 방향 상자는 제목 줄 오른쪽 끝에 "지금 화면"(강조색). 설정 화면은 회전하면 다시 만들어지므로 표시가 새 방향 상자로 옮겨 간다. 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음 | FR-SET-09, FR-CMN-14 |
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
 
 - 0.25: 묶음 순서는 입력 모드 → 입력기 → 안내 표시 → 피드백 → 자판 → 입력 연습. 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.

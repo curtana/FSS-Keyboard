@@ -82,4 +82,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)   // test only, MIT (issue #12)
+    // Compose UI tests under Robolectric, test only, Apache-2.0 (FSS#44); the host activity is registered in the test (no manifest library in the APK)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 }
