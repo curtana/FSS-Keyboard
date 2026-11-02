@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 11장(시험 설계)
 - 버전 **0.39** (2026-11-02)
-- 0.39(FSS#25, LLD-08 0.28 7.2, LLD-07 0.26): 자판 폭과 정렬 — 7.5에 KW-01~KW-08(`KeyboardWidthTest`, JVM)·SS-10·SS-11, 새 7.7 KR-01~KR-06(`KeyboardRootViewTest`, Robolectric), 9절 표, 실기기 DV-29.
+- 0.39(FSS#25, LLD-08 0.28 7.2, LLD-07 0.26): 자판 폭과 정렬 — 7.5에 KW-01~KW-08(`KeyboardWidthTest`, JVM)·SS-10·SS-11, 새 7.7 KR-01~KR-06(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), 9절 표, 실기기 DV-29.
 - 0.38(FSS#31, LLD-08 0.27·LLD-07 0.25): OM-01~OM-09 꺼진 모드(SRS FR-CMN-03f 사례 표 8행 + 정규화, 7.2b), SS-08 켜진 모드 저장, PR-14 주제 목록의 "키보드에서 꺼져 있음".
 - 0.37(FSS#33): GR-33~GR-35 닫힌 고리 인식(LLD-05 0.27 3.2 4a).
 - 0.36(FSS#17, LLD-07 0.24): 튜터를 입력 연습으로 바꾸며 튜터·기준값 저장 시험을 지웠다: PG-01, PG-02, PG-03, PG-04, PG-05, PG-06, PG-07, TE-01, TE-02, TE-03, TE-04, TE-05, TE-06, TE-07, TE-08, TE-09, TE-10, TJ-01, TJ-02, TJ-03, TJ-04, TJ-05, TJ-06, TJ-07, TJ-08, TJ-09, TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08, TS-09, TS-10, TS-11, TU-01, TU-02, TU-03, TU-04, TU-05, TU-06, TU-07, TU-08, TU-09, TU-10, TU-11, TU-12, TU-13, TU-14, TU-15, TU-16, TU-17, TU-18, TU-18b, TU-19, TU-20, TU-21, TU-22, TU-23, TU-27, TU-28, TU-29, TU-30, TU-31, TU-32, TU-33, TU-34, TU-40, TU-41, TU-42, TU-43, TU-44, TU-45, TU-46, TU-47, TU-48, TU-49, TU-50, TU-51, TU-52, TU-53, TU-54, TU-55, TU-56, TU-57, TU-58, TU-59, TU-62, TY-01, TY-02, TY-03, TY-04. 새 시험은 7.6 입력 연습(PR-01~PR-13, PR-20·PR-21), TH-10(위치 허용 오차 = 키 폭 × 0.4), SS-05 이름 바꿈·SS-07. 9장의 `PracticeKeyboardView` 행과 9.1의 연습 자판 안내 행을 지웠다(연습 자판은 실제 `SwipeKeyboardView`라 SW-08이 같은 것을 본다). DV-11·DV-24를 입력 연습으로 고쳤다. MOD-04에서 `tutorSteps()`를 뺐다.
@@ -937,6 +937,11 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KR-04 | 키 40 중앙, 여백(x 50)에 손가락을 둔 채 둘째 손가락이 키(x 400) 탭 | 피드백 1, 입력 1(여백 손가락이 자판을 막지 않음) | FR-CMN-14 ⑤ |
 | KR-05 | 키 40 왼손, `enableGuide` | 안내표 버튼 오른쪽 끝 = 400, 왼쪽 = 400 − 줄 높이, 덮개 left 0·폭 400 | FR-CMN-14 ⑥, FR-GRF-09 |
 | KR-06 | 가로 화면(구성 `w800dp-h400dp-land`), 가로 기본 / 가로 `FULL`·세로 키 40 왼손 | 폭 400(짧은 변), left 200 / 폭 800(꽉 채움, 세로 값은 안 씀) | FR-CMN-12, FR-CMN-14 ③ |
+| OP-01 | `OffKeyboardPointers`(자판 = x < 100) | 자판 안 DOWN | 원래 이벤트 그대로, 버린 것 없음 | LLD-08 7.2 |
+| OP-02 | 〃 | 자판 밖 DOWN → 자판 안 POINTER_DOWN → 밖 손가락 POINTER_UP | null / `ACTION_DOWN`(포인터 1개, id 유지, downTime = 그 때) / null, 버린 것 없음 | FR-CMN-14 ⑤ |
+| OP-03 | 〃 | 자판 안·밖 두 손가락, 묶인 표본 1개가 있는 MOVE | `ACTION_MOVE`, 포인터 1개, history 1개(x·시각 보존), 현재 값 보존 | 획이 history를 읽음 |
+| OP-04 | 〃 | 밖 1·안 2(셋), 셋째 POINTER_DOWN / 둘째 POINTER_UP / 셋째 올라옴 | `POINTER_DOWN` 색인 1 / `POINTER_UP` 색인 0 / `ACTION_UP`(남은 하나) | 색인 변환 |
+| OP-05 | 〃 | 버린 손가락 뒤 CANCEL | 원래 이벤트 그대로, 버린 것 비움 | `cancelTouches` |
 
 ## 8. 실기기 시험 (D)
 
@@ -980,6 +985,7 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 |---|---|
 | `TapKeyboardView` | KH-03, MQ-05, MQ-06, MQ-08, FB-01, FB-02 |
 | `KeyboardRootView` | FB-03, KR-01~KR-06 |
+| `OffKeyboardPointers`(`MotionEvent`) | OP-01~OP-05 |
 | `Feedback`(`SettingsStore` 기본값과 함께) | FB-04 |
 | `SwipeKeyboardView` | SW-01~SW-04, SW-08 |
 | `GraffitiPadView`(기록용 `Canvas`, 0.11, 이슈 #136) | PI-01~PI-07 |
