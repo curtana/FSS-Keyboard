@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.36** (2026-11-02)
+- 버전 **0.37** (2026-11-02)
+- 0.37(FSS#33): GR-33~GR-35 닫힌 고리 인식(LLD-05 0.27 3.2 4a).
 - 0.36(FSS#17, LLD-07 0.24): 튜터를 입력 연습으로 바꾸며 튜터·기준값 저장 시험을 지웠다: PG-01, PG-02, PG-03, PG-04, PG-05, PG-06, PG-07, TE-01, TE-02, TE-03, TE-04, TE-05, TE-06, TE-07, TE-08, TE-09, TE-10, TJ-01, TJ-02, TJ-03, TJ-04, TJ-05, TJ-06, TJ-07, TJ-08, TJ-09, TS-01, TS-02, TS-03, TS-04, TS-05, TS-06, TS-07, TS-08, TS-09, TS-10, TS-11, TU-01, TU-02, TU-03, TU-04, TU-05, TU-06, TU-07, TU-08, TU-09, TU-10, TU-11, TU-12, TU-13, TU-14, TU-15, TU-16, TU-17, TU-18, TU-18b, TU-19, TU-20, TU-21, TU-22, TU-23, TU-27, TU-28, TU-29, TU-30, TU-31, TU-32, TU-33, TU-34, TU-40, TU-41, TU-42, TU-43, TU-44, TU-45, TU-46, TU-47, TU-48, TU-49, TU-50, TU-51, TU-52, TU-53, TU-54, TU-55, TU-56, TU-57, TU-58, TU-59, TU-62, TY-01, TY-02, TY-03, TY-04. 새 시험은 7.6 입력 연습(PR-01~PR-13, PR-20·PR-21), TH-10(위치 허용 오차 = 키 폭 × 0.4), SS-05 이름 바꿈·SS-07. 9장의 `PracticeKeyboardView` 행과 9.1의 연습 자판 안내 행을 지웠다(연습 자판은 실제 `SwipeKeyboardView`라 SW-08이 같은 것을 본다). DV-11·DV-24를 입력 연습으로 고쳤다. MOD-04에서 `tutorSteps()`를 뺐다.
 - 0.35(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59): MC-11·MC-13 삭제, SS-03은 모르는 저장 이름 사례만, TS-07·MOD 행의 public·HLD 3.1 표기 정리(CON-5·NFR-11·FR-CMN-03b·FR-TUT-08 삭제). 앱 시험은 한 번만 돈다(`testDebugUnitTest`, `testPersonal`·`testPublic` 합침). MOD-01 = `assembleDebug`, MOD-02 = `kbd.app.swipe.impl` 밖 main에 `import kbd.gesture` 없음, MOD-04 = 제공자가 `SwipeEngineModule`. 공개판 튜터 시험 삭제: TU-02, TU-07, TU-30, TU-33, TU-40, TU-41(public 1-1), PG-06(쿼티 1-1 안내 없음), 쿼티 연습 echo 시험 셋, 개인판 쿼티 연습 자판 대체 시험.
 - 0.34(이슈 #246): ㅄ = ㅂ(q) → — TA-12(q: ← ㅂ, → ㅄ), TA-20·TA-21(q 힌트 ↑ ㅃ → ㅄ, q ← = ㅂ) 기대값 바뀜.
@@ -517,6 +518,9 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 | GR-30 | 되짚는 획: 영문 B ① D ① H 템플릿 획(`expect = NORMAL`, EN 문자 영역, 크기 60dp) / 한 다리를 끝까지 되짚는 세로 쐐기(아래 → 위 → 아래)·가로 쐐기(왼 → 오른 → 왼) 60dp(`expect = PUNCT`) | Symbol(en_b·en_d·en_h), `StrokeRules.line == null` / `StrokeRules.line == null`(LineUp·LineRight 아님, 직선도 < `LINE_STRAIGHTNESS`) | GRAFFITI 6.1·6.4, LLD-05 3.1 되짚는 획 (0.7) |
 | GR-31 | `TemplateLoader`: NUMBER 집합에 `rule` / `rule` = `LINE_LEFT`·`CORNER_TAP`·모르는 값 / `rule` + 빈 아닌 `strokes` / 한 집합에 같은 `rule` 둘 / `rule` 없는 0.6 형식 파일 | `IllegalStateException` ×4 / 읽힘 | LLD-05 7절 (0.7) |
 | GR-32 | 제품 템플릿, `expect = NORMAL`: 탭 / ↓ / → / ↑ / ↙ / ↘ (기호표에 규칙 항목이 있어도) | Tap / LineDown / LineRight / LineUp / DiagDownLeft / DiagDownRight (대기가 없으면 규칙 항목을 보지 않음) | LLD-05 3.1 3번 (0.7) |
+| GR-33 | 제품 템플릿, 합성 고리(FSS#33): 시작 0°~330°(30° 간격) × 돈 각 320°~420°(끝 −40°~+60°) × 원·세로 타원·가로 타원(0.75) × 두 방향, 반지름 70dp | 한글 문자 영역 `ko_ieung`, 영문 `en_o`, 숫자 영역 `num_0` 모두. 세로 타원을 120° 근처에서 시계 방향으로 시작한 것만 `en_d2`도 허용 | LLD-05 3.2 4a (0.37) |
+| GR-34 | 제품 템플릿, `expect = PUNCT`: GR-33의 고리를 @ 템플릿 방향(화면 반시계)으로 | 모두 `p_at` | LLD-05 3.2 4a (0.37) |
+| GR-35 | `TemplateMatcher.loopOf` | g·q·6·9·ㅎ(6 모양)·c·u·e·8 템플릿 획 / 45°에서 시작해 400° 돈 원 | 모두 null / 한 바퀴로 잘려 닫힘(처음 = 끝) | LLD-05 3.2 4a (0.37) |
 | GR-EVAL | `strokes/eval/` 전체 | 정확도 보고(영문, 한글 자모). 목표는 TBD-12 | NFR-12 |
 
 ### 6.2 CheonjiinAssembler (GRAFFITI 4.2)
