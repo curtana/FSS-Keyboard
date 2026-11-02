@@ -90,7 +90,7 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 - 탭 자판: `TapKeyboardView` + `TapLayouts.QWERTY`(편집 줄 포함, 오너 결정 A), 높이 = 줄 수 × 설정 줄 높이.
 - 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 자음이 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
 - 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만 — 한글 / 영문 / 숫자, `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
-- **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 누를 때 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이 바뀌었거나 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
+- **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이 바뀌었거나 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
 - 시험: PR-02~PR-08, PR-10~PR-13, PR-20·PR-21, 실기기 DV-11·DV-24.

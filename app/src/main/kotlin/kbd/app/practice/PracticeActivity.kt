@@ -173,7 +173,8 @@ private class BoardFactory(
 }
 
 /**
- * Sees every touch of the practice keyboard without taking it (LLD-07 §2.3): [onDown] on each press; on each release,
+ * Sees every touch of the practice keyboard without taking it (LLD-07 §2.3): [onDown] on a press with no other finger
+ * down; on each release,
  * after the view has handled it, [onUp] is posted (so an engine that posts its own work is done too). [onUp] gets
  * whether the released touch went up or left by more than [slopPx] (a reversed swipe stroke, SWIPE 10.2 덧붙임).
  */
@@ -190,8 +191,11 @@ private class BoardFrame(
         val i = ev.actionIndex
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                // Only the first finger starts an action: a second one pressed meanwhile must not reset the first
+                // one's text and error mark before it is released (one-finger practice; review PR #27).
+                val first = starts.isEmpty()
                 starts[ev.getPointerId(i)] = ev.getX(i) to ev.getY(i)
-                onDown()
+                if (first) onDown()
             }
         }
         val handled = super.dispatchTouchEvent(ev)
