@@ -1,7 +1,8 @@
 # LLD-05 그래피티
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
-- 버전 **0.27** (2026-11-02)
+- 버전 **0.28** (2026-11-03)
+- 0.28(FSS#47, 오너 실기 신고): **손 떼는 꼬리**(3.1 2번). 태블릿에서 ㅣ를 그으면 손을 떼는 순간 끝점이 5~13dp 되돌아와 직선도가 0.84~0.91로 떨어져(10획 중 6획) 인식 실패였다. 직선 규칙은 시작점에서 가장 먼 점 뒤의 경로가 그 앞 경로의 `LIFT_TAIL_RATIO`(0.2) 이하면 그 점에서 획이 끝난 것으로 본다. 템플릿 비교와 되짚는 획(절반 되짚음 이상)은 그대로다. 시험 GR-36(실기 획)·GR-37.
 - 0.27(FSS#33, 오너 실기 신고): **닫힌 고리 비교**(3.2 4a단계). 원 계열 템플릿(ㅇ·o·0·@·°)과는, 입력이 거의 닫힌 고리면 정확히 한 바퀴로 자르거나 닫은 뒤 시작점을 돌려 가장 잘 맞는 자리에서 점수를 낸다. 시작 위치·덜 닫힘·더 돎에 강해진다. 판정 규칙(SRS·HLD)은 그대로이고 회전 정규화도 하지 않는다(방향은 그대로 가름). 시험 GR-33~GR-35.
 - 0.26(이슈 #258 오너 결정): 패드 상태 표시의 다른 제품 이름 언급을 뺐다. 동작은 그대로다.
 - 0.25(이슈 #254 오너 결정): 다른 제품 이름이 든 출처 표현을 중립 표현으로 바꿨다(7절 획 데이터·패드 상태 표시). 획 규칙·템플릿은 그대로다.
@@ -75,7 +76,8 @@ recognize(stroke, lang, expect):
     L < TAP_MAX_DP 그리고 B < TAP_MAX_DP                        → 탭
         stroke.area == LETTER 이고 시작점이 구석(왼쪽 위, x − left < 폭 × CORNER_RATIO 그리고 y − top < 높이 × CORNER_RATIO) → CornerTap
         그 밖 → Tap
- 2. 직선도 S = |끝 − 시작| / L ≥ LINE_STRAIGHTNESS 이면 직선. 방향 각 θ = atan2(dy, dx)
+ 2. 손 떼는 꼬리 빼기(0.28): F = 시작점에서 가장 먼 점. F 뒤 경로 ≤ F까지 경로 × LIFT_TAIL_RATIO 이면 획을 F에서 끊는다(2번에서만)
+    직선도 S = |끝 − 시작| / L ≥ LINE_STRAIGHTNESS 이면 직선. 방향 각 θ = atan2(dy, dx)
         |θ − 90°| ≤ LINE_SECTOR → LineDown,  |θ + 90°| ≤ LINE_SECTOR → LineUp
         |θ| ≤ LINE_SECTOR → LineRight,       |θ − 180°| ≤ LINE_SECTOR → LineLeft
         |θ − 135°| ≤ LINE_SECTOR → DiagDownLeft, |θ − 45°| ≤ LINE_SECTOR → DiagDownRight
@@ -90,7 +92,8 @@ recognize(stroke, lang, expect):
     점수 ≥ MATCH_MIN 이면 Symbol(id) 아니면 Unknown
 ```
 
-- 매개변수 초기값(D-11): `TAP_MAX_DP = 8`, `CORNER_RATIO = 0.15`(SRS FR-GRF-05a, 구현 시 조정), `LINE_STRAIGHTNESS = 0.92`, `LINE_SECTOR = 20°`, `MATCH_MIN = 0.80`. 모두 실측으로 조정하는 인식 매개변수다.
+- 매개변수 초기값(D-11): `TAP_MAX_DP = 8`, `CORNER_RATIO = 0.15`(SRS FR-GRF-05a, 구현 시 조정), `LINE_STRAIGHTNESS = 0.92`, `LINE_SECTOR = 20°`, `MATCH_MIN = 0.80`, `LIFT_TAIL_RATIO = 0.2`(0.28). 모두 실측으로 조정하는 인식 매개변수다.
+- **손 떼는 꼬리(0.28, FSS#47):** 정전식 화면은 손가락을 뗄 때 닿는 면이 줄며 마지막 점들이 획 반대쪽으로 몇 dp 되돌아온다(태블릿 실측 5~13dp, 획의 9% 이하). 직선 규칙만 이 꼬리를 뺀다. 한계 0.2는 실측 꼬리의 두 배쯤이고, 되짚는 획(절반 되짚음 = 0.5 이상)과 J 갈고리(약 0.45)보다 작아 그 획들은 그대로 템플릿으로 간다. 템플릿 비교에는 획 전체를 쓴다.
 - 탭·짧은 선을 템플릿보다 먼저 규칙으로 가른다(GRAFFITI 4.4 "길이와 방향 규칙으로 판정").
 - **기호표의 직선·탭 획(3번, 0.7):** 원본 구두점·확장 기호표에는 제어 획과 같은 직선·탭 모양 기호가 있다(GRAFFITI 6.4·6.5). 대기 중 그 표에 실린 획이면 직선·탭 모양이어도 기호이고 제어 획보다 먼저다(SRS FR-GRF-05c ⑥, GRAFFITI 6.2-8 ①). 그래서 규칙이 정한 토큰을 대기 중이면 기호표에서 한 번 더 찾는다. 기호표의 규칙 항목은 템플릿 JSON의 `rule` 칸이다(7절).
   - 규칙 항목(제품 템플릿): 구두점 `.` = Tap, `,` = DiagDownLeft, `'` = LineDown, `-` = LineRight, `!` = LineUp, `\` = DiagDownRight(OD-4 A) / 확장 `±` = LineRight, `×` = DiagDownLeft, `¡` = LineUp. 확장 기호표에 탭은 없다(확장 대기 + 탭 = 한영 전환, 5.2 1행. `•`는 배정하지 않음, OD-7 A). 확장 기호표에 ↘·↓도 없다(확장 대기 + ↘ = 확장 대기 그대로, GRAFFITI 6.2-8).
