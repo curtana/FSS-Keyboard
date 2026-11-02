@@ -47,9 +47,6 @@ class PracticeFlow(
     var highlight: List<String> = emptyList()
         private set
 
-    /** Actions of the current try judged so far (swipe and graffiti items). */
-    private var actions = 0
-
     fun open(t: PracticeTopic) {
         topic = t
         index = 0
@@ -81,16 +78,18 @@ class PracticeFlow(
     }
 
     /**
-     * An action ended (touch released, the real engine done with it). [text] is the item's text, [display] the input
-     * display, [error] = the action vibrated as an error, [reversed] = it went up or left (swipe 덧붙임).
-     * The screen calls this off the tap keyboard only when the action changed the text or vibrated.
+     * An action ended (touch released, the real engine done with it). [text] is the item's text, [composing] its part
+     * still composing (at its end; the rest is committed), [display] the input display, [error] = the action vibrated
+     * as an error, [reversed] = it went up or left (swipe 덧붙임). Off the tap keyboard only the committed text is
+     * judged (FSS#43): the space or the next syllable commits. The screen calls this off the tap keyboard only when the
+     * action changed the text or what is committed, or vibrated.
      */
-    fun onAction(text: String, display: String, error: Boolean = false, reversed: Boolean = false) {
+    fun onAction(text: String, display: String, error: Boolean = false, reversed: Boolean = false, composing: String = "") {
         val it = item ?: return
         if (screen != Screen.ITEM) return
         echo = display
         val v = if (it.board == PracticeBoard.TAP_QWERTY) PracticeItemJudge.text(it, text)
-        else PracticeItemJudge.step(it, actions++, text, error)
+        else PracticeItemJudge.commit(it, text.dropLast(composing.length), error)
         when (v) {
             Verdict.RIGHT -> right()
             Verdict.WRONG -> {
@@ -118,7 +117,6 @@ class PracticeFlow(
     }
 
     private fun newTry() {
-        actions = 0
         tryNo++
     }
 

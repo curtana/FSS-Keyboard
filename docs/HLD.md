@@ -1,9 +1,9 @@
 # 상위 수준 설계 (HLD)
 
-- 문서: HLD, 버전 **0.65** (2026-11-02)
+- 문서: HLD, 버전 **0.66** (2026-11-02)
 - 상태: 초안. LLD 0.1이 올린 설계 변경 요청 DCR-01~21(오너 승인 2026-10-27)을 반영했다.
-- 요구사항: [SRS.md](SRS.md) 0.72
-- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.52, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
+- 요구사항: [SRS.md](SRS.md) 0.73
+- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.53, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
 
 ## 1. 설계 원칙
 
@@ -267,7 +267,7 @@ PracticeActivity(옛 TutorActivity)
        │     ②의 긋기 항목·④ 긋기 자판: SwipeKeyboardView + StrokeClassifier·SwipeInputMapper(4.2·4.3), GuideOverlay·ProgressState(6장)를 같은 타이머로, 획 자국·가운데 자음 포함(SRS FR-TUT-11)
        │     ③ 그래피티: GraffitiPadView + recognizer(5장) + GraffitiGuidePanel을 늘 펼친 상태로. 항목마다 패드의 한영 상태를 목표에 맞춤
        ├─ 입력 표시: 마지막 한 글자 크게(SRS FR-TUT-09, 임시 ㆍ·‥ 그대로). 조합기는 실제와 같은 HangulComposer(4.4)
-       ├─ PracticeItemJudge(옛 TutorItemJudge): 동작(터치 하나, 그래피티는 획 하나)마다 실제 판정 결과를 목표의 같은 차례와 비교 → 다르면 ✗, 다 맞으면 ✓(SRS FR-TUT-12)
+       ├─ PracticeItemJudge(옛 TutorItemJudge): 동작(터치 하나, 그래피티는 획 하나)마다 실제 판정 결과를 목표와 비교 → 다르면 ✗, 다 맞으면 ✓(SRS FR-TUT-12). 긋기·그래피티는 확정된 글자만(조합 중 글자는 판정 안 함, 다음 자음·스페이스로 확정, 마지막 글자는 스페이스, FSS#43)
        │     ✗ → 쓰는 법 안내(SWIPE 10.2절 문구 규칙: 탭 자판 = 키와 방향, 그래피티 = 안내표 칸 강조, 긋기 = 획 차례와 자리), 같은 항목 다시
        │     항목 시작·다시 할 때 연습 자판·조합 상태를 비움(탭 자판 항목은 ✗ 뒤 비우지 않고 ⌫로 이어 씀)
        └─ 재는 것·저장하는 것 없음
@@ -553,3 +553,4 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 | 0.63 | 2026-11-02 | SRS 0.70·SWIPE 0.50 반영(오너 결정 2026-11-02, FSS#36·FSS#37): 6장 가운데 글자 행(지금 조합 중인 한 글자, 첫 획 두 역할 괄호, 조합 글자가 바뀌는 사건마다 갱신·긋는 동안 안 바꿈, 자리 = 쌍자음 줄 위 끝 + 4dp + 줄 높이 × 0.5, 높이 = 줄 높이 × 2), 그리는 것 행의 다음 획 자리 삭제 |
 | 0.64 | 2026-11-02 | SRS 0.71·SWIPE 0.51 반영(오너 결정 2026-11-02, FSS#25, 폭 지정 방식 변경 포함): 5A 자판 폭과 정렬(순수 함수 `KeyboardWidth` — 키 한 칸 폭 × 10, 가용 폭에서 멈춤, 루트가 모드 뷰·덮개·버튼을 W로 놓음, 남는 자리 소비, 배치·판정 코드 그대로, 테두리 = 모드 뷰 바깥 변, 다시 놓기, 입력 연습 자판 틀), 7.2 최소 통과 거리 문장, 7.3 저장 데이터, 8장 `onConfigurationChanged`, 13장 FR-CMN-14·FR-SET-09 |
 | 0.65 | 2026-11-02 | SRS 0.72·SWIPE 0.52 반영(오너 결정·보충 2026-11-02, FSS#36): 6장 가운데 글자 행 — 괄호 후보 삭제, 아직 모음이 아닌 점 상태는 점을 자리에 찍음 |
+| 0.66 | 2026-11-02 | SRS 0.73·SWIPE 0.53 반영(오너 결정·PM 결정 2026-11-02, FSS#43): 7.1 입력 연습 판정 — 긋기·그래피티는 확정된 글자로(스페이스가 마지막 글자의 끝 동작) |

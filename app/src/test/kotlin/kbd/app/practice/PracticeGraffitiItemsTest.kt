@@ -10,6 +10,7 @@ import kbd.graffiti.ink.PadArea
 import kbd.graffiti.ink.RectF2
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
+import kbd.stroke.layout.FunctionKey
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -54,17 +55,26 @@ class PracticeGraffitiItemsTest {
 
     private val tap = InkStroke(listOf(InkPoint(80f, 80f, 0), InkPoint(80.5f, 80.5f, 30), InkPoint(81f, 80.5f, 60)), PadArea.LETTER, LETTER)
 
+    private fun judge(item: PracticeItem, i: PracticeInput) =
+        PracticeItemJudge.commit(item, i.editor.text.dropLast(i.editor.composing.length), i.errored)
+
+    /** Draws [strokes], nothing judged on the way (FSS#43); ✓ at once when the last stroke committed, else after the pad's space key. */
     private fun check(item: PracticeItem, vararg strokes: InkStroke) {
         val (i, draw) = input(checkNotNull(item.lang))
         val seen = ArrayList<String>()
         var v = Verdict.PENDING
         strokes.forEachIndexed { k, s ->
+            assertEquals("${item.target} before stroke $k", Verdict.PENDING, v)
             i.errored = false
             draw(s)
             seen += i.editor.text
-            v = PracticeItemJudge.step(item, k, i.editor.text, i.errored)
+            v = judge(item, i)
         }
         assertEquals(item.target, item.steps, seen)
+        if (v == Verdict.PENDING) {
+            i.tapSink.onFunctionDown(FunctionKey.SPACE)
+            v = judge(item, i)
+        }
         assertEquals(item.target, Verdict.RIGHT, v)
     }
 
@@ -86,7 +96,7 @@ class PracticeGraffitiItemsTest {
         // A tight zig-zag matches no template.
         val pts = (0..40).map { k -> InkPoint(20f + k * 4f, if (k % 2 == 0) 20f else 120f, k * 8L) }
         draw(InkStroke(pts, PadArea.LETTER, LETTER))
-        assertEquals(Verdict.WRONG, PracticeItemJudge.step(it, 0, i.editor.text, i.errored))
+        assertEquals(Verdict.WRONG, judge(it, i))
     }
 
     private companion object {

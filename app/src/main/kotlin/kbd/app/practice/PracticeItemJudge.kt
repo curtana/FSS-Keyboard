@@ -30,14 +30,20 @@ object PracticeItemJudge {
     }
 
     /**
-     * Swipe and graffiti items: action [index] (0-based) of the try left [text] in the editor; [error] = it gave the
-     * error vibration (an ignored stroke or element, dropped strokes, a failed recognition — SWIPE 10.2 오류 진동).
-     * ✗ when it vibrated, when the item has no such action, or when [text] is not that action's step.
+     * Swipe and graffiti items (owner decision 2026-11-02, FSS#43): judged by what is committed only — a syllable still
+     * composing is not finished (기 may still become 가, and 가 becomes 각 on its way to 가가). [committed] is the try's
+     * committed text (what still composes is left out); its spaces are dropped (the space is the closing action, PM
+     * decision A). [error] = the action gave the error vibration (an ignored stroke or element, dropped strokes, a
+     * failed recognition — SWIPE 10.2 오류 진동). ✗ when it vibrated or the committed text is no beginning of the
+     * target, ✓ when it is the target (closed by the space, or by the next syllable's consonant), else pending.
      */
-    fun step(item: PracticeItem, index: Int, text: String, error: Boolean): Verdict {
-        val steps = requireNotNull(item.steps) { "${item.target}: a tap keyboard item is judged by text" }
-        if (error || index !in steps.indices || text != steps[index]) return Verdict.WRONG
-        return if (index == steps.lastIndex) Verdict.RIGHT else Verdict.PENDING
+    fun commit(item: PracticeItem, committed: String, error: Boolean): Verdict {
+        val done = committed.replace(" ", "")
+        return when {
+            error || !item.target.startsWith(done) -> Verdict.WRONG
+            done == item.target -> Verdict.RIGHT
+            else -> Verdict.PENDING
+        }
     }
 
     /** The last code point of [s], or "" (the input display, FR-TUT-09: one character, large). */
