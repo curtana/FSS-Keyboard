@@ -91,9 +91,9 @@ class SwipeInputMapperTest {
         val x = t().tap("ㄱ").vowel("ㅣ").reverse()
         check("기", x)
         assertEquals(1, x.errors)
-        x.stroke(v(235f, 56f, 150f))   // a second ㅣ beside C: no candidate
+        x.stroke(v(235f, 80f, 174f))   // a second ㅣ beside C: no candidate
         assertEquals(2, x.errors)
-        check("가", x.stroke(h(100f, 235f, 260f)))
+        check("가", x.stroke(h(124f, 235f, 260f)))
     }
     @Test fun `SM-22 a tap closing unfinished strokes drops them with the error vibration`() {
         val x = t().tap("ㄱ").stroke(SwipeTypist.DOT_C)   // one dot: no vowel yet
@@ -101,7 +101,7 @@ class SwipeInputMapperTest {
         x.tap("ㄴ")
         check("ㄱㄴ", x)
         assertEquals(1, x.errors)
-        val y = t().tap("ㄱ").vowel("ㅜ").stroke(h(185f, 185f, 210f)).tap("ㄴ")   // ㅜ + dot, then ㄴ
+        val y = t().tap("ㄱ").vowel("ㅜ").stroke(h(209f, 185f, 210f)).tap("ㄴ")   // ㅜ + dot, then ㄴ
         check("군", y)
         assertEquals(1, y.errors)
         val z = t().tap("ㄱ").vowel("ㅏ").tap("ㄴ")   // a vowel closes quietly
@@ -113,11 +113,11 @@ class SwipeInputMapperTest {
 
     @Test fun `SM-23 after a consonant strokes are judged against C, without one they are bare - TBD-24`() {
         // The same two strokes: a vertical, then a shorter horizontal at its bottom (SWIPE 3.6.5 (가) row 4).
-        val strokes = listOf(v(175f, 150f, 200f), h(205f, 145f, 185f))
+        val strokes = listOf(v(175f, 174f, 224f), h(229f, 145f, 185f))
         check("고", t().tap("ㄱ").also { x -> strokes.forEach { x.stroke(it) } })   // C: a dot under C, then the underline
         check("ㅏ", t().also { x -> strokes.forEach { x.stroke(it) } })              // bare: the shorter line is ㅏ's dot
         // A vertical through C's left part is under-left = a dot with C (SWIPE 0.43: nothing is dropped); bare it is ㅣ.
-        val over = t().tap("ㄱ").stroke(v(170f, 56f, 150f))
+        val over = t().tap("ㄱ").stroke(v(170f, 80f, 174f))
         check("ㄱㆍ", over)
         assertEquals(0, over.errors)
         check("ㅣ", t().stroke(v(170f, 56f, 150f)))

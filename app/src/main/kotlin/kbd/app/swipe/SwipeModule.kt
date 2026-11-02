@@ -1,5 +1,6 @@
 package kbd.app.swipe
 
+import kbd.hangul.stroke.DotPlace
 import kbd.hangul.stroke.StrokePop
 import android.content.Context
 import android.view.View
@@ -7,6 +8,7 @@ import kbd.app.error.EngineGuard
 import kbd.app.feedback.FeedbackPort
 import kbd.app.ime.FieldInfo
 import kbd.app.store.Settings
+import kbd.app.view.CenterText
 import kbd.hangul.event.JamoEvent
 import kbd.hangul.jamo.Jamo
 import kbd.stroke.layout.FunctionKey
@@ -30,10 +32,17 @@ interface SwipeHost {
 
     /**
      * The consonant the next vowel attaches to (the composer's `lastConsonant()`: the final's last consonant,
-     * else the initial; null = nothing composing or a bare vowel). The swipe view draws it in the place C
-     * (SWIPE 9.5, FR-DSP-10) and, when it is not null, judges vowel strokes against C (SWIPE 3.6.3, TBD-24).
+     * else the initial; null = nothing composing or a bare vowel). When it is not null the swipe view judges
+     * vowel strokes against C (SWIPE 3.6.3, TBD-24).
      */
     val centerConsonant: Jamo? get() = null
+
+    /**
+     * What the swipe view draws in the place C (SWIPE 9.5, FR-DSP-10, FSS#36): the composing syllable, its pending
+     * dots drawn in place (`InputDispatcher.centerText`); null = nothing. The default draws [centerConsonant] alone
+     * (hosts without a composer).
+     */
+    val centerText: CenterText? get() = centerConsonant?.let { CenterText(it.compat.toString()) }
 
     /** `SwipeInputMapper` output for a consonant-key stroke (HLD 4.1). */
     fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean = false)   // errorVibe: unfinished vowel strokes dropped (SWIPE 3.3)
@@ -73,6 +82,9 @@ interface SwipeEngineState {
 
     /** = `SwipeInputMapper.pendingReplacesVowel()`: the glyph is shown in place of the composer's last character (bare ‥, SWIPE 0.36 3.4). */
     fun pendingReplacesVowel(): Boolean = false
+
+    /** = `SwipeInputMapper.pendingDots()`: the pending vowel-stroke dots and their places, drawn in the center place (SWIPE 9.5, FSS#36). */
+    fun pendingDots(): List<DotPlace> = emptyList()
 
     /** = `SwipeInputMapper.popElement()`: ⌫ takes back one vowel stroke or cheonjiin element first (SWIPE 3.5, FR-SWP-64). */
     fun popElement(): StrokePop = StrokePop.Empty

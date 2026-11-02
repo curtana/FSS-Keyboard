@@ -7,6 +7,7 @@ import kbd.app.graffiti.GraffitiSnapshot
 import kbd.app.graffiti.InputSink
 import kbd.app.graffiti.ResetReason
 import kbd.app.swipe.SwipeEngineState
+import kbd.app.view.CenterText
 import kbd.app.view.TapSink
 import kbd.hangul.stroke.StrokePop
 import kbd.hangul.compose.BackspaceResult
@@ -60,6 +61,30 @@ class InputDispatcher(
         if (errorVibe) feedback.error()
         out.show(c.applyAll(ev), swipeState?.pendingGlyph() ?: "", swipeState?.pendingReplacesVowel() == true)
         markInput()
+    }
+
+    /**
+     * What the swipe view draws in C (SWIPE 9.5, FR-DSP-10, owner decisions 2026-11-02, FSS#36): the one composing
+     * syllable, no candidates. Vowel strokes that make no vowel yet show as dots in place ([CenterText.dots]) instead
+     * of the editor's ㆍ·‥; a cheonjiin ㆍ·‥ stays text as in the editor. Null when nothing composes or no consonant
+     * does (a bare vowel). Read only; it changes only when the composer or the assemblies do (a tap, a released
+     * stroke, a cheonjiin element, ⌫, a reset), never while a stroke is drawn.
+     */
+    fun centerText(): CenterText? {
+        val c = composer ?: return null
+        if (c.lastConsonant() == null) return null
+        val sw = swipeState
+        val dots = sw?.pendingDots().orEmpty()
+        if (dots.isNotEmpty()) {
+            // The ‥ that hides the composer's ㅣ / ㅡ: the syllable without that vowel (그 + a second line = ㄱ and two dots).
+            val base = if (sw?.pendingReplacesVowel() == true) {
+                HangulComposer(c.policy).also { it.restore(c.snapshot()); it.undoLast() }.composingText()
+            } else {
+                c.composingText()
+            }
+            return CenterText(base, dots)
+        }
+        return CenterText(c.composingText() + (sw?.pendingGlyph() ?: ""))   // the cheonjiin ㆍ·‥ as in the editor
     }
 
     /** Closes the swipe assemblies for a key the user pressed; unfinished vowel strokes dropped = the error vibration (SWIPE 3.3). */

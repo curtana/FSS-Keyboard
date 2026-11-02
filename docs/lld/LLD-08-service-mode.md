@@ -1,8 +1,9 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.28** (2026-11-02)
-- 0.28(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): **자판 폭과 정렬**(새 7.2) — `KeyboardWidth.place`(키 한 칸 폭 × 10, 가용 폭에서 멈춤, 하한 320dp, 왼손/중앙/오른손), `KeyboardRootView`의 `portraitWidth`·`landscapeWidth`, `onMeasure`·`onLayout`(모드 뷰·덮개·버튼을 줄인 자판에), 자식 밖에서 내려온 포인터를 거르는 `OffKeyboardPointers`, 다시 놓기(화면 방향·설정 흐름).
+- 버전 **0.29** (2026-11-02)
+- 0.29(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): **자판 폭과 정렬**(새 7.2) — `KeyboardWidth.place`(키 한 칸 폭 × 10, 가용 폭에서 멈춤, 하한 320dp, 왼손/중앙/오른손), `KeyboardRootView`의 `portraitWidth`·`landscapeWidth`, `onMeasure`·`onLayout`(모드 뷰·덮개·버튼을 줄인 자판에), 자식 밖에서 내려온 포인터를 거르는 `OffKeyboardPointers`, 다시 놓기(화면 방향·설정 흐름).
+- 0.28(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `InputDispatcher.centerText()`(가운데 글자, 6.1). `KeyboardService.centerText = dispatcher.centerText()`(3절 표).
 - 0.27(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f, HLD 0.62 8.1·8장): **켜진 모드.** `ModeController`에 켜진 모드 집합 `enabled`(영문 쿼티·한글 두벌식은 늘 켬), `nextEnabled`(`nextInOrder` 대신), `applyEnabled`(이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로, 저장할 모드를 돌려줌), `fixedStart`(시작 때 고친 모드)(5절). 서비스: 생성 때 켜진 모드를 넘기고 `fixedStart`를 저장, `onStartInputView`에서 `applyEnabled`(3.1), 설정 `flow`가 바뀌면 `applyEnabledModes` — 키보드가 떠 있으면 곧바로 확정하고 새 모드의 뷰로 바꿈(3.2).
 - 0.26(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): 기준값은 코드 상수(`thresholds = ThresholdDefaults.VALUES`), `ThresholdStore` 읽기와 `onStartInputView`의 다시 읽기 삭제.
 - 0.25(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): `KeyboardService`는 `ModeController`에 모든 모드를 넘긴다(긋기를 빼는 공개판 순서 없음, 5절). `createSwipeView`는 늘 뷰를 준다.
@@ -81,7 +82,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
 | `onEvaluateFullscreenMode()` | `false` | FR-CMN-12 |
 | `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2) | FR-CMN-12, FR-CMN-14 ⑩ |
 | `onComputeInsets(out)` | `contentTopInsets = visibleTopInsets = 0`(입력 뷰 위 끝), `touchableInsets = TOUCHABLE_INSETS_FRAME`. 창 전체(빈 띠 포함)가 터치를 받는다 | SRS 3.3 빈 띠 |
-| `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, LLD-04 9.5) 등 | LLD-03 2.2 |
+| `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, 판정 C), `centerText = dispatcher.centerText()`(0.28, LLD-04 9.5) 등 | LLD-03 2.2 |
 
 ### 3.1 `onStartInputView(info, restarting)`
 ```
@@ -256,6 +257,7 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `onJamoEvents(ev, errorVibe)` (긋기) | `if (errorVibe) feedback.error()`(0.18: 조립을 닫으며 모음이 못 된 획을 버림); `r = composer.applyAll(ev)`; `out.show(r, swipeState?.pendingGlyph() ?: "", swipeState?.pendingReplacesVowel() == true)`(ㆍ·‥ 임시 글자를 조합 글자 뒤에, 빈 이벤트도 보임); `markInput()` | HLD 4.1, SWIPE 3.3·3.4 |
+| `centerText()` (0.28, 읽기만) | 조합기가 없거나 `lastConsonant() == null`(조합 없음·낱모음)이면 null. `swipeState.pendingDots()`가 비어 있지 않으면 `CenterText(base, dots)` — `base` = `composingText()`, 다만 `pendingReplacesVowel()`이면 조합기 사본(`HangulComposer(c.policy)` + `restore(c.snapshot())`)의 `undoLast()` 뒤 글자(숨긴 ㅣ / ㅡ를 뺀 꼴). 그 밖에는 `CenterText(composingText() + pendingGlyph())`(천지인 ㆍ·‥는 글자). 후보는 없다. 실제 조합기·편집기는 그대로 | SWIPE 9.5, FR-DSP-10, FSS#36 |
 | `onSwipeText(s, vibe)` (둘레 숫자·기호) | `finishAll()`; `out.commitText(s)`; `if vibe feedback.error()`; `markInput()`. 조립기 비움은 매퍼가 이미 함(LLD-04 6.2) | FR-SWP-42, 43, D-30 |
 | `onTapOutput(key, o)` | `o.jamo != null`(두벌식 글자) → `j = Jamo.ofCompat(o.jamo)`, `composer.apply(if j.kind == CONSONANT Consonant(j) else Vowel(j))` → `out.show`. `o.text != null` → `finishAll()` 뒤 `out.commitText(o.text)`(쿼티 글자도 이 길, FR-TAP-11a). `o.errorVibe` → `feedback.error()`. `markInput()` | FR-TAP-01a~03a, 11a |
 | `onFunctionDown(BACKSPACE)` | `backspace()`; `markInput()` | FR-CMN-07 |
@@ -344,7 +346,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
 - 시험: GD-01·GD-02·GD-06~GD-09(LLD-11 6.6, Robolectric). 실기기 DV-28(LLD-11 8절).
 
-### 7.2 자판 폭과 정렬 (0.28, FSS#25)
+### 7.2 자판 폭과 정렬 (0.29, FSS#25)
 
 근거: SRS 0.71 FR-CMN-14·FR-SET-09·3.3 창 규칙 ④·FR-SWP-45, HLD 0.64 5A "자판 폭과 정렬", SWIPE 0.51 2.1·9.5. 설정값과 저장은 LLD-07 6.1·7절.
 
@@ -381,7 +383,7 @@ internal class OffKeyboardPointers(onKeyboard: (x: Float, y: Float) -> Boolean) 
 | 안내표 | 덮개는 모드 뷰와 같은 x·폭, 버튼은 줄인 자판 오른쪽 끝(7.1 표 "자식과 z 순서"의 `END`는 이 x로 바뀜). 열기·닫기·삼키기는 7.1 그대로(삼키기 `onInterceptTouchEvent`는 거른 이벤트를 본다) |
 | 판정 | 모드 뷰는 받은 폭으로 기하를 만든다: 탭 자판 `TapGeometry.build(layout, widthDp, rowDp)`, 긋기 `SwipeGeometry.build(widthDp, rowDp)`(가운데 글자 자리 C = `SwipeLayout.consonantBox(widthDp, …)`, 가로 중심 = 자판 가운데), 그래피티 패드 `GraffitiPadGeometry`. 위치 허용 오차 = 실제 키 폭 × 0.4, `minCrossDp` = 8dp 그대로. 테두리(FR-SWP-45)는 모드 뷰 좌표의 0과 폭 = 줄인 자판의 바깥 변. 바꾸는 코드 없음 |
 
-- 시험: KW-01~KW-08(`KeyboardWidthTest`, JVM), KR-01~KR-06(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), SS-10·SS-11(LLD-11 7.5·7.7). 실기기 DV-29(LLD-11 8절).
+- 시험: KW-01~KW-08(`KeyboardWidthTest`, JVM), KR-01~KR-06(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), SS-10·SS-11(LLD-11 7.5·7.7). 실기기 DV-30(LLD-11 8절).
 
 ## 8. Feedback
 

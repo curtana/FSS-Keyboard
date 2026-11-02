@@ -44,7 +44,7 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
     }
     private val repeatTimer = RepeatTimer(handler, repeatSchedule()) { key ->
         host.guard.stroke(SwipeTouchLogic.SITE_FN) { host.onFunctionKey(key) } // no feedback on repeats (FR-CMN-11a ②)
-        invalidate()   // a repeated ⌫ changes the center consonant without a touch event (SWIPE 9.5)
+        invalidate()   // a repeated ⌫ changes the center syllable without a touch event (SWIPE 9.5)
     }
     private var guide: GuideOverlay? = null
     private var guideFlags: GuideFlags? = null
@@ -144,11 +144,11 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
                 else -> Unit   // consonant keys show no edge hints (their strokes are vowels)
             }
         }
-        // SWIPE 9.5: the center consonant, faint, in the place C between the keys and the trail. It changes only when the
+        // SWIPE 9.5: the center syllable, faint, in the place C between the keys and the trail. It changes only when the
         // composer does (dispatch on release, ⌫ repeat, app resets), never while a stroke is drawn.
         val c = g.consonantBox
         centerBox.set(c.left * density, c.top * density, c.right * density, c.bottom * density)
-        centerPainter.draw(canvas, kbd.app.view.CenterConsonantPainter.textFor(host.centerConsonant, host.fieldInfo), centerBox)
+        centerPainter.draw(canvas, kbd.app.view.CenterConsonantPainter.textFor(host.centerText, host.fieldInfo), centerBox)
         // SWIPE 9.4: the vowel strokes' trail above the keys; it follows the open assembly (a cursor move or a new field closed it too).
         logic.trail.sync(mapper.strokes.size)
         trailPainter.draw(canvas, logic.trail.paths)

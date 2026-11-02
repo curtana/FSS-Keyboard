@@ -17,6 +17,7 @@ import kbd.app.store.Settings
 import kbd.app.swipe.SwipeEngineState
 import kbd.app.swipe.SwipeHost
 import kbd.app.view.CenterConsonantPainter
+import kbd.app.view.CenterText
 import kbd.app.view.Touches
 import kbd.app.view.ViewTestSdk
 import kbd.app.view.layoutExactly
@@ -24,6 +25,7 @@ import kbd.gesture.input.SwipeInputMapper
 import kbd.gesture.layout.SwipeLayout
 import kbd.hangul.event.JamoEvent
 import kbd.hangul.jamo.Jamo
+import kbd.hangul.stroke.DotPlace
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.threshold.ThresholdDefaults
 import kbd.stroke.threshold.Thresholds
@@ -66,6 +68,9 @@ class SwipeKeyboardViewTest {
         override var settings: Settings = Settings.DEFAULT
         override var fieldInfo = FieldInfo(FieldClass.TEXT, isPassword = false, noLearning = false, multiLine = false, enterAction = null)
         override var centerConsonant: Jamo? = null
+        /** The center text, when set; else the interface default ([centerConsonant] alone). */
+        var center: CenterText? = null
+        override val centerText: CenterText? get() = center ?: centerConsonant?.let { CenterText(it.compat.toString()) }
         /** What the next swipe events make the center consonant (the composer is not in this test). */
         var consonantAfterEvents: Jamo? = null
         override fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean) {
@@ -243,6 +248,8 @@ class SwipeKeyboardViewTest {
             }
         }
         override fun drawPath(path: Path, paint: Paint) { ops += "path" }
+        val circles = ArrayList<Triple<Float, Float, Int>>()
+        override fun drawCircle(cx: Float, cy: Float, radius: Float, paint: Paint) { circles += Triple(cx, cy, paint.color) }
         override fun drawRoundRect(rect: android.graphics.RectF, rx: Float, ry: Float, paint: Paint) {}
         override fun drawColor(color: Int) {}
     }
@@ -258,7 +265,7 @@ class SwipeKeyboardViewTest {
         val canvas = RecordingCanvas().also { view.draw(it) }
         assertEquals(listOf("center:ㄲ:${CenterConsonantPainter.COLOR}"), center(canvas.ops))
         assertEquals(canvas.ops.lastIndex, canvas.ops.indexOfFirst { it.startsWith("center:") })   // after every key label
-        // Centred on C = consonantBox(357, 48) ≈ (137.7, 52)–(219.3, 148) (centred, issue #213).
+        // Centred on C = consonantBox(357, 48) ≈ (137.7, 76)–(219.3, 172) (centred, issue #213, half a row down, FSS#37).
         val c = SwipeLayout.consonantBox(WIDTH, ROW)
         assertEquals((c.left + c.right) / 2 * density, canvas.centerAt.single().first, 0.5f)
     }
@@ -282,6 +289,26 @@ class SwipeKeyboardViewTest {
         assertEquals(listOf("center:ㄱ:${CenterConsonantPainter.COLOR}"), center(draw()))   // not on press
         touch.up(0)
         assertEquals(listOf("center:ㄴ:${CenterConsonantPainter.COLOR}"), center(draw()))
+    }
+
+    /** FSS#36 SWIPE 9.5: one syllable, no candidates; pending dots drawn in place in C, as ㅛ·ㅕ's dots stand. */
+    @Test
+    fun `SW-14b pending dots in C - under in a row, right in a column, none once a vowel is made`() {
+        val c = SwipeLayout.consonantBox(WIDTH, ROW)
+        host.center = CenterText("ㄱ", listOf(DotPlace.UNDER, DotPlace.UNDER))
+        val under = RecordingCanvas().also { view.draw(it) }
+        assertEquals(listOf("center:ㄱ:${CenterConsonantPainter.COLOR}"), center(under.ops))
+        assertEquals(2, under.circles.size)
+        assertEquals(under.circles[0].second, under.circles[1].second, 0.01f)                // side by side
+        assertTrue(under.circles.all { it.third == CenterConsonantPainter.COLOR && it.second > under.centerAt.single().second && it.second < c.bottom * density })
+        host.center = CenterText("ㄱ", listOf(DotPlace.RIGHT, DotPlace.RIGHT))
+        val right = RecordingCanvas().also { view.draw(it) }
+        assertEquals(right.circles[0].first, right.circles[1].first, 0.01f)                  // one above the other
+        assertTrue(right.circles.all { it.first > right.centerAt.single().first && it.first < c.right * density })
+        host.center = CenterText("고")
+        val made = RecordingCanvas().also { view.draw(it) }
+        assertEquals(listOf("center:고:${CenterConsonantPainter.COLOR}"), center(made.ops))
+        assertEquals(0, made.circles.size)                                                   // no dots, no candidates
     }
 
     /** #180 FR-CMN-08 ①: not in password fields; ② no-learning fields draw it; FR-DSP-08: the guide settings do not matter. */

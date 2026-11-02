@@ -1,8 +1,9 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.26** (2026-11-02)
-- 0.26(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): 설정 `portraitWidth`·`landscapeWidth`(`WidthSetting(keyDp, align)` — 키 한 칸 폭, 없음 = 기본값, `KeyboardWidth.FULL` = 꽉 채움; 키 `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`, 6.1), 설정 화면 "자판" 묶음의 세로·가로 키 크기 슬라이더·전체 폭 미리보기·정렬(7절), 연습 자판 `BoardFrame`의 폭·정렬·여백(2.3). 계산 `KeyboardWidth`는 LLD-08 7.2.
+- 버전 **0.27** (2026-11-02)
+- 0.27(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): 설정 `portraitWidth`·`landscapeWidth`(`WidthSetting(keyDp, align)` — 키 한 칸 폭, 없음 = 기본값, `KeyboardWidth.FULL` = 꽉 채움; 키 `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`, 6.1), 설정 화면 "자판" 묶음의 세로·가로 키 크기 슬라이더·전체 폭 미리보기·정렬(7절), 연습 자판 `BoardFrame`의 폭·정렬·여백(2.3). 계산 `KeyboardWidth`는 LLD-08 7.2.
+- 0.26(FSS#36·FSS#37, SWIPE 0.52 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 점 자리)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
 - 0.25(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f ⑦, HLD 0.62 7.1·7.3, SWIPE 0.49 10.0): **쓸 입력 모드.** `Settings`에 `graffitiEnabled`·`swipeEnabled`(기본 켬)와 `enabledModes`, 키 `graffiti_enabled`·`swipe_enabled`(6.1). 설정 화면 첫 묶음 "입력 모드"(체크 상자 넷, 영문·한글은 체크된 채 바꿀 수 없음, 7절). `PracticeTopic.mode`·`offInKeyboard`: 그래피티·긋기 주제는 그 모드가 꺼져도 보이고 할 수 있으며 목록에 "키보드에서 꺼져 있음"(2.1, 2.3). 기호 주제의 긋기 자판 항목은 그대로.
 - 0.24(FSS#17 오너 결정 "권장안대로"·오너 결정 A·PM 결정 B, SRS 0.68·HLD 0.61·SWIPE 0.48): **튜터를 입력 연습으로 다시 짰다.** 측정하는 튜터(1·3·5과, `TutorSession`·`TutorStep`·`TutorSteps`, `TutorFlow`, `TutorItemJudge`·`HowTo`, `PracticeEcho`·`PracticeKeyboard`·`PracticeLayouts`, `TypingStats`, `TutorMeasure`, `ThresholdEstimator`)와 기준값 저장(`ThresholdStore`·`ThresholdCodec`, 기준값 JSON 형식, 내보내기·가져오기·초기화 메뉴, `calibration` 쓰기)을 지웠다. 새 구성은 2절: 주제 넷·19항목(`PracticeTopics`), 실제 자판 뷰를 그대로 쓰는 연습 자판(`PracticeInput`이 실제 `InputDispatcher`를 메모리 편집기에 연결), 결과 판정 `PracticeItemJudge`(탭 자판 항목은 ⌫ 반영 글자열), 화면 `PracticeActivity`·`PracticeFlow`, 첫 실행 `PracticeLaunchPolicy`(주제 목록만). 기준값은 코드 상수(3절), 위치 허용 오차는 실행 때 긋기 키 폭 × 0.4. 옛 저장 파일 `thresholds.json`은 읽지 않고 지우지도 않는다(4절). 0.23까지의 기록은 아래 이력과 git에 남는다.
 - 0.23(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 공개판 튜터를 지웠다 — 1-1 쿼티(`MinCrossOnQwertyStep`), `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`, `PracticeLayouts.QWERTY`, `TutorSession`의 `personal` 구분과 1-1 한쪽 분포 규칙(`ONE_SIDED_DISTANCE`), `TutorMeasure.jitter`·`jitterSample`. `PersonalTutorSteps` → `TutorSteps`. 이 문서의 "public …" 설명은 0.22 이전 기록이고, "personal"은 모든 빌드로 읽는다. `ThresholdEstimator.oneSidedDistance`는 남겼다(쓰는 곳 없음, 튜터 정리 이슈 #224에서).
@@ -88,15 +89,15 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 
 **한 시도 `PracticeInput(board, feedback, errorLog, settings) : SwipeHost`:** 실제 `InputDispatcher`·`ComposingController`·`ModeController(모드 하나)`와 모드의 조합기(긋기 `ComposePolicy.SWIPE`, 그래피티 `GRAFFITI`, 쿼티 없음)를 `PracticeEditor`에 잇는다. 기준값은 `ThresholdDefaults.VALUES`(3절). 오류 진동(`FeedbackPort.error`)을 지나며 `errored`를 켠다 — SWIPE 10.2의 ✗ 조건(무시된 획·천지인 요소, 버린 임시 획, 인식 실패)이 모두 이 진동이다.
 - `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫만** 넘긴다. 스페이스·↵·화살표·Esc·Del·Tab·모드 키·설정 획은 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
-- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`라 가운데 자음·C 기준 판정이 실제와 같다.
+- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`(C 기준 판정), `centerText` = `dispatcher.centerText()`(0.26, 가운데 글자)라 실제와 같다.
 - `graffiti(templates, lang, flash, redraw)`: 실제 `GraffitiInputHandler`(인식기·`GraffitiState`·천지인 조립기)를 만들고 패드 언어를 항목의 `lang`으로 둔다(한영 전환 획은 연습하지 않음, SWIPE 10.1 ③).
 
 **연습 자판(`BoardFactory.build`, 시도마다 새로):** 실제 뷰를 `BoardFrame` 안에 둔다.
 - 탭 자판: `TapKeyboardView` + `TapLayouts.QWERTY`(편집 줄 포함, 오너 결정 A), 높이 = 줄 수 × 설정 줄 높이.
-- 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 자음이 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
+- 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 글자가 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
 - 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만 — 한글 / 영문 / 숫자, `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
 - **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이 바뀌었거나 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
-- **폭·정렬(0.26, FSS#25, SRS FR-CMN-14 ⑥):** `BoardFrame`은 화면 폭(가용 폭)을 받아 그 화면 방향의 설정(`portraitWidth`·`landscapeWidth`)으로 `KeyboardWidth.place`(LLD-08 7.2, 짧은 변 = `displayMetrics`의 작은 쪽)를 구해 자식(연습 자판, 그래피티면 안내표 + 패드 묶음)을 그 폭으로 재고 `span.left`에 둔다. 남는 자리는 키보드 배경색이고 터치를 소비한다. 자판 밖에서 내려온 포인터는 `OffKeyboardPointers`로 걸러 자판에 가지 않고 `onPress`·`onAction`도 부르지 않는다(연습 동작이 아님). 설정은 화면을 열 때 한 번 읽은 값이다(2.3 처음)
+- **폭·정렬(0.27, FSS#25, SRS FR-CMN-14 ⑥):** `BoardFrame`은 화면 폭(가용 폭)을 받아 그 화면 방향의 설정(`portraitWidth`·`landscapeWidth`)으로 `KeyboardWidth.place`(LLD-08 7.2, 짧은 변 = `displayMetrics`의 작은 쪽)를 구해 자식(연습 자판, 그래피티면 안내표 + 패드 묶음)을 그 폭으로 재고 `span.left`에 둔다. 남는 자리는 키보드 배경색이고 터치를 소비한다. 자판 밖에서 내려온 포인터는 `OffKeyboardPointers`로 걸러 자판에 가지 않고 `onPress`·`onAction`도 부르지 않는다(연습 동작이 아님). 설정은 화면을 열 때 한 번 읽은 값이다(2.3 처음)
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
 - **꺼진 모드 표시(0.25, FR-CMN-03f ⑦, SWIPE 10.0):** 주제 목록은 설정 `flow`의 `enabledModes`로 `offInKeyboard`가 참인 주제(그래피티·긋기)의 한 줄 설명 아래에 `practice_mode_off`("키보드에서 꺼져 있음", 작은 글자·`outline` 색)를 붙인다. 주제는 그대로 열고 할 수 있다(연습 자판은 앱 안의 화면). 기호 주제(②)의 긋기 자판 항목은 그대로 둔다(표시도 없음).
@@ -147,7 +148,7 @@ data class Settings(val lastMode: InputMode?, val showDirectionGuide: Boolean, v
                     val graffitiLetterRatio: Float, val tutorAutoStarted: Boolean,
                     val practiceDone: Set<String> = emptySet(),
                     val graffitiEnabled: Boolean = true, val swipeEnabled: Boolean = true,   // 0.25, FR-SET-08
-                    val portraitWidth: WidthSetting = WidthSetting.DEFAULT,    // 0.26, FSS#25 (LLD-08 7.2)
+                    val portraitWidth: WidthSetting = WidthSetting.DEFAULT,    // 0.27, FSS#25 (LLD-08 7.2)
                     val landscapeWidth: WidthSetting = WidthSetting.DEFAULT) {
     val enabledModes: Set<InputMode>   // {QWERTY, DUBEOLSIK} ∪ 켜진 GRAFFITI·SWIPE (LLD-08 5절 applyEnabled에 넘김)
 }
@@ -176,8 +177,8 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
 | `graffiti_enabled` (0.25) | **true** | FR-SET-08(오너 결정 2026-11-02, FSS#31): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절) |
 | `swipe_enabled` (0.25) | **true** | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
-| `key_portrait_dp`, `align_portrait` (0.26) | 없음(= 꽉 채움), `CENTER` | FR-CMN-14 ②③, FR-SET-09(FSS#25). 키 한 칸 폭(Float, dp)과 정렬 이름(`LEFT`·`CENTER`·`RIGHT`). 읽을 때 키 폭은 `KeyboardWidth.snap`(정수 dp, 32~160 안, D-33과 같은 생각). 세로 슬라이더 위 끝(꽉 채움)은 키를 지운다(없음 = 꽉 채움). 모르는 정렬 이름은 `CENTER` |
-| `key_landscape_dp`, `align_landscape` (0.26) | 없음(= 세로와 같은 키 크기), `CENTER` | FR-CMN-14 ③, FR-SET-09. 없으면 `keyDp = null`이고 `KeyboardWidth.place`가 세로 키 크기(세로가 꽉 채움이면 화면 짧은 변 ÷ 10)를 쓴다. 가로 슬라이더 위 끝은 `KeyboardWidth.FULL`(양의 무한대, 숫자가 아닌 "꽉 채움" 표식)로 저장한다(방향·막대가 바뀌어도, 세로 키 크기를 바꿔도 꽉 채움, SRS FR-SET-09). `update`에서 `keyDp = null`이면 키를 지운다 |
+| `key_portrait_dp`, `align_portrait` (0.27) | 없음(= 꽉 채움), `CENTER` | FR-CMN-14 ②③, FR-SET-09(FSS#25). 키 한 칸 폭(Float, dp)과 정렬 이름(`LEFT`·`CENTER`·`RIGHT`). 읽을 때 키 폭은 `KeyboardWidth.snap`(정수 dp, 32~160 안, D-33과 같은 생각). 세로 슬라이더 위 끝(꽉 채움)은 키를 지운다(없음 = 꽉 채움). 모르는 정렬 이름은 `CENTER` |
+| `key_landscape_dp`, `align_landscape` (0.27) | 없음(= 세로와 같은 키 크기), `CENTER` | FR-CMN-14 ③, FR-SET-09. 없으면 `keyDp = null`이고 `KeyboardWidth.place`가 세로 키 크기(세로가 꽉 채움이면 화면 짧은 변 ÷ 10)를 쓴다. 가로 슬라이더 위 끝은 `KeyboardWidth.FULL`(양의 무한대, 숫자가 아닌 "꽉 채움" 표식)로 저장한다(방향·막대가 바뀌어도, 세로 키 크기를 바꿔도 꽉 채움, SRS FR-SET-09). `update`에서 `keyDp = null`이면 키를 지운다 |
 
 - 저장된 `lastMode` 이름이 모르는 값이면 없음으로 본다(FR-CMN-10; 0.23: 모든 빌드가 네 모드라 FR-CMN-03b의 "빌드에 없는 모드" 경우는 없음, 이슈 #251).
 - `graffiti_letter_ratio`는 Float 하나로 저장한다(`floatPreferencesKey`). 값은 패드 폭 가운데 **문자 영역의 몫**이다: 1 : 1 = 1/2, 2 : 1 = 2/3, 3 : 1 = 3/4(문자 : 숫자 = r : 1 − r). 설정 화면은 세 값만 쓴다(`GRAFFITI_RATIOS`, 7절). 읽을 때는 검사하지 않는다: 저장값이 없으면 기본값 2/3, 있으면 목록 밖 값이라도 그대로 `GraffitiPadGeometry`에 넘겨 그 몫으로 패드를 나누고, 설정 화면은 어느 선택지도 고르지 않은 상태(세 값과의 차가 모두 0.001 이상)로 보인다. 사용자가 하나를 고르면 그 값으로 덮어쓴다. 앱이 목록 밖 값을 쓰는 길은 없으므로(설정 화면이 유일한 쓰기) 이 경우는 저장 파일이 손상되거나 바깥에서 고친 때뿐이다.
@@ -215,7 +216,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 입력 연습(0.24) | `PracticeActivity` 열기(설명 "영문 대문자 · 기호 · 그래피티 · 긋기를 골라서 짧게 연습"). 첫 실행의 주제 목록은 2.5 | FR-TUT-06, FR-SET-04 |
 | 그래피티 영역 비율 | `graffiti_letter_ratio`. 라디오 단추 셋: 1 : 1 / 2 : 1(기본) / 3 : 1 → 1/2 / 2/3 / 3/4 저장(6.1) | FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | 줄 높이 | `row_height_dp`(40~64dp, 기본 48dp) | FR-SET-06, TBD-16 |
-| 세로·가로 화면 키 크기·정렬(0.26) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 넷: "세로 화면 키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음), "세로 화면 정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면 키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리), "가로 화면 정렬". 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음 | FR-SET-09, FR-CMN-14 |
+| 세로·가로 화면 키 크기·정렬(0.27) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 넷: "세로 화면 키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음), "세로 화면 정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면 키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리), "가로 화면 정렬". 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음 | FR-SET-09, FR-CMN-14 |
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
 
 - 0.25: 묶음 순서는 입력 모드 → 입력기 → 안내 표시 → 피드백 → 자판 → 입력 연습. 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.

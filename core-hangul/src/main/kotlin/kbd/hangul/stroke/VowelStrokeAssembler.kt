@@ -57,6 +57,12 @@ sealed interface StrokePop {
     data class Popped(val undoComposer: Boolean) : StrokePop
 }
 
+/**
+ * Where a pending dot stands beside the syllable in the center place (SWIPE 9.5, owner 2026-11-02, FSS#36): a vertical
+ * stroke's dot (ㅗ·ㅛ's) under it, two side by side; a horizontal stroke's dot (ㅓ·ㅕ's) right of it, two one above the other.
+ */
+enum class DotPlace { UNDER, RIGHT }
+
 /** Value copy for error recovery (LLD-09): the strokes and the C they were judged against. */
 data class StrokeSnapshot(val strokes: List<VowelStroke>, val consonant: ConsonantBox? = null)
 
@@ -147,6 +153,18 @@ class VowelStrokeAssembler(var tol: Float) {
      * character (its ㅣ / ㅡ) on screen; the composer itself keeps that vowel for ⌫ and closing.
      */
     val pendingReplacesVowel: Boolean get() = reading(seq, consonant)?.hidesVowel ?: false
+
+    /**
+     * The dots [pendingGlyph] stands for, one per stroke, for the center place (SWIPE 9.5, owner 2026-11-02, FSS#36):
+     * a vertical stroke is ㅗ·ㅛ's dot ([DotPlace.UNDER]), a horizontal one ㅓ·ㅕ's ([DotPlace.RIGHT]). In the ‥ states
+     * that hide the composer's vowel ([pendingReplacesVowel]) both strokes are dots. Empty when no dot is pending.
+     */
+    val pendingDots: List<DotPlace>
+        get() {
+            val r = reading(seq, consonant) ?: return emptyList()
+            val n = if (r.hidesVowel) seq.size else r.pending
+            return seq.takeLast(n).map { if (it.vertical) DotPlace.UNDER else DotPlace.RIGHT }
+        }
 
     fun snapshot(): StrokeSnapshot = StrokeSnapshot(seq.toList(), consonant)
 
