@@ -106,7 +106,7 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
 - **꺼진 모드 표시(0.25, FR-CMN-03f ⑦, SWIPE 10.0):** 주제 목록은 설정 `flow`의 `enabledModes`로 `offInKeyboard`가 참인 주제(그래피티·긋기)의 한 줄 설명 아래에 `practice_mode_off`("키보드에서 꺼져 있음", 작은 글자·`outline` 색)를 붙인다. 주제는 그대로 열고 할 수 있다(연습 자판은 앱 안의 화면). 기호 주제(②)의 긋기 자판 항목은 그대로 둔다(표시도 없음).
-- **맞힌 항목 보이기(0.30):** `LaunchedEffect(flow.holding)`이 켜지면 `RIGHT_HOLD_MS` 기다렸다 `advance()`. [그만]으로 그사이 나가면 `holding`이 꺼져 아무 일도 없다.
+- **맞힌 항목 보이기(0.30):** `LaunchedEffect(flow.holding)`이 켜지면 `RIGHT_HOLD_MS` 기다렸다 `advance()`. [그만]으로 그사이 나가면 `holding`이 꺼져 아무 일도 없다. 마지막 항목의 `markDone`은 홀드 뒤가 아니라 ✓ 때 부르므로 그사이 [그만]으로 나가도 주제 ✓는 남는다.
 - 시험: PR-02~PR-08, PR-10~PR-14, PR-16, PR-20~PR-23, 실기기 DV-11·DV-24·DV-31·DV-33.
 
 ### 2.4 항목 판정 `PracticeItemJudge` (FR-TUT-12, SWIPE 10.2, 안드로이드 없음)
