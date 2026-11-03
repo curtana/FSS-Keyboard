@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.29** (2026-11-03)
+- 버전 **0.30** (2026-11-03)
+- 0.30(FSS#54 버그·PM 결정 A, SWIPE 0.54 10.2): **✓ 뒤 다음 항목으로 넘어갈 때 목표 줄이 바뀌지 않던 버그** — `PracticeFlow`의 값이 일반 변수여서, 인자(`flow`·`redraw`)가 같은 화면 함수(`Item` 등)를 Compose가 건너뛰어(strong skipping) 다시 그리지 않았다(판정·자판은 다음 항목, 화면 글자는 앞 항목). `PracticeFlow`의 값을 스냅숏 상태(`mutableStateOf`)로 바꾸고 `tick`·`redraw`를 없앴다(2.3). ✓ 뒤 `holding`: 맞힌 항목을 `RIGHT_HOLD_MS`(1000ms) 보인 뒤 화면이 `advance()`를 부르고, 그동안 `BoardFrame`은 그때 시작한 터치를 통째로 받지 않으며 `onPress`·`onAction`은 아무 일도 하지 않는다. 시험 PR-04·PR-06·PR-08 고침, PR-22·PR-23 새로.
 - 0.29(FSS#44 오너 결정, SRS 0.74 FR-SET-09, HLD 0.67): 설정 화면 "자판" 묶음의 키 크기·정렬을 **방향마다 상자 하나**로 — "세로 화면" 상자·"가로 화면" 상자(`OutlinedCard`), 상자 안에 "키 크기"·"정렬". 지금 화면 방향(`LocalConfiguration.orientation`, 가로가 아니면 세로) 상자의 제목 줄 오른쪽 끝에 "지금 화면". 두 상자 늘 보임(7절).
 - 0.28(FSS#43 오너 결정·PM 결정, SWIPE 0.53 10.2, SRS 0.73 FR-TUT-12): **긋기·그래피티 항목은 확정된 글자로 판정.** `PracticeItemJudge.step`(동작마다 `steps`와 비교)을 `commit(item, committed, error)`로 바꿨다 — 조합 중 글자는 보지 않고, 확정된 글자열(스페이스 뺌)이 목표의 앞부분이 아니면 ✗, 목표면 ✓(2.4). `PracticeFlow.onAction`에 `composing`(조합 중인 끝부분), 동작 번호 `actions` 삭제(2.3). 끝 동작 = **스페이스**: 긋기 연습 자판의 스페이스 키(`PracticeInput.onFunctionKey`)와 그래피티 패드의 스페이스 키(`tapSink`)가 실제처럼 `InputDispatcher`의 스페이스를 부른다(D-66 바뀜). `BoardFrame`은 조합 부분이 바뀐 것도 동작으로 센다(그래피티 끝 획). 입력 표시는 끝 스페이스를 건너뛴다. 한글 항목 쓰는 법 끝에 `→ 스페이스`, ③·④ 설명에 스페이스 한 줄(2.2). `steps`는 시험이 지키는 실제 표시로 남고 판정에는 쓰지 않는다(D-65 바뀜).
 - 0.27(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): 설정 `portraitWidth`·`landscapeWidth`(`WidthSetting(keyDp, align)` — 키 한 칸 폭, 없음 = 기본값, `KeyboardWidth.FULL` = 꽉 채움; 키 `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`, 6.1), 설정 화면 "자판" 묶음의 세로·가로 키 크기 슬라이더·전체 폭 미리보기·정렬(7절), 연습 자판 `BoardFrame`의 폭·정렬·여백(2.3). 계산 `KeyboardWidth`는 LLD-08 7.2.
@@ -75,18 +76,19 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 
 ### 2.3 화면과 연습 자판 (`PracticeActivity`, `PracticeFlow`, `PracticeInput`)
 
-**흐름 `PracticeFlow`(안드로이드 없음):** `Screen { LIST, INTRO, ITEM, DONE }`. `open(topic)` → INTRO, `start()`([시작]) → ITEM 첫 항목, `stop()`([그만]·[주제 목록으로]) → LIST. 마지막 항목이 ✓이면 DONE으로 가고 `markDone(id)`(→ `SettingsStore.markPracticeDone`)를 부른다. 중간에 그만두면 표시하지 않는다.
+**흐름 `PracticeFlow`(안드로이드 없음):** `Screen { LIST, INTRO, ITEM, DONE }`. `open(topic)` → INTRO, `start()`([시작]) → ITEM 첫 항목, `stop()`([그만]·[주제 목록으로]) → LIST. 마지막 항목이 ✓이면 DONE으로 가고 `markDone(id)`(→ `SettingsStore.markPracticeDone`)를 부른다. 중간에 그만두면 표시하지 않는다. 표의 값은 Compose 스냅숏 상태(`mutableStateOf`)라 화면은 읽은 값이 바뀌면 스스로 다시 그린다(0.30, FSS#54: 일반 변수일 때 건너뛴 화면 함수가 앞 항목의 목표를 남겼다).
 
 | 값 | 뜻 | 바뀌는 때 |
 |---|---|---|
-| `verdict` | ✓·✗ | 판정 때 정함. 다음 터치를 누를 때(`onPress`) 지움. 탭 자판 항목의 ✗는 글자열이 틀린 동안 남고, ⌫로 앞부분이 되면 지움 |
+| `verdict` | ✓·✗ | 판정 때 정함. 다음 터치를 누를 때(`onPress`) 지움. ✓는 `advance()` 때 지움(0.30). 탭 자판 항목의 ✗는 글자열이 틀린 동안 남고, ⌫로 앞부분이 되면 지움 |
 | `echo` | 입력 표시(FR-TUT-09) | 동작마다 `PracticeEditor.display`. `onPress`에서 지움(탭 자판 항목의 ✗ 동안은 남김) |
 | `howTo` | 쓰는 법 한 줄 | ✗ 때 항목의 `howTo`, 그 항목을 맞히면 지움 |
 | `hint` | 덧붙임 | 긋기 항목의 ✗가 위나 왼쪽으로 그은 터치에서 났을 때 "획은 아래로, 오른쪽으로만 그어요"(SWIPE 10.2) |
 | `highlight` | 안내표 강조 칸 | 그래피티 ✗ 때 `guideCells`, ✓ 때 지움 |
+| `holding` | 맞힌 항목을 보이는 중(0.30) | ✓ 때 켬, `advance()`·`stop()`·`open()` 때 끔. 켜진 동안 `onPress`·`onAction`은 아무 일도 하지 않는다 |
 | `tryNo` | 시도 번호 | 항목 시작, 탭 자판이 아닌 항목의 ✗ 뒤. 바뀌면 화면이 연습 자판을 새로 만든다(= 판정·조합 상태를 비움, SWIPE 10.2) |
 
-**`onAction(text, display, error, reversed, composing = "")`:** `composing`은 `text` 끝의 조합 중인 부분(0.28). 탭 자판 항목은 `PracticeItemJudge.text`, 그 밖은 `PracticeItemJudge.commit(item, text에서 composing을 뺀 확정 글자열, error)`. ✓ → 다음 항목(새 시도), ✗ → 위 표대로(탭 자판 항목은 비우지 않음).
+**`onAction(text, display, error, reversed, composing = "")`:** `composing`은 `text` 끝의 조합 중인 부분(0.28). 탭 자판 항목은 `PracticeItemJudge.text`, 그 밖은 `PracticeItemJudge.commit(item, text에서 composing을 뺀 확정 글자열, error)`. ✓ → `holding`(같은 자판, 맞힌 항목과 ✓를 그대로 보임), 화면이 `RIGHT_HOLD_MS` = 1000ms 뒤 `advance()` → 다음 항목(새 시도, ✓·입력 표시 지움) 또는 DONE(0.30, SWIPE 10.2, FSS#54). ✗ → 위 표대로(탭 자판 항목은 비우지 않음).
 
 **연습 편집기 `PracticeEditor : EditorPort`:** 입력창 대신 메모리 글자열. `commitText`는 조합 글자를 바꿔 넣고(InputConnection과 같음), `deleteBefore`는 끝 한 글자를 지운다. `text` = 확정 + 조합(`composing`), `display` = 조합 글자가 있으면 그것(`ㄱㆍ`처럼 그대로), 없으면 확정 글자의 끝 공백을 뺀 마지막 한 글자(0.28: 스페이스 뒤에도 그 글자).
 
@@ -99,12 +101,13 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 - 탭 자판: `TapKeyboardView` + `TapLayouts.QWERTY`(편집 줄 포함, 오너 결정 A), 높이 = 줄 수 × 설정 줄 높이.
 - 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 글자가 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
 - 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만 — 한글 / 영문 / 숫자, `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
-- **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이나 그 조합 부분이 바뀌었거나(그래피티 끝 획처럼 확정만 하는 동작, 0.28) 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
+- **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이나 그 조합 부분이 바뀌었거나(그래피티 끝 획처럼 확정만 하는 동작, 0.28) 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용). `PracticeFlow.holding`일 때 시작한 터치(첫 손가락이 내려온 때 기준)는 뗄 때까지 통째로 소비해 자판에 주지 않는다(0.30).
 - **폭·정렬(0.27, FSS#25, SRS FR-CMN-14 ⑥):** `BoardFrame`은 화면 폭(가용 폭)을 받아 그 화면 방향의 설정(`portraitWidth`·`landscapeWidth`)으로 `KeyboardWidth.place`(LLD-08 7.2, 짧은 변 = `displayMetrics`의 작은 쪽)를 구해 자식(연습 자판, 그래피티면 안내표 + 패드 묶음)을 그 폭으로 재고 `span.left`에 둔다. 남는 자리는 키보드 배경색이고 터치를 소비한다. 자판 밖에서 내려온 포인터는 `OffKeyboardPointers`로 걸러 자판에 가지 않고 `onPress`·`onAction`도 부르지 않는다(연습 동작이 아님). 설정은 화면을 열 때 한 번 읽은 값이다(2.3 처음)
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
 - **꺼진 모드 표시(0.25, FR-CMN-03f ⑦, SWIPE 10.0):** 주제 목록은 설정 `flow`의 `enabledModes`로 `offInKeyboard`가 참인 주제(그래피티·긋기)의 한 줄 설명 아래에 `practice_mode_off`("키보드에서 꺼져 있음", 작은 글자·`outline` 색)를 붙인다. 주제는 그대로 열고 할 수 있다(연습 자판은 앱 안의 화면). 기호 주제(②)의 긋기 자판 항목은 그대로 둔다(표시도 없음).
-- 시험: PR-02~PR-08, PR-10~PR-14, PR-16, PR-20·PR-21, 실기기 DV-11·DV-24·DV-31.
+- **맞힌 항목 보이기(0.30):** `LaunchedEffect(flow.holding)`이 켜지면 `RIGHT_HOLD_MS` 기다렸다 `advance()`. [그만]으로 그사이 나가면 `holding`이 꺼져 아무 일도 없다.
+- 시험: PR-02~PR-08, PR-10~PR-14, PR-16, PR-20~PR-23, 실기기 DV-11·DV-24·DV-31·DV-33.
 
 ### 2.4 항목 판정 `PracticeItemJudge` (FR-TUT-12, SWIPE 10.2, 안드로이드 없음)
 

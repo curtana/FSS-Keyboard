@@ -31,11 +31,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,6 +67,7 @@ import kbd.graffiti.recognize.TemplateSet
 import kbd.stroke.layout.TapLayouts
 import kbd.stroke.threshold.ThresholdDefaults
 import kotlin.math.abs
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -111,25 +110,24 @@ class PracticeActivity : ComponentActivity() {
  * Builds one try's practice keyboard (LLD-07 §2.3): the real view of the item's board, wrapped in a [BoardFrame] that
  * tells the flow when a touch is pressed and when the engine is done with a released one.
  */
-private class BoardFactory(
+internal class BoardFactory(
     private val settings: Settings,
     private val feedback: Feedback,
     private val errorLog: ErrorLog,
     private val templates: TemplateSet,
 ) {
-    fun build(context: Context, flow: PracticeFlow, item: PracticeItem, redraw: () -> Unit): View {
+    fun build(context: Context, flow: PracticeFlow, item: PracticeItem): View {
         val input = PracticeInput(item.board, feedback, errorLog, settings)
         val density = context.resources.displayMetrics.density
         fun px(dp: Float) = Math.round(dp * density)
         val row = settings.rowHeightDp
         var before = ""
         var beforeComposing = ""
-        val frame = BoardFrame(context, ThresholdDefaults.MIN_CROSS_DP * density, settings.portraitWidth, settings.landscapeWidth, onDown = {
+        val frame = BoardFrame(context, ThresholdDefaults.MIN_CROSS_DP * density, settings.portraitWidth, settings.landscapeWidth, held = { flow.holding }, onDown = {
             input.errored = false
             before = input.editor.text
             beforeComposing = input.editor.composing
             flow.onPress()
-            redraw()
         }) { reversed ->
             val text = input.editor.text
             val composing = input.editor.composing
@@ -138,7 +136,6 @@ private class BoardFactory(
             // of the guide, is not an action).
             if (item.board == PracticeBoard.TAP_QWERTY || text != before || composing != beforeComposing || input.errored) {
                 flow.onAction(text, input.editor.display, input.errored, reversed, composing)
-                redraw()
             }
         }
         when (item.board) {
@@ -192,18 +189,23 @@ private class BoardFactory(
  * The board has the keyboard width and alignment of the screen's orientation (SRS FR-CMN-14 ⑥, LLD-07 §2.3, FSS#25):
  * the frame's width is the available width, the board sits in its [KeyboardWidth.place] span, and the rest is
  * keyboard-coloured margin whose touches are taken with no input and are no action of the practice.
+ *
+ * A gesture that begins while [held] (a right item on show, FSS#54) is taken whole with no input and no action.
  */
 private class BoardFrame(
     context: Context,
     private val slopPx: Float,
     private val portraitWidth: WidthSetting,
     private val landscapeWidth: WidthSetting,
+    private val held: () -> Boolean,
     private val onDown: () -> Unit,
     private val onUp: (reversed: Boolean) -> Unit,
 ) : FrameLayout(context) {
 
     private val starts = HashMap<Int, Pair<Float, Float>>()
     private var span = KeyboardSpan(0, 0)
+    /** The gesture began while [held]: none of it reaches the board. */
+    private var heldGesture = false
     private val offBoard = OffKeyboardPointers { x, y -> x >= span.left && x < span.left + span.width && y >= 0 && y < height }
 
     init {
@@ -230,6 +232,8 @@ private class BoardFrame(
     override fun onTouchEvent(event: MotionEvent): Boolean = true
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) heldGesture = held()
+        if (heldGesture) return true   // a right item on show takes no input (FSS#54)
         val ev = offBoard.filter(event) ?: return true   // a finger on the margin: no input, no practice action
         try {
             return dispatchOnBoard(ev) || offBoard.active
@@ -265,35 +269,39 @@ private class BoardFrame(
 }
 
 @Composable
-private fun PracticeScreen(
+internal fun PracticeScreen(
     flow: PracticeFlow,
     settingsFlow: kotlinx.coroutines.flow.Flow<Settings>,
     start: Settings,
     boards: BoardFactory,
     close: () -> Unit,
 ) {
-    var tick by remember { mutableIntStateOf(0) }   // PracticeFlow is plain state; bump to redraw
-    val redraw: () -> Unit = remember { { tick++ } }
     val now by settingsFlow.collectAsState(start)   // the topic ✓ marks as stored (SWIPE 10.0)
     val done = now.practiceDone
     val enabled = now.enabledModes   // "키보드에서 꺼져 있음" (FR-CMN-03f ⑦)
+    // A right item stays on screen with its ✓, then the next one comes (FSS#54); [그만] meanwhile ends the hold.
+    LaunchedEffect(flow.holding) {
+        if (flow.holding) {
+            delay(PracticeFlow.RIGHT_HOLD_MS)
+            flow.advance()
+        }
+    }
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
-            @Suppress("UNUSED_EXPRESSION") tick   // read so every bump recomposes
             Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.practice_title), style = MaterialTheme.typography.headlineSmall)
                 when (flow.screen) {
-                    PracticeFlow.Screen.LIST -> TopicList(flow, done, enabled, redraw, close)
-                    PracticeFlow.Screen.INTRO -> Intro(flow, redraw)
-                    PracticeFlow.Screen.ITEM -> Item(flow, redraw)
-                    PracticeFlow.Screen.DONE -> Finished(flow, redraw)
+                    PracticeFlow.Screen.LIST -> TopicList(flow, done, enabled, close)
+                    PracticeFlow.Screen.INTRO -> Intro(flow)
+                    PracticeFlow.Screen.ITEM -> Item(flow)
+                    PracticeFlow.Screen.DONE -> Finished(flow)
                 }
             }
             val item = flow.item
             if (flow.screen == PracticeFlow.Screen.ITEM && item != null) {
                 key(flow.topic?.id, flow.index, flow.tryNo) {
                     AndroidView(
-                        factory = { ctx -> boards.build(ctx, flow, item, redraw) },
+                        factory = { ctx -> boards.build(ctx, flow, item) },
                         modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
                     )
                 }
@@ -303,12 +311,12 @@ private fun PracticeScreen(
 }
 
 @Composable
-private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled: Set<InputMode>, redraw: () -> Unit, close: () -> Unit) {
+private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled: Set<InputMode>, close: () -> Unit) {
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.practice_list_hint), style = MaterialTheme.typography.bodyMedium)
         for (t in flow.topics) {
             HorizontalDivider(Modifier.padding(top = 8.dp))
-            Column(Modifier.fillMaxWidth().clickable { flow.open(t); redraw() }.padding(vertical = 12.dp)) {
+            Column(Modifier.fillMaxWidth().clickable { flow.open(t) }.padding(vertical = 12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     if (t.id in done) Text(MARK_RIGHT, color = RIGHT_COLOR, style = MaterialTheme.typography.titleMedium)
@@ -325,17 +333,17 @@ private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled
 }
 
 @Composable
-private fun ColumnScope.Intro(flow: PracticeFlow, redraw: () -> Unit) {
+private fun ColumnScope.Intro(flow: PracticeFlow) {
     val t = flow.topic ?: return
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(t.title, style = MaterialTheme.typography.titleLarge)
         for (line in t.intro) Text(line, style = MaterialTheme.typography.bodyLarge)
     }
-    Buttons(flow, redraw) { Button(onClick = { flow.start(); redraw() }) { Text(stringResource(R.string.practice_start)) } }
+    Buttons(flow) { Button(onClick = { flow.start() }) { Text(stringResource(R.string.practice_start)) } }
 }
 
 @Composable
-private fun ColumnScope.Item(flow: PracticeFlow, redraw: () -> Unit) {
+private fun ColumnScope.Item(flow: PracticeFlow) {
     val t = flow.topic ?: return
     val item = flow.item ?: return
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -348,23 +356,23 @@ private fun ColumnScope.Item(flow: PracticeFlow, redraw: () -> Unit) {
         flow.howTo?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
         flow.hint?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
-    Buttons(flow, redraw) {}
+    Buttons(flow) {}
 }
 
 @Composable
-private fun ColumnScope.Finished(flow: PracticeFlow, redraw: () -> Unit) {
+private fun ColumnScope.Finished(flow: PracticeFlow) {
     Column(Modifier.weight(1f).fillMaxWidth()) {
         Text(flow.topic?.title ?: "", style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.practice_finished), style = MaterialTheme.typography.headlineMedium)
     }
-    Button(onClick = { flow.stop(); redraw() }) { Text(stringResource(R.string.practice_back)) }
+    Button(onClick = { flow.stop() }) { Text(stringResource(R.string.practice_back)) }
 }
 
 /** [그만] on the left (back to the topic list at any time, SWIPE 10.0), [extra] on the right. */
 @Composable
-private fun Buttons(flow: PracticeFlow, redraw: () -> Unit, extra: @Composable () -> Unit) {
+private fun Buttons(flow: PracticeFlow, extra: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        OutlinedButton(onClick = { flow.stop(); redraw() }) { Text(stringResource(R.string.practice_stop)) }
+        OutlinedButton(onClick = { flow.stop() }) { Text(stringResource(R.string.practice_stop)) }
         extra()
     }
 }

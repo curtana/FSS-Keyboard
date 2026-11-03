@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 PR-01..PR-09, PR-14 (FSS#17, FSS#43, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
+/** LLD-11 PR-01..PR-09, PR-14, PR-22 (FSS#17, FSS#43, FSS#54, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
 class PracticeFlowTest {
 
     @get:Rule
@@ -100,6 +100,8 @@ class PracticeFlowTest {
         fun act() = f.onAction(i.editor.text, i.editor.display)
         i.key("a", TapGesture.Exit(Dir.UP)); act()
         assertEquals(Verdict.RIGHT, f.verdict)
+        assertEquals(0, f.index)                                // A stays on screen with its ✓ (FSS#54)
+        f.advance()                                             // the screen, RIGHT_HOLD_MS later
         assertEquals(1, f.index)
         i = tapInput()   // the screen builds a fresh keyboard for the next item
         f.onPress()
@@ -155,6 +157,7 @@ class PracticeFlowTest {
         assertEquals(Verdict.RIGHT, f.verdict)
         assertNull(f.howTo)
         assertNull(f.hint)
+        f.advance()
         assertEquals(1, f.index)
     }
 
@@ -178,7 +181,7 @@ class PracticeFlowTest {
         f.open(PracticeTopics.UPPER)
         assertEquals(PracticeFlow.Screen.INTRO, f.screen)
         f.start()
-        for (target in listOf("A", "Hi", "OK")) f.onAction(target, target)
+        for (target in listOf("A", "Hi", "OK")) { f.onAction(target, target); f.advance() }
         assertEquals(PracticeFlow.Screen.DONE, f.screen)
         assertEquals(listOf("upper"), done)
         f.stop()
@@ -189,6 +192,42 @@ class PracticeFlowTest {
         assertEquals(PracticeFlow.Screen.LIST, f.screen)
         assertEquals(listOf("upper"), done)
         assertNull(f.item)
+    }
+
+    @Test
+    fun `PR-22 a right item stays with its check, takes no input, then the next one comes (FSS#54)`() {
+        val f = PracticeFlow(listOf(PracticeTopics.SWIPE))
+        f.open(PracticeTopics.SWIPE)
+        f.start()
+        f.onAction("가", "가", composing = "가")
+        f.onAction("가 ", "가")                                          // the space: ✓
+        val t0 = f.tryNo
+        assertTrue(f.holding)
+        assertEquals(Verdict.RIGHT, f.verdict)
+        assertEquals("가", f.item?.target)                               // the solved target is still shown
+        assertEquals("가", f.echo)
+        f.onPress()                                                      // no input while it is shown
+        f.onAction("ㄱ", "ㄱ", composing = "ㄱ")
+        assertEquals(Verdict.RIGHT, f.verdict)
+        assertEquals("가", f.echo)
+        assertEquals(t0, f.tryNo)                                        // same keyboard, nothing new
+        f.advance()
+        assertFalse(f.holding)
+        assertEquals("고", f.item?.target)
+        assertNull(f.verdict)
+        assertEquals("", f.echo)
+        assertEquals(t0 + 1, f.tryNo)                                    // a fresh keyboard for 고
+        f.advance()                                                      // a late second call does nothing
+        assertEquals(1, f.index)
+        f.onAction("가 ", "가")
+        assertEquals(Verdict.WRONG, f.verdict)                           // 가 on 고 is ✗, with 고's how-to
+        assertEquals(PracticeTopics.SWIPE.items[1].howTo, f.howTo)
+        f.onAction("고 ", "고")
+        assertTrue(f.holding)
+        f.stop()                                                         // [그만] while it is shown: the hold ends
+        assertFalse(f.holding)
+        f.advance()
+        assertEquals(PracticeFlow.Screen.LIST, f.screen)
     }
 
     @Test
