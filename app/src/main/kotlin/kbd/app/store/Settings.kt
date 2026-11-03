@@ -24,6 +24,8 @@ data class Settings(
     val portraitWidth: WidthSetting = WidthSetting.DEFAULT,
     /** The same on the landscape screen; the default key size is the portrait one (FR-CMN-14 ③). */
     val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
+    /** The swipe keyboard's stroke trail (FR-DSP-09, FSS#57); off = no trail lines, the center syllable and dots stay. Default on. */
+    val showStrokeTrail: Boolean = true,
 ) {
     /** The modes on in the keyboard, for `ModeController.applyEnabled` (FR-CMN-03f). */
     val enabledModes: Set<InputMode>

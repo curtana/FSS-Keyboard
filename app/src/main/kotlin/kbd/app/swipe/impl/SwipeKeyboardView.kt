@@ -150,8 +150,9 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
         centerBox.set(c.left * density, c.top * density, c.right * density, c.bottom * density)
         centerPainter.draw(canvas, kbd.app.view.CenterConsonantPainter.textFor(host.centerText, host.fieldInfo), centerBox)
         // SWIPE 9.4: the vowel strokes' trail above the keys; it follows the open assembly (a cursor move or a new field closed it too).
+        // FSS#57: the setting only hides it; the trail is still kept, so turning it back on shows the open strokes.
         logic.trail.sync(mapper.strokes.size)
-        trailPainter.draw(canvas, logic.trail.paths)
+        if (host.settings.showStrokeTrail) trailPainter.draw(canvas, logic.trail.paths)
     }
 
     /**
