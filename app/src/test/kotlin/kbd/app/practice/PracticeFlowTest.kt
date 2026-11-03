@@ -192,6 +192,12 @@ class PracticeFlowTest {
         assertEquals(PracticeFlow.Screen.LIST, f.screen)
         assertEquals(listOf("upper"), done)
         assertNull(f.item)
+        f.open(PracticeTopics.UPPER)
+        f.start()
+        for (target in listOf("A", "Hi")) { f.onAction(target, target); f.advance() }
+        f.onAction("OK", "OK")
+        f.stop()   // [그만] while the last ✓ is shown (FSS#54): the topic is done all the same
+        assertEquals(listOf("upper", "upper"), done)
     }
 
     @Test

@@ -123,6 +123,8 @@ class PracticeFlow(
         hint = null
         highlight = emptyList()
         holding = true
+        // The topic is done at its last ✓, not after the hold: [그만] within the second must not lose it.
+        if (index == (topic?.items?.size ?: 0) - 1) topic?.let { markDone(it.id) }
     }
 
     /** [RIGHT_HOLD_MS] after ✓: the next item with a fresh keyboard, or the end screen after the last one. */
@@ -132,10 +134,7 @@ class PracticeFlow(
         verdict = null
         echo = ""
         index++
-        if (index >= (topic?.items?.size ?: 0)) {
-            screen = Screen.DONE
-            topic?.let { markDone(it.id) }
-        }
+        if (index >= (topic?.items?.size ?: 0)) screen = Screen.DONE
         newTry()
     }
 
