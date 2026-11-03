@@ -14,8 +14,8 @@ android {
         applicationId = "kbd.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0-alpha"
+        versionCode = 2
+        versionName = "0.1.0-alpha.2"
     }
 
     // One edition (owner, issue #251): the swipe engine is in every build; no product flavors.
