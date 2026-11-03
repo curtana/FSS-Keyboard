@@ -137,6 +137,7 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
             SwitchRow(R.string.settings_direction_guide, settings.showDirectionGuide) { v -> update { it.copy(showDirectionGuide = v) } }
             SwitchRow(R.string.settings_next_char, settings.showNextChar) { v -> update { it.copy(showNextChar = v) } }
             SwitchRow(R.string.settings_current_char, settings.showCurrentChar) { v -> update { it.copy(showCurrentChar = v) } }   // FR-DSP-08, #135
+            SwitchRow(R.string.settings_stroke_trail, settings.showStrokeTrail) { v -> update { it.copy(showStrokeTrail = v) } }   // FR-DSP-09, FSS#57
 
             Section(R.string.settings_section_feedback)
             SwitchRow(R.string.settings_haptic, settings.haptic) { v -> update { it.copy(haptic = v) } }

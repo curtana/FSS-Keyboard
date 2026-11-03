@@ -1,7 +1,8 @@
 # LLD-04 긋기 입력 처리
 
 - 대응 HLD 절: 4장(4.1 한 획의 흐름, 4.2 StrokeClassifier, 4.3 SwipeInputMapper, 4.4 HangulComposer)
-- 버전 **0.32** (2026-11-02)
+- 버전 **0.33** (2026-11-03)
+- 0.33(FSS#57, SRS 0.76 FR-DSP-09·FR-SET-02, SWIPE 0.55 9.3·9.4): 획 자국 설정 — `onDraw`는 `host.settings.showStrokeTrail`이 켜졌을 때만 `TrailPainter`로 그린다(9.4).
 - 0.32(FSS#36·FSS#37, SWIPE 0.52 9.5·3.6.5, SRS 0.72 FR-DSP-10, HLD 0.65 6장): ① 가운데 자리 C를 **반 키 높이 아래로** — `consonantBox` 위 끝 = `(1 + 0.5) × 줄 높이 + 4dp`(상수 `C_DROP_ROWS = 0.5`, 줄 높이를 따라감), 360dp·48dp에서 ≈ (139.2, 76)–(220.8, 172)(8.1). 그림과 판정이 같은 함수라 판정 C도 같이 내려간다. ② 9.5를 **가운데 글자**로: 그릴 것은 `SwipeHost.centerText`(= `InputDispatcher.centerText()`, LLD-08 6.1) — 지금 조합 중인 한 글자(후보 표시 없음, 낱모음이면 null), 아직 모음이 아닌 모음 획은 획마다 점을 자리에 찍음(세로 획 = 자음 아래 수평 나란히, 가로 획 = 자음 오른쪽 수직, 오너 보충 2026-11-02). 조립기 `pendingDots`(6.3), 매퍼 `pendingDots()`(6.1). 이름 `CenterConsonantPainter`는 그대로. ③ 10.1 시퀀스의 가운데 표시. 획 안내의 "다음 획 자리"는 0.18부터 그리지 않았고 이제 할 일도 아니다(SRS FR-DSP-01, 5.2 0.18 끝 문장).
 - 0.31(FSS#17): 입력 연습의 긋기 자판은 실제 `SwipeKeyboardView`다(LLD-07 2.3). 튜터 연습 자판(`PracticeEcho`·`SwipePracticeEcho`)의 미리보기·가운데 자음 경로는 없어졌다. `SwipeKeyboardView.rebuildGeometry`가 `SwipeInputMapper.setKeyWidth(폭 / 7)`로 t = 키 폭 × 0.4를 넣는다(HLD 7.2).
 - 0.30(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 긋기 뷰·`SwipeTouchLogic`·`SwipeMapperState`·연습 부분(`kbd.app.swipe.impl`)은 app main 소스 세트에 있다(9절의 "personal"은 이 판부터 "app"으로 읽는다).
@@ -644,7 +645,7 @@ dropStroke(): classifier = null; guide.onUp()                        // 매퍼�
 
 - `StrokeTrail`(안드로이드 없음): 남긴 경로 목록 + 그리는 중인 경로. `begin(p)`(자음 키 누름), `add(p)`(MOVE·뗌), `keep()`(조립기가 받은 모음 획), `drop()`(탭·무시된 획·취소), `sync(open)`(남긴 경로를 열린 모음 획 수로 자름), `paths`.
 - **지우는 때 = 조립이 닫히는 때:** 남긴 경로 수는 늘 매퍼의 열린 획 수(`mapper.strokes.size`)를 따른다. 뗌·기능키 누름 뒤와 그릴 때마다 `sync`하므로 자음 탭·숫자·기호·천지인 키·스페이스·엔터·모드·설정 키는 0으로, 조립이 열린 ⌫는 그 획 하나만 지운다. 커서 이동·입력창 바뀜은 뷰가 감싼 `SwipeEngineState.reset()`이 `postInvalidate()`로 곧 다시 그리게 한다(검수 PR #177).
-- `TrailPainter`: 굵기 4dp, 둥근 끝·이음, 흰색(라벨색) 40%(0x66FFFFFF), 키를 그린 뒤 그림(키 위, 안내 팝업 창 아래). 뷰 밖은 잘림. 설정 없음(늘 그림).
+- `TrailPainter`: 굵기 4dp, 둥근 끝·이음, 흰색(라벨색) 40%(0x66FFFFFF), 키를 그린 뒤 그림(키 위, 안내 팝업 창 아래). 뷰 밖은 잘림. 안내 설정과 무관. **획 자국 설정**(0.33, FSS#57): `onDraw`는 `host.settings.showStrokeTrail`(기본 true)일 때만 그린다. 꺼도 `trail.sync`는 그대로 돌므로(판정·자국 목록 불변) 다시 켜면 열린 조립의 자국이 보인다. 값이 바뀌면 서비스 `applySettings`가 `KeyboardRootView.redrawModeView()`로 떠 있는 자판을 다시 그린다. 연습 자판은 `PracticeInput.settings`(연습 화면을 열 때 읽은 값)를 따른다.
 - 긋기 자판(`SwipeTouchLogic.trail`, `SwipeKeyboardView.onDraw`)과 튜터 연습 자판(`PracticeKeyboardView.trail`, 입력 표시의 `openStrokes`로 맞춤, LLD-07 2.3)이 함께 쓴다. 숫자·기호·천지인·기능키·빈 칸에서 시작한 획은 `begin`하지 않는다.
 - 시험: SW-12·SW-13(SwipeTouchLogic: 남김·지움·⌫), TU-61(연습 자판 `openStrokes`).
 

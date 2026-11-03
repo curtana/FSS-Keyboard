@@ -259,7 +259,9 @@ class KeyboardService : InputMethodService(), SwipeHost {
     private fun applySettings(s: Settings) {
         val rowChanged = s.rowHeightDp != settings.rowHeightDp
         val widthChanged = s.portraitWidth != settings.portraitWidth || s.landscapeWidth != settings.landscapeWidth
+        val trailChanged = s.showStrokeTrail != settings.showStrokeTrail
         settings = s
+        if (trailChanged && ::root.isInitialized) root.redrawModeView()   // FSS#57: the swipe view reads it when it draws
         pad?.let { if (it.letterRatio != s.graffitiLetterRatio) it.letterRatio = s.graffitiLetterRatio }
         if ((rowChanged || widthChanged) && ::root.isInitialized) {
             root.rowHeightDp = s.rowHeightDp

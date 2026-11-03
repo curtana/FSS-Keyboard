@@ -323,6 +323,25 @@ class SwipeKeyboardViewTest {
         assertEquals(1, center(draw()).size)   // owner 2026-11-01: "학습 금지이지 암호처럼 출력 금지가 아니잖아!"
     }
 
+    /** FSS#57 FR-DSP-09: the trail setting off draws no trail but the center syllable and its dots; judgement unchanged. */
+    @Test
+    fun `SW-08c trail setting off draws no trail, the center stays, turning it on shows the kept strokes`() {
+        host.center = CenterText("ㄱ", listOf(DotPlace.UNDER))
+        touch.down(0, cx(G_COL), cy(G_ROW))
+        touch.move(0, cx(G_COL), cy(G_ROW) + dp(25f), steps = 8)   // a ㅣ stroke being drawn (as SW-15)
+        assertEquals(1, draw().count { it == "path" })             // default on
+        host.settings = Settings.DEFAULT.copy(showStrokeTrail = false)
+        val off = RecordingCanvas().also { view.draw(it) }
+        assertEquals(0, off.ops.count { it == "path" })
+        assertEquals(listOf("center:ㄱ:${CenterConsonantPainter.COLOR}"), center(off.ops))
+        assertEquals(1, off.circles.size)                          // the pending dot stays
+        touch.up(0)
+        assertEquals(1, count("events:1"))                         // taken as with the trail on
+        assertEquals(0, draw().count { it == "path" })
+        host.settings = Settings.DEFAULT                           // on again while the assembly is open
+        assertEquals(1, draw().count { it == "path" })
+    }
+
     /** TBD-24: while a consonant composes, strokes are judged against C (SWIPE 0.43 two zones: a vertical left of C is a dot). */
     @Test
     fun `SW-17 the touch logic hands C to the mapper while a consonant composes`() {

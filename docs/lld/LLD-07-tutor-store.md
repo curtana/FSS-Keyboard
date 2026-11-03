@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.30** (2026-11-03)
+- 버전 **0.31** (2026-11-03)
+- 0.31(FSS#57, SRS 0.76 FR-DSP-09·FR-SET-02, SWIPE 0.55 9.3): 설정 `showStrokeTrail`(키 `show_stroke_trail`, 기본 true, 6.1)과 설정 화면 "안내 표시" 묶음의 "획 자국" 줄(7절, 현재 글자 크게 보기 바로 다음).
 - 0.30(FSS#54 버그·PM 결정 A, SWIPE 0.54 10.2): **✓ 뒤 다음 항목으로 넘어갈 때 목표 줄이 바뀌지 않던 버그** — `PracticeFlow`의 값이 일반 변수여서, 인자(`flow`·`redraw`)가 같은 화면 함수(`Item` 등)를 Compose가 건너뛰어(strong skipping) 다시 그리지 않았다(판정·자판은 다음 항목, 화면 글자는 앞 항목). `PracticeFlow`의 값을 스냅숏 상태(`mutableStateOf`)로 바꾸고 `tick`·`redraw`를 없앴다(2.3). ✓ 뒤 `holding`: 맞힌 항목을 `RIGHT_HOLD_MS`(1000ms) 보인 뒤 화면이 `advance()`를 부르고, 그동안 `BoardFrame`은 그때 시작한 터치를 통째로 받지 않으며 `onPress`·`onAction`은 아무 일도 하지 않는다. 시험 PR-04·PR-06·PR-08 고침, PR-22·PR-23 새로.
 - 0.29(FSS#44 오너 결정, SRS 0.74 FR-SET-09, HLD 0.67): 설정 화면 "자판" 묶음의 키 크기·정렬을 **방향마다 상자 하나**로 — "세로 화면" 상자·"가로 화면" 상자(`OutlinedCard`), 상자 안에 "키 크기"·"정렬". 지금 화면 방향(`LocalConfiguration.orientation`, 가로가 아니면 세로) 상자의 제목 줄 오른쪽 끝에 "지금 화면". 두 상자 늘 보임(7절).
 - 0.28(FSS#43 오너 결정·PM 결정, SWIPE 0.53 10.2, SRS 0.73 FR-TUT-12): **긋기·그래피티 항목은 확정된 글자로 판정.** `PracticeItemJudge.step`(동작마다 `steps`와 비교)을 `commit(item, committed, error)`로 바꿨다 — 조합 중 글자는 보지 않고, 확정된 글자열(스페이스 뺌)이 목표의 앞부분이 아니면 ✗, 목표면 ✓(2.4). `PracticeFlow.onAction`에 `composing`(조합 중인 끝부분), 동작 번호 `actions` 삭제(2.3). 끝 동작 = **스페이스**: 긋기 연습 자판의 스페이스 키(`PracticeInput.onFunctionKey`)와 그래피티 패드의 스페이스 키(`tapSink`)가 실제처럼 `InputDispatcher`의 스페이스를 부른다(D-66 바뀜). `BoardFrame`은 조합 부분이 바뀐 것도 동작으로 센다(그래피티 끝 획). 입력 표시는 끝 스페이스를 건너뛴다. 한글 항목 쓰는 법 끝에 `→ 스페이스`, ③·④ 설명에 스페이스 한 줄(2.2). `steps`는 시험이 지키는 실제 표시로 남고 판정에는 쓰지 않는다(D-65 바뀜).
@@ -155,7 +156,8 @@ data class Settings(val lastMode: InputMode?, val showDirectionGuide: Boolean, v
                     val practiceDone: Set<String> = emptySet(),
                     val graffitiEnabled: Boolean = true, val swipeEnabled: Boolean = true,   // 0.25, FR-SET-08
                     val portraitWidth: WidthSetting = WidthSetting.DEFAULT,    // 0.27, FSS#25 (LLD-08 7.2)
-                    val landscapeWidth: WidthSetting = WidthSetting.DEFAULT) {
+                    val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
+                    val showStrokeTrail: Boolean = true) {   // 0.31, FSS#57
     val enabledModes: Set<InputMode>   // {QWERTY, DUBEOLSIK} ∪ 켜진 GRAFFITI·SWIPE (LLD-08 5절 applyEnabled에 넘김)
 }
 class SettingsStore(private val ds: DataStore<Preferences>) {
@@ -175,6 +177,7 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `show_direction_guide` | true | SWIPE 9.3 |
 | `show_next_char` | true | SWIPE 9.3 |
 | `show_current_char` | true | SWIPE 9.3, FR-DSP-08(0.11, 이슈 #135). 비밀번호 입력창만 이 값과 상관없이 끔(FR-CMN-08 ①, LLD-06 2절). 학습 금지 칸은 이 값대로(②, 0.21) |
+| `show_stroke_trail` (0.31) | **true** | FR-DSP-09, FR-SET-02(FSS#57): 긋기 자판(연습 자판 포함)의 획 자국을 그리는가. 끄면 획 선만 안 그림(가운데 글자·점, 판정 그대로, LLD-04 9.4). 키가 없으면 켬 |
 | `haptic` | **true**(진동 켬) | FR-SET-03(DCR-14 결정) |
 | `sound` | **false**(소리 끔) | FR-SET-03(DCR-14 결정) |
 | `row_height_dp` | 48, 고를 수 있는 범위 40~64 | FR-SET-06, NFR-06, TBD-16(DCR-14 결정) |
@@ -218,6 +221,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 방향 안내 켜기·끄기 | `show_direction_guide` | FR-DSP-08, FR-SET-02 |
 | 다음 글자 안내 켜기·끄기 | `show_next_char` | 〃 |
 | 현재 글자 크게 보기 켜기·끄기(0.11) | `show_current_char` | FR-DSP-08, FR-SET-02(이슈 #135). 셋 다 끄면 안내가 전혀 보이지 않음(실제 키보드·연습 자판) |
+| 획 자국 켜기·끄기(0.31) | `show_stroke_trail`. "획 자국" 한 줄, 현재 글자 크게 보기 바로 다음(같은 안내 표시 묶음) | FR-DSP-09, FR-SET-02(FSS#57) |
 | 진동·소리 | `haptic`, `sound`(기본 진동 켬·소리 끔) | FR-SET-03 |
 | 입력 연습(0.24) | `PracticeActivity` 열기(설명 "영문 대문자 · 기호 · 그래피티 · 긋기를 골라서 짧게 연습"). 첫 실행의 주제 목록은 2.5 | FR-TUT-06, FR-SET-04 |
 | 그래피티 영역 비율 | `graffiti_letter_ratio`. 라디오 단추 셋: 1 : 1 / 2 : 1(기본) / 3 : 1 → 1/2 / 2/3 / 3/4 저장(6.1) | FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |

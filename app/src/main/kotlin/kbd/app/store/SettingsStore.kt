@@ -50,6 +50,7 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[SHOW_DIRECTION_GUIDE] = s.showDirectionGuide
             p[SHOW_NEXT_CHAR] = s.showNextChar
             p[SHOW_CURRENT_CHAR] = s.showCurrentChar
+            p[SHOW_STROKE_TRAIL] = s.showStrokeTrail
             p[HAPTIC] = s.haptic
             p[SOUND] = s.sound
             p[ROW_HEIGHT_DP] = s.rowHeightDp
@@ -80,6 +81,7 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             showDirectionGuide = p[SHOW_DIRECTION_GUIDE] ?: d.showDirectionGuide,
             showNextChar = p[SHOW_NEXT_CHAR] ?: d.showNextChar,
             showCurrentChar = p[SHOW_CURRENT_CHAR] ?: d.showCurrentChar,
+            showStrokeTrail = p[SHOW_STROKE_TRAIL] ?: d.showStrokeTrail,
             haptic = p[HAPTIC] ?: d.haptic,
             sound = p[SOUND] ?: d.sound,
             // D-33: out-of-range stored values snap to the nearest end; 40–47 dp are kept (TBD-16).
@@ -112,6 +114,8 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         val SHOW_DIRECTION_GUIDE = booleanPreferencesKey("show_direction_guide")
         val SHOW_NEXT_CHAR = booleanPreferencesKey("show_next_char")
         val SHOW_CURRENT_CHAR = booleanPreferencesKey("show_current_char")
+        /** FR-DSP-09 (FSS#57): absent = on. */
+        val SHOW_STROKE_TRAIL = booleanPreferencesKey("show_stroke_trail")
         val HAPTIC = booleanPreferencesKey("haptic")
         val SOUND = booleanPreferencesKey("sound")
         val ROW_HEIGHT_DP = floatPreferencesKey("row_height_dp")

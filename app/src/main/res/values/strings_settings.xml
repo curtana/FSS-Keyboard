@@ -17,6 +17,7 @@
     <string name="settings_direction_guide">방향 안내</string>
     <string name="settings_next_char">다음 글자 안내</string>
     <string name="settings_current_char">현재 글자 크게 보기</string>
+    <string name="settings_stroke_trail">획 자국</string>
     <string name="settings_section_feedback">피드백</string>
     <string name="settings_haptic">진동</string>
     <string name="settings_sound">소리</string>

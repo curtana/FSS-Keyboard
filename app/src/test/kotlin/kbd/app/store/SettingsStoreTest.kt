@@ -74,6 +74,7 @@ class SettingsStoreTest {
         assertTrue(s.showDirectionGuide)
         assertTrue(s.showNextChar)
         assertTrue(s.showCurrentChar)   // #135: default on
+        assertTrue(s.showStrokeTrail)   // FSS#57: default on
         assertEquals(2f / 3f, s.graffitiLetterRatio)
     }
 
@@ -176,6 +177,7 @@ class SettingsStoreTest {
             swipeEnabled = false,
             portraitWidth = WidthSetting(44f, KeyboardAlign.RIGHT),
             landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.LEFT),
+            showStrokeTrail = false,
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())

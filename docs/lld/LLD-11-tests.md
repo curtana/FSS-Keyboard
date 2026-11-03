@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.45** (2026-11-03)
+- 버전 **0.46** (2026-11-03)
+- 0.46(FSS#57, LLD-04 0.33·LLD-07 0.31): 9.1에 SW-08c(획 자국 설정 끔·다시 켬), SS-01 기본값에 획 자국 true, SS 쓰기 시험에 `showStrokeTrail`, 7.7에 KR-07(`redrawModeView`).
 - 0.45(FSS#54, LLD-07 0.30): PR-22(`PracticeFlow` 맞힌 항목 보이기 — ✓ 뒤 `holding`, 입력 무시, `advance()`로 고, [그만]이 끝냄), PR-23(`PracticeScreenTest`, Robolectric + Compose UI 시험: 실제 연습 화면·긋기 보드에 오너 태블릿 설정과 획 좌표 — 가 + 스페이스 ✓, 1초 동안 쓸 것: 가·✓와 입력 무시, 뒤 쓸 것: 고), 실기기 DV-33. PR-04·PR-06·PR-08은 ✓ 뒤 `advance()`를 부른다.
 - 0.44(FSS#47, LLD-05 0.29): 6.1에 GR-36(실기 획 `strokes/device/`, `DeviceStrokeTest`)·GR-37(손 떼는 꼬리, `LiftTailTest`).
 - 0.43(FSS#48, LLD-05 0.28 8.1): 그래피티 인식 영역 경계 — PI-01 점 중심 (3, 3) → (10, 10)dp, PI-09(두 영역 테두리, 비밀번호 칸에서도)·PI-10(비율 바꾸면 테두리도), 실기기 DV-32.
@@ -885,7 +886,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | GT-08 | 〃 | 다음 글자 끔 | showNext false | FR-DSP-08 |
 | GT-09 | – | (삭제, 0.12: 누르고 있기 타이머 없음, GT-04로 합침) | – | – |
 | GT-10 | `GuideFlags.of` | 기본 설정 + 보통 입력창 / 입력창 없음(튜터) / 세 설정 끔 / 비밀번호 입력창 / 학습 금지 입력창 | 모두 켬 / 모두 켬 / 모두 끔 / `bigCurrentOn` false(설정과 상관없이) / 모두 켬(0.21: 학습 금지 칸은 표시 그대로), 다음 글자는 늘 그대로 | FR-DSP-08, FR-CMN-08 ①② (0.21), FR-TUT-11 (0.11) |
-| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합, 세 안내 true) | 6.1, FR-SET-03 (DCR-14) |
+| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합, 세 안내 true, 획 자국 true(0.46)) | 6.1, FR-SET-03 (DCR-14) |
 | SS-02 | 〃 | `lastMode` 저장 뒤 다시 읽기 | 같은 값 | FR-CMN-10 |
 | SS-03 | 〃 | 저장된 `last_mode`가 모르는 이름 | `lastMode` = 없음(null) | LLD-07 4절 (0.35: public `lastMode = SWIPE` 사례는 FR-CMN-03b와 함께 삭제, 이슈 #251) |
 | SS-04 | 〃 | 저장된 `row_height_dp` 30 / 70 / 44 / 40 / 64 | 40 / 64 / 44 / 40 / 64 (40~47도 그대로 허용) | FR-SET-06, TBD-16 (DCR-14), D-33 |
@@ -959,6 +960,7 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KR-04 | 키 40 중앙, 여백(x 50)에 손가락을 둔 채 둘째 손가락이 키(x 400) 탭 | 피드백 1, 입력 1(여백 손가락이 자판을 막지 않음) | FR-CMN-14 ⑤ |
 | KR-05 | 키 40 왼손, `enableGuide` | 안내표 버튼 오른쪽 끝 = 400, 왼쪽 = 400 − 줄 높이, 덮개 left 0·폭 400 | FR-CMN-14 ⑥, FR-GRF-09 |
 | KR-06 | 가로 화면(구성 `w800dp-h400dp-land`), 가로 기본 / 가로 `FULL`·세로 키 40 왼손 | 폭 400(짧은 변), left 200 / 폭 800(꽉 채움, 세로 값은 안 씀) | FR-CMN-12, FR-CMN-14 ③ |
+| KR-07 | `redrawModeView()` | 모드 뷰 `invalidate` 1회(서비스가 획 자국 설정이 바뀌면 부름) | FR-DSP-09 (0.46, FSS#57) |
 | OB-01 | `KeyboardSizeBoxes`(기본 설정) | 상자 "세로 화면"·"가로 화면" 둘 다 있고, 상자마다 "키 크기"·"정렬"·"왼손모드" | FR-SET-09, LLD-07 7절, FSS#44 |
 | OB-02 | 구성 방향 세로 → 가로 → 세로(`LocalConfiguration`) | "지금 화면"이 세로 상자에만 → 가로 상자에만 → 세로 상자에만 | FR-SET-09, FSS#44 |
 | OP-01 | `OffKeyboardPointers`(자판 = x < 100) | 자판 안 DOWN | 원래 이벤트 그대로, 버린 것 없음 | LLD-08 7.2 |
@@ -1012,10 +1014,10 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | 대상 | 시험 ID |
 |---|---|
 | `TapKeyboardView` | KH-03, MQ-05, MQ-06, MQ-08, FB-01, FB-02 |
-| `KeyboardRootView` | FB-03, KR-01~KR-06 |
+| `KeyboardRootView` | FB-03, KR-01~KR-07 |
 | `OffKeyboardPointers`(`MotionEvent`) | OP-01~OP-05 |
 | `Feedback`(`SettingsStore` 기본값과 함께) | FB-04 |
-| `SwipeKeyboardView` | SW-01~SW-04, SW-08 |
+| `SwipeKeyboardView` | SW-01~SW-04, SW-08, SW-08c |
 | `GraffitiPadView`(기록용 `Canvas`, 0.11, 이슈 #136) | PI-01~PI-07, PI-09·PI-10(0.43) |
 | `RepeatTimer`(가짜 `Handler`) | RT-05 |
 
@@ -1024,3 +1026,4 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | ID | 대상·입력 | 기대 | 근거 |
 |---|---|---|---|
 | SW-08 | `SwipeKeyboardView`: `showCurrentChar = false`로 ㄴ 누르고 슬롭 넘게 이동 / 세 설정 모두 끄고 같은 획 | `GuideView`(방향 true, 현재 false, 다음 true) / SHOWING이지만 모두 false(그릴 것 없음) | FR-DSP-08 |
+| SW-08c | 〃: ㄱ(점 하나 대기) 자리에서 ㄱ 키 ↓ 긋는 중 기본 / `showStrokeTrail = false` / 뗌 / 다시 켬 | 경로 1 / 경로 0, 가운데 "ㄱ"·점 1 그대로 / [Vowel] 1회(켰을 때와 같음), 경로 0 / 경로 1(남긴 자국) | FR-DSP-09, FR-SET-02 (0.46, FSS#57) |
