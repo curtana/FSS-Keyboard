@@ -56,7 +56,7 @@ class SwipeTabResetTest {
         d.swipeState = SwipeMapperState(mapper)
         fun tap(down: Long) = mapper.accept(StrokeResult("ㄱ", SwipeKeyKind.CONSONANT, StrokeOutcome.Tap, down, null, down + 50))
         fun stroke(down: Long, s: kbd.hangul.stroke.VowelStroke) = mapper.accept(StrokeResult("ㄱ", SwipeKeyKind.CONSONANT, StrokeOutcome.Stroke(s), down, null, down + 100))
-        // Against C = consonantBox(360, 48) ≈ (139, 52)–(221, 148) (centred, issue #213), t ≈ 20.6, b ≈ 137.7 (SWIPE 3.6.3, 9.5):
+        // Against C = consonantBox(360, 48) ≈ (139, 76)–(221, 172) (centred, issue #213, FSS#37), t ≈ 20.6, b ≈ 161.7 (SWIPE 3.6.3, 9.5):
         // ㅣ right of C at C's height (x ≥ C.R − t/2, T < b), C's horizontal dot beside it (no vowel yet).
         val i = kbd.hangul.stroke.VowelStroke(kbd.hangul.stroke.StrokeAxis.VERTICAL, 235f, 56f, 235f, 176f)
         val dot = kbd.hangul.stroke.VowelStroke(kbd.hangul.stroke.StrokeAxis.HORIZONTAL, 225f, 100f, 245f, 100f)

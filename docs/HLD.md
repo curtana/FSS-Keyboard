@@ -1,9 +1,9 @@
 # 상위 수준 설계 (HLD)
 
-- 문서: HLD, 버전 **0.61** (2026-11-02)
+- 문서: HLD, 버전 **0.69** (2026-11-03)
 - 상태: 초안. LLD 0.1이 올린 설계 변경 요청 DCR-01~21(오너 승인 2026-10-27)을 반영했다.
-- 요구사항: [SRS.md](SRS.md) 0.68
-- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.48, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
+- 요구사항: [SRS.md](SRS.md) 0.76
+- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.53, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
 
 ## 1. 설계 원칙
 
@@ -186,10 +186,12 @@ app: ComposingController / HangulComposer(그래피티 정책)
    ▼
 GraffitiPadView: 인식한 글자를 잠깐 표시(FR-GRF-07)
 GraffitiPadView: GraffitiState를 보고 패드 상태 표시를 늘 그림(FR-GRF-05d)
+GraffitiPadView: 문자·숫자 영역마다 경계 사각형을 늘 그림(FR-GRF-01a)
 GraffitiGuidePanel: 안내표가 열려 있으면 패드·보조 줄 위에 불투명 덮개로 GuideCatalog(한글·영문·숫자·제어·기호)를 그림(FR-GRF-09~09d)
 ```
 
 - **패드 상태 표시(SRS FR-GRF-05d, GRAFFITI 4.2, 이슈 #136):** `GraffitiPadView`는 획을 처리할 때마다(그리고 초기화 뒤) `GraffitiState`의 내부 언어·시프트·캡스록·구두점 시프트 대기·확장 시프트 대기를 읽어 다시 그린다. 문자 영역 왼쪽 위 구석 탭 영역에 점과 언어 글자("한"/"A"), 패드 구석 한 자리에 켜진 대기 표시(⇧·⇪·•·↘). 상태는 `GraffitiState`가 정본이고 뷰는 그리기만 한다. 인식 글자 표시(FR-GRF-07)와 달리 비밀번호 입력창에서도 그린다. 위치·크기·그림은 LLD-05 8.1.
+- **인식 영역 경계(SRS FR-GRF-01a, FSS#48):** `GraffitiPadView`는 `GraffitiPadGeometry`의 문자 영역·숫자 영역 사각형을 조금 안으로 줄인 둥근 사각형 테두리를 그린다. 영역 사이·패드와 보조 줄 사이의 구분선은 두 테두리의 틈이 대신한다. 구석 점·언어 글자·대기 표시는 테두리 안으로 옮긴다. 영역 판정(`areaAt`, 시작점의 x)과 영역 크기는 바꾸지 않으므로 테두리와 영역 끝 사이 틈에서 시작한 획도 그 영역 획이다. 상태와 상관없는 그림이라 비밀번호 입력창에서도 그린다. 입력 연습은 같은 뷰를 쓴다. 여백·두께·색은 LLD-05 8.1.
 
 - 그래피티 안의 한영 전환은 `GraffitiState`의 내부 언어만 바꾼다. 모드 키(FR-CMN-03)와 별개다(FR-GRF-05a).
 - **ㆍ 중간 상태(FR-HGL-04e):** 첫 요소가 탭이라 모음이 성립하지 않은 동안(ㆍ, ‥)은 `CheonjiinAssembler`만 상태를 갖고 조합기에는 아무것도 넘기지 않는다. 앱은 조합 텍스트 뒤에 임시 글자(탭 한 번 ㆍ U+318D, 두 번 ‥ U+2025)를 붙여 `setComposingText`로 보인다. ㅣ·ㅡ로 모음이 성립하면 그때 `Vowel`을 넘긴다(도깨비불도 이때). 성립 전에 자음·스페이스·엔터·확정 획·모드 전환이 오거나 그 밖의 이유로 조합을 확정하면(숫자 영역 획, 영문·기호, 그래피티 안 한영 전환, 커서 이동, 입력창 변경) 조립기를 비우고 임시 글자를 버린다(DCR-21). 성립한 모음 뒤에 이어질 수 없는 요소(ㅐ + 탭, ㅣ + ㅣ, ㅡ + ㅡ 등)는 조립기가 무시한다. 상태·표시를 바꾸지 않고 요소 목록에도 넣지 않으며, `GraffitiPadView`의 인식 글자도 그리지 않는다(DCR-04, 오너 결정 #74 A). ‥ 다음 세 번째 탭은 시작하는 모음이 없으므로 무시한다(‥ 그대로). 조합 중인 글자가 없을 때의 탭도 같은 규칙으로 "ㆍ"만 표시하고, 모음이 성립하면 모음 단독 글자가 된다(ㆍ + ㅣ = ㅓ).
@@ -217,6 +219,12 @@ GraffitiGuidePanel: 안내표가 열려 있으면 패드·보조 줄 위에 불�
 - **배치는 데이터로 정의**한다(키 목록: 위치·크기·종류·글자·방향별 배정). 쿼티와 두벌식이 같은 뷰와 같은 형식을 쓴다. 따로 만든 숫자 키패드는 없다(숫자류 입력창은 쿼티, FR-CMN-04).
 - **창 높이·바닥 정렬:** 키 영역 높이는 모드 중 가장 높은 자판(쿼티·두벌식 6줄)으로 고정한다. 긋기 자판도 6줄이라 창을 채운다(쌍자음 줄, 이슈 #168). 낮은 자판(그래피티 패드)은 바닥에 맞춰 그리고 위 띠는 비운다. 빈 띠는 터치를 소비하되 입력이 없다(그래피티 띠 오른쪽 끝의 획 안내표 버튼만 예외, 5장). 긋기 자판 맨 윗줄(숫자 1~7) 키의 ↑ 나감은 창 밖으로 나가도 이동 이벤트를 계속 받아 보통 변 통과로 센다(10장 R2). 모드 키는 모든 모드에서 맨 아랫줄 왼쪽이라 화면 위치가 같다.
 - **시스템 막대 여백(SRS FR-TAP-03 아래 창 규칙, 오너 결정 #93 OD-1·2·3 A):** 입력 뷰는 창 인셋 중 내비게이션 바(`navigationBars`)와 시스템 버튼 줄(`tappableElement`)을 **변마다 큰 값**으로 받아 안쪽 여백으로 둔다. 키 영역(6줄 고정 높이, 낮은 자판은 그 안에서 바닥 정렬)은 여백 안쪽에 그리고, 여백은 키보드 배경색으로 칠한다. 아래 변은 늘, 옆 변은 가로 화면 3버튼 내비게이션처럼 막대가 옆에 올 때 같은 방식으로 비운다. 여백은 빈 띠와 같이 터치를 소비하되 입력이 없다. 창 높이 = 6줄 + 아래 여백.
+- **자판 폭과 정렬(SRS FR-CMN-14·FR-SET-09, 오너 결정 2026-11-02, FSS#25):**
+  - **계산은 순수 함수 하나**(`KeyboardWidth`, 안드로이드 없음, 단위 시험): 입력 = 가용 폭 A(dp, 입력 뷰 폭 − 옆 시스템 막대 여백), 화면 짧은 변 A_v(dp, 세로 화면의 가용 폭), 화면 방향, 세로·가로 설정값(키 한 칸 폭 u 또는 기본값, 정렬) → 출력 = 자판 폭 W와 가용 폭 안의 왼쪽 위치 x. 키 한 칸 = 배치 단위 360의 한 칸(한 줄 10칸). 세로 u = 설정값, 없으면 꽉 채움(W = A). 가로 u = 설정값, 없으면 세로의 u(세로가 꽉 채움이면 A_v / 10). 설정값은 키 크기 숫자 또는 "꽉 채움"(슬라이더 위 끝, 숫자로 저장하지 않음 — 방향·막대가 바뀌어도 꽉 채움, SRS FR-SET-09)이다. W = min(A, max(320, 10 × u)). x = 0(왼손모드), (A − W) / 2(중앙모드), A − W(오른손모드). 화면 방향은 입력 뷰가 놓인 구성(세로·가로)이고, 설정값은 방향마다 따로다(7.3).
+  - **놓기:** 입력 뷰 루트(`KeyboardRootView`)가 잴 때 W를 구해 모드 뷰·그래피티 안내표 덮개를 폭 W로 재고, 놓을 때 옆 여백 + x에 둔다. 안내표 버튼은 자판 오른쪽 끝(x + W − 버튼 폭)의 빈 띠에 둔다. 높이·바닥 정렬은 그대로다. 남는 자리는 루트 배경(키보드 배경색)이고 루트가 터치를 소비한다(빈 띠·시스템 막대 여백과 같은 길, 입력·피드백 없음). 안드로이드는 다른 손가락이 자식을 누르고 있으면 자식 밖에 닿은 새 손가락(`ACTION_POINTER_DOWN`)도 그 자식에 붙여 보내므로, 루트는 **자식 밖에서 시작한 포인터를 자식에 넘기지 않는다**(그 포인터의 내려옴을 보내지 않으면 나뉜 이동·올라옴도 자식에 가지 않음, LLD). 그래피티 위 빈 띠도 같다.
+  - **배치·판정 코드는 바꾸지 않는다:** 모드 뷰(`TapKeyboardView`·`SwipeKeyboardView`·`GraffitiPadView`)는 이미 받은 폭으로 기하(키 사각형, 위치 허용 오차 = 실제 키 폭 × 0.4, 가운데 글자 자리 C, 패드 구역)를 만든다. 그래서 키 폭은 W에 비례해 줄고 C의 가로 중심은 줄인 자판의 가운데다(SWIPE 9.5). 입력기 테두리 판정(FR-SWP-45)은 모드 뷰 좌표의 왼쪽 0·오른쪽 폭을 테두리로 보므로 줄인 자판의 바깥 변이 곧 테두리다. 손가락이 여백으로 나가도 DOWN을 받은 모드 뷰가 이동을 계속 받는다(안드로이드 터치 대상 유지, 10장 R2와 같은 성질).
+  - **다시 놓기:** 화면 방향이 바뀌면(`onConfigurationChanged`, 8장) 그 방향의 값으로, 설정 흐름(Flow)에서 폭·정렬이 바뀌면 곧 루트가 다시 잰다(줄 높이 설정과 같은 길). 모드·조합 상태는 건드리지 않는다.
+  - **입력 연습:** 연습 화면(`PracticeActivity`, 7.1)의 자판 틀도 같은 함수로 폭·자리를 정한다. 가용 폭 = 그 화면의 자판 자리 폭, 방향 = 연습 화면의 구성. 남는 자리는 자판 틀 밖의 키보드 배경색 여백이고 터치를 소비한다.
 - **글자 키 획:** `stroke-core`로 ↑·↓·문지르기를 판정해 탭 자판 동작 표(SRS 3.3)대로 입력한다. 나갔다 돌아옴과 ←·→ 문지르기는 그 방향 나감으로 본다(DCR-02). 시프트 상태는 없다(↑ 나감이 유일한 시프트).
 - **처리 시점(SRS FR-CMN-11a, DCR-11):** 기능키는 누를 때, 키 입력 진동·소리도 누를 때. 모드 키만 뗄 때 결과를 정한다(8.2절, 이슈 #205). `ACTION_CANCEL`이면 아직 떼지 않은 모든 포인터가 결과 없이 대기열에서 빠지고 반복은 멈춘다. 이미 뗀 포인터의 대기 결과는 누른 순서대로 낸다.
 - **여러 손가락(FR-CMN-11):** 포인터마다 따로 추적한다. 글자·숫자·기호 키는 결과를 각 포인터를 뗄 때 정하고, 출력은 누른 순서로 낸다. 먼저 누른 글자·숫자·기호 키가 아직 눌려 있으면 뒤 포인터의 결과를 대기열에 두었다가 앞 결과가 나온 뒤에 낸다. 기능키(⌫, 스페이스, ↵, ⇥, 방향키)는 누르는 즉시 처리하고 대기열에 들어가지 않으며, 다른 키를 기다리게 하지도 않는다. 모드 키는 뗄 때 결과를 정하므로 글자·숫자·기호 키처럼 대기열 순서에 든다(SRS FR-CMN-11, 이슈 #205).
@@ -231,11 +239,11 @@ GraffitiGuidePanel: 안내표가 열려 있으면 패드·보조 줄 위에 불�
 | 항목 | 설계 |
 |---|---|
 | 창 | 입력 뷰 기준 `PopupWindow`(터치 받지 않음, 잘림 해제). 맨 윗줄 키는 키보드 위쪽으로 띄운다 |
-| 그리는 것 | 한글 자음 키: **획 안내**(누를 때, 이어 그을 수 있는 획(↓·→)과 결과, 다음 획 자리), 현재 글자(크게, 조립 결과). 한글 모음 획의 다음 글자는 세로 하나 뒤 가로 획의 ㅏ → ㅗ뿐(SWIPE 9.2). 숫자·기호·천지인 키: 방향 안내(안쪽 고리, 바깥 길게), 현재 글자, 다음 글자(SWIPE 9장, 이슈 #173). 기호 키 셋(기호3·기호·기호2)은 방향마다 한 글자, 다음 글자 없음(이슈 #208) |
+| 그리는 것 | 한글 자음 키: **획 안내**(누를 때, 이어 그을 수 있는 획(↓·→)과 결과. 0.62까지의 다음 획 자리 표시는 가운데 글자로 대신, FSS#36), 현재 글자(크게, 조립 결과). 한글 모음 획의 다음 글자는 세로 하나 뒤 가로 획의 ㅏ → ㅗ뿐(SWIPE 9.2). 숫자·기호·천지인 키: 방향 안내(안쪽 고리, 바깥 길게), 현재 글자, 다음 글자(SWIPE 9장, 이슈 #173). 기호 키 셋(기호3·기호·기호2)은 방향마다 한 글자, 다음 글자 없음(이슈 #208) |
 | 띄우는 키 | 모든 한글 자음 키(획 안내), 숫자 키, 기호 키, 천지인 키(SRS FR-DSP-01. 기준 키 조건은 이슈 #168·#173로 없음) |
 | 갱신 | `ProgressState`가 바뀔 때만 다시 그림 |
-| 획 자국(SRS FR-DSP-09, 이슈 #173) | `GuideOverlay`가 아니라 **`SwipeKeyboardView` 안의 자국 층**에 그린다(키 위, 안내 팝업 아래, 창 안에서만, 터치 안 받음). 자국 목록 = 열린 `VowelStrokeAssembler`의 받아들인 획마다 점 열 하나 + 지금 긋는 획. 갱신: ACTION_MOVE마다 지금 획을 늘림, ACTION_UP에서 받아들인 획이면 목록에 남기고 무시된 획이면 버림, ACTION_CANCEL이면 지금 획을 버림, 한글 자음 키에서 시작한 모음 획에만 그림, 조립이 닫히면(`SwipeInputMapper` 조립 닫기, 4.3) 목록을 비움, ⌫가 획을 빼면 그 점 열을 뺌. 안내 설정(FR-DSP-08)과 상관없이 그림. 입력 연습의 긋기 연습 자판도 같은 뷰를 씀. 색·굵기·불투명도는 LLD |
-| 가운데 자음(SRS FR-DSP-10, 이슈 #180·후속) | 획 자국과 같은 **`SwipeKeyboardView` 층**에 그린다(키 위, **획 자국 아래**, 안내 팝업 아래, 터치 안 받음). 그릴 글자 = 한글 조합기의 조합 중 글자에서 **다음 모음이 붙을 마지막 자음 하나**(받침이 있으면 받침의 마지막 자음, 없으면 초성. 쌍자음 키면 쌍자음. 낱모음이면 그리지 않음). 자리 = **자음 키 영역 위쪽, 가로 가운데**(쌍자음 줄 위 끝 + 4dp, 가로 중심 = 자판 가로 중심(가운데 ㄸ 열 중심), 세로 화면 C ≈ (139,52)–(221,148), 오너 결정 2026-11-02, 이슈 #213), 높이 키 줄 약 2개(세로 화면 96dp), 너비 = 높이 × 0.85(설계 기본값, SWIPE 9.5 공간 점검). 이 자리 상자 C는 `gesture-engine` 판정 입력으로도 넘긴다(4.2·4.3) — 그리는 곳과 판정 기준이 같은 상수를 쓴다. 갱신은 자음 탭(앞 표시를 지우고 새 자음)과 ⌫만, 모음 획·천지인 키·ACTION_MOVE에서는 바꾸지 않음. 조합 글자가 비면(완성·모드 전환·모드 키 ↑ 설정 열기·커서 이동·입력창 변경·입력 끝) 지움. 안내 설정과 무관(획 자국과 같음), **비밀번호 입력창 판별**(FR-CMN-08의 비밀번호 판별)이면 그리지 않음(비밀번호에는 한글을 쓰지 않음, 오너. 판정 C는 그대로). 학습 금지 입력창에서는 그린다(FR-CMN-08 ②, 오너 원칙 "학습 금지이지 암호처럼 출력 금지가 아니잖아!"). 그리기는 판정 경로와 분리(읽기만). 판정은 같은 자리 상수 C를 따로 받는다, 입력 연습의 긋기 연습 자판도 같은 뷰라 같음 |
+| 획 자국(SRS FR-DSP-09, 이슈 #173) | `GuideOverlay`가 아니라 **`SwipeKeyboardView` 안의 자국 층**에 그린다(키 위, 안내 팝업 아래, 창 안에서만, 터치 안 받음). 자국 목록 = 열린 `VowelStrokeAssembler`의 받아들인 획마다 점 열 하나 + 지금 긋는 획. 갱신: ACTION_MOVE마다 지금 획을 늘림, ACTION_UP에서 받아들인 획이면 목록에 남기고 무시된 획이면 버림, ACTION_CANCEL이면 지금 획을 버림, 한글 자음 키에서 시작한 모음 획에만 그림, 조립이 닫히면(`SwipeInputMapper` 조립 닫기, 4.3) 목록을 비움, ⌫가 획을 빼면 그 점 열을 뺌. 안내 설정(FR-DSP-08)과 상관없이 그리되, **획 자국 설정**(`Settings.showStrokeTrail`, 기본 켬, FR-SET-02, FSS#57)이 꺼지면 그리지 않는다 — 자국 목록은 그대로 맞추고 그리기만 건너뜀(판정 불변), 값이 바뀌면 서비스가 떠 있는 자판을 다시 그림. 입력 연습의 긋기 연습 자판도 같은 뷰를 씀. 색·굵기·불투명도는 LLD |
+| 가운데 글자(SRS FR-DSP-10, 이슈 #180·후속, FSS#36·#37) | 획 자국과 같은 **`SwipeKeyboardView` 층**에 그린다(키 위, **획 자국 아래**, 안내 팝업 아래, 터치 안 받음). 그릴 글자 = **한글 조합기의 지금 조합 중인 한 글자**(FSS#36: 자음 탭 = 그 자음이 붙은 글자, 가 + ㄱ = 각. 도깨비불이면 확정 뒤 지금 글자만. 낱모음이면 그리지 않음. **후보 표시 없음** — 첫 획이 두 역할 후보를 가진 동안에도 보이는 글자 하나만, 0.63의 괄호 후보 삭제, 0.65). 모음 획이 아직 모음이 아니면(임시 ㆍ·‥) `VowelStrokeAssembler`의 획마다 점을 그 자리에 찍는다 — 세로 획의 점은 자음 아래 수평으로 나란히, 가로 획의 점은 자음 오른쪽 수직으로(FSS#36 오너 보충, ㅛ·ㅕ 배열). 천지인 ㆍ·‥는 글자 그대로. 자리 = **자음 키 영역 위쪽, 가로 가운데**(쌍자음 줄 위 끝 + 4dp + 줄 높이 × 0.5(FSS#37, 기본 24dp), 가로 중심 = 자판 가로 중심(가운데 ㄸ 열 중심), 세로 화면 C ≈ (139,76)–(221,172), 이슈 #213·FSS#37), 높이 = 줄 높이 × 2(기본 96dp, 줄 높이 설정을 따라감), 너비 = 높이 × 0.85(설계 기본값, SWIPE 9.5 공간 점검). 이 자리 상자 C는 `gesture-engine` 판정 입력으로도 넘긴다(4.2·4.3) — 그리는 곳과 판정 기준이 같은 상수를 쓴다. 갱신은 조합 글자가 바뀌는 사건마다 — 자음 탭, 모음 획을 뗄 때(`ACTION_UP`, 받아들인 획), 천지인 요소, ⌫. ACTION_MOVE(긋는 동안)와 무시된 획에서는 바꾸지 않음. 획 자국은 지금처럼 조립이 닫힐 때 지움. 조합 글자가 비면(완성·모드 전환·모드 키 ↑ 설정 열기·커서 이동·입력창 변경·입력 끝) 지움. 안내 설정과 무관(획 자국과 같음), **비밀번호 입력창 판별**(FR-CMN-08의 비밀번호 판별)이면 그리지 않음(비밀번호에는 한글을 쓰지 않음, 오너. 판정 C는 그대로). 학습 금지 입력창에서는 그린다(FR-CMN-08 ②, 오너 원칙 "학습 금지이지 암호처럼 출력 금지가 아니잖아!"). 그리기는 판정 경로와 분리(읽기만). 판정은 같은 자리 상수 C를 따로 받는다, 입력 연습의 긋기 연습 자판도 같은 뷰라 같음 |
 | 타이머 | 표시 지연 타이머(누른 시각 + 120ms, 기준값) 하나: 이동 없이도 방향 안내를 띄움. 누르고 있기 타이머(옛 ②)는 없앴다(SRS FR-SWP-35 삭제, 오너 결정 2026-10-30, 이슈 #142). 머물기 타이머와 "새 글자" 표시는 없앴다(이슈 #127, FR-SWP-24 삭제) |
 | 짧은 탭 | 표시 지연 전에 움직이지 않고 떼면 아무것도 띄우지 않음 |
 | 위치 계산 | 획 안내 결과 글자 거리는 방향마다 일정한 값(LLD, 길이 기준 없음, 이슈 #179). 숫자·기호·천지인 키의 바깥 글자 거리도 같은 값. 배정 없는 방향(테두리 쪽 포함, 이슈 #237)은 그리지 않음 |
@@ -253,6 +261,7 @@ GraffitiGuidePanel: 안내표가 열려 있으면 패드·보조 줄 위에 불�
 PracticeActivity(옛 TutorActivity)
   └─ 주제 목록 = ①②③④ (SWIPE 10.1)
        │     주제마다 이름·한 줄 설명·어림 시간·해 본 표시(✓, SettingsStore의 값, 판정에 안 씀)
+       │     그 모드가 키보드에서 꺼져 있으면 ③·④에 "꺼져 있음" 표시(할 수는 있음, SRS FR-CMN-03f ⑦)
        ├─ 주제 설명(한 화면) → [시작]
        ├─ 항목을 정해진 순서로 한 번씩(되풀이·표본 없음). 다 맞히면 끝 화면 → 주제 목록. [그만]은 언제든 주제 목록으로
        ├─ 연습 자판 = 주제·항목이 정함(실제 키보드와 같은 뷰·엔진·고정 기준값):
@@ -260,7 +269,7 @@ PracticeActivity(옛 TutorActivity)
        │     ②의 긋기 항목·④ 긋기 자판: SwipeKeyboardView + StrokeClassifier·SwipeInputMapper(4.2·4.3), GuideOverlay·ProgressState(6장)를 같은 타이머로, 획 자국·가운데 자음 포함(SRS FR-TUT-11)
        │     ③ 그래피티: GraffitiPadView + recognizer(5장) + GraffitiGuidePanel을 늘 펼친 상태로. 항목마다 패드의 한영 상태를 목표에 맞춤
        ├─ 입력 표시: 마지막 한 글자 크게(SRS FR-TUT-09, 임시 ㆍ·‥ 그대로). 조합기는 실제와 같은 HangulComposer(4.4)
-       ├─ PracticeItemJudge(옛 TutorItemJudge): 동작(터치 하나, 그래피티는 획 하나)마다 실제 판정 결과를 목표의 같은 차례와 비교 → 다르면 ✗, 다 맞으면 ✓(SRS FR-TUT-12)
+       ├─ PracticeItemJudge(옛 TutorItemJudge): 동작(터치 하나, 그래피티는 획 하나)마다 실제 판정 결과를 목표와 비교 → 다르면 ✗, 다 맞으면 ✓(SRS FR-TUT-12). 긋기·그래피티는 확정된 글자만(조합 중 글자는 판정 안 함, 다음 자음·스페이스로 확정, 마지막 글자는 스페이스, FSS#43)
        │     ✗ → 쓰는 법 안내(SWIPE 10.2절 문구 규칙: 탭 자판 = 키와 방향, 그래피티 = 안내표 칸 강조, 긋기 = 획 차례와 자리), 같은 항목 다시
        │     항목 시작·다시 할 때 연습 자판·조합 상태를 비움(탭 자판 항목은 ✗ 뒤 비우지 않고 ⌫로 이어 씀)
        └─ 재는 것·저장하는 것 없음
@@ -275,7 +284,7 @@ PracticeActivity(옛 TutorActivity)
   - 5과 문장·`TypingStats`·5과 ⌫, 19자음 돌림(오너 결정 ③).
   - 기준값 저장 파일과 내보내기·가져오기·초기화 메뉴(오너 결정 ①, 7.2·7.3).
   - 그 전의 `ThresholdEstimator`·흔들림 여유·겹침 다시 하기, 시간 창 계수, 3-2·한 획 복모음 측정은 이미 없앴다.
-- 최소 통과 거리는 **dp 절댓값**이다. 가로 화면이나 줄 높이 설정(FR-SET-06)으로 키 크기가 달라져도 비율로 바꾸지 않는다(SRS FR-CMN-12). 위치 허용 오차만 **실행 때의 실제 키 폭** × 0.4로 셈한다(그때 그려진 긋기 자판 키의 폭, PM 결정 2026-11-02, FSS#17). 키 폭이 바뀌면 함께 바뀐다.
+- 최소 통과 거리는 **dp 절댓값**이다. 가로 화면이나 줄 높이 설정(FR-SET-06)·자판 폭 설정(FR-SET-09)으로 키 크기가 달라져도 비율로 바꾸지 않는다(SRS FR-CMN-12). 위치 허용 오차만 **실행 때의 실제 키 폭** × 0.4로 셈한다(그때 그려진 긋기 자판 키의 폭, PM 결정 2026-11-02, FSS#17). 키 폭이 바뀌면 함께 바뀐다.
 - `minCrossDp` 하나를 긋기 자판과 탭 자판·모드 키·그래피티 보조 줄 모드 키가 함께 쓴다. 긋기 자판에서는 한글 탭/획 경계(누른 점 → 뗀 점 변위)와 숫자·기호·천지인 키·모드 키의 변 통과 인정(키 변 너머 거리)에 쓴다. **값은 8dp 고정**이다(오너 결정 2026-11-02, SRS TBD-29 확정). 0.50까지의 기본값은 14dp였다.
   - **영향(설계자 확인):** 숫자·기호·천지인 키와 탭 자판 ↑·↓의 나감·들어옴도 변 너머 8dp다(`EdgeCrossingTracker`가 같은 값을 받음). 이 문턱은 누른 점이 아니라 **키 변에서** 잰다. 그래서 키 가운데를 누른 탭은 반 키(약 25dp) + 8dp를 움직여야 나감이 되고, 안드로이드 touch slop(누른 점에서 8dp)보다 둔하다. 나갔다 돌아옴(같은 변 2번)·문지르기(3번 이상)는 변 안팎을 8dp씩 오가야 해 흔들림으로 생기기 어렵다.
 
@@ -296,19 +305,19 @@ PracticeActivity(옛 TutorActivity)
 | 데이터 | 형식 | 위치 |
 |---|---|---|
 | ~~기준값~~ | – | 삭제(FSS#17): 고정값은 코드 상수(7.2), 내보내기·가져오기 없음 |
-| 설정(마지막 모드, 표시, 피드백, 줄 높이 등) | 키-값 | Jetpack DataStore(Preferences) |
+| 설정(마지막 모드, 켜진 모드(그래피티·긋기, 기본 켬, FSS#31), 표시, 피드백, 줄 높이, 세로·가로 자판 폭·정렬(FSS#25) 등) | 키-값 | Jetpack DataStore(Preferences) |
 | 오류 기록 | 텍스트 | 앱 내부 저장소, 크기 제한 순환. **오류 종류·코드 위치만**, 입력 글자·좌표 없음. 비밀번호·학습 금지 입력창에서는 기록 안 함(NFR-05) |
 
 ## 8. 입력기 생명주기와 플랫폼 처리
 
 | 시점 | 처리 |
 |---|---|
-| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드)의 입력 뷰 생성(FR-CMN-10) |
-| `onStartInputView(info)` | **자판 선택:** 클래스가 숫자·전화·날짜시간이거나 비밀번호(아래 판별, 학습 금지 플래그만 있는 경우는 제외)면 **숫자류 입력창** → `ModeController.enterNumericField()`(영문 쿼티로 시작), 아니면 `leaveNumericField()`(돌아갈 모드로 복귀). 8.1, FR-CMN-04·04b. **비밀번호 판별(클래스와 변형을 함께):** (클래스 = `TYPE_CLASS_TEXT`이고 변형 ∈ {`TYPE_TEXT_VARIATION_PASSWORD`, `VISIBLE_PASSWORD`, `WEB_PASSWORD`}) 또는 (클래스 = `TYPE_CLASS_NUMBER`이고 변형 = `TYPE_NUMBER_VARIATION_PASSWORD`) → 표시 제한·기록 안 함(FR-CMN-08 ①). `imeOptions`에 `IME_FLAG_NO_PERSONALIZED_LEARNING`만 있으면 → 기록 안 함(학습·통계·오류 기록), 표시는 평소대로(FR-CMN-08 ②). 변형 값만 비교하면 안 된다(`NUMBER_VARIATION_PASSWORD`와 `TEXT_VARIATION_URI`가 같은 값 0x10). 조합 확정, BlockParser·천지인 조립기 초기화, `ModeController.typed = false`(previous 유지, FR-CMN-03e) |
+| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드. 꺼진 모드면 순서상 다음 켜진 모드, FR-CMN-03f ③)의 입력 뷰 생성(FR-CMN-10) |
+| `onStartInputView(info)` | **자판 선택:** 클래스가 숫자·전화·날짜시간이거나 비밀번호(아래 판별, 학습 금지 플래그만 있는 경우는 제외)면 **숫자류 입력창** → `ModeController.enterNumericField()`(영문 쿼티로 시작), 아니면 `leaveNumericField()`(돌아갈 모드로 복귀). 8.1, FR-CMN-04·04b. **비밀번호 판별(클래스와 변형을 함께):** (클래스 = `TYPE_CLASS_TEXT`이고 변형 ∈ {`TYPE_TEXT_VARIATION_PASSWORD`, `VISIBLE_PASSWORD`, `WEB_PASSWORD`}) 또는 (클래스 = `TYPE_CLASS_NUMBER`이고 변형 = `TYPE_NUMBER_VARIATION_PASSWORD`) → 표시 제한·기록 안 함(FR-CMN-08 ①). `imeOptions`에 `IME_FLAG_NO_PERSONALIZED_LEARNING`만 있으면 → 기록 안 함(학습·통계·오류 기록), 표시는 평소대로(FR-CMN-08 ②). 변형 값만 비교하면 안 된다(`NUMBER_VARIATION_PASSWORD`와 `TEXT_VARIATION_URI`가 같은 값 0x10). 조합 확정, BlockParser·천지인 조립기 초기화, `ModeController.typed = false`(previous 유지, FR-CMN-03e). 이어서 `ModeController.applyEnabled(켜진 모드)`(FR-CMN-03f, 8.1) |
 | `onUpdateSelection(oldSel, newSel, candStart, candEnd)` | 조합 중이고 **새 커서가 조합 구간 끝(candEnd)과 다르거나 입력기가 마지막으로 기대한 위치와 다를 때만** 사용자 커서 이동으로 보고 확정·초기화. 입력기 자신의 `setComposingText`·`commitText`로 생긴 변화는 무시(FR-CMN-06) |
 | `onFinishInput` | 조합 확정 |
 | `onEvaluateFullscreenMode` | 항상 `false`(전체 화면 입력 모드 안 씀, FR-CMN-12) |
-| `onConfigurationChanged` | 가로·세로 바뀜: 같은 배치를 새 폭에 맞춰 다시 배치, 줄 높이 유지 |
+| `onConfigurationChanged` | 가로·세로 바뀜: 같은 배치를 **그 방향의 자판 폭·정렬**(FR-CMN-14, 5A)로 다시 배치, 줄 높이 유지 |
 | 엔터 | `imeOptions`의 동작이 있으면 `performEditorAction`, 여러 줄 입력창이면 줄바꿈, 둘 다 아니면(동작 없는 한 줄 입력창) `sendKeyEvent(KEYCODE_ENTER)`(FR-CMN-09, DCR-13) |
 | ⌫(조합 없음) | 확정 글자 한 글자 삭제. 선택 영역이 있으면 편집기 기본 동작(선택 부분 삭제, FR-CMN-07, DCR-13) |
 | 시스템 제스처 | 대책 없이 진행(TBD-7). 실기기에서 관찰만 |
@@ -319,7 +328,9 @@ PracticeActivity(옛 TutorActivity)
 
 ```
 상태: current, previous(없을 수 있음), typed
-순서: SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → SWIPE … (빌드에 없는 모드는 건너뜀)
+순서: SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → SWIPE … (설정에서 꺼진 모드는 건너뜀, FR-CMN-03f)
+켜진 모드: enabled ⊇ {QWERTY, DUBEOLSIK}(늘 켜짐), GRAFFITI·SWIPE는 SettingsStore 값(기본 켬, FR-SET-08)
+nextEnabled(m) = 순서상 m 다음의 첫 켜진 모드
 
 입력 이벤트(글자·숫자·기호, 그래피티 천지인 요소 획, 스페이스, 엔터, 탭, 지우기) → typed = true
   (방향키, 모드 키, 그래피티 한영 전환·시프트·캡스록·확장 시프트·'J' 확정 획 → 입력 아님, DCR-17)
@@ -329,17 +340,24 @@ PracticeActivity(옛 TutorActivity)
     current = QWERTY                       (previous·마지막 모드 저장 안 바꿈)
   아니면 leaveNumericField():
     if returnMode != null: current = returnMode; returnMode = null   (previous 안 바꿈)
-프로세스 시작 → current = 저장된 마지막 모드, previous = 없음, typed = false, returnMode = 없음
+applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면 곧바로)와 onStartInputView마다    // FR-CMN-03f ②~④
+  if previous ∉ enabled: previous = null
+  if returnMode != null and returnMode ∉ enabled: returnMode = nextEnabled(returnMode); 마지막 모드 저장(= returnMode)
+  if current ∉ enabled: 확정·조립기 초기화(FR-CMN-03d); current = nextEnabled(current)   (typed·previous 안 바꿈)
+                        if returnMode == null: 마지막 모드 저장
+프로세스 시작 → current = 저장된 마지막 모드(꺼져 있으면 nextEnabled로 고치고 마지막 모드로 저장), previous = 없음, typed = false, returnMode = 없음
 모드 키 →
   확정(finishComposingText, 입력 단위 목록은 확정으로 소멸), SwipeInputMapper의 모음 획 조립기·천지인 조립기 초기화   // FR-CMN-03d
-  if typed and previous != null and previous != current:  next = previous
-  else:                                                    next = 순서상 current 다음
+  if typed and previous != null and previous != current:  next = previous      (previous는 늘 켜진 모드, applyEnabled)
+  else:                                                    next = nextEnabled(current)
   if typed: previous = current
   current = next; typed = false
   if returnMode == null: 마지막 모드 저장(DataStore)   // 숫자류 입력창 안에서 바꾼 모드는 저장 안 함, FR-CMN-04b
 ```
 
-- 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행과 숫자류 입력창 사례 표 7행을 단위 시험한다.
+- 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 8행(FR-CMN-03f)을 단위 시험한다. 켜진 모드 집합은 밖(`SettingsStore`)에서 받아 넣는다.
+- **설정 변경 전달:** `KeyboardService`가 `SettingsStore`의 켜진 모드 값(Flow)을 구독한다. 값이 바뀌면 `applyEnabled`를 부르고, 입력 뷰가 떠 있는 동안 `current`가 바뀌었으면 입력 뷰를 새 모드의 뷰로 바꾼다(`setInputView`, 모드 전환과 같은 경로). 떠 있지 않으면 다음 `onStartInputView`의 `applyEnabled`가 맡는다.
+- 그래피티 안의 한영 상태(`GraffitiState`, 5장)는 `ModeController`와 따로이고 켜진 모드와 상관없다(FR-CMN-03f ⑥).
 - 숫자류 입력창 안에서도 모드 키는 위 규칙 그대로다(typed·previous 포함). 마지막 모드 저장만 하지 않으므로, 숫자류 입력창 안에서 프로세스가 다시 시작되면 저장된 마지막 모드(= 돌아갈 모드)를 `returnMode`로 삼아 다시 쿼티로 시작한다(사례 표 7행).
 - 위 "모드 키 →"는 모드 키의 **탭** 결과(8.2절의 `ModeKeyTap`)일 때만이다. ↑(설정 열기)는 `ModeController`를 거치지 않는다.
 
@@ -394,10 +412,10 @@ PracticeActivity(옛 TutorActivity)
 | 단위(JVM) | `stroke-core` | 궤적 + 키 사각형 → 변 통과 기록, 테두리 변 닿음 = 나감(누른 점에서 minCross 미만이면 아님, 이슈 #237), 탭 자판 동작 표 |
 | 단위(JVM) | `gesture-engine` | 궤적 JSON(점, 시각) + 기준값 → 기대 결과. 한글 자음 키: 시작점 → 끝점 변위로 Tap / 세로 획 / 가로 획 / Reverse(최소 통과 거리 경계 ± 1dp, 대각선 |x| = |y|, 시작 키 무관, 중간 경로 무관, **길이를 바꿔도 획 종류 같음**). `VowelStrokeAssembler`: SWIPE 3.3절 21모음 전부를 3.6.2 다음 후보 표대로, 임시 상태 셋(세로 획 둘, 가로 획 둘, ㅜ + 가로 점), 후보 밖·구역 밖 획 = 무시 + 진동, 조립 끝(탭 등)에서 마지막 모음 상태로 되돌림 + 진동, 획 하나로 닫기 = ㅣ / ㅡ, ⌫ 획 하나씩·닫힌 모음 다시 안 엶. `SwipeInputMapper`: SWIPE 5.3 표 전체(가, 거, 고, 구, 각, 가기, 곡기, 고끼, 까, 밖, 박가, 바까, 박까, 아빠, 안녕, 했다, 닭, 과, 괴, 의, ㄱㄱ, ㅋㅋ), 쌍자음 키 = 일반 자음 키, 두 번 탭 = 자음 둘(시간 무관), 오래 누름 = 탭, 닫힌 모음 ⌫(곡 ⌫ = 고 → ㄱ). 천지인 키: 모음 획과 섞지 않음. **자음 기준 C(SWIPE 3.6.5 (가) 전부: 역할 표, ㅏ / ㅗ·ㅜ / ㅓ·ㅢ 경계 근처, 상대 크기와 부딪치는 두 사례, C 왼쪽·위 = 무시, 점 하나로 닫기 = 버림)**, **낱모음 연결 위치(SWIPE 3.6.5 (나) 전부):** 떨어진 획(ㅏ·ㅓ·ㅗ·ㅜ·ㅢ), 길이만 바꾼 짝(결과 같음), 짧은 ㅡ의 ㅜ, ㅓ/ㅢ 3등분·가로지름(가로 획 어느 부분이든)·짧은 가로 예외(TBD-22 확정, 가로 < ㅣ × 0.5), ㅏ / ㅗ 상대 크기(가로가 짧으면 ㅏ·길면 ㅗ·같으면 ㅏ, 가로지름·ㄴ 모양·시작점 점 = ㅏ, 점 위쪽 절반을 지나는 긴 가로 = 무시), ㅢ로 보인 뒤 ③ = 게, ㅕ·ㅛ·ㅠ·ㅟ·ㅝ·ㅚ·ㅘ·ㅙ, 점 오른쪽 ㅣ = ㅐ, 앞 ㅣ에 겹친 ㅣ = 무시, ㅡ 왼쪽 부분 가로지름 = 거, ㅡ 왼쪽 끝 바깥 = 무시, 허용 오차 경계 ± 1dp, 첫 획 역할 다시 정하기(기 → 고, 그 → 거) |
 | 단위(JVM) | `recognizer` | 획 JSON → 기대 문자. 천지인 조립(ㄱ, ㅣ, 탭 = 가; SRS FR-HGL-04d의 ㆍ 중간 상태 사례), ⌫ 뒤 조립기 동기화(가 ⌫ 탭 = 가), 초기화, 내부 언어 상태. 개발용/평가용 샘플 분리, 평가용으로 정확도 측정 |
-| 단위(JVM) | `ModeController` | SRS 모드 키 예시 표 10행 |
+| 단위(JVM) | `ModeController` | SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 8행(`applyEnabled`·`nextEnabled`) |
 | 단위(JVM) | `ModeKeyGesture` | 8.2절 변 통과 기록 → 탭 / ↑ 결과, 설정 열기 뒤 `ModeController` 상태 불변(SRS FR-CMN-13) |
 | 단위(JVM) | `PracticeItemJudge`(옛 `TutorItemJudge`) | 주제·항목마다 동작 결과 열 → ✓/✗·판정 시점(SWIPE 10.2절: 탭 자판 A·!·[와 ⌫로 고쳐 맞힘, 긋기 가·과·천지인 가, 그래피티 가·a·1, 무시된 획·인식 실패 = ✗), 안내 문구 생성(10.2절 규칙), 연습 화면 입력 표시의 임시 ㆍ·‥ |
-| 실기기 | 앱 | R1~R5, 표시 지연 표시, 모드 전환, 입력창 종류(비밀번호 포함), 여러 손가락, 가로 화면, NFR-01·02 |
+| 실기기 | 앱 | R1~R5, 표시 지연 표시, 모드 전환, 입력창 종류(비밀번호 포함), 여러 손가락, 가로 화면, 자판 폭·정렬(FR-CMN-14), NFR-01·02 |
 
 시험 데이터 위치: 각 모듈의 `src/test/resources/`.
 
@@ -418,13 +436,14 @@ PracticeActivity(옛 TutorActivity)
 
 | SRS | 구성 요소 |
 |---|---|
-| FR-CMN-01~03e, 10 | `KeyboardService`, `ModeController`(8.1) |
+| FR-CMN-01~03f, 10 | `KeyboardService`, `ModeController`(8.1, 03f = `applyEnabled`·`nextEnabled`), `SettingsStore`(켜진 모드) |
 | FR-CMN-04~04b | `KeyboardService.onStartInputView`(숫자류 입력창 판별), `ModeController`(`enterNumericField`·`leaveNumericField`·`returnMode`, 8.1) |
 | FR-CMN-05, 06, 09 | `ComposingController`, `onUpdateSelection` 조건(8장) |
 | FR-CMN-07~07c | `HangulComposer` 백스페이스 정책·입력 단위 목록, `SwipeInputMapper` 조립기 ⌫ 순서(4.3), `CheonjiinAssembler` ⌫ 순서(5장), ⌫ 반복(5A) |
 | FR-CMN-08 | `onStartInputView` 비밀번호 판별, `GuideOverlay`, `ErrorLog` |
 | FR-CMN-11, 11a | `TouchTracker`, `TapKeyboardView`, `InkCollector`(포인터 ID별), `Feedback`(누를 때), `ACTION_CANCEL` 처리(4.1, 5A) |
 | FR-CMN-12 | `onEvaluateFullscreenMode`, `onConfigurationChanged` |
+| FR-CMN-14 | `KeyboardWidth`(폭·자리 계산), `KeyboardRootView`(모드 뷰·덮개·버튼 놓기, 여백 터치 소비), `PracticeActivity` 자판 틀, `onConfigurationChanged`·설정 흐름(5A) |
 | FR-CMN-13 | `ModeKeyGesture`(8.2) — `TapKeyboardView`·`SwipeKeyboardView`·`GraffitiPadView` 보조 줄 공용, `ComposingController`(확정), `SettingsActivity` 열기 |
 | FR-HGL-01~06 | `core-hangul`(HangulComposer, 모드 정책), `core-hangul.CheonjiinAssembler`(04c·04e, 그래피티·긋기 천지인 키) |
 | FR-TAP-01~04, 10~11a (03a·03b 포함) | `TapKeyboardView`(배치·방향별 배정 데이터·변 가운데 표시), `stroke-core`(탭 자판 동작 표), `ComposingController`(탭, 방향키, 기호 전 확정) |
@@ -442,7 +461,7 @@ PracticeActivity(옛 TutorActivity)
 | FR-SWP-60~65 | 자판 배치 데이터(천지인 키), `StrokeClassifier`(천지인 키 결과), `SwipeInputMapper`(조립 닫기, 모음 획과 섞지 않음), `core-hangul.CheonjiinAssembler`, `HangulComposer`(`ReplaceVowel`, 요소 단위 ⌫), `GuideOverlay`·`ProgressState`(천지인 키 안내), `Feedback`(무시 요소 오류 진동). FR-SWP-66(설정 키)은 이슈 #205로 삭제 |
 | FR-GRF-01~08 (05a~05d 포함) | `GraffitiPadView`(보조 줄, 패드 상태 표시), `InkCollector`, `recognizer`(Recognizer, GraffitiState), `core-hangul.CheonjiinAssembler`, `Feedback`(인식 실패 오류 진동) |
 | FR-GRF-09~09d | `recognizer.GuideCatalog`(언어와 상관없는 칸 목록 하나 = 템플릿 id·규칙 획, 임시 표시), `GraffitiGuidePanel`(불투명 덮개·✕·세로 스크롤), `KeyboardRootView`(빈 띠 안내표 버튼, 덮개 자리 터치 소비, 열 때 진행 중 패드 포인터 버림, 5장) |
-| FR-SET-02~06 | `SettingsActivity`, `SettingsStore`, `Feedback` |
+| FR-SET-02~06, 08, 09 | `SettingsActivity`(08 = 첫 묶음 "입력 모드" 체크 상자, 09 = "자판" 묶음의 "세로 화면"·"가로 화면" 상자 — 상자마다 키 크기·정렬, 지금 화면 방향 상자에 "지금 화면" 표시(FSS#44)), `SettingsStore`, `Feedback` |
 | NFR-01, 02 | 5A·6장 그리기 정책, 11장 실기기 계측 |
 | NFR-03, 05 | 9장 오류 처리, 7.3 오류 기록 규칙 |
 | NFR-04 | 1장 결정성, 4.3 시각은 `StrokeResult` 값만 씀 |
@@ -532,3 +551,11 @@ PracticeActivity(옛 TutorActivity)
 | 0.59 | 2026-11-02 | SRS 0.65·SWIPE 0.47 반영(오너 결정 2026-11-02, 이슈 #251: 공개판·개인판을 하나로 합침): 3장 의존 방향·`gesture-engine`·`app` 행, 3.1 빌드 변형 삭제, 6장 제목, 7.1 튜터 그림의 public 경로, 7.2 표 1-1, 12장 결정 표·13장 추적표의 빌드 변형 행 |
 | 0.60 | 2026-11-02 | SRS 0.66 반영(오너 결정 2026-11-02, 이슈 #254): 5장 템플릿·획 안내표 그리기의 출처 표현을 중립 표현으로 |
 | 0.61 | 2026-11-02 | (검수 반영: 3장 그림·7.1 코드 이름 `Practice…`로 통일, 11장 ⑩ 완화 칸. 오너 결정 A: 탭 자판 연습은 실제 자판 그대로·⌫ 반영 뒤 판정(7.1, 시험 표). PM 결정 B: `posTolDp` = 실행 때 실제 키 폭 × 0.4(7.1, 7.2)) SRS 0.68·SWIPE 0.48 반영(오너 방향·결정 2026-11-02, FSS#17): 7장을 입력 연습과 저장소로 — 7.1 그림(주제 목록 → 설명 → 항목 → 끝, 주제별 연습 자판, `PracticeItemJudge` 결과 판정, 재는 것·저장 없음, 첫 실행은 주제 목록만)과 빠지는 것, 7.2 고정 기준값 표(코드 상수, 저장 파일·내보내기·가져오기·초기화 없음, 옛 저장 파일은 읽지 않음), 7.3 기준값 행 삭제 |
+| 0.62 | 2026-11-02 | SRS 0.69·SWIPE 0.49 반영(오너 결정 2026-11-02, FSS#31): 8.1 `ModeController`에 켜진 모드 집합·`nextEnabled`·`applyEnabled`·설정 변경 전달(Flow 구독, 뷰 교체)(검수 반영: 돌아갈 모드·시작 때 고친 모드도 마지막 모드로 저장)(꺼진 모드 건너뜀, 이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로), 8장 `onCreateInputView`·`onStartInputView` 행, 7.1 주제 목록의 "꺼져 있음" 표시, 7.3 설정에 켜진 모드, 11장 시험, 13장 추적(FR-CMN-03f, FR-SET-08) |
+| 0.63 | 2026-11-02 | SRS 0.70·SWIPE 0.50 반영(오너 결정 2026-11-02, FSS#36·FSS#37): 6장 가운데 글자 행(지금 조합 중인 한 글자, 첫 획 두 역할 괄호, 조합 글자가 바뀌는 사건마다 갱신·긋는 동안 안 바꿈, 자리 = 쌍자음 줄 위 끝 + 4dp + 줄 높이 × 0.5, 높이 = 줄 높이 × 2), 그리는 것 행의 다음 획 자리 삭제 |
+| 0.64 | 2026-11-02 | SRS 0.71·SWIPE 0.51 반영(오너 결정 2026-11-02, FSS#25, 폭 지정 방식 변경 포함): 5A 자판 폭과 정렬(순수 함수 `KeyboardWidth` — 키 한 칸 폭 × 10, 가용 폭에서 멈춤, 루트가 모드 뷰·덮개·버튼을 W로 놓음, 남는 자리 소비, 배치·판정 코드 그대로, 테두리 = 모드 뷰 바깥 변, 다시 놓기, 입력 연습 자판 틀), 7.2 최소 통과 거리 문장, 7.3 저장 데이터, 8장 `onConfigurationChanged`, 13장 FR-CMN-14·FR-SET-09 |
+| 0.65 | 2026-11-02 | SRS 0.72·SWIPE 0.52 반영(오너 결정·보충 2026-11-02, FSS#36): 6장 가운데 글자 행 — 괄호 후보 삭제, 아직 모음이 아닌 점 상태는 점을 자리에 찍음 |
+| 0.66 | 2026-11-02 | SRS 0.73·SWIPE 0.53 반영(오너 결정·PM 결정 2026-11-02, FSS#43): 7.1 입력 연습 판정 — 긋기·그래피티는 확정된 글자로(스페이스가 마지막 글자의 끝 동작) |
+| 0.67 | 2026-11-03 | SRS 0.74 반영(오너 결정 2026-11-03, FSS#44): 13장 추적의 FR-SET-09 — 설정 화면 "자판" 묶음을 방향마다 상자(키 크기·정렬)로, 지금 화면 방향 상자에 "지금 화면" 표시 |
+| 0.68 | 2026-11-03 | SRS 0.75 반영(오너 요청 2026-11-03, FSS#48): 5장 그래피티 패드 인식 영역 경계 — 영역마다 둥근 사각형 테두리, 구분선 대신, 상태 표시는 테두리 안, 영역 판정 그대로 |
+| 0.69 | 2026-11-03 | SRS 0.76 반영(오너 요청 2026-11-03, FSS#57): 6장 획 자국 층 — 획 자국 설정이 꺼지면 그리지 않음(기본 켬, 판정 불변) |

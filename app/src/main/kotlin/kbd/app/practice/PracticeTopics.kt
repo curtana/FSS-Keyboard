@@ -1,5 +1,6 @@
 package kbd.app.practice
 
+import kbd.app.ime.InputMode
 import kbd.graffiti.ink.GraffitiLang
 
 /** The practice keyboard of an item (SWIPE 10.1, HLD 7.1): the real view, the real engine, the fixed thresholds. */
@@ -16,9 +17,10 @@ enum class PracticeBoard {
 
 /**
  * One practice item (LLD-07 §2.2). [target] is what the item types. Tap keyboard items ([steps] null) are judged by
- * the text after ⌫ (SWIPE 10.2); the others by [steps], the editor text the real engine shows after each action
- * (touch, or graffiti stroke) of the item's stroke order — the result of that action, temporary ㆍ / ‥ included
- * (SWIPE 3.4). [howTo] is the line shown after ✗ (SWIPE 10.2 문구 규칙); [note] a short addition to the target line;
+ * the text after ⌫ (SWIPE 10.2); the others by their committed text (`PracticeItemJudge.commit`, FSS#43). [steps] is
+ * the editor text the real engine shows after each action (touch, or graffiti stroke) of the item's stroke order,
+ * before the closing space — temporary ㆍ / ‥ included (SWIPE 3.4); the tests play it, the judgement does not use it
+ * (a composing syllable is no result yet). [howTo] is the line shown after ✗ (SWIPE 10.2 문구 규칙); [note] a short addition to the target line;
  * [guideCells] the stroke-guide cell labels highlighted after ✗ and [lang] the pad's language for graffiti items.
  */
 data class PracticeItem(
@@ -36,7 +38,10 @@ data class PracticeItem(
     }
 }
 
-/** One topic of the topic list (SWIPE 10.0, 10.1): its name, one-line summary, rough time, explanation and items. */
+/**
+ * One topic of the topic list (SWIPE 10.0, 10.1): its name, one-line summary, rough time, explanation and items.
+ * [mode] is the keyboard mode the topic is about, if it can be turned off (FR-SET-08); null for the others.
+ */
 data class PracticeTopic(
     val id: String,
     val title: String,
@@ -44,7 +49,11 @@ data class PracticeTopic(
     val time: String,
     val intro: List<String>,
     val items: List<PracticeItem>,
-)
+    val mode: InputMode? = null,
+) {
+    /** "키보드에서 꺼져 있음" on the topic list (FR-CMN-03f ⑦); the topic can still be done. */
+    fun offInKeyboard(enabled: Set<InputMode>): Boolean = mode != null && mode !in enabled
+}
 
 /** The four topics and 19 items of SWIPE 0.48 10.1 (the items are the design's recommendation). */
 object PracticeTopics {
@@ -94,15 +103,17 @@ object PracticeTopics {
         listOf(
             "획 하나에 글자 하나예요.",
             "한글 모음은 ㅣ, ㅡ, ㆍ(탭)를 이어 써요.",
+            "한글은 글자를 다 쓰면 아래 줄의 스페이스를 눌러요. 그때 맞았는지 봐요.",
             "숫자는 오른쪽 숫자 영역에 써요.",
             "모르는 글자는 위의 안내표에서 찾아요. 점(●)이 획의 시작이에요.",
         ),
         listOf(
-            graffiti("가", GraffitiLang.KO, "가 = ㄱ → ㅣ → 탭", listOf("ㄱ", "ㅏ"), "ㄱ", "기", "가"),
-            graffiti("고", GraffitiLang.KO, "고 = ㄱ → 탭 → ㅡ", listOf("ㄱ", "ㅗ"), "ㄱ", "ㄱㆍ", "고"),
+            graffiti("가", GraffitiLang.KO, "가 = ㄱ → ㅣ → 탭 → 스페이스", listOf("ㄱ", "ㅏ"), "ㄱ", "기", "가"),
+            graffiti("고", GraffitiLang.KO, "고 = ㄱ → 탭 → ㅡ → 스페이스", listOf("ㄱ", "ㅗ"), "ㄱ", "ㄱㆍ", "고"),
             graffiti("a", GraffitiLang.EN, "a = 안내표의 A 칸처럼", listOf("A"), "a", note = "영문"),
             graffiti("1", GraffitiLang.EN, "1 = 안내표의 1 칸처럼, 숫자 영역에", listOf("1"), "1", note = "숫자 영역"),
         ),
+        InputMode.GRAFFITI,
     )
 
     val SWIPE = PracticeTopic(
@@ -113,18 +124,20 @@ object PracticeTopics {
             "길이는 상관없고 아래로, 오른쪽으로만 그어요. 떨어져도 돼요.",
             "모음으로 시작하는 글자는 ㅇ 탭 뒤에 그어요. 쌍자음은 위 줄의 전용 키예요.",
             "복모음은 쓰는 그대로 이어 붙여요. 천지인 키로도 모음을 넣을 수 있어요.",
+            "글자를 다 쓰면 스페이스를 눌러요. 그때 맞았는지 봐요(쓰는 중의 기·ㄱㆍ는 아직 글자가 아니에요).",
         ),
         listOf(
-            swipe("가", "가 = ㄱ 탭 → 자음 오른쪽에서 아래로 → ㅣ 오른쪽에 오른쪽으로", "ㄱ", "기", "가"),
-            swipe("고", "고 = ㄱ 탭 → 자음 아래에 아래로 → 점 아래에 오른쪽으로", "ㄱ", "ㄱㆍ", "고"),
-            swipe("아", "아 = ㅇ 탭 → 자음 오른쪽에서 아래로 → ㅣ 오른쪽에 오른쪽으로", "ㅇ", "이", "아"),
+            swipe("가", "가 = ㄱ 탭 → 자음 오른쪽에서 아래로 → ㅣ 오른쪽에 오른쪽으로 → 스페이스", "ㄱ", "기", "가"),
+            swipe("고", "고 = ㄱ 탭 → 자음 아래에 아래로 → 점 아래에 오른쪽으로 → 스페이스", "ㄱ", "ㄱㆍ", "고"),
+            swipe("아", "아 = ㅇ 탭 → 자음 오른쪽에서 아래로 → ㅣ 오른쪽에 오른쪽으로 → 스페이스", "ㅇ", "이", "아"),
             swipe(
-                "과", "과 = ㄱ 탭 → 자음 아래에 아래로 → 점 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 아래로 → ㅣ 오른쪽에 오른쪽으로",
+                "과", "과 = ㄱ 탭 → 자음 아래에 아래로 → 점 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 아래로 → ㅣ 오른쪽에 오른쪽으로 → 스페이스",
                 "ㄱ", "ㄱㆍ", "고", "괴", "과",
             ),
-            swipe("의", "의 = ㅇ 탭 → 자음 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 ㅡ가 아래쪽에 오게 아래로", "ㅇ", "으", "의"),
-            swipe("가", "가 = ㄱ 탭 → 천지인 키에서 위로 긋기 → 천지인 키 탭", "ㄱ", "기", "가", note = "천지인 키"),
+            swipe("의", "의 = ㅇ 탭 → 자음 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 ㅡ가 아래쪽에 오게 아래로 → 스페이스", "ㅇ", "으", "의"),
+            swipe("가", "가 = ㄱ 탭 → 천지인 키에서 위로 긋기 → 천지인 키 탭 → 스페이스", "ㄱ", "기", "가", note = "천지인 키"),
         ),
+        InputMode.SWIPE,
     )
 
     /** In the order of SWIPE 10.1; any can be done first. */

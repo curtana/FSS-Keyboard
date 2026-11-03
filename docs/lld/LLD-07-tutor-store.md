@@ -1,7 +1,14 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.24** (2026-11-02)
+- 버전 **0.31** (2026-11-03)
+- 0.31(FSS#57, SRS 0.76 FR-DSP-09·FR-SET-02, SWIPE 0.55 9.3): 설정 `showStrokeTrail`(키 `show_stroke_trail`, 기본 true, 6.1)과 설정 화면 "안내 표시" 묶음의 "획 자국" 줄(7절, 현재 글자 크게 보기 바로 다음).
+- 0.30(FSS#54 버그·PM 결정 A, SWIPE 0.54 10.2): **✓ 뒤 다음 항목으로 넘어갈 때 목표 줄이 바뀌지 않던 버그** — `PracticeFlow`의 값이 일반 변수여서, 인자(`flow`·`redraw`)가 같은 화면 함수(`Item` 등)를 Compose가 건너뛰어(strong skipping) 다시 그리지 않았다(판정·자판은 다음 항목, 화면 글자는 앞 항목). `PracticeFlow`의 값을 스냅숏 상태(`mutableStateOf`)로 바꾸고 `tick`·`redraw`를 없앴다(2.3). ✓ 뒤 `holding`: 맞힌 항목을 `RIGHT_HOLD_MS`(1000ms) 보인 뒤 화면이 `advance()`를 부르고, 그동안 `BoardFrame`은 그때 시작한 터치를 통째로 받지 않으며 `onPress`·`onAction`은 아무 일도 하지 않는다. 시험 PR-04·PR-06·PR-08 고침, PR-22·PR-23 새로.
+- 0.29(FSS#44 오너 결정, SRS 0.74 FR-SET-09, HLD 0.67): 설정 화면 "자판" 묶음의 키 크기·정렬을 **방향마다 상자 하나**로 — "세로 화면" 상자·"가로 화면" 상자(`OutlinedCard`), 상자 안에 "키 크기"·"정렬". 지금 화면 방향(`LocalConfiguration.orientation`, 가로가 아니면 세로) 상자의 제목 줄 오른쪽 끝에 "지금 화면". 두 상자 늘 보임(7절).
+- 0.28(FSS#43 오너 결정·PM 결정, SWIPE 0.53 10.2, SRS 0.73 FR-TUT-12): **긋기·그래피티 항목은 확정된 글자로 판정.** `PracticeItemJudge.step`(동작마다 `steps`와 비교)을 `commit(item, committed, error)`로 바꿨다 — 조합 중 글자는 보지 않고, 확정된 글자열(스페이스 뺌)이 목표의 앞부분이 아니면 ✗, 목표면 ✓(2.4). `PracticeFlow.onAction`에 `composing`(조합 중인 끝부분), 동작 번호 `actions` 삭제(2.3). 끝 동작 = **스페이스**: 긋기 연습 자판의 스페이스 키(`PracticeInput.onFunctionKey`)와 그래피티 패드의 스페이스 키(`tapSink`)가 실제처럼 `InputDispatcher`의 스페이스를 부른다(D-66 바뀜). `BoardFrame`은 조합 부분이 바뀐 것도 동작으로 센다(그래피티 끝 획). 입력 표시는 끝 스페이스를 건너뛴다. 한글 항목 쓰는 법 끝에 `→ 스페이스`, ③·④ 설명에 스페이스 한 줄(2.2). `steps`는 시험이 지키는 실제 표시로 남고 판정에는 쓰지 않는다(D-65 바뀜).
+- 0.27(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): 설정 `portraitWidth`·`landscapeWidth`(`WidthSetting(keyDp, align)` — 키 한 칸 폭, 없음 = 기본값, `KeyboardWidth.FULL` = 꽉 채움; 키 `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`, 6.1), 설정 화면 "자판" 묶음의 세로·가로 키 크기 슬라이더·전체 폭 미리보기·정렬(7절), 연습 자판 `BoardFrame`의 폭·정렬·여백(2.3). 계산 `KeyboardWidth`는 LLD-08 7.2.
+- 0.26(FSS#36·FSS#37, SWIPE 0.52 9.5): 연습 호스트 `PracticeInput`의 `centerText` = `dispatcher.centerText()`라 가운데 글자(지금 조합 중인 한 글자, 점 자리)와 내려간 C 자리·판정이 실제 자판과 같다(2.3).
+- 0.25(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f ⑦, HLD 0.62 7.1·7.3, SWIPE 0.49 10.0): **쓸 입력 모드.** `Settings`에 `graffitiEnabled`·`swipeEnabled`(기본 켬)와 `enabledModes`, 키 `graffiti_enabled`·`swipe_enabled`(6.1). 설정 화면 첫 묶음 "입력 모드"(체크 상자 넷, 영문·한글은 체크된 채 바꿀 수 없음, 7절). `PracticeTopic.mode`·`offInKeyboard`: 그래피티·긋기 주제는 그 모드가 꺼져도 보이고 할 수 있으며 목록에 "키보드에서 꺼져 있음"(2.1, 2.3). 기호 주제의 긋기 자판 항목은 그대로.
 - 0.24(FSS#17 오너 결정 "권장안대로"·오너 결정 A·PM 결정 B, SRS 0.68·HLD 0.61·SWIPE 0.48): **튜터를 입력 연습으로 다시 짰다.** 측정하는 튜터(1·3·5과, `TutorSession`·`TutorStep`·`TutorSteps`, `TutorFlow`, `TutorItemJudge`·`HowTo`, `PracticeEcho`·`PracticeKeyboard`·`PracticeLayouts`, `TypingStats`, `TutorMeasure`, `ThresholdEstimator`)와 기준값 저장(`ThresholdStore`·`ThresholdCodec`, 기준값 JSON 형식, 내보내기·가져오기·초기화 메뉴, `calibration` 쓰기)을 지웠다. 새 구성은 2절: 주제 넷·19항목(`PracticeTopics`), 실제 자판 뷰를 그대로 쓰는 연습 자판(`PracticeInput`이 실제 `InputDispatcher`를 메모리 편집기에 연결), 결과 판정 `PracticeItemJudge`(탭 자판 항목은 ⌫ 반영 글자열), 화면 `PracticeActivity`·`PracticeFlow`, 첫 실행 `PracticeLaunchPolicy`(주제 목록만). 기준값은 코드 상수(3절), 위치 허용 오차는 실행 때 긋기 키 폭 × 0.4. 옛 저장 파일 `thresholds.json`은 읽지 않고 지우지도 않는다(4절). 0.23까지의 기록은 아래 이력과 git에 남는다.
 - 0.23(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): 공개판 튜터를 지웠다 — 1-1 쿼티(`MinCrossOnQwertyStep`), `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`, `PracticeLayouts.QWERTY`, `TutorSession`의 `personal` 구분과 1-1 한쪽 분포 규칙(`ONE_SIDED_DISTANCE`), `TutorMeasure.jitter`·`jitterSample`. `PersonalTutorSteps` → `TutorSteps`. 이 문서의 "public …" 설명은 0.22 이전 기록이고, "personal"은 모든 빌드로 읽는다. `ThresholdEstimator.oneSidedDistance`는 남겼다(쓰는 곳 없음, 튜터 정리 이슈 #224에서).
 - 0.22(이슈 #217 오너 결정): **`minCrossDp` = 8dp 고정.** 탭 겹침 안내(`Message.OVERLAP_TAP`, `tutor_overlap_tap`) 삭제(2.3). 튜터는 이 값을 바꾸지 않는다 — public 1-1·personal 1-2의 `MIN_CROSS` 규칙은 표본 수(`NotEnough`)만 보고 값은 그대로, 탭 ↔ 점 겹침은 1-2를 다시 하게 하지 않는다(기록 `calibration.tapDot`에는 남음, 2.2). 저장 파일의 `minCrossDp`는 읽지 않고(없어도·범위 밖이어도 됨) 8을 쓰며, 쓰기는 8을 그대로 적는다(옛 판 호환, 4절).
@@ -14,7 +21,7 @@
 - 0.15(이슈 #154, SRS 0.34~0.35 FR-TUT-12·TBD-17, HLD 0.30~0.31 7.1, SWIPE 0.25~0.26 10.1절): **항목 판정**(2.5 `TutorItemJudge`·`HowTo`). 1~3과 항목과 public 1-1은 동작을 뗄 때마다 목표의 같은 차례 동작과 비교해 다르면 바로 ✗(빨강) + 쓰는 법 안내 + 같은 항목 다시, 모두 맞으면 ✓(초록) + 다음 항목. ✗ 시도의 표본은 버리고 진행 수는 ✓만 센다. 측정 단계는 키·탭/긋기·기준 키·처음 통과한 변으로만 판정하고 ✓이면 입력 표시를 목표 글자로(TBD-17 = A). ✓·✗와 입력 표시는 다음 동작을 누를 때 비운다(항목마다 새 `PracticeEcho`). ✗인 기준 키 밖 긋기는 오류 진동(D-48 바뀜). 이상값 처리(3절, D-51). 이슈 #156: 3-3 삭제, 3과 설명에서 나눠 쓰기 문장을 뺌.
 - 0.14(이슈 #150, SRS 0.33·HLD 0.29·SWIPE 0.24): 4과(4-1)·3-3 측정·5-1 다시 계산·`SwipeSentenceJudge`를 지웠다. 2-1은 빠른 ㄲ ↔ 보통 ㄱㄱ 두 분포 경계, 연습 항목은 모두 "자음 탭 + 그 키에서 모음 긋기", 1-2에 아·오·이(연습만, 한 바퀴의 마지막, PM 결정), 안내는 기준 키에서만(`anchorKeyId`). 기준값 JSON 형식 3(형식 1·2는 빠진 칸과 `doubleTapWindowMs`를 버리고 읽음, PM 결정).
 - `Thresholds`·`ThresholdDefaults`는 [LLD-03-modules.md#34-기준값-kbdstrokethreshold](LLD-03-modules.md#34-기준값-kbdstrokethreshold)에 있다.
-- 요구: FR-TUT-01·02·05·06·09·11·12, FR-DSP-08, FR-SET-02~06, NFR-05, FR-CMN-12.
+- 요구: FR-TUT-01·02·05·06·09·11·12, FR-DSP-08, FR-SET-02~06·09, NFR-05, FR-CMN-12·14.
 
 ## 1. 범위
 
@@ -37,18 +44,21 @@
 enum class PracticeBoard { TAP_QWERTY, SWIPE, GRAFFITI }      // 항목의 연습 자판
 data class PracticeItem(
     val target: String, val board: PracticeBoard, val howTo: String,
-    val steps: List<String>? = null,       // 탭 자판이 아닌 항목: 동작마다 편집기에 남아야 할 글자열(마지막 = target)
+    val steps: List<String>? = null,       // 탭 자판이 아닌 항목: 동작마다 편집기에 남는 글자열(마지막 = target, 끝 스페이스 전). 0.28부터 판정에 안 씀
     val note: String? = null,              // 목표 줄에 붙이는 짧은 말("긋기 자판", "천지인 키", "숫자 영역")
     val guideCells: List<String> = emptyList(),   // 그래피티 ✗ 때 강조할 안내표 칸 이름
     val lang: GraffitiLang? = null,        // 그래피티 항목의 패드 언어
 )
 data class PracticeTopic(val id: String, val title: String, val summary: String, val time: String,
-                         val intro: List<String>, val items: List<PracticeItem>)
+                         val intro: List<String>, val items: List<PracticeItem>,
+                         val mode: InputMode? = null) {   // 0.25: 끌 수 있는 키보드 모드의 주제(graffiti = GRAFFITI, swipe = SWIPE)
+    fun offInKeyboard(enabled: Set<InputMode>): Boolean    // mode != null && mode ∉ enabled
+}
 enum class Verdict { PENDING, RIGHT, WRONG }
 ```
 
 - 화면 문구 가운데 주제 이름·한 줄 설명·어림 시간·설명·쓰는 법은 `PracticeTopics`의 Kotlin 상수다(시험이 그대로 읽음). 단추·제목은 `strings_settings.xml`의 `practice_*`.
-- **`steps`(LLD 결정 D-65):** 탭 자판이 아닌 항목은 "동작마다 실제 판정 결과를 목표의 같은 차례와 비교"(SWIPE 10.2)를 **그 동작 뒤 편집기의 글자열**로 한다. 글자열은 조합 중 글자와 임시 ㆍ·‥까지 포함한 실제 표시다(예: 고 = `ㄱ` → `ㄱㆍ` → `고`). 이 값은 손으로 정한 것이 아니라 실제 엔진으로 확인한 값이고, 시험 PR-10~PR-12·PR-20이 항목의 필순대로 실제 엔진에 넣어 같음을 지킨다.
+- **`steps`(LLD 결정 D-65, 0.28 바뀜):** 탭 자판이 아닌 항목의 필순대로 넣었을 때 **각 동작 뒤 편집기의 글자열**이다. 글자열은 조합 중 글자와 임시 ㆍ·‥까지 포함한 실제 표시다(예: 고 = `ㄱ` → `ㄱㆍ` → `고`). 이 값은 실제 엔진으로 확인한 값이고, 시험 PR-10~PR-12·PR-16·PR-20이 항목의 필순대로 실제 엔진에 넣어 같음을 지킨다. 0.27까지는 판정이 이 값과 동작마다 비교했으나, 0.28부터 판정은 확정된 글자로만 한다(2.4, FSS#43: 조합 중인 기·ㄱㆍ는 아직 결과가 아니다).
 
 ### 2.2 주제와 항목 (SWIPE 10.1, 설계 권장 글자 그대로)
 
@@ -56,57 +66,62 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 |---|---|---|
 | ① 영문 대문자(`upper`) | 탭 자판 | `A`(a 키에서 위로), `Hi`(h 키에서 위로 → i 탭), `OK`(o 키에서 위로 → k 키에서 위로) |
 | ② 기호 입력(`symbol`) | 탭 자판 3, 긋기 자판 3 | `!`(1 키에서 위로), `?`(/ 키에서 위로), `[`(i 키에서 왼쪽으로) / 긋기: `@`(2 키에서 위로, `@`), `(`(. 키에서 왼쪽으로, `(`), `?`(/ 키에서 위로, `?`) |
-| ③ 그래피티(`graffiti`) | 패드 + 안내표 | `가`(ㄱ → ㅣ → 탭 / `ㄱ`,`기`,`가`, 칸 ㄱ·ㅏ), `고`(ㄱ → 탭 → ㅡ / `ㄱ`,`ㄱㆍ`,`고`, 칸 ㄱ·ㅗ), `a`(영문, 칸 A), `1`(숫자 영역, 칸 1) |
+| ③ 그래피티(`graffiti`) | 패드 + 안내표 | `가`(ㄱ → ㅣ → 탭 → 스페이스 / `ㄱ`,`기`,`가`, 칸 ㄱ·ㅏ), `고`(ㄱ → 탭 → ㅡ → 스페이스 / `ㄱ`,`ㄱㆍ`,`고`, 칸 ㄱ·ㅗ), `a`(영문, 칸 A), `1`(숫자 영역, 칸 1) |
 | ④ 긋기(`swipe`) | 긋기 자판 | `가`(`ㄱ`,`기`,`가`), `고`(`ㄱ`,`ㄱㆍ`,`고`), `아`(`ㅇ`,`이`,`아`), `과`(`ㄱ`,`ㄱㆍ`,`고`,`괴`,`과`), `의`(`ㅇ`,`으`,`의`), 천지인 키 `가`(`ㄱ`,`기`,`가`) |
 
 - 긋기 자판의 기호 키 이름은 키에 적힌 탭 기호로 부른다(기호 키 = `.`, 기호3 키 = `/`). 긋기 항목의 쓰는 법은 SWIPE 10.2 위치 말 그대로다(예: 과 = `ㄱ 탭 → 자음 아래에 아래로 → 점 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 아래로 → ㅣ 오른쪽에 오른쪽으로`).
-- 그래피티 한글 쓰는 법은 자모 차례(`가 = ㄱ → ㅣ → 탭`), 영문·숫자는 `<목표> = 안내표의 <글자> 칸처럼`이다(SWIPE 10.2).
+- 그래피티 한글 쓰는 법은 자모 차례 + 스페이스(`가 = ㄱ → ㅣ → 탭 → 스페이스`), 영문·숫자는 `<목표> = 안내표의 <글자> 칸처럼`이다(SWIPE 10.2). 긋기 한글 항목(④의 여섯)도 끝에 `→ 스페이스`를 붙인다. 긋기 자판의 기호 항목(②)·영문·숫자는 넣는 즉시 확정되므로 붙이지 않는다(0.28, FSS#43).
+- 설명 추가(0.28): ③ "한글은 글자를 다 쓰면 아래 줄의 스페이스를 눌러요. 그때 맞았는지 봐요.", ④ "글자를 다 쓰면 스페이스를 눌러요. 그때 맞았는지 봐요(쓰는 중의 기·ㄱㆍ는 아직 글자가 아니에요)."
 - 설명(주제마다 3~5줄)은 SWIPE 10.1 "설명(핵심)" 칸을 말로 풀어 쓴 것이고 한 화면을 넘지 않는다. ④에는 "떨어져도 돼요"를 둔다.
 - 시험: PR-01.
 
 ### 2.3 화면과 연습 자판 (`PracticeActivity`, `PracticeFlow`, `PracticeInput`)
 
-**흐름 `PracticeFlow`(안드로이드 없음):** `Screen { LIST, INTRO, ITEM, DONE }`. `open(topic)` → INTRO, `start()`([시작]) → ITEM 첫 항목, `stop()`([그만]·[주제 목록으로]) → LIST. 마지막 항목이 ✓이면 DONE으로 가고 `markDone(id)`(→ `SettingsStore.markPracticeDone`)를 부른다. 중간에 그만두면 표시하지 않는다.
+**흐름 `PracticeFlow`(안드로이드 없음):** `Screen { LIST, INTRO, ITEM, DONE }`. `open(topic)` → INTRO, `start()`([시작]) → ITEM 첫 항목, `stop()`([그만]·[주제 목록으로]) → LIST. 마지막 항목이 ✓이면 DONE으로 가고 `markDone(id)`(→ `SettingsStore.markPracticeDone`)를 부른다. 중간에 그만두면 표시하지 않는다. 표의 값은 Compose 스냅숏 상태(`mutableStateOf`)라 화면은 읽은 값이 바뀌면 스스로 다시 그린다(0.30, FSS#54: 일반 변수일 때 건너뛴 화면 함수가 앞 항목의 목표를 남겼다).
 
 | 값 | 뜻 | 바뀌는 때 |
 |---|---|---|
-| `verdict` | ✓·✗ | 판정 때 정함. 다음 터치를 누를 때(`onPress`) 지움. 탭 자판 항목의 ✗는 글자열이 틀린 동안 남고, ⌫로 앞부분이 되면 지움 |
+| `verdict` | ✓·✗ | 판정 때 정함. 다음 터치를 누를 때(`onPress`) 지움. ✓는 `advance()` 때 지움(0.30). 탭 자판 항목의 ✗는 글자열이 틀린 동안 남고, ⌫로 앞부분이 되면 지움 |
 | `echo` | 입력 표시(FR-TUT-09) | 동작마다 `PracticeEditor.display`. `onPress`에서 지움(탭 자판 항목의 ✗ 동안은 남김) |
 | `howTo` | 쓰는 법 한 줄 | ✗ 때 항목의 `howTo`, 그 항목을 맞히면 지움 |
 | `hint` | 덧붙임 | 긋기 항목의 ✗가 위나 왼쪽으로 그은 터치에서 났을 때 "획은 아래로, 오른쪽으로만 그어요"(SWIPE 10.2) |
 | `highlight` | 안내표 강조 칸 | 그래피티 ✗ 때 `guideCells`, ✓ 때 지움 |
+| `holding` | 맞힌 항목을 보이는 중(0.30) | ✓ 때 켬, `advance()`·`stop()`·`open()` 때 끔. 켜진 동안 `onPress`·`onAction`은 아무 일도 하지 않는다 |
 | `tryNo` | 시도 번호 | 항목 시작, 탭 자판이 아닌 항목의 ✗ 뒤. 바뀌면 화면이 연습 자판을 새로 만든다(= 판정·조합 상태를 비움, SWIPE 10.2) |
 
-**`onAction(text, display, error, reversed)`:** 탭 자판 항목은 `PracticeItemJudge.text`, 그 밖은 `PracticeItemJudge.step(item, 이번 시도의 동작 번호, text, error)`. ✓ → 다음 항목(새 시도), ✗ → 위 표대로(탭 자판 항목은 비우지 않음).
+**`onAction(text, display, error, reversed, composing = "")`:** `composing`은 `text` 끝의 조합 중인 부분(0.28). 탭 자판 항목은 `PracticeItemJudge.text`, 그 밖은 `PracticeItemJudge.commit(item, text에서 composing을 뺀 확정 글자열, error)`. ✓ → `holding`(같은 자판, 맞힌 항목과 ✓를 그대로 보임), 화면이 `RIGHT_HOLD_MS` = 1000ms 뒤 `advance()` → 다음 항목(새 시도, ✓·입력 표시 지움) 또는 DONE(0.30, SWIPE 10.2, FSS#54). ✗ → 위 표대로(탭 자판 항목은 비우지 않음).
 
-**연습 편집기 `PracticeEditor : EditorPort`:** 입력창 대신 메모리 글자열. `commitText`는 조합 글자를 바꿔 넣고(InputConnection과 같음), `deleteBefore`는 끝 한 글자를 지운다. `text` = 확정 + 조합(판정용), `display` = 조합 글자가 있으면 그것(`ㄱㆍ`처럼 그대로), 없으면 확정 글자의 마지막 한 글자.
+**연습 편집기 `PracticeEditor : EditorPort`:** 입력창 대신 메모리 글자열. `commitText`는 조합 글자를 바꿔 넣고(InputConnection과 같음), `deleteBefore`는 끝 한 글자를 지운다. `text` = 확정 + 조합(`composing`), `display` = 조합 글자가 있으면 그것(`ㄱㆍ`처럼 그대로), 없으면 확정 글자의 끝 공백을 뺀 마지막 한 글자(0.28: 스페이스 뒤에도 그 글자).
 
 **한 시도 `PracticeInput(board, feedback, errorLog, settings) : SwipeHost`:** 실제 `InputDispatcher`·`ComposingController`·`ModeController(모드 하나)`와 모드의 조합기(긋기 `ComposePolicy.SWIPE`, 그래피티 `GRAFFITI`, 쿼티 없음)를 `PracticeEditor`에 잇는다. 기준값은 `ThresholdDefaults.VALUES`(3절). 오류 진동(`FeedbackPort.error`)을 지나며 `errored`를 켠다 — SWIPE 10.2의 ✗ 조건(무시된 획·천지인 요소, 버린 임시 획, 인식 실패)이 모두 이 진동이다.
-- `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫만** 넘긴다. 스페이스·↵·화살표·Esc·Del·Tab·모드 키·설정 획은 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
-- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키(⌫·스페이스·↵·모드 키)는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`라 가운데 자음·C 기준 판정이 실제와 같다.
+- `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫와 그래피티 패드의 스페이스**만 넘긴다(스페이스 = 글자 확정, 0.28, FSS#43). ↵·화살표·Esc·Del·Tab·모드 키·설정 획, 탭 자판의 스페이스, 패드의 ⌫는 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
+- `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키는 **스페이스만** `dispatcher.onFunctionDown(SPACE)`로 넘기고(실제처럼 조합을 확정하고 " "를 넣으며 조립을 닫음 — 버린 임시 획은 오류 진동, 0.28) ⌫·↵·모드 키는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`(C 기준 판정), `centerText` = `dispatcher.centerText()`(0.26, 가운데 글자)라 실제와 같다.
 - `graffiti(templates, lang, flash, redraw)`: 실제 `GraffitiInputHandler`(인식기·`GraffitiState`·천지인 조립기)를 만들고 패드 언어를 항목의 `lang`으로 둔다(한영 전환 획은 연습하지 않음, SWIPE 10.1 ③).
 
 **연습 자판(`BoardFactory.build`, 시도마다 새로):** 실제 뷰를 `BoardFrame` 안에 둔다.
 - 탭 자판: `TapKeyboardView` + `TapLayouts.QWERTY`(편집 줄 포함, 오너 결정 A), 높이 = 줄 수 × 설정 줄 높이.
-- 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 자음이 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
+- 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 글자가 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
 - 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만 — 한글 / 영문 / 숫자, `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
-- **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이 바뀌었거나 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용).
+- **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이나 그 조합 부분이 바뀌었거나(그래피티 끝 획처럼 확정만 하는 동작, 0.28) 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용). `PracticeFlow.holding`일 때 시작한 터치(첫 손가락이 내려온 때 기준)는 뗄 때까지 통째로 소비해 자판에 주지 않는다(0.30).
+- **폭·정렬(0.27, FSS#25, SRS FR-CMN-14 ⑥):** `BoardFrame`은 화면 폭(가용 폭)을 받아 그 화면 방향의 설정(`portraitWidth`·`landscapeWidth`)으로 `KeyboardWidth.place`(LLD-08 7.2, 짧은 변 = `displayMetrics`의 작은 쪽)를 구해 자식(연습 자판, 그래피티면 안내표 + 패드 묶음)을 그 폭으로 재고 `span.left`에 둔다. 남는 자리는 키보드 배경색이고 터치를 소비한다. 자판 밖에서 내려온 포인터는 `OffKeyboardPointers`로 걸러 자판에 가지 않고 `onPress`·`onAction`도 부르지 않는다(연습 동작이 아님). 설정은 화면을 열 때 한 번 읽은 값이다(2.3 처음)
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
-- 시험: PR-02~PR-08, PR-10~PR-13, PR-20·PR-21, 실기기 DV-11·DV-24.
+- **꺼진 모드 표시(0.25, FR-CMN-03f ⑦, SWIPE 10.0):** 주제 목록은 설정 `flow`의 `enabledModes`로 `offInKeyboard`가 참인 주제(그래피티·긋기)의 한 줄 설명 아래에 `practice_mode_off`("키보드에서 꺼져 있음", 작은 글자·`outline` 색)를 붙인다. 주제는 그대로 열고 할 수 있다(연습 자판은 앱 안의 화면). 기호 주제(②)의 긋기 자판 항목은 그대로 둔다(표시도 없음).
+- **맞힌 항목 보이기(0.30):** `LaunchedEffect(flow.holding)`이 켜지면 `RIGHT_HOLD_MS` 기다렸다 `advance()`. [그만]으로 그사이 나가면 `holding`이 꺼져 아무 일도 없다. 마지막 항목의 `markDone`은 홀드 뒤가 아니라 ✓ 때 부르므로 그사이 [그만]으로 나가도 주제 ✓는 남는다.
+- 시험: PR-02~PR-08, PR-10~PR-14, PR-16, PR-20~PR-23, 실기기 DV-11·DV-24·DV-31·DV-33.
 
 ### 2.4 항목 판정 `PracticeItemJudge` (FR-TUT-12, SWIPE 10.2, 안드로이드 없음)
 
 ```kotlin
 object PracticeItemJudge {
     fun text(item: PracticeItem, text: String): Verdict      // 탭 자판 항목
-    fun step(item: PracticeItem, index: Int, text: String, error: Boolean): Verdict
+    fun commit(item: PracticeItem, committed: String, error: Boolean): Verdict   // 0.28: 긋기·그래피티 항목
     fun lastChar(s: String): String
 }
 ```
 
 - `text`: 글자열 = 목표 → RIGHT, 목표의 앞부분(빈 글자열 포함) → PENDING, 그 밖 → WRONG. ⌫는 판정 동작이 아니고, ⌫ 뒤의 글자열을 다시 보는 것이 "⌫로 고쳐 앞부분이 되면 ✗를 거둠"이다(오너 결정 A).
-- `step`: 오류 진동이 있었거나, 항목에 그 차례가 없거나(동작이 남음), 글자열이 그 차례의 `steps`와 다르면 WRONG. 마지막 차례와 같으면 RIGHT, 아니면 PENDING.
+- `commit`(0.28, FSS#43, SWIPE 10.2 "확정된 글자로"): `committed` = 확정된 글자열(조합 중인 부분은 넘기지 않음), 그 안의 스페이스는 뺀다(끝 동작). 오류 진동이 있었거나 목표의 앞부분이 아니면 WRONG, 목표와 같으면 RIGHT, 아니면 PENDING. 조합 중인 글자(기·ㄱㆍ·각)는 보지 않으므로 "고"에 ㄱ + ㅣ를 써도 ✗가 나지 않고, 스페이스나 다음 글자로 확정될 때 판정된다. 다음 글자의 자음이 앞 글자를 확정해도(가 + ㄸ) 확정된 글자열이 목표면 RIGHT다. 0.27까지의 `step`(동작마다 `steps`의 같은 차례와 비교)은 없앴다.
 - 0.23까지의 1-1·1-2 특별 판정(누른 키만, 축·방향만)과 "✓이면 목표 글자로 바꿔 보임"은 없다(SRS TBD-17 해당 없음). 입력 표시는 늘 실제 글자라 ✓이면 그것이 곧 목표다.
 
 ### 2.5 첫 실행 `PracticeLaunchPolicy` (FR-TUT-01, 안드로이드 없음)
@@ -137,7 +152,14 @@ object PracticeItemJudge {
 data class Settings(val lastMode: InputMode?, val showDirectionGuide: Boolean, val showNextChar: Boolean,
                     val showCurrentChar: Boolean,   // 0.11, 이슈 #135
                     val haptic: Boolean, val sound: Boolean, val rowHeightDp: Float,
-                    val graffitiLetterRatio: Float, val tutorAutoStarted: Boolean)
+                    val graffitiLetterRatio: Float, val tutorAutoStarted: Boolean,
+                    val practiceDone: Set<String> = emptySet(),
+                    val graffitiEnabled: Boolean = true, val swipeEnabled: Boolean = true,   // 0.25, FR-SET-08
+                    val portraitWidth: WidthSetting = WidthSetting.DEFAULT,    // 0.27, FSS#25 (LLD-08 7.2)
+                    val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
+                    val showStrokeTrail: Boolean = true) {   // 0.31, FSS#57
+    val enabledModes: Set<InputMode>   // {QWERTY, DUBEOLSIK} ∪ 켜진 GRAFFITI·SWIPE (LLD-08 5절 applyEnabled에 넘김)
+}
 class SettingsStore(private val ds: DataStore<Preferences>) {
     val flow: Flow<Settings>
     fun loadBlocking(): Settings                    // runBlocking { flow.first() } — 서비스 시작 때 한 번(D-24)
@@ -155,18 +177,24 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `show_direction_guide` | true | SWIPE 9.3 |
 | `show_next_char` | true | SWIPE 9.3 |
 | `show_current_char` | true | SWIPE 9.3, FR-DSP-08(0.11, 이슈 #135). 비밀번호 입력창만 이 값과 상관없이 끔(FR-CMN-08 ①, LLD-06 2절). 학습 금지 칸은 이 값대로(②, 0.21) |
+| `show_stroke_trail` (0.31) | **true** | FR-DSP-09, FR-SET-02(FSS#57): 긋기 자판(연습 자판 포함)의 획 자국을 그리는가. 끄면 획 선만 안 그림(가운데 글자·점, 판정 그대로, LLD-04 9.4). 키가 없으면 켬 |
 | `haptic` | **true**(진동 켬) | FR-SET-03(DCR-14 결정) |
 | `sound` | **false**(소리 끔) | FR-SET-03(DCR-14 결정) |
 | `row_height_dp` | 48, 고를 수 있는 범위 40~64 | FR-SET-06, NFR-06, TBD-16(DCR-14 결정) |
 | `graffiti_letter_ratio` | 2/3 (문자 2 : 숫자 1). 고를 수 있는 값은 1/2(1 : 1)·2/3(2 : 1)·3/4(3 : 1) 셋뿐 | FR-GRF-01, FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | `tutor_auto_started` | false | FR-TUT-01: 첫 실행에 주제 목록을 보였는가(2.5). 값 이름은 `practiceListShown`, 키 이름은 옛 것 그대로라 옛 튜터를 이미 연 설치본은 목록을 다시 열지 않는다 |
 | `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
+| `graffiti_enabled` (0.25) | **true** | FR-SET-08(오너 결정 2026-11-02, FSS#31): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절) |
+| `swipe_enabled` (0.25) | **true** | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
+| `key_portrait_dp`, `align_portrait` (0.27) | 없음(= 꽉 채움), `CENTER` | FR-CMN-14 ②③, FR-SET-09(FSS#25). 키 한 칸 폭(Float, dp)과 정렬 이름(`LEFT`·`CENTER`·`RIGHT`). 읽을 때 키 폭은 `KeyboardWidth.snap`(정수 dp, 32~160 안, D-33과 같은 생각). 세로 슬라이더 위 끝(꽉 채움)은 키를 지운다(없음 = 꽉 채움). 모르는 정렬 이름은 `CENTER` |
+| `key_landscape_dp`, `align_landscape` (0.27) | 없음(= 세로와 같은 키 크기), `CENTER` | FR-CMN-14 ③, FR-SET-09. 없으면 `keyDp = null`이고 `KeyboardWidth.place`가 세로 키 크기(세로가 꽉 채움이면 화면 짧은 변 ÷ 10)를 쓴다. 가로 슬라이더 위 끝은 `KeyboardWidth.FULL`(양의 무한대, 숫자가 아닌 "꽉 채움" 표식)로 저장한다(방향·막대가 바뀌어도, 세로 키 크기를 바꿔도 꽉 채움, SRS FR-SET-09). `update`에서 `keyDp = null`이면 키를 지운다 |
 
 - 저장된 `lastMode` 이름이 모르는 값이면 없음으로 본다(FR-CMN-10; 0.23: 모든 빌드가 네 모드라 FR-CMN-03b의 "빌드에 없는 모드" 경우는 없음, 이슈 #251).
 - `graffiti_letter_ratio`는 Float 하나로 저장한다(`floatPreferencesKey`). 값은 패드 폭 가운데 **문자 영역의 몫**이다: 1 : 1 = 1/2, 2 : 1 = 2/3, 3 : 1 = 3/4(문자 : 숫자 = r : 1 − r). 설정 화면은 세 값만 쓴다(`GRAFFITI_RATIOS`, 7절). 읽을 때는 검사하지 않는다: 저장값이 없으면 기본값 2/3, 있으면 목록 밖 값이라도 그대로 `GraffitiPadGeometry`에 넘겨 그 몫으로 패드를 나누고, 설정 화면은 어느 선택지도 고르지 않은 상태(세 값과의 차가 모두 0.001 이상)로 보인다. 사용자가 하나를 고르면 그 값으로 덮어쓴다. 앱이 목록 밖 값을 쓰는 길은 없으므로(설정 화면이 유일한 쓰기) 이 경우는 저장 파일이 손상되거나 바깥에서 고친 때뿐이다.
 - `row_height_dp`는 읽을 때 `RowHeight.clamp`로 40~64 안에 둔다(범위 밖 저장값은 가까운 끝값, D-33). 48dp 미만(40~47dp)도 사용자가 고른 값이면 그대로 쓴다(NFR-06은 기본 줄 높이 기준, TBD-16).
 - 0.1의 `tutor_done`은 없앴다. 연습을 했는지는 키보드 동작을 바꾸지 않는다(안내 없음, FR-TUT-05).
-- 시험: SS-01~SS-05, SS-07(0.24).
+- 켜진 모드 값이 바뀌면 키보드 서비스가 같은 `flow`로 받아 곧바로 반영한다(LLD-08 3.2). 키가 없으면 켬이다(옛 설치본도 지금 동작 그대로).
+- 시험: SS-01~SS-05, SS-07(0.24), SS-08(0.25).
 
 ### 6.2 ErrorLog
 
@@ -189,15 +217,19 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 
 | 항목 | 저장 | 근거 |
 |---|---|---|
+| **입력 모드**(0.25, 첫 묶음) | 체크 상자 넷, 이 순서: 영문(쿼티) · 한글(두벌식) · 그래피티(한 획 손글씨) · 긋기 입력. 영문·한글은 체크된 채 흐리게(바꿀 수 없음) 오른쪽에 "늘 켜짐", 그래피티 → `graffiti_enabled`, 긋기 → `swipe_enabled`. 묶음 제목 아래 설명 "끈 모드는 모드 키로 넘길 때 건너뜁니다" | FR-SET-08, FR-CMN-03f |
 | 방향 안내 켜기·끄기 | `show_direction_guide` | FR-DSP-08, FR-SET-02 |
 | 다음 글자 안내 켜기·끄기 | `show_next_char` | 〃 |
 | 현재 글자 크게 보기 켜기·끄기(0.11) | `show_current_char` | FR-DSP-08, FR-SET-02(이슈 #135). 셋 다 끄면 안내가 전혀 보이지 않음(실제 키보드·연습 자판) |
+| 획 자국 켜기·끄기(0.31) | `show_stroke_trail`. "획 자국" 한 줄, 현재 글자 크게 보기 바로 다음(같은 안내 표시 묶음) | FR-DSP-09, FR-SET-02(FSS#57) |
 | 진동·소리 | `haptic`, `sound`(기본 진동 켬·소리 끔) | FR-SET-03 |
 | 입력 연습(0.24) | `PracticeActivity` 열기(설명 "영문 대문자 · 기호 · 그래피티 · 긋기를 골라서 짧게 연습"). 첫 실행의 주제 목록은 2.5 | FR-TUT-06, FR-SET-04 |
 | 그래피티 영역 비율 | `graffiti_letter_ratio`. 라디오 단추 셋: 1 : 1 / 2 : 1(기본) / 3 : 1 → 1/2 / 2/3 / 3/4 저장(6.1) | FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | 줄 높이 | `row_height_dp`(40~64dp, 기본 48dp) | FR-SET-06, TBD-16 |
+| 세로·가로 화면 키 크기·정렬(0.27, 상자 0.29) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 **상자 둘**(`KeyboardSizeBoxes`, 0.29, FSS#44): "세로 화면" 상자 = "키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음) + "정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면" 상자 = "키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리) + "정렬". 지금 화면 방향 상자는 제목 줄 오른쪽 끝에 "지금 화면"(강조색). 설정 화면은 회전하면 다시 만들어지므로 표시가 새 방향 상자로 옮겨 간다. 값 칸은 전체 폭 미리보기: "키 36dp · 전체 360dp", 꽉 채움이면 "꽉 채움 · 키 약 71dp · 711dp"(대략 가용 폭 ÷ 10). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 10 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음 | FR-SET-09, FR-CMN-14 |
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
 
+- 0.25: 묶음 순서는 입력 모드 → 입력기 → 안내 표시 → 피드백 → 자판 → 입력 연습. 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.
 - 0.24: "튜터 다시 실행"은 "입력 연습"으로, 기준값 초기화·내보내기·가져오기는 삭제(FSS#17 오너 결정 ①, FR-TUT-07 삭제).
 - 안내 표시 항목(방향 안내·다음 글자·현재 글자)은 늘 보인다(0.23, 이슈 #251). 줄 높이는 40~64dp 범위에서 고른다(FR-SET-06, DCR-14 결정). 설정 화면에는 기준값 상태 안내를 두지 않는다(FR-TUT-05).
 - 시험: 실기기 DV-11.

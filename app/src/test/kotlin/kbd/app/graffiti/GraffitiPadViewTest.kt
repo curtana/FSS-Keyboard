@@ -40,7 +40,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 
 /**
- * Pad status display of `GraffitiPadView` (LLD-11 §6.5 PI-01~PI-07, LLD-05 §8.1, SRS FR-GRF-05d). Strokes go in
+ * Pad status display and area outlines of `GraffitiPadView` (LLD-11 §6.5 PI-01~PI-07, PI-09·PI-10, LLD-05 §8.1, SRS FR-GRF-05d, FR-GRF-01a). Strokes go in
  * as synthetic touches through the real recognizer rules and [GraffitiState] (no templates: only taps and
  * straight lines are used); what the view draws is captured with a recording [Canvas].
  *
@@ -59,6 +59,8 @@ class GraffitiPadViewTest {
     private class RecordingCanvas : Canvas() {
         val texts = ArrayList<Triple<String, Float, Float>>()
         val circles = ArrayList<Triple<Float, Float, Float>>()
+        /** Outlined round rects (the area outlines); the filled ones are the auxiliary bar buttons. */
+        val outlines = ArrayList<Pair<android.graphics.RectF, Float>>()
         override fun drawText(text: String, x: Float, y: Float, paint: Paint) {
             texts += Triple(text, x, y)
         }
@@ -66,7 +68,9 @@ class GraffitiPadViewTest {
             circles += Triple(cx, cy, radius)
         }
         override fun drawLine(startX: Float, startY: Float, stopX: Float, stopY: Float, paint: Paint) {}
-        override fun drawRoundRect(rect: android.graphics.RectF, rx: Float, ry: Float, paint: Paint) {}
+        override fun drawRoundRect(rect: android.graphics.RectF, rx: Float, ry: Float, paint: Paint) {
+            if (paint.style == Paint.Style.STROKE) outlines += android.graphics.RectF(rect) to rx
+        }
         override fun drawColor(color: Int) {}
     }
 
@@ -172,8 +176,8 @@ class GraffitiPadViewTest {
         assertEquals("한", cornerText(c))
         assertEquals(null, pendingText(c))
         val dot = c.circles.single()
-        assertEquals(2f * 1.5f * density, dot.first, 0.01f)
-        assertEquals(2f * 1.5f * density, dot.second, 0.01f)
+        assertEquals(10f * density, dot.first, 0.01f)    // inside the area outline (FSS#48)
+        assertEquals(10f * density, dot.second, 0.01f)
         assertEquals(2f * density, dot.third, 0.01f)
         assertTrue("dot inside the corner-tap zone", dot.first + dot.third < 36f * density && dot.second + dot.third < 28.8f * density)
     }
@@ -252,6 +256,49 @@ class GraffitiPadViewTest {
         handler.restore(snap)
         handler.enterMode()
         assertEquals(before + 3, redraws)
+    }
+
+    @Test
+    fun `PI-09 both areas get an outline inside them, the status display sits inside, in password fields too`() {
+        for (hides in listOf(false, true)) {
+            sink.hidesDisplay = hides
+            val c = draw()
+            assertEquals(2, c.outlines.size)
+            val (letter, letterR) = c.outlines[0]
+            val (number, numberR) = c.outlines[1]
+            assertRect(4.5f, 4.5f, 235.5f, 187.5f, letter)
+            assertRect(244.5f, 4.5f, 355.5f, 187.5f, number)
+            assertEquals(6f * density, letterR, 0.01f)
+            assertEquals(6f * density, numberR, 0.01f)
+            val dot = c.circles.single()
+            assertTrue("dot clear of the outline", dot.first - dot.third > letter.left && dot.second - dot.third > letter.top)
+            val glyph = c.texts.single { it.first == "한" }
+            assertTrue("glyph inside the letter outline", glyph.second > letter.left && glyph.second < letter.right)
+        }
+        cornerTap()
+        up()
+        val c = draw()
+        val number = c.outlines[1].first
+        val pending = c.texts.single { it.first == "⇧" }
+        assertTrue("pending label left of the number outline's right edge", pending.second < number.right)
+        assertTrue("pending label below the outline's top", pending.third > number.top)
+    }
+
+    @Test
+    fun `PI-10 the outlines follow the letter ratio`() {
+        for ((ratio, split) in listOf(0.5f to 180f, 0.75f to 270f)) {
+            view.letterRatio = ratio
+            val c = draw()
+            assertEquals((split - 4.5f) * density, c.outlines[0].first.right, 0.01f)
+            assertEquals((split + 4.5f) * density, c.outlines[1].first.left, 0.01f)
+        }
+    }
+
+    private fun assertRect(l: Float, t: Float, r: Float, b: Float, actual: android.graphics.RectF) {
+        assertEquals(l * density, actual.left, 0.01f)
+        assertEquals(t * density, actual.top, 0.01f)
+        assertEquals(r * density, actual.right, 0.01f)
+        assertEquals(b * density, actual.bottom, 0.01f)
     }
 
     /** Issue #205: the auxiliary bar's mode key (0–72 dp) acts on release; an up exit into the pad opens the settings. */

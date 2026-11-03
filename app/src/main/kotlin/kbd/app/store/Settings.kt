@@ -17,7 +17,25 @@ data class Settings(
     val practiceListShown: Boolean,
     /** Ids of the practice topics done to the end (the ✓ of the topic list, SWIPE 10.0); never used for judgement. */
     val practiceDone: Set<String> = emptySet(),
+    /** Graffiti and swipe on in the keyboard (FR-SET-08, FSS#31); QWERTY and Dubeolsik are always on. Default on. */
+    val graffitiEnabled: Boolean = true,
+    val swipeEnabled: Boolean = true,
+    /** Key size and alignment on the portrait screen (FR-CMN-14, FR-SET-09, FSS#25); the default key size fills. */
+    val portraitWidth: WidthSetting = WidthSetting.DEFAULT,
+    /** The same on the landscape screen; the default key size is the portrait one (FR-CMN-14 ③). */
+    val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
+    /** The swipe keyboard's stroke trail (FR-DSP-09, FSS#57); off = no trail lines, the center syllable and dots stay. Default on. */
+    val showStrokeTrail: Boolean = true,
 ) {
+    /** The modes on in the keyboard, for `ModeController.applyEnabled` (FR-CMN-03f). */
+    val enabledModes: Set<InputMode>
+        get() = buildSet {
+            add(InputMode.QWERTY)
+            add(InputMode.DUBEOLSIK)
+            if (graffitiEnabled) add(InputMode.GRAFFITI)
+            if (swipeEnabled) add(InputMode.SWIPE)
+        }
+
     companion object {
         /** LLD-07 §6.1 defaults: vibration on, sound off (DCR-14), row 48 dp, letters 2 : numbers 1. */
         val DEFAULT = Settings(

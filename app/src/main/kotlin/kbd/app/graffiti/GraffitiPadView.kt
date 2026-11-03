@@ -38,7 +38,7 @@ import kbd.stroke.threshold.ThresholdDefaults
  * The mode key is judged on release like on the tap keyboards (issue #205): an up exit (into the pad)
  * opens the settings ([TapSink.onSettingsStroke]), anything else is the mode change.
  * The pad status display (FR-GRF-05d, LLD-05 §8.1) is drawn from the handler's [GraffitiState][kbd.graffiti.state.GraffitiState]
- * on every frame, in password fields too.
+ * on every frame, in password fields too, inside the area outlines (FR-GRF-01a, FSS#48).
  */
 class GraffitiPadView(
     context: Context,
@@ -86,7 +86,10 @@ class GraffitiPadView(
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
     }
-    private val dividerPaint = Paint().apply { color = 0xFF3C3C3C.toInt() }
+    private val areaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF505050.toInt()   // faint area outline, same grey as "123" (FR-GRF-01a)
+        style = Paint.Style.STROKE
+    }
     private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFF505050.toInt()   // faint "123" over the number area (GRAFFITI 6.3)
         textAlign = Paint.Align.CENTER
@@ -133,6 +136,7 @@ class GraffitiPadView(
         cornerPaint.textSize = minOf(rowPx * LABEL_SCALE, (g.cornerRect.bottom - g.cornerRect.top) * density * CORNER_TEXT_SCALE)
         flashPaint.textSize = rowPx * FLASH_SCALE
         inkPaint.strokeWidth = INK_WIDTH_DP * density
+        areaPaint.strokeWidth = AREA_STROKE_DP * density
         invalidate()
     }
 
@@ -151,9 +155,15 @@ class GraffitiPadView(
     override fun onDraw(canvas: Canvas) {
         val g = geometry ?: return
         val padBottom = g.padBottomDp * density
-        val split = g.letterRect.right * density
-        canvas.drawLine(split, 0f, split, padBottom, dividerPaint)
-        canvas.drawLine(0f, padBottom, width.toFloat(), padBottom, dividerPaint)
+        // Area outlines (FR-GRF-01a, LLD-05 §8.1): drawn only, the areas themselves stay as they are.
+        // Their gaps take the place of the old divider lines.
+        val boxInset = AREA_INSET_DP * density + areaPaint.strokeWidth / 2
+        val boxRadius = AREA_RADIUS_DP * density
+        for (r in arrayOf(g.letterRect, g.numberRect)) {
+            setPx(keyRect, r)
+            keyRect.inset(boxInset, boxInset)
+            canvas.drawRoundRect(keyRect, boxRadius, boxRadius, areaPaint)
+        }
         setPx(keyRect, g.numberRect)
         drawCentered(canvas, NUMBER_HINT, keyRect, hintPaint)
 
@@ -161,12 +171,13 @@ class GraffitiPadView(
         val state = handler.snapshot().state
         setPx(keyRect, g.cornerRect)
         val dot = CORNER_DOT_DP * density
-        canvas.drawCircle(keyRect.left + dot * 1.5f, keyRect.top + dot * 1.5f, dot, cornerPaint)
-        keyRect.left += dot * 3.5f   // the glyph sits right of the dot, inside the zone
+        val dotOffset = AREA_INSET_DP * density + dot * 3   // inside the outline and its round corner
+        canvas.drawCircle(keyRect.left + dotOffset, keyRect.top + dotOffset, dot, cornerPaint)
+        keyRect.left += dotOffset + dot * 2   // the glyph sits right of the dot, inside the zone
         drawCentered(canvas, langLabel(state.lang), keyRect, cornerPaint)
         val pending = pendingLabel(state)
         if (pending.isNotEmpty()) {
-            val inset = KEY_INSET_DP * density * 3
+            val inset = (AREA_INSET_DP + KEY_INSET_DP * 3) * density   // inside the number area outline
             canvas.drawText(pending, width - inset, inset - pendingPaint.ascent(), pendingPaint)
         }
 
@@ -329,6 +340,11 @@ class GraffitiPadView(
         internal const val CORNER_DOT_DP = 2f
         private const val CORNER_TEXT_SCALE = 0.6f
         private const val INK_WIDTH_DP = 3f
+
+        /** Area outline (FR-GRF-01a, LLD-05 §8.1): inset from each area, corner radius, line width. */
+        internal const val AREA_INSET_DP = 4f
+        internal const val AREA_RADIUS_DP = 6f
+        internal const val AREA_STROKE_DP = 1f
 
         /** Platform repeat timing (D-16), as in the swipe keyboard; before API 28 the values were not public. */
         private fun repeatSchedule(): RepeatSchedule =

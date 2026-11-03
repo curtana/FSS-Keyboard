@@ -1,7 +1,10 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.26** (2026-11-02)
+- 버전 **0.29** (2026-11-02)
+- 0.29(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): **자판 폭과 정렬**(새 7.2) — `KeyboardWidth.place`(키 한 칸 폭 × 10, 가용 폭에서 멈춤, 하한 320dp, 왼손/중앙/오른손), `KeyboardRootView`의 `portraitWidth`·`landscapeWidth`, `onMeasure`·`onLayout`(모드 뷰·덮개·버튼을 줄인 자판에), 자식 밖에서 내려온 포인터를 거르는 `OffKeyboardPointers`, 다시 놓기(화면 방향·설정 흐름).
+- 0.28(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `InputDispatcher.centerText()`(가운데 글자, 6.1). `KeyboardService.centerText = dispatcher.centerText()`(3절 표).
+- 0.27(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f, HLD 0.62 8.1·8장): **켜진 모드.** `ModeController`에 켜진 모드 집합 `enabled`(영문 쿼티·한글 두벌식은 늘 켬), `nextEnabled`(`nextInOrder` 대신), `applyEnabled`(이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로, 저장할 모드를 돌려줌), `fixedStart`(시작 때 고친 모드)(5절). 서비스: 생성 때 켜진 모드를 넘기고 `fixedStart`를 저장, `onStartInputView`에서 `applyEnabled`(3.1), 설정 `flow`가 바뀌면 `applyEnabledModes` — 키보드가 떠 있으면 곧바로 확정하고 새 모드의 뷰로 바꿈(3.2).
 - 0.26(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): 기준값은 코드 상수(`thresholds = ThresholdDefaults.VALUES`), `ThresholdStore` 읽기와 `onStartInputView`의 다시 읽기 삭제.
 - 0.25(이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)): `KeyboardService`는 `ModeController`에 모든 모드를 넘긴다(긋기를 빼는 공개판 순서 없음, 5절). `createSwipeView`는 늘 뷰를 준다.
 - 0.24(이슈 #189, SRS 0.45 FR-GRF-09·09a, HLD 0.41 5장·5A): **그래피티 획 안내표의 버튼과 덮개는 `KeyboardRootView`가 가진다**(새 7.1). 빈 띠 오른쪽 끝 1줄 × 1줄 버튼(누를 때 피드백·토글), 패드 + 보조 줄 위 덮개(`GraffitiGuidePanel`, LLD-05 10절), 열 때 모드 뷰의 진행 중 터치 취소와 그 제스처의 나머지 가로채기. `setModeView`는 모드 뷰만 바꾼다(버튼·덮개는 남음). 서비스: `showModeView`에서 그래피티면 `enableGuide`, 아니면 `disableGuide`, `onWindowHidden`·`onFinishInputView(false)`에서 `closeGuide`(3절). 창 높이·인셋은 그대로.
@@ -13,7 +16,7 @@
 - 0.16(이슈 #160): 긋기 천지인 키. `onJamoEvents`는 매퍼의 임시 글자(ㆍ·‥)를 조합 글자 뒤에 보이고(빈 이벤트 목록도 보임), `backspace()`는 긋기면 매퍼의 조립기에 먼저 묻는다(6.1). 천지인 키 요소는 입력이다(6.2).
 - 0.14(이슈 #150): `BlockParser` → `SwipeInputMapper`(`SwipeEngineState`). `SwipeHost.hasJong` 삭제. `backspace()`는 조합기 다음 `swipeState.onBackspace(composer.lastConsonant())`로 ⌫ 뒤 기준 키를 정하고 편집기를 마지막에 쓴다(FR-SWP-39). 기준 키 밖 긋기의 오류 진동은 뷰가 `feedback.error()`로 낸다(8절 진동 설정을 따름).
 - `InputMode`·`FunctionKey`는 [LLD-03-modules.md#35-모드와-기능키](LLD-03-modules.md#35-모드와-기능키), 조합기는 [LLD-04-swipe.md#7](LLD-04-swipe.md#7-hangulcomposer-core-hangul)에 있다.
-- 요구: FR-CMN-01~12(04·04b·11a 포함), FR-TAP-04, 10, 11a, FR-CMN-09, FR-GRF-08, NFR-05.
+- 요구: FR-CMN-01~12(03f·04·04b·11a 포함), FR-CMN-14, FR-SET-08, FR-TAP-04, 10, 11a, FR-CMN-09, FR-GRF-08, NFR-05.
 
 ## 1. 범위
 
@@ -69,7 +72,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode)`(0.25: 모든 모드, 이슈 #251). `dispatcher = InputDispatcher(…)`. 설정 `flow`를 모아 바뀌면 `applySettings()` | FR-CMN-10, HLD 7.3 |
+| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.25: 모든 모드, 이슈 #251. 0.27: 켜진 모드). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`. 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
 | `onCreateInputView()` | `root = KeyboardRootView(…)`. `showModeView(modes.current)` | FR-CMN-10 |
 | `onStartInputView(info, restarting)` | 아래 3.1 | FR-CMN-03e, 04, 04b, 08 |
 | `onUpdateSelection(oldS, oldE, newS, newE, candS, candE)` | `r = composing.onUpdateSelection(newS, newE, candS, candE)`. `USER_MOVED` → `dispatcher.onCursorMoved(newS, newE, candS, candE)`. `OTHER_MOVED` → `dispatcher.onCursorMovedNoComposing()` | FR-CMN-06, HLD 8장, R4 |
@@ -77,9 +80,9 @@ class KeyboardService : InputMethodService(), SwipeHost {
 | `onFinishInput()` | `dispatcher.finishAll()` | HLD 8장 |
 | `onWindowHidden()` | 진행 중 터치·타이머 버림(`root.cancelTouches()`), `root.closeGuide()`(0.24) | D-27, FR-GRF-09 |
 | `onEvaluateFullscreenMode()` | `false` | FR-CMN-12 |
-| `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 새 폭에, 줄 높이 유지) | FR-CMN-12 |
+| `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2) | FR-CMN-12, FR-CMN-14 ⑩ |
 | `onComputeInsets(out)` | `contentTopInsets = visibleTopInsets = 0`(입력 뷰 위 끝), `touchableInsets = TOUCHABLE_INSETS_FRAME`. 창 전체(빈 띠 포함)가 터치를 받는다 | SRS 3.3 빈 띠 |
-| `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, LLD-04 9.5) 등 | LLD-03 2.2 |
+| `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, 판정 C), `centerText = dispatcher.centerText()`(0.28, LLD-04 9.5) 등 | LLD-03 2.2 |
 
 ### 3.1 `onStartInputView(info, restarting)`
 ```
@@ -91,6 +94,7 @@ modes.onFieldChanged()                     // typed = false, previous 유지(FR-
 before = modes.current
 if f.numericLike: modes.enterNumericField()   // 영문 쿼티로 시작, 돌아갈 모드 기억(5절, FR-CMN-04·04b)
 else:             modes.leaveNumericField()   // 돌아갈 모드가 있으면 그 모드로(5절)
+modes.applyEnabled(settings.enabledModes)?.let(saveLastMode)   // 0.27: 꺼진 모드를 고침(FR-CMN-03f ②~④). 확정은 위에서 함
 errorLog.enabled = !f.noRecord             // NFR-05, FR-CMN-08 ①② (0.21)
 composing.onStart(info.initialSelStart, info.initialSelEnd)
 showModeView(modes.current, f)
@@ -98,6 +102,22 @@ if modes.current == GRAFFITI && before != GRAFFITI: dispatcher.graffiti?.enterMo
 ```
 - 같은 숫자류 입력창에서 키보드가 다시 떠도(`onStartInputView` 다시 호출) 이 순서를 그대로 탄다. 그래서 다시 영문 쿼티로 시작하고 돌아갈 모드는 그대로다(FR-CMN-04b).
 - 자동으로 바뀌는 모드(쿼티로 시작, 돌아가기)는 `previous`와 마지막 모드 저장을 바꾸지 않는다(5절, FR-CMN-04b).
+
+- 0.27: `applyEnabled`는 enter·leave 다음이다. 그래서 숫자류 입력창 안이면 `current`(= QWERTY, 늘 켬)는 그대로이고 돌아갈 모드만 고쳐지며, 문자 입력창으로 돌아온 뒤 돌아갈 모드가 꺼져 있었으면 그 다음 켜진 모드가 된다(사례 표 8행).
+
+### 3.2 `applyEnabledModes(on)` (0.27, FSS#31)
+설정 `flow`의 값이 올 때마다(`applySettings`의 끝, 메인 스레드) 부른다. `on = settings.enabledModes`.
+```
+before = modes.current
+if before ∉ on && isInputViewShown:  dispatcher.finishAll(); dispatcher.resetParsers()   // 바꾸기 전에 확정(FR-CMN-03d)
+modes.applyEnabled(on)?.let(saveLastMode)
+if modes.current == before || !isInputViewShown: return      // 떠 있지 않으면 다음 onStartInputView의 showModeView가 보임
+showModeView(modes.current, dispatcher.field)                   // 모드 키와 같은 길(뷰 교체)
+if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모드의 다음 켜진 모드는 그래피티가 될 수 없지만 같은 규칙을 둠)
+```
+- `resetParsers()`는 기본 이유(`FIELD_CHANGED`)다: 사용자가 누른 키가 아니므로 버린 획에 진동하지 않는다(D-57과 같음).
+- 자동 전환이라 `typed`·`previous`는 바꾸지 않는다(5절). 저장은 `applyEnabled`가 돌려준 모드만 한다(숫자류 입력창 안이면 고친 돌아갈 모드, 밖이면 새 모드).
+- `Settings.enabledModes` = {QWERTY, DUBEOLSIK} ∪ (`graffitiEnabled`면 GRAFFITI) ∪ (`swipeEnabled`면 SWIPE)(LLD-07 6.1).
 
 #### `showModeView(mode, f)`
 | 조건 | 보이는 뷰 |
@@ -180,27 +200,34 @@ USER_MOVED 일 때: predictedSel = newE; expected.clear()   // composeStart는 f
 ## 5. ModeController
 
 ```kotlin
-class ModeController(private val available: List<InputMode>, saved: InputMode?) {
+class ModeController(private val available: List<InputMode>, saved: InputMode?, enabled: Set<InputMode> = available.toSet()) {
+    var enabled: Set<InputMode>; private set           // 0.27: 켜진 모드(정규화, 아래)
     var current: InputMode; var previous: InputMode? = null; var typed = false
     var returnMode: InputMode? = null                  // 숫자류 입력창에 들어가기 직전의 모드(돌아갈 모드). null = 숫자류 입력창 밖
     val inNumericField: Boolean get() = returnMode != null
+    val fixedStart: InputMode?                         // 0.27: 저장된 모드가 꺼져 있어 고친 시작 모드(저장할 값). 아니면 null
     fun onInput()
     fun onFieldChanged()
     fun onModeKey(): InputMode
     fun enterNumericField()
     fun leaveNumericField()
+    fun applyEnabled(modes: Set<InputMode>): InputMode?   // 0.27: 저장할 마지막 모드 또는 null
+    fun nextEnabled(m: InputMode): InputMode
+    companion object { val ALWAYS_ON = setOf(QWERTY, DUBEOLSIK) }
 }
 ```
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| 생성 | `current = saved`가 `available`에 있으면 그 값, 아니면 `available[0]`(= SWIPE, 0.25: 모든 빌드가 모든 모드). `previous = null`, `typed = false`, `returnMode = null`(프로세스 시작) | FR-CMN-10, 03b, 03e, HLD 8.1 |
+| 생성 | `enabled = 정규화(enabled)`. `current = saved`가 `available`에 있으면 그 값(꺼져 있으면 `nextEnabled(saved)`), 없으면 `available[0]`(= SWIPE, 0.25: 모든 빌드가 모든 모드. 꺼져 있으면 `nextEnabled(available[0])`). `fixedStart = saved != null && saved != current`면 `current`, 아니면 null(저장된 모드가 없을 때 고친 첫 모드는 저장하지 않음). `previous = null`, `typed = false`, `returnMode = null`(프로세스 시작) | FR-CMN-10, 03b, 03e, 03f ③, HLD 8.1 |
 | `onInput()` | `typed = true` | FR-CMN-03a |
 | `onFieldChanged()` | `typed = false`(previous·returnMode 유지) | FR-CMN-03e |
-| `onModeKey()` | HLD 8.1 그대로: `next = if (typed && previous != null && previous != current) previous else nextInOrder(current)`; `if (typed) previous = current`; `current = next`; `typed = false`; `return next`. 숫자류 입력창 안에서도 같다(`returnMode`는 바꾸지 않음) | FR-CMN-03, 03c, 04b |
+| `onModeKey()` | HLD 8.1 그대로: `next = if (typed && previous != null && previous != current) previous else nextEnabled(current)`; `if (typed) previous = current`; `current = next`; `typed = false`; `return next`. 숫자류 입력창 안에서도 같다(`returnMode`는 바꾸지 않음). `previous`는 늘 켜진 모드다(`applyEnabled`가 꺼진 것을 비움) | FR-CMN-03, 03c, 03f ①②, 04b |
 | `enterNumericField()` | `if (returnMode == null) returnMode = current`; `current = QWERTY`. `previous`·`typed`는 바꾸지 않는다 | FR-CMN-04, 04b, HLD 8.1 |
 | `leaveNumericField()` | `if (returnMode != null) { current = returnMode; returnMode = null }`. `previous`·`typed`는 바꾸지 않는다. 숫자류 입력창 밖에서 부르면 아무것도 하지 않는다 | FR-CMN-04b, HLD 8.1 |
-| `nextInOrder(m)` | `available`에서 m 다음, 끝이면 처음(SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → …) | FR-CMN-03, 03b |
+| `applyEnabled(modes)` (0.27) | `enabled = 정규화(modes)`; `if (previous ∉ enabled) previous = null`; `if (returnMode != null && returnMode ∉ enabled) { returnMode = nextEnabled(returnMode); 저장 = returnMode }`; `if (current ∉ enabled) { current = nextEnabled(current); if (returnMode == null) 저장 = current }`. `typed`는 바꾸지 않는다. 돌려주는 값 = 저장(없으면 null). 확정·뷰 교체는 서비스(3.1, 3.2) | FR-CMN-03f ②~④, HLD 8.1 |
+| `nextEnabled(m)` (0.27, `nextInOrder` 대신) | `available`에서 m 다음부터 돌며(끝이면 처음) 처음 만나는 `enabled`의 모드(SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → …, 꺼진 모드 건너뜀). m 말고 켜진 것이 없으면 m | FR-CMN-03, 03b, 03f ① |
+| 정규화 (0.27) | `available` 가운데 `modes`에 있거나 `ALWAYS_ON`(QWERTY·DUBEOLSIK)인 것. 비면 `available` 전부(연습 자판의 한 모드짜리 `ModeController(listOf(mode), mode)`가 그대로 동작) | FR-SET-08, FR-CMN-03f ⑤ |
 
 - `QWERTY`는 늘 `available`에 있다. 그래서 `enterNumericField`는 늘 쿼티로 간다.
 - **돌아갈 모드의 수명:** 숫자류 입력창에서 다른 숫자류 입력창으로 옮기면 `enterNumericField`가 다시 불려도 `returnMode`는 처음 값 그대로이고 `current`는 다시 QWERTY다(사례 표 4행). 같은 숫자류 입력창에서 키보드가 다시 떠도 같다(FR-CMN-04b). 숫자류 입력창이 아닌 입력창으로 옮길 때만 `returnMode`로 돌아가고 비운다(사례 3·5행).
@@ -208,7 +235,8 @@ class ModeController(private val available: List<InputMode>, saved: InputMode?) 
 - `returnMode`는 저장하지 않는다(프로세스 시작 때 null, HLD 8.1).
 - 확정·초기화·저장 같은 부수 효과는 `InputDispatcher.onModeKey()`와 `KeyboardService.onStartInputView`가 한다(6절, 3.1). 이 클래스는 상태 기계만 둔다(HLD 8.1 "순수 Kotlin 상태 기계").
 - `onInput()`을 부르는 곳과 부르지 않는 곳은 6.2 표.
-- 시험: MC-01~MC-10(SRS 모드 키 예시 10행), MC-11~MC-13, NF-01~NF-09(SRS 숫자류 입력창 사례 7행 + 재표시·저장).
+- **켜진 모드(0.27):** 켜진 모드 집합은 밖(`SettingsStore`)에서 받는다. 이 클래스는 저장하지 않고 저장할 값만 돌려준다(`applyEnabled`, `fixedStart`). 영문 쿼티·한글 두벌식은 끌 수 없으므로 순환에는 늘 둘 이상이 있고, `enterNumericField`의 QWERTY도 늘 켜져 있다.
+- 시험: MC-01~MC-10(SRS 모드 키 예시 10행), MC-11~MC-13, NF-01~NF-09(SRS 숫자류 입력창 사례 7행 + 재표시·저장), OM-01~OM-09(SRS 꺼진 모드 사례 8행 + 정규화, 0.27).
 
 ## 6. InputDispatcher
 
@@ -229,6 +257,7 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `onJamoEvents(ev, errorVibe)` (긋기) | `if (errorVibe) feedback.error()`(0.18: 조립을 닫으며 모음이 못 된 획을 버림); `r = composer.applyAll(ev)`; `out.show(r, swipeState?.pendingGlyph() ?: "", swipeState?.pendingReplacesVowel() == true)`(ㆍ·‥ 임시 글자를 조합 글자 뒤에, 빈 이벤트도 보임); `markInput()` | HLD 4.1, SWIPE 3.3·3.4 |
+| `centerText()` (0.28, 읽기만) | 조합기가 없거나 `lastConsonant() == null`(조합 없음·낱모음)이면 null. `swipeState.pendingDots()`가 비어 있지 않으면 `CenterText(base, dots)` — `base` = `composingText()`, 다만 `pendingReplacesVowel()`이면 조합기 사본(`HangulComposer(c.policy)` + `restore(c.snapshot())`)의 `undoLast()` 뒤 글자(숨긴 ㅣ / ㅡ를 뺀 꼴). 그 밖에는 `CenterText(composingText() + pendingGlyph())`(천지인 ㆍ·‥는 글자). 후보는 없다. 실제 조합기·편집기는 그대로 | SWIPE 9.5, FR-DSP-10, FSS#36 |
 | `onSwipeText(s, vibe)` (둘레 숫자·기호) | `finishAll()`; `out.commitText(s)`; `if vibe feedback.error()`; `markInput()`. 조립기 비움은 매퍼가 이미 함(LLD-04 6.2) | FR-SWP-42, 43, D-30 |
 | `onTapOutput(key, o)` | `o.jamo != null`(두벌식 글자) → `j = Jamo.ofCompat(o.jamo)`, `composer.apply(if j.kind == CONSONANT Consonant(j) else Vowel(j))` → `out.show`. `o.text != null` → `finishAll()` 뒤 `out.commitText(o.text)`(쿼티 글자도 이 길, FR-TAP-11a). `o.errorVibe` → `feedback.error()`. `markInput()` | FR-TAP-01a~03a, 11a |
 | `onFunctionDown(BACKSPACE)` | `backspace()`; `markInput()` | FR-CMN-07 |
@@ -316,6 +345,45 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 | 창 크기 | 바꾸지 않는다(높이·인셋·`onComputeInsets` 그대로, 세로·가로 같음) |
 
 - 시험: GD-01·GD-02·GD-06~GD-09(LLD-11 6.6, Robolectric). 실기기 DV-28(LLD-11 8절).
+
+### 7.2 자판 폭과 정렬 (0.29, FSS#25)
+
+근거: SRS 0.71 FR-CMN-14·FR-SET-09·3.3 창 규칙 ④·FR-SWP-45, HLD 0.64 5A "자판 폭과 정렬", SWIPE 0.51 2.1·9.5. 설정값과 저장은 LLD-07 6.1·7절.
+
+```kotlin
+// kbd.app.store (안드로이드 없음)
+enum class KeyboardAlign { LEFT, CENTER, RIGHT }                 // 왼손모드 · 중앙모드 · 오른손모드
+data class WidthSetting(val keyDp: Float?, val align: KeyboardAlign)  // 키 한 칸 폭, null = 기본값, FULL = 꽉 채움
+data class KeyboardSpan(val left: Int, val width: Int)           // 가용 폭 왼쪽 끝에서 px
+object KeyboardWidth {
+    const val UNITS = 10                                          // 배치 단위 360 = 키 10칸
+    const val MIN_KEY_DP = 32f; const val MAX_KEY_DP = 160f; const val MIN_DP = 320f
+    const val FULL = Float.POSITIVE_INFINITY                      // "꽉 채움" 표식(가로 슬라이더 위 끝)
+    fun snap(k: Float): Float                                     // 정수 dp, 32~160 안(FULL은 그대로)
+    fun fullKeyDp(availDp: Float): Int                            // 슬라이더 위 끝(설정 화면, LLD-07 7절)
+    fun place(availPx: Int, portraitAvailPx: Int, density: Float,
+              portrait: WidthSetting, landscape: WidthSetting, isLandscape: Boolean): KeyboardSpan
+}
+// KeyboardRootView
+var portraitWidth: WidthSetting; var landscapeWidth: WidthSetting   // 바꾼 뒤 relayout()
+// kbd.app.view
+internal class OffKeyboardPointers(onKeyboard: (x: Float, y: Float) -> Boolean) { fun filter(ev): MotionEvent?; val active: Boolean }
+```
+
+| 항목 | 처리 |
+|---|---|
+| `KeyboardWidth.place` | `availPx ≤ 0`이면 (0, 0). s = 그 방향의 설정. 원하는 폭 = s.keyDp가 `FULL`이면 `availPx`, 숫자면 `round(keyDp × 10 × density)`, null이면 — 세로: `availPx`(꽉 채움), 가로: 세로 설정의 keyDp(숫자면 × 10, `FULL`이면 `portraitAvailPx`), 그것도 null이면 `portraitAvailPx`(세로 꽉 채움의 폭 = 짧은 변). 폭 = `min(availPx, max(원하는 폭, round(320 × density)))`. 남는 자리 rest = `availPx − 폭`, left = 0(LEFT) / `rest / 2`(CENTER, 정수 나눗셈) / rest(RIGHT) (FR-CMN-14 ②③④⑤) |
+| `onMeasure` | 가용 폭 = 잰 폭 − 왼쪽·오른쪽 padding(시스템 막대, 7절). 방향 = `resources.configuration.orientation`(가로인가). `portraitAvailPx` = `min(displayMetrics.widthPixels, heightPixels)`(화면 짧은 변 = 세로 화면 가용 폭, FR-CMN-14 ③). `span = place(…, portraitWidth, landscapeWidth, 가로인가)`. `MATCH_PARENT` 폭 자식(모드 뷰·안내표 덮개)은 폭 `span.width`, 폭이 정해진 자식(안내표 버튼)은 그 폭. 높이는 7절 그대로 |
+| `onLayout` | 0.26까지의 `FrameLayout` gravity 대신 직접 놓는다. x = 왼쪽 padding + `span.left`. 안내표 버튼 = (x + 폭 − 버튼 폭, 위 padding), 그 밖의 자식 = (x, 줄 바닥 − 자식 높이) — 줄 바닥 = 높이 − 아래 padding. `GONE` 자식은 건너뜀 |
+| 다시 놓기 | `relayout()`(7절)이 `requestLayout`. 서비스가 `onConfigurationChanged`(화면 방향)와 설정 흐름의 폭·정렬 변경(`applySettings`, 줄 높이와 같은 길)에서 부른다. `onCreateInputView`가 새 루트에 두 값을 넣는다. 모드·조합 상태는 건드리지 않는다(FR-CMN-14 ⑩) |
+| 여백 터치 | 자식 밖(빈 띠·옆 여백·시스템 막대 여백)의 터치는 7절 `onTouchEvent` = 소비 그대로 |
+| `dispatchTouchEvent` | `OffKeyboardPointers.filter`를 거친 이벤트만 `super`로 보낸다. 판정 `onKeyboard(x, y)` = 보이는(`VISIBLE`) 자식의 사각형 안. 결과가 null이면(자식 밖에서 내려온 포인터만의 이벤트) `true`(소비, 입력 없음). 돌려준 값 = `super`의 결과 또는 버린 포인터가 남아 있음 |
+| `OffKeyboardPointers.filter` | `ACTION_DOWN`이면 버린 집합을 비우고, `ACTION_CANCEL`이면 비운 뒤 원래 이벤트(모든 자식이 멈춰야 함). `ACTION_DOWN`·`POINTER_DOWN`의 점이 자식 밖이면 그 포인터 id를 버린다. 버린 것이 없으면 원래 이벤트. 있으면: 버린 포인터의 내려옴·올라옴은 null, 그 밖은 버린 포인터를 뺀 새 이벤트 — 남은 포인터가 하나뿐인 내려옴은 `ACTION_DOWN`(그 때를 `downTime`으로), 남은 하나의 올라옴은 `ACTION_UP`, 그 밖은 새 색인의 `POINTER_DOWN`·`POINTER_UP`, 이동은 묶인 표본(history)까지 옮긴다(획이 history를 읽음). 올라온 포인터는 집합에서 뺀다. 새 이벤트는 부른 쪽이 `recycle` |
+| 왜 거르나 | 안드로이드는 다른 손가락이 자식을 누르고 있으면 자식 밖에 내려온 새 손가락도 그 자식에 붙인다(탭 자판은 틈을 가장 가까운 키로 침 → 여백 입력). 또 첫 손가락이 자식 밖이면 그 제스처의 뒤 손가락은 자식에 가지 않는다(`ViewGroup`이 가로챔) — 여백에 손을 얹으면 자판이 막힌다. 거르면 둘 다 없다(SRS FR-CMN-14 ⑤ 둘째 손가락, HLD 5A). 그래피티 빈 띠도 같다 |
+| 안내표 | 덮개는 모드 뷰와 같은 x·폭, 버튼은 줄인 자판 오른쪽 끝(7.1 표 "자식과 z 순서"의 `END`는 이 x로 바뀜). 열기·닫기·삼키기는 7.1 그대로(삼키기 `onInterceptTouchEvent`는 거른 이벤트를 본다) |
+| 판정 | 모드 뷰는 받은 폭으로 기하를 만든다: 탭 자판 `TapGeometry.build(layout, widthDp, rowDp)`, 긋기 `SwipeGeometry.build(widthDp, rowDp)`(가운데 글자 자리 C = `SwipeLayout.consonantBox(widthDp, …)`, 가로 중심 = 자판 가운데), 그래피티 패드 `GraffitiPadGeometry`. 위치 허용 오차 = 실제 키 폭 × 0.4, `minCrossDp` = 8dp 그대로. 테두리(FR-SWP-45)는 모드 뷰 좌표의 0과 폭 = 줄인 자판의 바깥 변. 바꾸는 코드 없음 |
+
+- 시험: KW-01~KW-08(`KeyboardWidthTest`, JVM), KR-01~KR-06(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), SS-10·SS-11(LLD-11 7.5·7.7). 실기기 DV-30(LLD-11 8절).
 
 ## 8. Feedback
 

@@ -1,9 +1,15 @@
 package kbd.app.practice
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 /**
  * The input practice as a plain state machine (LLD-07 §2.3, SWIPE 10.0, 10.2): topic list → explanation → items, each
- * once → end → topic list; [stop] goes back to the list from anywhere. The screen redraws from these values after
- * every call. Nothing is measured or stored except the topic's ✓ ([markDone]).
+ * once → end → topic list; [stop] goes back to the list from anywhere. Nothing is measured or stored except the topic's
+ * ✓ ([markDone]). Its values are snapshot state, so the screen redraws whatever reads them when they change (FSS#54:
+ * a plain value read in a skipped composable kept the old target on screen); it needs no Android.
  */
 class PracticeFlow(
     val topics: List<PracticeTopic> = PracticeTopics.ALL,
@@ -11,44 +17,48 @@ class PracticeFlow(
 ) {
     enum class Screen { LIST, INTRO, ITEM, DONE }
 
-    var screen: Screen = Screen.LIST
+    var screen: Screen by mutableStateOf(Screen.LIST)
         private set
 
-    var topic: PracticeTopic? = null
+    var topic: PracticeTopic? by mutableStateOf(null)
         private set
 
     /** The item's place in [topic]. */
-    var index: Int = 0
+    var index: Int by mutableIntStateOf(0)
         private set
 
     val item: PracticeItem? get() = topic?.items?.getOrNull(index)
 
     /** A new try (item start, or after ✗ off the tap keyboard) bumps this: the screen builds a fresh practice keyboard. */
-    var tryNo: Int = 0
+    var tryNo: Int by mutableIntStateOf(0)
         private set
 
     /** ✓ / ✗ of the last judged action, shown until the next touch is pressed; null = none (SWIPE 10.2 표시 순서). */
-    var verdict: Verdict? = null
+    var verdict: Verdict? by mutableStateOf(null)
         private set
 
     /** The input display (FR-TUT-09): the last character, large; emptied when the next touch is pressed. */
-    var echo: String = ""
+    var echo: String by mutableStateOf("")
         private set
 
     /** The how-to line after ✗, kept until the item is right (SWIPE 10.2). */
-    var howTo: String? = null
+    var howTo: String? by mutableStateOf(null)
         private set
 
     /** The extra line after a reversed swipe stroke, with [howTo] (SWIPE 10.2 덧붙임). */
-    var hint: String? = null
+    var hint: String? by mutableStateOf(null)
         private set
 
     /** Stroke-guide cells highlighted after a graffiti ✗ (SWIPE 10.1 ③). */
-    var highlight: List<String> = emptyList()
+    var highlight: List<String> by mutableStateOf(emptyList())
         private set
 
-    /** Actions of the current try judged so far (swipe and graffiti items). */
-    private var actions = 0
+    /**
+     * The item is right and stays on screen with its ✓ for [RIGHT_HOLD_MS], taking no input; then the screen calls
+     * [advance] (SWIPE 10.2 표시 순서, FSS#54: the next target must not come unnoticed).
+     */
+    var holding: Boolean by mutableStateOf(false)
+        private set
 
     fun open(t: PracticeTopic) {
         topic = t
@@ -74,23 +84,26 @@ class PracticeFlow(
 
     /** A touch is pressed on the practice keyboard: the last ✓ / ✗ and the input display go (SWIPE 10.2). */
     fun onPress() {
-        if (verdict == Verdict.RIGHT || item?.board != PracticeBoard.TAP_QWERTY) {
+        if (holding) return
+        if (item?.board != PracticeBoard.TAP_QWERTY) {
             verdict = null
             echo = ""
         }
     }
 
     /**
-     * An action ended (touch released, the real engine done with it). [text] is the item's text, [display] the input
-     * display, [error] = the action vibrated as an error, [reversed] = it went up or left (swipe 덧붙임).
-     * The screen calls this off the tap keyboard only when the action changed the text or vibrated.
+     * An action ended (touch released, the real engine done with it). [text] is the item's text, [composing] its part
+     * still composing (at its end; the rest is committed), [display] the input display, [error] = the action vibrated
+     * as an error, [reversed] = it went up or left (swipe 덧붙임). Off the tap keyboard only the committed text is
+     * judged (FSS#43): the space or the next syllable commits. The screen calls this off the tap keyboard only when the
+     * action changed the text or what is committed, or vibrated. Nothing is judged while [holding].
      */
-    fun onAction(text: String, display: String, error: Boolean = false, reversed: Boolean = false) {
+    fun onAction(text: String, display: String, error: Boolean = false, reversed: Boolean = false, composing: String = "") {
         val it = item ?: return
-        if (screen != Screen.ITEM) return
+        if (screen != Screen.ITEM || holding) return
         echo = display
         val v = if (it.board == PracticeBoard.TAP_QWERTY) PracticeItemJudge.text(it, text)
-        else PracticeItemJudge.step(it, actions++, text, error)
+        else PracticeItemJudge.commit(it, text.dropLast(composing.length), error)
         when (v) {
             Verdict.RIGHT -> right()
             Verdict.WRONG -> {
@@ -109,16 +122,23 @@ class PracticeFlow(
         howTo = null
         hint = null
         highlight = emptyList()
+        holding = true
+        // The topic is done at its last ✓, not after the hold: [그만] within the second must not lose it.
+        if (index == (topic?.items?.size ?: 0) - 1) topic?.let { markDone(it.id) }
+    }
+
+    /** [RIGHT_HOLD_MS] after ✓: the next item with a fresh keyboard, or the end screen after the last one. */
+    fun advance() {
+        if (!holding) return
+        holding = false
+        verdict = null
+        echo = ""
         index++
-        if (index >= (topic?.items?.size ?: 0)) {
-            screen = Screen.DONE
-            topic?.let { markDone(it.id) }
-        }
+        if (index >= (topic?.items?.size ?: 0)) screen = Screen.DONE
         newTry()
     }
 
     private fun newTry() {
-        actions = 0
         tryNo++
     }
 
@@ -128,6 +148,12 @@ class PracticeFlow(
         howTo = null
         hint = null
         highlight = emptyList()
+        holding = false
         newTry()
+    }
+
+    companion object {
+        /** How long a right item stays on screen with its ✓ before the next one (FSS#54, PM decision A). */
+        const val RIGHT_HOLD_MS = 1000L
     }
 }

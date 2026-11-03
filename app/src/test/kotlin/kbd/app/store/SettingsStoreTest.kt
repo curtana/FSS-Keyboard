@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
@@ -28,7 +29,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** SS-01..SS-05 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
+/** SS-01..SS-05, SS-07, SS-08 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
 class SettingsStoreTest {
 
     @get:Rule
@@ -73,6 +74,7 @@ class SettingsStoreTest {
         assertTrue(s.showDirectionGuide)
         assertTrue(s.showNextChar)
         assertTrue(s.showCurrentChar)   // #135: default on
+        assertTrue(s.showStrokeTrail)   // FSS#57: default on
         assertEquals(2f / 3f, s.graffitiLetterRatio)
     }
 
@@ -101,6 +103,34 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `SS-10 key size defaults, read back with the full mark, null removes the key`() {
+        val d = SettingsStore(open()).loadBlocking()
+        assertEquals(WidthSetting(null, KeyboardAlign.CENTER), d.portraitWidth)   // FR-CMN-14 ③: fills
+        assertEquals(WidthSetting(null, KeyboardAlign.CENTER), d.landscapeWidth)   // the portrait key size
+        val p = WidthSetting(40f, KeyboardAlign.LEFT)
+        val l = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.RIGHT)
+        runBlocking { SettingsStore(reopen()).update { it.copy(portraitWidth = p, landscapeWidth = l) } }
+        val s = SettingsStore(reopen())
+        assertEquals(p, s.loadBlocking().portraitWidth)
+        assertEquals(l, s.loadBlocking().landscapeWidth)
+        runBlocking { s.update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = null)) } }
+        val r = reopen()
+        assertEquals(WidthSetting(null, KeyboardAlign.RIGHT), SettingsStore(r).loadBlocking().landscapeWidth)
+        assertNull(runBlocking { r.data.first()[SettingsStore.KEY_LANDSCAPE] })
+    }
+
+    @Test
+    fun `SS-11 stored key size snaps to whole dp in 32 to 160, unknown alignment reads as centre`() {
+        val cases = listOf(10f to 32f, 400f to 160f, 36.4f to 36f, 36.6f to 37f)
+        for ((stored, expected) in cases) {
+            runBlocking { reopen().edit { it[SettingsStore.KEY_PORTRAIT] = stored } }
+            assertEquals("stored $stored", expected, SettingsStore(reopen()).loadBlocking().portraitWidth.keyDp)
+        }
+        runBlocking { reopen().edit { it[SettingsStore.ALIGN_LANDSCAPE] = "UP" } }
+        assertEquals(KeyboardAlign.CENTER, SettingsStore(reopen()).loadBlocking().landscapeWidth.align)
+    }
+
+    @Test
     fun `SS-05 setPracticeListShown true reads back`() {
         runBlocking { SettingsStore(open()).setPracticeListShown(true) }
         assertTrue(SettingsStore(reopen()).loadBlocking().practiceListShown)
@@ -118,6 +148,19 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `SS-08 modes on by default, graffiti and swipe turn off and read back`() {
+        val all = setOf(InputMode.SWIPE, InputMode.QWERTY, InputMode.DUBEOLSIK, GRAFFITI)
+        val d = SettingsStore(open()).loadBlocking()
+        assertTrue(d.graffitiEnabled)
+        assertTrue(d.swipeEnabled)
+        assertEquals(all, d.enabledModes)
+        runBlocking { SettingsStore(reopen()).update { it.copy(graffitiEnabled = false) } }
+        assertEquals(all - GRAFFITI, SettingsStore(reopen()).loadBlocking().enabledModes)
+        runBlocking { SettingsStore(reopen()).update { it.copy(swipeEnabled = false) } }
+        assertEquals(setOf(InputMode.QWERTY, InputMode.DUBEOLSIK), SettingsStore(reopen()).loadBlocking().enabledModes)
+    }
+
+    @Test
     fun `update writes every field and null lastMode removes the key`() {
         val changed = Settings(
             lastMode = GRAFFITI,
@@ -130,6 +173,11 @@ class SettingsStoreTest {
             graffitiLetterRatio = 0.5f,
             practiceListShown = true,
             practiceDone = setOf("graffiti"),
+            graffitiEnabled = false,
+            swipeEnabled = false,
+            portraitWidth = WidthSetting(44f, KeyboardAlign.RIGHT),
+            landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.LEFT),
+            showStrokeTrail = false,
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())

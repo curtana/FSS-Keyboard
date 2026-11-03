@@ -5,11 +5,13 @@ import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.swipe.impl.SwipeGeometry
 import kbd.app.swipe.impl.SwipeMapperState
+import kbd.app.view.CenterText
 import kbd.gesture.classify.StrokeClassifier
 import kbd.gesture.input.MapResult
 import kbd.gesture.input.SwipeInputMapper
 import kbd.gesture.layout.SwipeLayout
 import kbd.stroke.geom.StrokePoint
+import kbd.stroke.layout.FunctionKey
 import kbd.stroke.threshold.ThresholdDefaults
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -71,18 +73,35 @@ class PracticeSwipeItemsTest {
     private fun Run.tap(label: String) = center(label).let { (x, y) -> touch(x, y) }
     private fun Run.swipe(label: String, dx: Float, dy: Float) = center(label).let { (x, y) -> touch(x, y, x + dx, y + dy) }
 
-    /** Plays [actions] and checks the editor text after each against [item]'s steps, and the judge's ✓ at the end. */
+    /** The judgement of what [r] has typed so far (FSS#43: the committed text only). */
+    private fun judge(item: PracticeItem, r: Run) =
+        PracticeItemJudge.commit(item, r.input.editor.text.dropLast(r.input.editor.composing.length), r.input.errored)
+
+    /** The space key of the practice swipe keyboard (FSS#43): commits as on the keyboard. */
+    private val space: Run.() -> Unit = { input.onFunctionKey(FunctionKey.SPACE) }
+
+    /**
+     * Plays [actions] and checks the editor text after each against [item]'s steps, nothing judged on the way (a
+     * composing syllable is no result, FSS#43), then ✓ — at once when the last action committed (a symbol), else after
+     * the space.
+     */
     private fun check(item: PracticeItem, vararg actions: Run.() -> Unit) {
         val r = run()
         val seen = ArrayList<String>()
         var v = Verdict.PENDING
         actions.forEachIndexed { i, a ->
+            assertEquals("${item.target} before action $i", Verdict.PENDING, v)
             r.input.errored = false
             r.a()
             seen += r.input.editor.text
-            v = PracticeItemJudge.step(item, i, r.input.editor.text, r.input.errored)
+            v = judge(item, r)
         }
         assertEquals(item.target, item.steps, seen)
+        if (v == Verdict.PENDING) {
+            r.input.errored = false
+            r.space()
+            v = judge(item, r)
+        }
         assertEquals(item.target, Verdict.RIGHT, v)
     }
 
@@ -123,17 +142,38 @@ class PracticeSwipeItemsTest {
     }
 
     @Test
-    fun `PR-13 a wrong consonant and a reversed stroke are wrong at once`() {
+    fun `PR-13 a wrong syllable is wrong when committed, a reversed stroke at once`() {
         val it = item(PracticeTopics.SWIPE, "가")
         val r = run()
         r.tap("ㄴ")
-        assertEquals(Verdict.WRONG, PracticeItemJudge.step(it, 0, r.input.editor.text, r.input.errored))
+        assertEquals(Verdict.PENDING, judge(it, r))                    // composing ㄴ: no result yet (FSS#43)
+        r.iRight(); r.aDot()
+        assertEquals(Verdict.PENDING, judge(it, r))                    // 나, still composing
+        r.space()
+        assertEquals(Verdict.WRONG, judge(it, r))                      // committed 나
         val r2 = run()
         r2.tap("ㄱ")
         r2.input.errored = false
         r2.touch(230f, 140f, 230f, 60f)   // ㅣ drawn upwards: ignored with the error vibration (SWIPE 3.2)
         assertTrue(r2.input.errored)
-        assertEquals(Verdict.WRONG, PracticeItemJudge.step(it, 1, r2.input.editor.text, r2.input.errored))
+        assertEquals(Verdict.WRONG, judge(it, r2))
+    }
+
+    @Test
+    fun `PR-16 the owner's cases - 고 as ㄱ ㅣ is no ✗ while composing, 가가 goes 가 각 가가 (FSS#43)`() {
+        val go = item(PracticeTopics.SWIPE, "고")
+        val r = run()
+        r.tap("ㄱ"); r.iRight()
+        assertEquals("기", r.input.editor.text)
+        assertEquals(Verdict.PENDING, judge(go, r))                    // not 고, but not finished either
+        assertEquals(CenterText("기"), r.input.centerText)            // and C keeps it (FSS#36)
+        r.aDot()
+        assertEquals(CenterText("가"), r.input.centerText)
+        r.space()
+        assertEquals(Verdict.WRONG, judge(go, r))                      // committed 가 ≠ 고
+        check(go, { tap("ㄱ") }, oDot, oEu)                              // ㄱ, ㄱㆍ, 고, then the space: ✓
+        val gaga = PracticeItem("가가", PracticeBoard.SWIPE, "가가 = …", listOf("ㄱ", "기", "가", "각", "가기", "가가"))
+        check(gaga, { tap("ㄱ") }, iRight, aDot, { tap("ㄱ") }, iRight, aDot)   // 가 → 각 → 가기 (가 committed) → 가가, space ✓
     }
 
     private companion object {

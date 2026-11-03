@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.28** (2026-11-02)
+- 버전 **0.29** (2026-11-02)
+- 0.29(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `SwipeHost.centerText`(가운데 글자 = 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에, LLD-04 9.5), `SwipeEngineState.pendingDots()`(2.2). `centerConsonant`는 판정 C를 줄지 정하는 데만 쓴다.
 - 0.28(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): `kbd.app.tutor` → `kbd.app.practice`(LLD-07 2절), `ThresholdStore` 삭제. `SwipeModule.tutorSteps()` 삭제(연습은 같은 `createSwipeView`를 연습용 `SwipeHost`로 부름). 기준값은 고정 상수(3.4), `posTolDp`는 실행 때 키 폭 × 0.4(`ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth`).
 - 0.27(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59 — CON-5·NFR-11·FR-CMN-03b·FR-TUT-08·HLD 3.1 삭제): 2절 제목을 "빌드와 SwipeModule"로. HLD가 `SwipeModule`을 LLD 표기로 따르므로 인터페이스 이름은 그대로 둔다. 빌드 변형(productFlavors) 삭제, 빌드 하나(`assembleDebug`, 앱 ID `kbd.app`), `gesture-engine`은 일반 `implementation`. `app/src/personal`·`public`·`testPersonal`·`testPublic`를 `main`·`test`로 합침. `SwipeModule`에서 `available`·`thresholdFields()`와 public `NoSwipeModule`을 지움, `PersonalSwipeModule` → `SwipeEngineModule`, `PersonalTutorSteps` → `TutorSteps`. 공개판 튜터 1-1(`MinCrossOnQwertyStep`, `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`)과 긋기를 빼는 모드 순서도 지움. 아래 표·코드는 이 판 기준이고, 0.26까지의 변형 설명은 이 줄로 대신한다.
 - 0.26(이슈 #242 오너 결정(두벌식 겹받침 한 번에)): `TapKeyDef.compoundJamo: Map<Dir, Char>`(두벌식 글자 키의 방향별 겹받침, 기본 빈 맵), core-hangul `JamoTables.SPLIT_JONG`(겹받침 → 두 자음). 겹받침 자모(`GS` 등)도 `JamoEvent.Consonant`로 들어올 수 있다(조합기가 나눔, LLD-04 7절).
@@ -118,7 +119,8 @@ interface SwipeHost {                 // KeyboardService가 구현, 긋기 뷰�
     val thresholds: Thresholds
     val settings: Settings
     val fieldInfo: FieldInfo
-    val centerConsonant: Jamo? get() = null       // 0.21: 조합기 lastConsonant() = 가운데 자음(SWIPE 9.5), null 아니면 판정에 C(TBD-24, LLD-04 9.3·9.5)
+    val centerConsonant: Jamo? get() = null       // 0.21: 조합기 lastConsonant(), null 아니면 판정에 C(TBD-24, LLD-04 9.3·9.5)
+    val centerText: CenterText? get() = centerConsonant?.let { CenterText(it.compat.toString()) }   // 0.29: C에 그릴 가운데 글자(LLD-04 9.5) = dispatcher.centerText()(LLD-08 6.1)
     fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean = false)   // SwipeInputMapper 출력. errorVibe: 모음이 못 된 획을 버림(0.18, SWIPE 3.3)
     fun onSwipeText(text: String, errorVibe: Boolean) // 둘레 숫자·기호 키 결과
     fun onFunctionKey(key: FunctionKey)               // ⌫ 스페이스 ↵(누를 때), 모드 키(뗄 때 탭이면, 0.23)
@@ -134,6 +136,7 @@ interface SwipeEngineState {          // main이 gesture-engine 타입을 보지
     fun pendingGlyph(): String = ""         // = SwipeInputMapper.pendingGlyph(): ㆍ·‥ 임시 글자(SWIPE 3.4, FR-SWP-64)
     fun pendingReplacesVowel(): Boolean = false   // 0.21 2회차: = SwipeInputMapper.pendingReplacesVowel() (낱모음 ‥, SWIPE 0.36 3.4)
     fun popElement(): StrokePop = StrokePop.Empty   // = SwipeInputMapper.popElement(): ⌫가 먼저 부름(SWIPE 3.5, 0.18)
+    fun pendingDots(): List<DotPlace> = emptyList() // 0.29: = SwipeInputMapper.pendingDots() — 가운데 글자에 찍을 점과 자리(LLD-04 6.3)
     fun snapshot(): Any               // = SwipeInputMapper.snapshot()
     fun restore(s: Any)
 }

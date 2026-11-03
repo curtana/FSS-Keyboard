@@ -31,18 +31,20 @@ object SwipeLayout {
     const val CHEONJIIN_ID = "cheonjiin"
 
     /*
-     * The center consonant's place C (SWIPE 9.5 "자리와 크기", design defaults; LLD-04 §8.1): the top of the
-     * consonant key area, centred across the keyboard (the middle ㄸ column, owner decision #213), in view dp.
-     * The view draws the consonant in it and the vowel assembler judges against it (HLD 6: one constant for both).
+     * The center syllable's place C (SWIPE 9.5 "자리와 크기", design defaults; LLD-04 §8.1): the top of the
+     * consonant key area half a row down (owner decision FSS#37), centred across the keyboard (the middle ㄸ
+     * column, owner decision #213), in view dp. The view draws the composing syllable in it and the vowel
+     * assembler judges against it (HLD 6: one constant for both).
      */
     private const val C_TOP_ROW = 1             // the double-consonant row
-    private const val C_TOP_INSET_DP = 4f       // C top = that row's top + 4 dp
+    private const val C_TOP_INSET_DP = 4f       // C top = that row's top + 4 dp + half a row
+    private const val C_DROP_ROWS = 0.5f        // the half row (24 dp at 48 dp rows; follows FR-SET-06, FSS#37)
     private const val C_ROWS = 2f               // height = two key rows (96 dp at 48 dp rows; follows FR-SET-06)
     private const val C_ASPECT = 0.85f          // width = height × 0.85
 
-    /** C for a swipe view [widthDp] wide with rows [rowHeightDp] high: ≈ (139, 52)–(221, 148) on 360 × 48 dp. */
+    /** C for a swipe view [widthDp] wide with rows [rowHeightDp] high: ≈ (139, 76)–(221, 172) on 360 × 48 dp. */
     fun consonantBox(widthDp: Float, rowHeightDp: Float): ConsonantBox {
-        val top = C_TOP_ROW * rowHeightDp + C_TOP_INSET_DP
+        val top = (C_TOP_ROW + C_DROP_ROWS) * rowHeightDp + C_TOP_INSET_DP
         val h = C_ROWS * rowHeightDp
         val w = C_ASPECT * h
         val left = widthDp / 2 - w / 2   // horizontal centre of C = horizontal centre of the keyboard (#213)

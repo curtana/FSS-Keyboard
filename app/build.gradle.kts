@@ -14,8 +14,8 @@ android {
         applicationId = "kbd.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0-alpha"
+        versionCode = 2
+        versionName = "0.1.0-alpha.2"
     }
 
     // One edition (owner, issue #251): the swipe engine is in every build; no product flavors.
@@ -82,4 +82,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)   // test only, MIT (issue #12)
+    // Compose UI tests under Robolectric, test only, Apache-2.0 (FSS#44); the host activity is registered in the test (no manifest library in the APK)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 }
