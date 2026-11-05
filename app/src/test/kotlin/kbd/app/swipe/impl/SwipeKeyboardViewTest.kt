@@ -142,14 +142,31 @@ class SwipeKeyboardViewTest {
         fun at(t: String) = rc.textAt.filter { it.first == t }
         val cx = cx(6)
         val cy = cy(4)
-        val up = at("<").single()
-        val down = at("'").single()
-        val left = at("\"").single { it.second < cx + COL * density / 2 && it.second > cx - COL * density / 2 }
+        val up = at("\"").single()
+        val down = at("★").single()
+        val left = at("♥").single()
         assertEquals(cx, up.second, 0.5f)
         assertEquals(cx, down.second, 0.5f)
         assertTrue("$up above $down", up.third < cy && down.third > cy)
         assertTrue("$left left of the middle", left.second < cx)
         assertTrue("$left on the middle height", left.third > up.third && left.third < down.third)
+    }
+
+    /** FSS#75: the labels follow the new table: the . key's edges show < > ' _, and ( ) only on 9 and 0. */
+    @Test
+    fun `SW-19b the symbol key's edge labels and the parentheses only on 9 and 0`() {
+        val rc = RecordingCanvas().also { view.draw(it) }
+        fun at(t: String) = rc.textAt.filter { it.first == t }
+        val cx = cx(5)
+        val cy = cy(4)
+        val half = COL * density / 2
+        assertEquals(cx, at("'").single().second, 0.5f)
+        assertEquals(cx, at("_").single().second, 0.5f)
+        assertTrue(at("'").single().third < cy && at("_").single().third > cy)
+        assertTrue(at("<").single().second in (cx - half)..cx)
+        assertTrue(at(">").single().second in cx..(cx + half))
+        assertEquals(cx(6), at("(").single().second, 0.5f)   // 9 ↑
+        assertEquals(cx(0), at(")").single().second, 0.5f)   // 0 ↑
     }
 
     /** #135: the real keyboard follows the three guide settings (FR-DSP-08); all off = nothing drawn. */

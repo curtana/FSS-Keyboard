@@ -137,8 +137,28 @@ class PracticeSwipeItemsTest {
     fun `PR-12 swipe symbol items of topic 2`() {
         val t = PracticeTopics.SYMBOL
         check(item(t, "@", "긋기 자판"), { swipe("2", 0f, -40f) })
-        check(item(t, "(", "긋기 자판"), { swipe(".", -40f, 0f) })
+        check(item(t, "(", "긋기 자판"), { swipe("9", 0f, -40f) })
+        assertEquals("( = 9 키에서 위로", item(t, "(", "긋기 자판").howTo)   // the place it really has (FSS#75)
         check(item(t, "?", "긋기 자판"), { swipe("/", 0f, -40f) })
+    }
+
+    /**
+     * PR-30 (FSS#75, SWIPE 7·8): every cell of the owner's table through the real engine and dispatcher into the editor.
+     * Each cell comes out as exactly that text: nothing composing, no case change, no variation selector; `,` → is the border = its tap.
+     */
+    @Test
+    fun `PR-30 every cell of the swipe symbol table goes into the editor as plain text`() {
+        val cells = listOf(
+            Triple(".", 0f to 0f, "."), Triple(".", -40f to 0f, "<"), Triple(".", 40f to 0f, ">"), Triple(".", 0f to -40f, "'"), Triple(".", 0f to 40f, "_"),
+            Triple(",", 0f to 0f, ","), Triple(",", -40f to 0f, "♥"), Triple(",", 40f to 0f, ","), Triple(",", 0f to -40f, "\""), Triple(",", 0f to 40f, "★"),
+            Triple("5", 0f to 0f, "5"), Triple("5", -40f to 0f, "-"), Triple("5", 40f to 0f, "+"), Triple("5", 0f to -40f, "%"), Triple("5", 0f to 40f, "×"),
+        )
+        for ((label, d, want) in cells) {
+            val r = run()
+            r.swipe(label, d.first, d.second)
+            assertEquals("$label $d", want, r.input.editor.text)
+            assertEquals("$label $d", "", r.input.editor.composing)
+        }
     }
 
     @Test

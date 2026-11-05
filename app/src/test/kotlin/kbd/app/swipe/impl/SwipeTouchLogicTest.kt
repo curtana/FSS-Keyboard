@@ -431,10 +431,10 @@ class SwipeTouchLogicTest {
         assertEquals("", mapper.pendingGlyph())
         val s = centre("symbol").copy(t = 200)
         logic.down(0, s)
-        val pts = path(s, 40f, 0f, 20, 200) // → exit: ) (issue #208)
+        val pts = path(s, 40f, 0f, 20, 200) // → exit: > (FSS#75)
         logic.move(pts)
         logic.up(0, pts.last().copy(t = 230))
-        assertEquals(listOf("5" to false, ")" to false), host.texts)
+        assertEquals(listOf("5" to false, ">" to false), host.texts)
     }
 
     @Test
