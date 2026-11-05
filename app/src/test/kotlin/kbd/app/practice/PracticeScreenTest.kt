@@ -186,11 +186,20 @@ class PracticeScreenTest {
     }
 
     @Test
-    fun `PR-28 a double consonant on the real pad - the shift stroke is no action, then the consonant, then the space (FSS#72)`() {
+    fun `PR-28 a double consonant on the real pad - without shift wrong and both cells marked, the shift stroke is no action, then right (FSS#72)`() {
         val flow = openAt(PracticeTopics.GRAFFITI_KO, "ㄸ")
         compose.onNodeWithText("쓸 것: ㄸ (시프트 + ㄷ)").assertExists()
         assertEquals(scrollFor(panelNow(), GuideSection.HANGUL, "ㄷ"), panelNow().scrollDp, 0.01f)   // the base cell is in view from the start
         compose.mainClock.autoAdvance = false
+        drawTemplate("ko_d")                                              // no shift stroke: ㄷ, closed by the space, is ✗
+        pressSpace()
+        assertEquals(Verdict.WRONG, flow.verdict)
+        assertEquals("ㄸ = 시프트(아래에서 위로) → ㄷ → 스페이스", flow.howTo)
+        idle()
+        compose.mainClock.advanceTimeByFrame()                            // the new try's keyboard is built
+        compose.waitForIdle()
+        assertEquals(setOf("ㄷ", "ㄲ"), panelNow().highlight)              // the consonant's cell and the guide's shift cell
+        assertEquals(scrollFor(panelNow(), GuideSection.HANGUL, "ㄷ"), panelNow().scrollDp, 0.01f)
         draw(listOf(60f to 120f, 60f to 80f, 60f to 40f))                 // ↑: nothing shows, nothing is judged
         assertEquals(null, flow.verdict)
         assertEquals("", flow.echo)

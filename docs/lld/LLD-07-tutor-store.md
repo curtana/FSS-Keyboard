@@ -187,7 +187,7 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `row_height_dp` | 48, 고를 수 있는 범위 40~64 | FR-SET-06, NFR-06, TBD-16(DCR-14 결정) |
 | `graffiti_letter_ratio` | 2/3 (문자 2 : 숫자 1). 고를 수 있는 값은 1/2(1 : 1)·2/3(2 : 1)·3/4(3 : 1) 셋뿐 | FR-GRF-01, FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | `tutor_auto_started` | false | FR-TUT-01: 첫 실행에 주제 목록을 보였는가(2.5). 값 이름은 `practiceListShown`, 키 이름은 옛 것 그대로라 옛 튜터를 이미 연 설치본은 목록을 다시 열지 않는다 |
-| `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
+| `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti_ko`·`graffiti_en`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
 | `graffiti_enabled` (0.25) | **true** | FR-SET-08(오너 결정 2026-11-02, FSS#31): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절) |
 | `swipe_enabled` (0.25) | **true** | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
 | `key_portrait_dp`, `align_portrait` (0.27) | 없음(= 꽉 채움), `CENTER` | FR-CMN-14 ②③, FR-SET-09(FSS#25). 키 한 칸 폭(Float, dp)과 정렬 이름(`LEFT`·`CENTER`·`RIGHT`). 읽을 때 키 폭은 `KeyboardWidth.snap`(정수 dp, 32~160 안, D-33과 같은 생각). 세로 슬라이더 위 끝(꽉 채움)은 키를 지운다(없음 = 꽉 채움). 모르는 정렬 이름은 `CENTER` |

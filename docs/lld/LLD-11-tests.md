@@ -958,7 +958,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | PR-25 | `PracticeTopics`, `GuideCatalog`(0.51) | 두 그래피티 주제 | 목표 차례가 자음 14·쌍자음 5·가·고 / a~z·1, 모든 항목의 `guideCells`가 그 구획에 있는 칸 이름(없어진 쌍자음 칸을 가리키지 않음) | FR-GRF-09b, FSS#72 |
 | PR-26 | 그래피티 항목(0.51) | ㄱ에 ㄴ + 스페이스 / ㄲ에 시프트 없이 ㄱ + 스페이스 / a에 ↑ + a | 쓰는 중 대기, 스페이스에 ✗ / ✗ / ↑ 뒤 대기, `A`로 ✗ | SWIPE 10.1, 10.2, FSS#72 |
 | PR-27 | `PracticeFlow`(`graffiti_en`, 0.51) | 20항목 뒤 [그만] → 다시 열기 → 끝까지 | 표시 없음, 다시 a부터 / 끝 화면, `graffiti_en` 표시 | SWIPE 10.1, FSS#72 |
-| PR-28 | 연습 화면(`PracticeScreen` + 실제 템플릿·패드, Robolectric·Compose, 0.51) | ㄸ 항목에서 터치로 ↑, ko_d, 패드 스페이스 | 안내표가 ㄷ 칸으로 넘어가 있음, 쓸 것: ㄸ (시프트 + ㄷ) / ↑ 뒤 판정·표시 없음 / ㄸ 표시, 대기 / ✓ | SWIPE 10.1 ③, FSS#72 |
+| PR-28 | 연습 화면(`PracticeScreen` + 실제 템플릿·패드, Robolectric·Compose, 0.51) | ㄸ 항목에서 터치로 시프트 없이 ko_d + 패드 스페이스, 이어서 ↑, ko_d, 패드 스페이스 | 안내표가 ㄷ 칸으로 넘어가 있음, 쓸 것: ㄸ (시프트 + ㄷ) / ✗, 새 시도의 안내표가 ㄷ·ㄲ 칸 강조, ㄷ 칸 자리 / ↑ 뒤 판정·표시 없음 / ㄸ 표시, 대기 / ✓ | SWIPE 10.1 ③, FSS#72 |
 | PR-29 | 〃 | q 항목에서 터치로 en_a, en_q | 처음부터 Q 칸이 보이고 강조 없음 / ✗, 쓰는 법, 새 시도의 안내표가 Q 강조 / 바로 ✓ | SWIPE 10.1 ③, 10.2, FSS#72 |
 | TH-10 | `ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth` | 51 / 처음 / 50 / 101.6 | 20.4 / 20 / 20 / 40.64, `minCrossDp`는 8 그대로 | HLD 7.2, PM 결정 B |
 
