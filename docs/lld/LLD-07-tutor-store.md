@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.31** (2026-11-03)
+- 버전 **0.32** (2026-11-05)
+- 0.32(FSS#72, SRS 0.79 FR-TUT-02·11, SWIPE 0.56 10.1): 그래피티 주제 `graffiti`를 `graffiti_ko`(21항목)·`graffiti_en`(27항목)으로 나눴다(2.2, 주제 다섯·63항목). `consonant`·`double`·`letter` 도움 함수, `guideSection()`을 `BoardFactory`에서 `PracticeItem` 확장으로 옮김, `BoardFactory`가 `panel.reveal = guideCells`로 목표 칸을 처음부터 보임(2.3, LLD-05 0.33). `steps`의 `""` = 시프트 획 뒤. 판정 `PracticeItemJudge`와 `PracticeFlow`는 바뀌지 않았다: 자음만 쓰는 항목은 지금 `commit`으로 스페이스 뒤 ✓다. 시험 PR-01·PR-07 고침, PR-24~PR-29 새로.
 - 0.31(FSS#57, SRS 0.76 FR-DSP-09·FR-SET-02, SWIPE 0.55 9.3): 설정 `showStrokeTrail`(키 `show_stroke_trail`, 기본 true, 6.1)과 설정 화면 "안내 표시" 묶음의 "획 자국" 줄(7절, 현재 글자 크게 보기 바로 다음).
 - 0.30(FSS#54 버그·PM 결정 A, SWIPE 0.54 10.2): **✓ 뒤 다음 항목으로 넘어갈 때 목표 줄이 바뀌지 않던 버그** — `PracticeFlow`의 값이 일반 변수여서, 인자(`flow`·`redraw`)가 같은 화면 함수(`Item` 등)를 Compose가 건너뛰어(strong skipping) 다시 그리지 않았다(판정·자판은 다음 항목, 화면 글자는 앞 항목). `PracticeFlow`의 값을 스냅숏 상태(`mutableStateOf`)로 바꾸고 `tick`·`redraw`를 없앴다(2.3). ✓ 뒤 `holding`: 맞힌 항목을 `RIGHT_HOLD_MS`(1000ms) 보인 뒤 화면이 `advance()`를 부르고, 그동안 `BoardFrame`은 그때 시작한 터치를 통째로 받지 않으며 `onPress`·`onAction`은 아무 일도 하지 않는다. 시험 PR-04·PR-06·PR-08 고침, PR-22·PR-23 새로.
 - 0.29(FSS#44 오너 결정, SRS 0.74 FR-SET-09, HLD 0.67): 설정 화면 "자판" 묶음의 키 크기·정렬을 **방향마다 상자 하나**로 — "세로 화면" 상자·"가로 화면" 상자(`OutlinedCard`), 상자 안에 "키 크기"·"정렬". 지금 화면 방향(`LocalConfiguration.orientation`, 가로가 아니면 세로) 상자의 제목 줄 오른쪽 끝에 "지금 화면". 두 상자 늘 보임(7절).
@@ -45,20 +46,20 @@ enum class PracticeBoard { TAP_QWERTY, SWIPE, GRAFFITI }      // 항목의 연�
 data class PracticeItem(
     val target: String, val board: PracticeBoard, val howTo: String,
     val steps: List<String>? = null,       // 탭 자판이 아닌 항목: 동작마다 편집기에 남는 글자열(마지막 = target, 끝 스페이스 전). 0.28부터 판정에 안 씀
-    val note: String? = null,              // 목표 줄에 붙이는 짧은 말("긋기 자판", "천지인 키", "숫자 영역")
+    val note: String? = null,              // 목표 줄에 붙이는 짧은 말("긋기 자판", "천지인 키", "숫자 영역", "시프트 + ㄷ")
     val guideCells: List<String> = emptyList(),   // 그래피티 ✗ 때 강조할 안내표 칸 이름
     val lang: GraffitiLang? = null,        // 그래피티 항목의 패드 언어
 )
 data class PracticeTopic(val id: String, val title: String, val summary: String, val time: String,
                          val intro: List<String>, val items: List<PracticeItem>,
-                         val mode: InputMode? = null) {   // 0.25: 끌 수 있는 키보드 모드의 주제(graffiti = GRAFFITI, swipe = SWIPE)
+                         val mode: InputMode? = null) {   // 0.25: 끌 수 있는 키보드 모드의 주제(graffiti_ko·graffiti_en = GRAFFITI, swipe = SWIPE)
     fun offInKeyboard(enabled: Set<InputMode>): Boolean    // mode != null && mode ∉ enabled
 }
 enum class Verdict { PENDING, RIGHT, WRONG }
 ```
 
 - 화면 문구 가운데 주제 이름·한 줄 설명·어림 시간·설명·쓰는 법은 `PracticeTopics`의 Kotlin 상수다(시험이 그대로 읽음). 단추·제목은 `strings_settings.xml`의 `practice_*`.
-- **`steps`(LLD 결정 D-65, 0.28 바뀜):** 탭 자판이 아닌 항목의 필순대로 넣었을 때 **각 동작 뒤 편집기의 글자열**이다. 글자열은 조합 중 글자와 임시 ㆍ·‥까지 포함한 실제 표시다(예: 고 = `ㄱ` → `ㄱㆍ` → `고`). 이 값은 실제 엔진으로 확인한 값이고, 시험 PR-10~PR-12·PR-16·PR-20이 항목의 필순대로 실제 엔진에 넣어 같음을 지킨다. 0.27까지는 판정이 이 값과 동작마다 비교했으나, 0.28부터 판정은 확정된 글자로만 한다(2.4, FSS#43: 조합 중인 기·ㄱㆍ는 아직 결과가 아니다).
+- **`steps`(LLD 결정 D-65, 0.28 바뀜):** 탭 자판이 아닌 항목의 필순대로 넣었을 때 **각 동작 뒤 편집기의 글자열**이다. 글자열은 조합 중 글자와 임시 ㆍ·‥까지 포함한 실제 표시다(예: 고 = `ㄱ` → `ㄱㆍ` → `고`, 쌍자음 ㄸ = 시프트 획 뒤 `` → `ㄸ`). 이 값은 실제 엔진으로 확인한 값이고, 시험 PR-10~PR-12·PR-16·PR-20·PR-24가 항목의 필순대로 실제 엔진에 넣어 같음을 지킨다. 0.27까지는 판정이 이 값과 동작마다 비교했으나, 0.28부터 판정은 확정된 글자로만 한다(2.4, FSS#43: 조합 중인 기·ㄱㆍ는 아직 결과가 아니다).
 
 ### 2.2 주제와 항목 (SWIPE 10.1, 설계 권장 글자 그대로)
 
@@ -66,14 +67,17 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 |---|---|---|
 | ① 영문 대문자(`upper`) | 탭 자판 | `A`(a 키에서 위로), `Hi`(h 키에서 위로 → i 탭), `OK`(o 키에서 위로 → k 키에서 위로) |
 | ② 기호 입력(`symbol`) | 탭 자판 3, 긋기 자판 3 | `!`(1 키에서 위로), `?`(/ 키에서 위로), `[`(i 키에서 왼쪽으로) / 긋기: `@`(2 키에서 위로, `@`), `(`(. 키에서 왼쪽으로, `(`), `?`(/ 키에서 위로, `?`) |
-| ③ 그래피티(`graffiti`) | 패드 + 안내표 | `가`(ㄱ → ㅣ → 탭 → 스페이스 / `ㄱ`,`기`,`가`, 칸 ㄱ·ㅏ), `고`(ㄱ → 탭 → ㅡ → 스페이스 / `ㄱ`,`ㄱㆍ`,`고`, 칸 ㄱ·ㅗ), `a`(영문, 칸 A), `1`(숫자 영역, 칸 1) |
+| ③-1 그래피티 한글(`graffiti_ko`) | 패드 + 안내표 | 자음 14 `ㄱ ㄴ ㄷ ㄹ ㅁ ㅂ ㅅ ㅇ ㅈ ㅊ ㅋ ㅌ ㅍ ㅎ`(`consonant`: 안내표의 <글자> 칸처럼 → 스페이스 / `<글자>`, 칸 <글자>), 쌍자음 5 `ㄲ ㄸ ㅃ ㅆ ㅉ`(`double`: 시프트(아래에서 위로) → <자음> → 스페이스 / ``,`<쌍자음>`, 칸 <자음>·ㄲ, note `시프트 + <자음>`), `가`(ㄱ → ㅣ → 탭 → 스페이스 / `ㄱ`,`기`,`가`, 칸 ㄱ·ㅏ), `고`(ㄱ → 탭 → ㅡ → 스페이스 / `ㄱ`,`ㄱㆍ`,`고`, 칸 ㄱ·ㅗ) |
+| ③-2 그래피티 영문(`graffiti_en`) | 패드 + 안내표 | 소문자 26 `a`~`z`(`letter`: 안내표의 <대문자> 칸처럼 / `<글자>`, 칸 <대문자>), `1`(숫자 영역, 칸 1) |
 | ④ 긋기(`swipe`) | 긋기 자판 | `가`(`ㄱ`,`기`,`가`), `고`(`ㄱ`,`ㄱㆍ`,`고`), `아`(`ㅇ`,`이`,`아`), `과`(`ㄱ`,`ㄱㆍ`,`고`,`괴`,`과`), `의`(`ㅇ`,`으`,`의`), 천지인 키 `가`(`ㄱ`,`기`,`가`) |
 
 - 긋기 자판의 기호 키 이름은 키에 적힌 탭 기호로 부른다(기호 키 = `.`, 기호3 키 = `/`). 긋기 항목의 쓰는 법은 SWIPE 10.2 위치 말 그대로다(예: 과 = `ㄱ 탭 → 자음 아래에 아래로 → 점 아래에 오른쪽으로 → ㅡ 오른쪽 끝에서 아래로 → ㅣ 오른쪽에 오른쪽으로`).
-- 그래피티 한글 쓰는 법은 자모 차례 + 스페이스(`가 = ㄱ → ㅣ → 탭 → 스페이스`), 영문·숫자는 `<목표> = 안내표의 <글자> 칸처럼`이다(SWIPE 10.2). 긋기 한글 항목(④의 여섯)도 끝에 `→ 스페이스`를 붙인다. 긋기 자판의 기호 항목(②)·영문·숫자는 넣는 즉시 확정되므로 붙이지 않는다(0.28, FSS#43).
-- 설명 추가(0.28): ③ "한글은 글자를 다 쓰면 아래 줄의 스페이스를 눌러요. 그때 맞았는지 봐요.", ④ "글자를 다 쓰면 스페이스를 눌러요. 그때 맞았는지 봐요(쓰는 중의 기·ㄱㆍ는 아직 글자가 아니에요)."
-- 설명(주제마다 3~5줄)은 SWIPE 10.1 "설명(핵심)" 칸을 말로 풀어 쓴 것이고 한 화면을 넘지 않는다. ④에는 "떨어져도 돼요"를 둔다.
-- 시험: PR-01.
+- 그래피티 한글 쓰는 법은 자모 차례 + 스페이스(`가 = ㄱ → ㅣ → 탭 → 스페이스`), 영문·숫자는 `<목표> = 안내표의 <글자> 칸처럼`이다(SWIPE 10.2). 자음은 `ㄱ = 안내표의 ㄱ 칸처럼 → 스페이스`, 쌍자음은 `ㄸ = 시프트(아래에서 위로) → ㄷ → 스페이스`다(0.32). `SHIFT_CELL` = `ㄲ`: 안내표에서 시프트를 안내하는 유일한 칸이다(LLD-05 10.1, 시프트 칸 자체는 제어 획 구획이라 항목 구획에 보이지 않는다). 긋기 한글 항목(④의 여섯)도 끝에 `→ 스페이스`를 붙인다. 긋기 자판의 기호 항목(②)·영문·숫자는 넣는 즉시 확정되므로 붙이지 않는다(0.28, FSS#43).
+- 설명 추가(0.28): ③-1 "글자를 다 쓰면 아래 줄의 스페이스를 눌러요. 그때 맞았는지 봐요.", ④ "글자를 다 쓰면 스페이스를 눌러요. 그때 맞았는지 봐요(쓰는 중의 기·ㄱㆍ는 아직 글자가 아니에요)."
+- 설명(주제마다 3~6줄)은 SWIPE 10.1 "설명(핵심)" 칸을 말로 풀어 쓴 것이고 한 화면을 넘지 않는다. ④에는 "떨어져도 돼요"를 둔다.
+- **자음·쌍자음 판정(0.32):** 새 판정은 없다. 시프트 획은 글자도 조합도 바꾸지 않아 `BoardFrame`이 동작으로 세지 않는다. 자음은 조합 중이라 `commit`이 PENDING이고, 패드의 스페이스(`finishAll` + `" "`)로 확정되어 RIGHT다. 틀린 자음도 스페이스에서 WRONG이다. 소문자 항목에 시프트를 먼저 그으면 대문자가 확정되어 WRONG이다(PR-26).
+- **옛 저장값(0.32):** 설정 `practiceDone`에 남은 옛 `graffiti`는 읽어도 어느 주제와도 맞지 않아 아무 일도 하지 않는다. 지우지 않는다.
+- 시험: PR-01, PR-24, PR-25, PR-26.
 
 ### 2.3 화면과 연습 자판 (`PracticeActivity`, `PracticeFlow`, `PracticeInput`)
 
@@ -101,14 +105,14 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 **연습 자판(`BoardFactory.build`, 시도마다 새로):** 실제 뷰를 `BoardFrame` 안에 둔다.
 - 탭 자판: `TapKeyboardView` + `TapLayouts.QWERTY`(편집 줄 포함, 오너 결정 A), 높이 = 줄 수 × 설정 줄 높이.
 - 긋기 자판: `SwipeModuleProvider.get().createSwipeView(context, input)` — 같은 `SwipeKeyboardView`라 획 안내·현재 글자·다음 글자·획 자국·가운데 글자가 같은 시점·설정으로 나온다(FR-TUT-11, 입력창이 없어 비밀번호 판별은 해당 없음).
-- 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만 — 한글 / 영문 / 숫자, `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
+- 그래피티: 위에 `GraffitiGuidePanel`(높이 200dp, ✕ 없음 `showClose = false`, 그 항목의 구획만(`PracticeItem.guideSection()`) — 한글 / 영문 / 숫자, `reveal` = 항목의 `guideCells`(0.32: 목표 칸이 처음부터 보임, 강조 없음), `highlight` = `PracticeFlow.highlight`), 아래에 `GraffitiPadView`(실제 비율 설정). 안내표는 늘 펼친 상태이고 패드를 덮지 않는다. **구획은 화면 크기와 상관없이 늘 그 항목의 것만** 보인다(LLD 결정 D-67: 안내표는 길어서 어차피 스크롤한다).
 - **`BoardFrame`:** 뷰의 터치를 가로채지 않고 지켜본다. 다른 손가락이 없을 때 누르면 `errored`를 끄고 그때의 글자열을 기억한 뒤 `PracticeFlow.onPress()`. 뗄 때는 뷰가 처리한 **뒤에** 판정을 `post`한다(엔진이 스스로 `post`한 일도 끝난 뒤). 탭 자판이 아니면 글자열이나 그 조합 부분이 바뀌었거나(그래피티 끝 획처럼 확정만 하는 동작, 0.28) 오류 진동이 있었을 때만 동작으로 센다(아무 일도 하지 않는 키·안내표 스크롤은 동작이 아님). `reversed` = 그 터치가 8dp를 넘게 위나 왼쪽으로 갔는가(덧붙임용). `PracticeFlow.holding`일 때 시작한 터치(첫 손가락이 내려온 때 기준)는 뗄 때까지 통째로 소비해 자판에 주지 않는다(0.30).
 - **폭·정렬(0.27, FSS#25, SRS FR-CMN-14 ⑥):** `BoardFrame`은 화면 폭(가용 폭)을 받아 그 화면 방향의 설정(`portraitWidth`·`landscapeWidth`)으로 `KeyboardWidth.place`(LLD-08 7.2, 짧은 변 = `displayMetrics`의 작은 쪽)를 구해 자식(연습 자판, 그래피티면 안내표 + 패드 묶음)을 그 폭으로 재고 `span.left`에 둔다. 남는 자리는 키보드 배경색이고 터치를 소비한다. 자판 밖에서 내려온 포인터는 `OffKeyboardPointers`로 걸러 자판에 가지 않고 `onPress`·`onAction`도 부르지 않는다(연습 동작이 아님). 설정은 화면을 열 때 한 번 읽은 값이다(2.3 처음)
 
 **화면(Compose):** 위에 제목, 주제 목록(이름·✓·어림 시간·한 줄 설명, [닫기]) / 설명([그만], [시작]) / 항목(주제 이름 n / N, `쓸 것: <목표> (<note>)`, 입력 표시 64sp + ✓ 초록·✗ 빨강(Material green 700·red 700), 쓰는 법, 덧붙임, [그만]) / 끝("다 했어요", [주제 목록으로]). 아래에 연습 자판. 회전해도 다시 만들지 않는다(매니페스트 `configChanges`).
 - **꺼진 모드 표시(0.25, FR-CMN-03f ⑦, SWIPE 10.0):** 주제 목록은 설정 `flow`의 `enabledModes`로 `offInKeyboard`가 참인 주제(그래피티·긋기)의 한 줄 설명 아래에 `practice_mode_off`("키보드에서 꺼져 있음", 작은 글자·`outline` 색)를 붙인다. 주제는 그대로 열고 할 수 있다(연습 자판은 앱 안의 화면). 기호 주제(②)의 긋기 자판 항목은 그대로 둔다(표시도 없음).
 - **맞힌 항목 보이기(0.30):** `LaunchedEffect(flow.holding)`이 켜지면 `RIGHT_HOLD_MS` 기다렸다 `advance()`. [그만]으로 그사이 나가면 `holding`이 꺼져 아무 일도 없다. 마지막 항목의 `markDone`은 홀드 뒤가 아니라 ✓ 때 부르므로 그사이 [그만]으로 나가도 주제 ✓는 남는다.
-- 시험: PR-02~PR-08, PR-10~PR-14, PR-16, PR-20~PR-23, 실기기 DV-11·DV-24·DV-31·DV-33.
+- 시험: PR-02~PR-08, PR-10~PR-14, PR-16, PR-20~PR-23, PR-27~PR-29, 실기기 DV-11·DV-24·DV-31·DV-33.
 
 ### 2.4 항목 판정 `PracticeItemJudge` (FR-TUT-12, SWIPE 10.2, 안드로이드 없음)
 
@@ -183,7 +187,7 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `row_height_dp` | 48, 고를 수 있는 범위 40~64 | FR-SET-06, NFR-06, TBD-16(DCR-14 결정) |
 | `graffiti_letter_ratio` | 2/3 (문자 2 : 숫자 1). 고를 수 있는 값은 1/2(1 : 1)·2/3(2 : 1)·3/4(3 : 1) 셋뿐 | FR-GRF-01, FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | `tutor_auto_started` | false | FR-TUT-01: 첫 실행에 주제 목록을 보였는가(2.5). 값 이름은 `practiceListShown`, 키 이름은 옛 것 그대로라 옛 튜터를 이미 연 설치본은 목록을 다시 열지 않는다 |
-| `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
+| `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti_ko`·`graffiti_en`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
 | `graffiti_enabled` (0.25) | **true** | FR-SET-08(오너 결정 2026-11-02, FSS#31): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절) |
 | `swipe_enabled` (0.25) | **true** | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
 | `key_portrait_dp`, `align_portrait` (0.27) | 없음(= 꽉 채움), `CENTER` | FR-CMN-14 ②③, FR-SET-09(FSS#25). 키 한 칸 폭(Float, dp)과 정렬 이름(`LEFT`·`CENTER`·`RIGHT`). 읽을 때 키 폭은 `KeyboardWidth.snap`(정수 dp, 32~160 안, D-33과 같은 생각). 세로 슬라이더 위 끝(꽉 채움)은 키를 지운다(없음 = 꽉 채움). 모르는 정렬 이름은 `CENTER` |

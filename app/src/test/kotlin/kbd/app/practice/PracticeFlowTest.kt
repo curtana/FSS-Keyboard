@@ -16,23 +16,23 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 PR-01..PR-09, PR-14, PR-22 (FSS#17, FSS#43, FSS#54, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
+/** LLD-11 PR-01..PR-09, PR-14, PR-22, PR-27 (FSS#17, FSS#43, FSS#54, FSS#72, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
 class PracticeFlowTest {
 
     @get:Rule
     val tmp = TemporaryFolder()
 
     @Test
-    fun `PR-01 four topics, 19 items, in the SWIPE 10_1 order`() {
+    fun `PR-01 five topics, 63 items, in the SWIPE 10_1 order`() {
         val t = PracticeTopics.ALL
-        assertEquals(listOf("upper", "symbol", "graffiti", "swipe"), t.map { it.id })
-        assertEquals(listOf(3, 6, 4, 6), t.map { it.items.size })
-        assertEquals(19, t.sumOf { it.items.size })
+        assertEquals(listOf("upper", "symbol", "graffiti_ko", "graffiti_en", "swipe"), t.map { it.id })
+        assertEquals(listOf(3, 6, 21, 27, 6), t.map { it.items.size })
+        assertEquals(63, t.sumOf { it.items.size })
         assertEquals(listOf("A", "Hi", "OK"), PracticeTopics.UPPER.items.map { it.target })
         assertEquals(listOf("!", "?", "[", "@", "(", "?"), PracticeTopics.SYMBOL.items.map { it.target })
         assertEquals(listOf(PracticeBoard.TAP_QWERTY, PracticeBoard.TAP_QWERTY, PracticeBoard.TAP_QWERTY,
             PracticeBoard.SWIPE, PracticeBoard.SWIPE, PracticeBoard.SWIPE), PracticeTopics.SYMBOL.items.map { it.board })
-        assertTrue(PracticeTopics.GRAFFITI.items.all { it.board == PracticeBoard.GRAFFITI && it.guideCells.isNotEmpty() })
+        assertTrue((PracticeTopics.GRAFFITI_KO.items + PracticeTopics.GRAFFITI_EN.items).all { it.board == PracticeBoard.GRAFFITI && it.guideCells.isNotEmpty() })
         assertTrue(t.all { it.intro.isNotEmpty() && it.items.all { i -> i.howTo.startsWith(i.target + " = ") } })
     }
 
@@ -41,7 +41,7 @@ class PracticeFlowTest {
         val on = Settings.DEFAULT.enabledModes
         assertTrue(PracticeTopics.ALL.none { it.offInKeyboard(on) })
         val off = Settings.DEFAULT.copy(graffitiEnabled = false, swipeEnabled = false).enabledModes
-        assertEquals(listOf("graffiti", "swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(off) }.map { it.id })
+        assertEquals(listOf("graffiti_ko", "graffiti_en", "swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(off) }.map { it.id })
         val noSwipe = Settings.DEFAULT.copy(swipeEnabled = false).enabledModes
         assertEquals(listOf("swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(noSwipe) }.map { it.id })   // symbol's swipe items stay
     }
@@ -163,14 +163,36 @@ class PracticeFlowTest {
 
     @Test
     fun `PR-07 graffiti wrong highlights the target cells, right clears them`() {
-        val f = PracticeFlow(listOf(PracticeTopics.GRAFFITI))
-        f.open(PracticeTopics.GRAFFITI)
+        val f = PracticeFlow(listOf(PracticeTopics.GRAFFITI_KO))
+        f.open(PracticeTopics.GRAFFITI_KO)
         f.start()
-        f.onAction("ㄴ", "ㄴ")
-        assertEquals(listOf("ㄱ", "ㅏ"), f.highlight)
-        f.onAction("ㄱ", "ㄱ", composing = "ㄱ"); f.onAction("기", "기", composing = "기"); f.onAction("가", "가", composing = "가")
-        f.onAction("가 ", "가")
+        f.onAction("ㄴ ", "ㄴ")                                           // ㄱ written as ㄴ, closed by the space
+        assertEquals(listOf("ㄱ"), f.highlight)
+        assertEquals("ㄱ = 안내표의 ㄱ 칸처럼 → 스페이스", f.howTo)
+        f.onAction("ㄱ", "ㄱ", composing = "ㄱ")
+        f.onAction("ㄱ ", "ㄱ")
         assertTrue(f.highlight.isEmpty())
+        f.advance()
+        assertEquals("ㄴ", f.item?.target)
+    }
+
+    @Test
+    fun `PR-27 a long topic ends and is marked at its last item, stop on the way starts over and marks nothing (FSS#72)`() {
+        val done = ArrayList<String>()
+        val t = PracticeTopics.GRAFFITI_EN
+        val f = PracticeFlow(listOf(t)) { done += it }
+        f.open(t)
+        f.start()
+        for (it in t.items.take(20)) { f.onAction(it.target, it.target); f.advance() }
+        assertEquals("u", f.item?.target)
+        f.stop()
+        assertTrue(done.isEmpty())
+        f.open(t)
+        f.start()
+        assertEquals("a", f.item?.target)
+        for (it in t.items) { f.onAction(it.target, it.target); f.advance() }
+        assertEquals(PracticeFlow.Screen.DONE, f.screen)
+        assertEquals(listOf("graffiti_en"), done)
     }
 
     @Test
