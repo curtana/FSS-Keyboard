@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.48** (2026-11-05)
+- 버전 **0.49** (2026-11-05)
+- 0.49(FSS#68, SRS 0.78·LLD-05 0.31): 문구 정리. BS-18·GS-18의 한 획 쌍자음 사례는 제품 템플릿이 아니라 시험 코드 안에서 만든 시험용 템플릿(`ko_gg`) 사례임을 적었고, BS-18의 SRS 행은 시프트 획 + ㄱ 사례다. GS-18에 시험이 실제로 보는 shift 대기 사례를 적었다. 시험 코드는 그대로다.
 - 0.48(FSS#52·FSS#64, LLD-05 0.30): GR-20 삭제(한 획 쌍자음 없음), 6.1에 GR-38(수평획이 긴 ㄴ)·GR-39(넣지 않은 오너 획 95 % 이상), GC-02·GC-06 수 조정. `strokes/dev`·`eval`에서 쌍자음 획 파일을 뺐다.
 - 0.47(FSS#62, LLD-05A 0.16): m 오른쪽 키가 탭 `=`, ← `-`가 되어 TK-09·TK-12·TK-24·TA-01의 기대값과 설명을 맞췄다. 라벨은 `=`이고 키 id는 `minus` 그대로다.
 - 0.46(FSS#57, LLD-04 0.33·LLD-07 0.31): 9.1에 SW-08c(획 자국 설정 끔·다시 켬), SS-01 기본값에 획 자국 true, SS 쓰기 시험에 `showStrokeTrail`, 7.7에 KR-07(`redrawModeView`).
@@ -161,7 +162,7 @@
 | BS-15 | 그래피티 | 가가 (ㄱ ㅣ 탭 ㄱ ㅣ 탭) | 가기 | 15 |
 | BS-16 | 그래피티 | 각 | 가 | 16 |
 | BS-17 | 그래피티 | 각 ⌫, 탭 | 가ㆍ | 17 |
-| BS-18 | 그래피티 | ㄲ (시프트 획 + ㄱ) / ㄲ (붙여 쓴 한 획) | "" / "" | 18 |
+| BS-18 | 그래피티 | ㄲ (시프트 획 + ㄱ) / ㄲ (시험용 템플릿 `ko_gg` 한 획. 제품 템플릿에는 없고 SRS 사례도 아님, LLD-05 5.2 20행) | "" / "" | 18 |
 | BS-19 | 그래피티 | 가 + 시프트 획 | 가, `shiftPending == false` | 19 |
 | BS-23 | 그래피티 | 조합 없음, 앞 글자 "한" + 숫자 영역 탭(구두점 시프트 대기) | 한(편집기 호출 없음), `punctPending == false` | 20 (DCR-05) |
 | BS-24 | 그래피티 | 기 + ㅣ(무시됨) ⌫ | ㄱ (ㅣ 하나만 되돌림, 조립기 Empty) | 21 (DCR-04) |
@@ -600,7 +601,7 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 | GS-15 | LineDown(숫자) | CommitText("1") | 행 17 |
 | GS-16 | EN, LineDown(문자) / shift 뒤 / capsLock | "i" / "I" / "I" | 행 18 |
 | GS-17 | shift, Symbol(ko_g) | Consonant(ㄲ), shift 끔 | 행 19, FR-GRF-03a |
-| GS-18 | Symbol(ko_gg 한 획) | Consonant(ㄲ) | 행 20 |
+| GS-18 | Symbol(시험용 템플릿 `ko_gg`, 제품 템플릿에는 없음) / shift 뒤 | Consonant(ㄲ) / Consonant(ㄲ), shift 끔 | 행 20 |
 | GS-19 | KO, Symbol(SPACE_V) | Space | 행 21, FR-GRF-06 |
 | GS-20 | KO, Symbol(FINISH_J) | Finish | 행 22, FR-GRF-05b |
 | GS-21 | EN, Symbol(en_a) / shift / capsLock | a / A / A | 행 23 |
