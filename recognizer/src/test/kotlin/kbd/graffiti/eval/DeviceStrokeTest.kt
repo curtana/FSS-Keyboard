@@ -7,7 +7,7 @@ import org.junit.Test
 /**
  * GR-36 (FSS#47): real tablet strokes in `strokes/device/` must all be recognized. They are raw touches
  * read off the device while "갸" (ㄱ, ㅣ, ㆍ, ㆍ) was written over and over: 84 strokes, 23 of them ㅣ. The long
- * ㅣ strokes end in a short move back up as the finger lifts; seven ㅣ failed before the lift-off tail rule. FSS#52 added ㄴ and ㅂ strokes (`ko_n_*`, `ko_b_*`).
+ * ㅣ strokes end in a short move back up as the finger lifts; seven ㅣ failed before the lift-off tail rule. FSS#52 added ㄴ and ㅂ strokes (`ko_n_*`, `ko_b_*`), FSS#70 the phone's Q and V strokes (`en/`).
  */
 class DeviceStrokeTest {
 
