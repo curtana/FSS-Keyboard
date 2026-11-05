@@ -164,10 +164,10 @@ class SwipeLayoutTest {
         assertEquals(mapOf(Dir.RIGHT to "=", Dir.UP to "?"), s3.exits)   // ← screen edge, ↓ none
         val s = SymbolKeyTable.SYMBOL
         assertEquals(".", s.tap)
-        assertEquals(mapOf(Dir.LEFT to "(", Dir.RIGHT to ")", Dir.UP to ">", Dir.DOWN to "-"), s.exits)
+        assertEquals(mapOf(Dir.LEFT to "<", Dir.RIGHT to ">", Dir.UP to "'", Dir.DOWN to "_"), s.exits)   // FSS#75
         val s2 = SymbolKeyTable.SYMBOL2
         assertEquals(",", s2.tap)
-        assertEquals(mapOf(Dir.LEFT to "\"", Dir.UP to "<", Dir.DOWN to "'"), s2.exits)   // → screen edge
+        assertEquals(mapOf(Dir.LEFT to "♥", Dir.UP to "\"", Dir.DOWN to "★"), s2.exits)   // → screen edge, FSS#75
         assertEquals(s3, SymbolKeyTable.of("symbol3"))
         assertEquals(s, SymbolKeyTable.of("symbol"))
         assertEquals(s2, SymbolKeyTable.of("symbol2"))
@@ -184,11 +184,11 @@ class SwipeLayoutTest {
     }
 
     /**
-     * SL-10 (SWIPE 8 "PC 특수 문자 32개가 모두 한 동작", issue #208): every PC special character is one move on the
-     * swipe keyboard (a number-key exit or a symbol-key tap/exit), and only ( ) appear twice (9·0 ↑ and the symbol key ← →).
+     * SL-10 (SWIPE 8 "PC 특수 문자 32개가 모두 한 동작", issue #208, FSS#75): every PC special character is exactly one move
+     * on the swipe keyboard (a number-key exit or a symbol-key tap/exit); ( ) only on 9·0 ↑ (SRS TBD-28), plus one ♥ and one ★.
      */
     @Test
-    fun `SL-10 the 32 PC special characters are all one move, only parentheses twice`() {
+    fun `SL-10 the 32 PC special characters are one move each, with one heart and one star`() {
         val pc = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~".map { it.toString() }
         assertEquals(32, pc.toSet().size)
         val moves = ArrayList<String>()
@@ -199,9 +199,11 @@ class SwipeLayoutTest {
                 else -> Unit
             }
         }
-        val counts = moves.filter { it in pc }.groupingBy { it }.eachCount()
-        assertEquals(pc.toSet(), counts.keys)
-        assertEquals(mapOf("(" to 2, ")" to 2), counts.filterValues { it > 1 })
+        val counts = moves.filter { it in pc || it == "♥" || it == "★" }.groupingBy { it }.eachCount()
+        assertEquals(pc.toSet() + "♥" + "★", counts.keys)
+        assertEquals(emptyMap<String, Int>(), counts.filterValues { it > 1 })
+        assertEquals("(", NumberKeyTable['9'][Dir.UP])
+        assertEquals(")", NumberKeyTable['0'][Dir.UP])
     }
 
     /** LLD-11 SL-08 (SWIPE 9.5 "자리와 크기", issue #213, FSS#37): C at the top of the consonant area half a row down, centred across, two rows high, 0.85 wide. */
