@@ -96,7 +96,7 @@ class TapKeyResolverTest {
         assertEquals(t("'"), q("comma", exit(LEFT)))
         assertEquals(t("\""), q("comma", exit(RIGHT)))
         assertEquals(t("."), q("period", exit(RIGHT)))
-        assertEquals(t("-"), q("minus", exit(RIGHT)))
+        assertEquals(t("="), q("minus", exit(RIGHT)))
     }
 
     @Test fun `TK-13 up rub QWERTY is superscript`() = assertEquals(t("ᵃ"), q("a", rub(UP)))
@@ -188,7 +188,7 @@ class TapKeyResolverTest {
         }
     }
 
-    @Test fun `TA-01 edit row minus`() = assertSymbolRow("minus", "-", "_", "=", "-", "+")
+    @Test fun `TA-01 the key right of m, tap = and left -`() = assertSymbolRow("minus", "=", "_", "-", "=", "+")   // FSS#62
 
     @Test fun `TA-02 number 1`() = assertSymbolRow("1", "1", "!", "1", "`", "~")
 

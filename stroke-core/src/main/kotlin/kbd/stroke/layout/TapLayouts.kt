@@ -86,7 +86,7 @@ object TapLayouts {
             x += KEY_W
         }
 
-        // Rows 2..4, letters; rows 3 and 4 start with an indent blank; row 4 ends with `-` and ↵.
+        // Rows 2..4, letters; rows 3 and 4 start with an indent blank; row 4 ends with the `=`/`-` key and ↵.
         LETTER_ROWS.forEachIndexed { r, ids ->
             val row = r + 2
             x = 0f
@@ -116,8 +116,8 @@ object TapLayouts {
                 x += INDENT_W
             }
             if (row == 4) {
-                // `-` after m, then ↵ at the right end (#198).
-                sym(row, "minus", KEY_W, KeyAssign("-", up = "_", left = "=", down = "+"))
+                // The `=`/`-` key after m (#198; FSS#62 swapped tap and left), then ↵ at the right end.
+                sym(row, "minus", KEY_W, KeyAssign("=", up = "_", left = "-", down = "+"))
                 fn(row, "enter", 54f, "↵", FunctionKey.ENTER)
             }
         }
