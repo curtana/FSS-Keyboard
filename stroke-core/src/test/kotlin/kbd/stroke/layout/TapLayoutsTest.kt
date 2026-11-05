@@ -148,7 +148,8 @@ class TapLayoutsTest {
     @Test
     fun `symbol assignments follow LLD-05A 3_3 in both layouts`() {
         for (l in layouts) {
-            assertEquals(KeyAssign("-", up = "_", left = "=", down = "+"), l.key("minus").assign)
+            assertEquals(KeyAssign("=", up = "_", left = "-", down = "+"), l.key("minus").assign)   // FSS#62
+            assertEquals("=", l.key("minus").label)
             assertEquals(KeyAssign("1", up = "!", right = "`", down = "~"), l.key("1").assign)
             "234567890".zip("@#$%^&*()").forEach { (n, s) ->
                 assertEquals(KeyAssign(n.toString(), up = s.toString()), l.key(n.toString()).assign)
