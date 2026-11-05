@@ -86,6 +86,7 @@ N = [(0, 1), (0, 0), (1, 1), (1, 0)]
 N_MIRROR = [(0, 0), (0, 1), (1, 0), (1, 1)]                      # 'И' from the top-left
 P = join([(0, 1), (0, 0)], arc(0, 0.27, 0.8, 0.27, -90, 90, 10))
 Q = join(CIRCLE_CCW, [(0.95, 0.0)])                              # 'σ': circle, then a short tail → at the top
+Q_TAIL_OUT = join(arc(0.225, 0.5, 0.225, 0.5, -90, -450, 24), [(1, 0)])  # 'σ' whose tail leaves the loop's width (FSS#70)
 R = join(P, [(1, 1)])
 S = join(arc(0.5, 0.25, 0.5, 0.25, -30, -270, 10), arc(0.5, 0.75, 0.5, 0.25, -90, 150, 10))
 V_HOOK = [(0, 0), (0.4, 1), (0.8, 0), (1, 0.03)]                 # '√': V whose end turns right
@@ -263,7 +264,11 @@ def owner_templates():
     ]
 
 
-ALL_TEMPLATES = TEMPLATES + owner_templates()
+# Recognition-only variants kept out of TEMPLATES: gen_strokes.py draws its samples in the order of that list.
+EXTRA_TEMPLATES = [
+    ("EN_LETTER", "en_q2", "text", "q", [Q_TAIL_OUT], f"{EN} Q written with the tail past the loop's right edge (FSS#70)", False),
+]
+ALL_TEMPLATES = TEMPLATES + EXTRA_TEMPLATES + owner_templates()
 SET_ORDER = ["KO_LETTER", "EN_LETTER", "NUMBER", "PUNCT", "EXTENDED"]
 RULES = {"TAP", "LINE_DOWN", "LINE_UP", "LINE_RIGHT", "DIAG_DOWN_LEFT", "DIAG_DOWN_RIGHT"}
 

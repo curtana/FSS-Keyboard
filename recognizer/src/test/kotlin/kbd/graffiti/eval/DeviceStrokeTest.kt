@@ -7,7 +7,7 @@ import org.junit.Test
 /**
  * GR-36 (FSS#47): real tablet strokes in `strokes/device/` must all be recognized. They are raw touches
  * read off the device while "갸" (ㄱ, ㅣ, ㆍ, ㆍ) was written over and over: 84 strokes, 23 of them ㅣ. The long
- * ㅣ strokes end in a short move back up as the finger lifts; seven ㅣ failed before the lift-off tail rule. FSS#52 added ㄴ and ㅂ strokes (`ko_n_*`, `ko_b_*`).
+ * ㅣ strokes end in a short move back up as the finger lifts; seven ㅣ failed before the lift-off tail rule. FSS#52 added ㄴ and ㅂ strokes (`ko_n_*`, `ko_b_*`), FSS#70 the phone's Q and V strokes (`en/`).
  */
 class DeviceStrokeTest {
 
@@ -37,6 +37,20 @@ class DeviceStrokeTest {
             val s = GraffitiEval.score(folder, list)
             println(s)
             assertTrue("$s misses ${s.misses}", s.accuracy >= HELD_OUT_MIN)
+        }
+    }
+
+    /** FSS#70: the owner's Q, whose tail leaves the loop's width, read as v. The V strokes must stay v. Neither is a template (`en_*` in `strokes/device/`). */
+    @Test
+    fun `GR-40 owner Q strokes with the tail outside the loop are q, V strokes stay v`() {
+        val en = GraffitiEval.load("device").getValue("en")
+        val q = en.filter { it.file.name.startsWith("en_q_") }
+        val v = en.filter { it.file.name.startsWith("en_v_") }
+        assertEquals(22, q.size)
+        assertEquals(10, v.size)
+        for (s in listOf(GraffitiEval.score("Q", q), GraffitiEval.score("V", v))) {
+            println(s)
+            assertEquals("${s.name} misses ${s.misses}", s.total, s.correct)
         }
     }
 

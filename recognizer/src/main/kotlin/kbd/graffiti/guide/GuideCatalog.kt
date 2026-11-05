@@ -43,7 +43,7 @@ sealed interface GuideShape {
 /**
  * The stroke guide's content (SRS FR-GRF-09b, 09c, HLD 5장, LLD-05 §10.1): one list, the same for both
  * languages. Cells point at the built-in templates by id, so the guide draws the strokes the recognizer
- * matches; recognition-only variants (`ko_d2`, `ko_b2`, the owner's `*_oN` strokes and second strokes of one row) are no cells.
+ * matches; recognition-only variants (`ko_d2`, `ko_b2`, `en_q2`, the owner's `*_oN` strokes and second strokes of one row) are no cells.
  * Strokes with no template are not recognised and have no drawing (symbols: "미정").
  */
 object GuideCatalog {
