@@ -40,6 +40,20 @@ class DeviceStrokeTest {
         }
     }
 
+    /** FSS#70: the owner's Q, whose tail leaves the loop's width, read as v. The V strokes must stay v. Neither is a template (`en_*` in `strokes/device/`). */
+    @Test
+    fun `GR-40 owner Q strokes with the tail outside the loop are q, V strokes stay v`() {
+        val en = GraffitiEval.load("device").getValue("en")
+        val q = en.filter { it.file.name.startsWith("en_q_") }
+        val v = en.filter { it.file.name.startsWith("en_v_") }
+        assertEquals(22, q.size)
+        assertEquals(10, v.size)
+        for (s in listOf(GraffitiEval.score("Q", q), GraffitiEval.score("V", v))) {
+            println(s)
+            assertEquals("${s.name} misses ${s.misses}", s.total, s.correct)
+        }
+    }
+
     private companion object {
         const val HELD_OUT_MIN = 95.0
     }

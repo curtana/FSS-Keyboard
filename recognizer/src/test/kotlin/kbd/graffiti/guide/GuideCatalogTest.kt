@@ -107,7 +107,7 @@ class GuideCatalogTest {
     fun `GC-06 every template is in a cell except the recognition-only variants`() {
         val used = cells.flatMap { it.marks }.filterIsInstance<GuideMark.Template>().map { it.id }.toSet()
         val all = templates.sets.values.flatten().filter { it.rule == null }.map { it.id }.toSet()
-        assertEquals(setOf("ko_d2", "ko_b2"), (all - used).filterNot { OWNER_ID.matches(it) }.toSet())
+        assertEquals(setOf("ko_d2", "ko_b2", "en_q2"), (all - used).filterNot { OWNER_ID.matches(it) }.toSet())
         assertTrue(used.all { it in all })
     }
 
