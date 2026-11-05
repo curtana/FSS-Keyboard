@@ -357,7 +357,7 @@ def main():
     ]
     with open(OUT_MD, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(md))
-    print(f"{len(TEMPLATES)} templates -> {OUT_JSON}")
+    print(f"{len(ALL_TEMPLATES)} templates -> {OUT_JSON}")
 
 
 if __name__ == "__main__":
