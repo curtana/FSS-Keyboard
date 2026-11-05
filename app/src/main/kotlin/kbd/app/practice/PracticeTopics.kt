@@ -1,6 +1,7 @@
 package kbd.app.practice
 
 import kbd.app.ime.InputMode
+import kbd.graffiti.guide.GuideSection
 import kbd.graffiti.ink.GraffitiLang
 
 /** The practice keyboard of an item (SWIPE 10.1, HLD 7.1): the real view, the real engine, the fixed thresholds. */
@@ -19,7 +20,7 @@ enum class PracticeBoard {
  * One practice item (LLD-07 §2.2). [target] is what the item types. Tap keyboard items ([steps] null) are judged by
  * the text after ⌫ (SWIPE 10.2); the others by their committed text (`PracticeItemJudge.commit`, FSS#43). [steps] is
  * the editor text the real engine shows after each action (touch, or graffiti stroke) of the item's stroke order,
- * before the closing space — temporary ㆍ / ‥ included (SWIPE 3.4); the tests play it, the judgement does not use it
+ * before the closing space — temporary ㆍ / ‥ included (SWIPE 3.4), "" after a shift stroke; the tests play it, the judgement does not use it
  * (a composing syllable is no result yet). [howTo] is the line shown after ✗ (SWIPE 10.2 문구 규칙); [note] a short addition to the target line;
  * [guideCells] the stroke-guide cell labels highlighted after ✗ and [lang] the pad's language for graffiti items.
  */
@@ -36,6 +37,13 @@ data class PracticeItem(
         require(board == PracticeBoard.TAP_QWERTY || !steps.isNullOrEmpty()) { "$target: steps are needed off the tap keyboard" }
         require(steps == null || steps.last() == target) { "$target: the last step is the target" }
     }
+}
+
+/** The stroke guide section a graffiti item shows (SWIPE 10.1 ③, LLD-07 §2.3). */
+internal fun PracticeItem.guideSection(): GuideSection = when {
+    target.all { it.isDigit() } -> GuideSection.NUMBER
+    lang == GraffitiLang.EN -> GuideSection.ENGLISH
+    else -> GuideSection.HANGUL
 }
 
 /**
@@ -55,7 +63,7 @@ data class PracticeTopic(
     fun offInKeyboard(enabled: Set<InputMode>): Boolean = mode != null && mode !in enabled
 }
 
-/** The four topics and 19 items of SWIPE 0.48 10.1 (the items are the design's recommendation). */
+/** The five topics and 63 items of SWIPE 10.1 (FSS#72: the graffiti topics cover every consonant and letter once). */
 object PracticeTopics {
 
     private fun tap(target: String, howTo: String) = PracticeItem(target, PracticeBoard.TAP_QWERTY, howTo)
@@ -82,9 +90,9 @@ object PracticeTopics {
     )
 
     val SYMBOL = PracticeTopic(
-        "symbol", "기호 입력", "숫자·기호 키를 그어 짝 기호 쓰기", "약 35초",
+        "symbol", "기호 입력", "숫자·기호 키를 그어 기호 쓰기", "약 35초",
         listOf(
-            "숫자 키와 기호 키를 위로 그으면 짝 기호예요(물리 키보드의 시프트 글자).",
+            "숫자 키와 / 키를 위로 그으면 짝 기호예요(물리 키보드의 시프트 글자).",
             "키 네 변 가운데의 작은 글자는 그쪽(↑ ← → ↓)으로 그으면 나와요.",
             "앞의 셋은 영문 쿼티 자판, 뒤의 셋은 긋기 자판에서 해요.",
         ),
@@ -93,26 +101,53 @@ object PracticeTopics {
             tap("?", "? = / 키에서 위로"),
             tap("[", "[ = i 키에서 왼쪽으로"),
             swipe("@", "@ = 2 키에서 위로", "@", note = "긋기 자판"),
-            swipe("(", "( = . 키에서 왼쪽으로", "(", note = "긋기 자판"),
+            swipe("(", "( = 9 키에서 위로", "(", note = "긋기 자판"),
             swipe("?", "? = / 키에서 위로", "?", note = "긋기 자판"),
         ),
     )
 
-    val GRAFFITI = PracticeTopic(
-        "graffiti", "그래피티", "한 획에 글자 하나, 안내표 보며 쓰기", "약 45초",
+    /** A consonant on its own: its stroke, then the space commits it (a composing letter is no result, FSS#43). */
+    private fun consonant(c: String) = graffiti(c, GraffitiLang.KO, "$c = 안내표의 $c 칸처럼 → 스페이스", listOf(c), c)
+
+    /** A double consonant: the shift stroke (nothing shows yet), then its base (FR-GRF-03a); the ㄲ cell is the guide's shift cell. */
+    private fun double(c: String, base: String) = graffiti(
+        c, GraffitiLang.KO, "$c = 시프트(아래에서 위로) → $base → 스페이스", listOf(base, SHIFT_CELL), "", c, note = "시프트 + $base",
+    )
+
+    /** An English letter: lower case as the pad writes it with no shift; the guide's cells are named in capitals. */
+    private fun letter(c: Char) = graffiti("$c", GraffitiLang.EN, "$c = 안내표의 ${c.uppercaseChar()} 칸처럼", listOf("${c.uppercaseChar()}"), "$c")
+
+    /** The guide's cell that shows the shift stroke (FR-GRF-09b: no cell per double consonant). */
+    private const val SHIFT_CELL = "ㄲ"
+
+    val GRAFFITI_KO = PracticeTopic(
+        "graffiti_ko", "그래피티 한글", "자음과 쌍자음을 하나씩, 안내표 보며 쓰기", "약 2분 20초",
         listOf(
             "획 하나에 글자 하나예요.",
-            "한글 모음은 ㅣ, ㅡ, ㆍ(탭)를 이어 써요.",
-            "한글은 글자를 다 쓰면 아래 줄의 스페이스를 눌러요. 그때 맞았는지 봐요.",
+            "자음 14개와 쌍자음 5개를 하나씩 쓰고, 끝으로 모음이 붙은 글자 둘을 써 봐요.",
+            "쌍자음은 시프트 획(아래에서 위로)을 먼저 긋고 자음을 써요.",
+            "모음은 ㅣ, ㅡ, ㆍ(탭)를 이어 써요.",
+            "글자를 다 쓰면 아래 줄의 스페이스를 눌러요. 그때 맞았는지 봐요.",
+            "모르는 글자는 위의 안내표에서 찾아요. 점(●)이 획의 시작이에요.",
+        ),
+        listOf("ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ").map(::consonant) +
+            listOf("ㄲ" to "ㄱ", "ㄸ" to "ㄷ", "ㅃ" to "ㅂ", "ㅆ" to "ㅅ", "ㅉ" to "ㅈ").map { (c, base) -> double(c, base) } +
+            listOf(
+                graffiti("가", GraffitiLang.KO, "가 = ㄱ → ㅣ → 탭 → 스페이스", listOf("ㄱ", "ㅏ"), "ㄱ", "기", "가"),
+                graffiti("고", GraffitiLang.KO, "고 = ㄱ → 탭 → ㅡ → 스페이스", listOf("ㄱ", "ㅗ"), "ㄱ", "ㄱㆍ", "고"),
+            ),
+        InputMode.GRAFFITI,
+    )
+
+    val GRAFFITI_EN = PracticeTopic(
+        "graffiti_en", "그래피티 영문", "알파벳 26자를 하나씩, 안내표 보며 쓰기", "약 2분",
+        listOf(
+            "획 하나에 글자 하나예요. 쓰면 바로 맞았는지 봐요.",
+            "a부터 z까지 하나씩 쓰고, 끝으로 숫자를 하나 써 봐요.",
             "숫자는 오른쪽 숫자 영역에 써요.",
             "모르는 글자는 위의 안내표에서 찾아요. 점(●)이 획의 시작이에요.",
         ),
-        listOf(
-            graffiti("가", GraffitiLang.KO, "가 = ㄱ → ㅣ → 탭 → 스페이스", listOf("ㄱ", "ㅏ"), "ㄱ", "기", "가"),
-            graffiti("고", GraffitiLang.KO, "고 = ㄱ → 탭 → ㅡ → 스페이스", listOf("ㄱ", "ㅗ"), "ㄱ", "ㄱㆍ", "고"),
-            graffiti("a", GraffitiLang.EN, "a = 안내표의 A 칸처럼", listOf("A"), "a", note = "영문"),
-            graffiti("1", GraffitiLang.EN, "1 = 안내표의 1 칸처럼, 숫자 영역에", listOf("1"), "1", note = "숫자 영역"),
-        ),
+        ('a'..'z').map(::letter) + graffiti("1", GraffitiLang.EN, "1 = 안내표의 1 칸처럼, 숫자 영역에", listOf("1"), "1", note = "숫자 영역"),
         InputMode.GRAFFITI,
     )
 
@@ -141,7 +176,7 @@ object PracticeTopics {
     )
 
     /** In the order of SWIPE 10.1; any can be done first. */
-    val ALL: List<PracticeTopic> = listOf(UPPER, SYMBOL, GRAFFITI, SWIPE)
+    val ALL: List<PracticeTopic> = listOf(UPPER, SYMBOL, GRAFFITI_KO, GRAFFITI_EN, SWIPE)
 
     /** The extra line after a reversed swipe stroke (SWIPE 10.2 덧붙임, 3.2). */
     const val REVERSE_HINT = "획은 아래로, 오른쪽으로만 그어요"

@@ -84,7 +84,7 @@ class ProgressStateTest {
         val ps = layoutKey("5")
         assertEquals("5", ps.current)
         fun of(kind: ProbeKind) = ps.candidates.filter { it.kind == kind }.map { "${it.dir} ${it.label}" }.sorted()
-        assertEquals(listOf("DOWN ×", "LEFT _", "RIGHT +", "UP %"), of(ProbeKind.RING))
+        assertEquals(listOf("DOWN ×", "LEFT -", "RIGHT +", "UP %"), of(ProbeKind.RING))
         assertEquals(listOf("DOWN ₅", "UP ⁵"), of(ProbeKind.RUB))
         assertEquals(6, ps.candidates.size)
     }
@@ -92,11 +92,11 @@ class ProgressStateTest {
     @Test fun `PS-14 symbol key press shows one symbol per direction, no stages (issue #208)`() {
         val ps = layoutKey("symbol")
         assertEquals(".", ps.current)
-        assertEquals(listOf("DOWN -", "LEFT (", "RIGHT )", "UP >"), ps.candidates.map { "${it.dir} ${it.label}" }.sorted())
+        assertEquals(listOf("DOWN _", "LEFT <", "RIGHT >", "UP '"), ps.candidates.map { "${it.dir} ${it.label}" }.sorted())
         assertTrue(ps.candidates.all { it.kind == ProbeKind.RING })
         val ps2 = layoutKey("symbol2")
         assertEquals(",", ps2.current)
-        assertEquals(listOf("DOWN '", "LEFT \"", "UP <"), ps2.candidates.map { "${it.dir} ${it.label}" }.sorted())   // → is the screen edge
+        assertEquals(listOf("DOWN ★", "LEFT ♥", "UP \""), ps2.candidates.map { "${it.dir} ${it.label}" }.sorted())   // → is the screen edge
         val ps3 = layoutKey("symbol3")
         assertEquals("/", ps3.current)
         assertEquals(listOf("RIGHT =", "UP ?"), ps3.candidates.map { "${it.dir} ${it.label}" }.sorted())   // ← screen edge, ↓ = the tap

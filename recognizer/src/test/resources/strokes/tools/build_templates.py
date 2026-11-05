@@ -21,11 +21,12 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from shapes import arc, corner_count, fit_box, join  # noqa: E402
+from shapes import arc, corner_count, fit_box, join, resample  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *[".."] * 6))
 OUT_JSON = os.path.join(ROOT, "recognizer", "src", "main", "resources", "graffiti", "templates.json")
 OUT_MD = os.path.join(ROOT, "recognizer", "src", "test", "resources", "strokes", "TEMPLATES.md")
+OWNER_STROKES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "owner_strokes.json")
 
 
 def rev(points):
@@ -70,13 +71,7 @@ TWO_GAMMAS = half(GAMMA, 0) + half(GAMMA, 0.5)                   # '%' / '÷': t
 HORSESHOE = join([(0.1, 0), (0.28, 0.12), (0.18, 0.5)], arc(0.5, 0.5, 0.32, 0.45, 180, 0, 12),
                  [(0.72, 0.12), (0.9, 0)])                        # 'ʊ': open top, ends turned out
 SIX = join([(0.75, 0), (0.4, 0.1), (0.15, 0.4)], arc(0.45, 0.72, 0.33, 0.28, 180, -150, 14))
-SEVEN_SEVEN = [(0, 0), (0.45, 0), (0.45, 1), (0.55, 0), (1, 0), (1, 1)]
 C_SHAPE = arc(0.5, 0.5, 0.5, 0.5, -50, -310, 16)
-CC = join(arc(0.25, 0.5, 0.25, 0.5, -55, -305, 12), arc(0.75, 0.5, 0.25, 0.5, -55, -305, 12))
-W = [(0, 0), (0.25, 1), (0.5, 0), (0.75, 1), (1, 0)]
-UU = join([(0, 0)], arc(0.25, 0.6, 0.25, 0.4, 180, 0, 8), arc(0.75, 0.6, 0.25, 0.4, 180, 0, 8))
-M = [(0, 1), (0.25, 0), (0.5, 1), (0.75, 0), (1, 1)]
-ALPHA_ALPHA = [(x * 0.5, y) for x, y in ALPHA] + [(0.5 + x * 0.5, y) for x, y in ALPHA]
 J = join([(0.8, 0), (0.8, 0.65)], arc(0.45, 0.65, 0.35, 0.35, 0, 180, 8))
 B = join([(0, 0), (0, 1), (0, 0)], arc(0, 0.25, 0.8, 0.25, -90, 90, 10), arc(0, 0.75, 0.9, 0.25, -90, 90, 10))
 B_UP = join([(0, 1), (0, 0)], arc(0, 0.25, 0.8, 0.25, -90, 90, 10), arc(0, 0.75, 0.9, 0.25, -90, 90, 10))  # 'ß'
@@ -91,6 +86,7 @@ N = [(0, 1), (0, 0), (1, 1), (1, 0)]
 N_MIRROR = [(0, 0), (0, 1), (1, 0), (1, 1)]                      # 'И' from the top-left
 P = join([(0, 1), (0, 0)], arc(0, 0.27, 0.8, 0.27, -90, 90, 10))
 Q = join(CIRCLE_CCW, [(0.95, 0.0)])                              # 'σ': circle, then a short tail → at the top
+Q_TAIL_OUT = join(arc(0.225, 0.5, 0.225, 0.5, -90, -450, 24), [(1, 0)])  # 'σ' whose tail leaves the loop's width (FSS#70)
 R = join(P, [(1, 1)])
 S = join(arc(0.5, 0.25, 0.5, 0.25, -30, -270, 10), arc(0.5, 0.75, 0.5, 0.25, -90, 150, 10))
 V_HOOK = [(0, 0), (0.4, 1), (0.8, 0), (1, 0.03)]                 # '√': V whose end turns right
@@ -115,7 +111,6 @@ REG = join([(0, 0)], R)                                          # ®: stem ↓ 
 # --- templates: (set, id, output type, value, [strokes], source, interim?) --------------------------
 
 KO = "GRAFFITI 4.2 consonant table"
-KO_D = "GRAFFITI 4.2 double consonants (one stroke)"
 EN = "GRAFFITI 6.1"
 NUM = "GRAFFITI 6.3"
 PU = "GRAFFITI 6.4 punctuation"
@@ -140,12 +135,6 @@ TEMPLATES = [
     ("KO_LETTER", "ko_p", "jamo", "ㅍ", [GAMMA], f"{KO}: 'γ' loop from the top-left", False),
     ("KO_LETTER", "ko_h", "jamo", "ㅎ", [HORSESHOE], f"{KO}: loop open at the top ('ʊ'-like), from the top", False),
     ("KO_LETTER", "ko_h6", "jamo", "ㅎ", [SIX], f"{KO}: ㅎ alternative — '6'", False),
-    ("KO_LETTER", "ko_gg", "jamo", "ㄲ", [SEVEN_SEVEN], f"{KO_D}: '77'", False),
-    ("KO_LETTER", "ko_dd", "jamo", "ㄸ", [CC], f"{KO_D}: 'CC'", False),
-    ("KO_LETTER", "ko_bb", "jamo", "ㅃ", [W], f"{KO_D}: 'W' (UU)", False),
-    ("KO_LETTER", "ko_bb2", "jamo", "ㅃ", [UU], f"{KO_D}: 'UU'", False),
-    ("KO_LETTER", "ko_ss", "jamo", "ㅆ", [M], f"{KO_D}: 'M' (ΛΛ)", False),
-    ("KO_LETTER", "ko_jj", "jamo", "ㅉ", [ALPHA_ALPHA], f"{KO_D}: 'αα'", False),
     ("KO_LETTER", "ko_space_v", "control", "SPACE_V", [V], "GRAFFITI 4.2/4.4, 6.3-4: Korean space = 'V'", False),
     ("KO_LETTER", "ko_finish_j", "control", "FINISH_J", [J], "GRAFFITI 4.2: finish composing = 'J'", False),
 
@@ -257,6 +246,29 @@ OMITTED = [
     ("EXTENDED", "Ø", "reads as the same shape as °"),
 ]
 
+
+def owner_templates():
+    """The owner's own consonant strokes (FSS#64), one id each because every stroke has its own corner count.
+    They come after the drawn templates, which keep their ids: the stroke guide shows the drawn shapes."""
+    with open(OWNER_STROKES, encoding="utf-8") as f:
+        strokes = json.load(f)
+    base = {t[3]: t[1] for t in TEMPLATES if t[0] == "KO_LETTER"}
+
+    def stored(s):
+        # As the JSON will hold it, so `corners` is counted on the same numbers the matcher reads.
+        return [(round(x, 3), round(y, 3)) for x, y in fit_box(resample([tuple(p) for p in s]))]
+
+    return [
+        ("KO_LETTER", f"{base[c]}_o{i}", "jamo", c, [stored(s)], "owner's handwriting (FSS#64)", False)
+        for c, ss in strokes.items() for i, s in enumerate(ss, start=1)
+    ]
+
+
+# Recognition-only variants kept out of TEMPLATES: gen_strokes.py draws its samples in the order of that list.
+EXTRA_TEMPLATES = [
+    ("EN_LETTER", "en_q2", "text", "q", [Q_TAIL_OUT], f"{EN} Q written with the tail past the loop's right edge (FSS#70)", False),
+]
+ALL_TEMPLATES = TEMPLATES + EXTRA_TEMPLATES + owner_templates()
 SET_ORDER = ["KO_LETTER", "EN_LETTER", "NUMBER", "PUNCT", "EXTENDED"]
 RULES = {"TAP", "LINE_DOWN", "LINE_UP", "LINE_RIGHT", "DIAG_DOWN_LEFT", "DIAG_DOWN_RIGHT"}
 
@@ -274,21 +286,21 @@ def fmt_stroke(stroke):
 
 
 def main():
-    ids = [t[1] for t in TEMPLATES]
+    ids = [t[1] for t in ALL_TEMPLATES]
     assert len(ids) == len(set(ids)), "duplicate id"
-    for t in TEMPLATES:
+    for t in ALL_TEMPLATES:
         if is_rule(t):
             assert t[0] in ("PUNCT", "EXTENDED") and t[4] in RULES, t[1]
             continue
         counts = {corner_count(fit_box(s)) for s in t[4]}
         assert len(counts) == 1, f"{t[1]}: alternative strokes with different corner counts {counts}"
     for name in ("PUNCT", "EXTENDED"):
-        rules = [t[4] for t in TEMPLATES if t[0] == name and is_rule(t)]
+        rules = [t[4] for t in ALL_TEMPLATES if t[0] == name and is_rule(t)]
         assert len(rules) == len(set(rules)), f"{name}: rule twice"
     lines = ['{', '  "version": 1,', '  "sets": {']
     for si, name in enumerate(SET_ORDER):
         rows = []
-        for t in TEMPLATES:
+        for t in ALL_TEMPLATES:
             set_name, tid, kind, value, strokes, _src, _interim = t
             if set_name != name:
                 continue
@@ -315,12 +327,14 @@ def main():
         "#79 OD-1..OD-7 A). The point lists are drawn by hand from those words (no GPL code, no third-party figures, CON-6). "
         "`rule` = a symbol-table entry for a tap or straight line, used only while that shift is pending "
         "(LLD-05 §3.1 step 3, §7). `interim` = GRAFFITI marks a detail of the stroke unconfirmed and the T28 "
-        "interim stroke is kept until real-device strokes settle it (GRAFFITI 7, LLD-05 §7).",
+        "interim stroke is kept until real-device strokes settle it (GRAFFITI 7, LLD-05 §7). "
+        "Ids ending in `_oN` are the owner's own strokes (`tools/owner_strokes.json`, FSS#64). "
+        "Double consonants have no template: they are shift (↑) + consonant (FSS#64).",
         "",
         "| set | id | output | rule | alt strokes | corners | interim | source |",
         "|---|---|---|---|---|---|---|---|",
     ]
-    for t in TEMPLATES:
+    for t in ALL_TEMPLATES:
         set_name, tid, kind, value, strokes, src, interim = t
         shown = {"\t": "tab (`\\t`)", "|": "\\|"}.get(value, value)
         rule = strokes if is_rule(t) else ""
@@ -348,7 +362,7 @@ def main():
     ]
     with open(OUT_MD, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(md))
-    print(f"{len(TEMPLATES)} templates -> {OUT_JSON}")
+    print(f"{len(ALL_TEMPLATES)} templates -> {OUT_JSON}")
 
 
 if __name__ == "__main__":

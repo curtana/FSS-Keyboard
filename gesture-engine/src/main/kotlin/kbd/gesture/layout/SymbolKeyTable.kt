@@ -22,11 +22,11 @@ data class SymbolKeyTable(val tap: String, val exits: Map<Dir, String>) {
         /** Row 4 col 0, above the mode key (the ⚙ cell, issue #205): tap / → = ↑ ?; ← screen edge, ↓ none. */
         val SYMBOL3 = SymbolKeyTable("/", mapOf(Dir.RIGHT to "=", Dir.UP to "?"))
 
-        /** Row 4 col 5, right of ㅍ: tap . ← ( → ) ↑ > ↓ -. */
-        val SYMBOL = SymbolKeyTable(".", mapOf(Dir.LEFT to "(", Dir.RIGHT to ")", Dir.UP to ">", Dir.DOWN to "-"))
+        /** Row 4 col 5, right of ㅍ: tap . ← < → > ↑ ' ↓ _ (owner FSS#75; ↓ _ swapped with 5's -). */
+        val SYMBOL = SymbolKeyTable(".", mapOf(Dir.LEFT to "<", Dir.RIGHT to ">", Dir.UP to "'", Dir.DOWN to "_"))
 
-        /** Row 4 col 6, the right end column: tap , ← ; ↑ < ↓ '; → screen edge. */
-        val SYMBOL2 = SymbolKeyTable(",", mapOf(Dir.LEFT to "\"", Dir.UP to "<", Dir.DOWN to "'"))   // ← " (owner #208: swapped with 4's ;)
+        /** Row 4 col 6, the right end column: tap , ← ♥ ↑ " ↓ ★ (owner FSS#75); → screen edge. */
+        val SYMBOL2 = SymbolKeyTable(",", mapOf(Dir.LEFT to "♥", Dir.UP to "\"", Dir.DOWN to "★"))
 
         /** The table of the symbol key [keyId]. */
         fun of(keyId: String): SymbolKeyTable = when (keyId) {

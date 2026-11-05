@@ -40,7 +40,7 @@ class NumberSymbolKeyTest {
 
     @Test fun `NK-04 key 4`() = expect("4", TAP to "4", U to "$", L to ";", R to ":", D to "€")   // ← ; (owner #208 swap)
 
-    @Test fun `NK-05 key 5`() = expect("5", TAP to "5", U to "%", L to "_", R to "+", D to "×")
+    @Test fun `NK-05 key 5, left is the hyphen (FSS#75)`() = expect("5", TAP to "5", U to "%", L to "-", R to "+", D to "×")
 
     @Test fun `NK-06 key 6, left has no symbol and is the tap (issue #208)`() = expect("6", TAP to "6", U to "^", L to "6", R to "~", D to "÷")
 
@@ -81,19 +81,19 @@ class NumberSymbolKeyTest {
     @Test fun `SK-01 symbol tap`() = expect("symbol", TAP to ".")
 
     // Issue #208: no return or rub stages; they equal the exit in that direction (DCR-02), ↓ included.
-    @Test fun `SK-02 symbol left exit, return and rub are all the exit`() = expect("symbol", L to "(", L_BACK to "(", L_RUB to "(")
+    @Test fun `SK-02 symbol left exit, return and rub are all the exit`() = expect("symbol", L to "<", L_BACK to "<", L_RUB to "<")
 
-    @Test fun `SK-03 symbol right exit, return and rub are all the exit`() = expect("symbol", R to ")", R_BACK to ")", R_RUB to ")")
+    @Test fun `SK-03 symbol right exit, return and rub are all the exit`() = expect("symbol", R to ">", R_BACK to ">", R_RUB to ">")
 
-    @Test fun `SK-04 symbol up exit, return and rub are all the exit`() = expect("symbol", U to ">", U_BACK to ">", U_RUB to ">")
+    @Test fun `SK-04 symbol up exit, return and rub are all the exit`() = expect("symbol", U to "'", U_BACK to "'", U_RUB to "'")
 
-    @Test fun `SK-05 symbol down is the hyphen`() = expect("symbol", D to "-", D_BACK to "-", D_RUB to "-")
+    @Test fun `SK-05 symbol down is the underscore (FSS#75)`() = expect("symbol", D to "_", D_BACK to "_", D_RUB to "_")
 
     @Test fun `SK-06 symbol2 tap and its directions, the right one is the screen edge`() =
-        expect("symbol2", TAP to ",", L to "\"", U to "<", D to "'", R to ",", L_BACK to "\"", U_RUB to "<", D_BACK to "'")   // ← " (owner #208 swap)
+        expect("symbol2", TAP to ",", L to "♥", U to "\"", D to "★", R to ",", L_BACK to "♥", U_RUB to "\"", D_BACK to "★")   // FSS#75
 
-    @Test fun `SK-07 the result comes from the first-pressed key - symbol right over symbol2 is still )`() =
-        expect("symbol", listOf(Leg.R(80.0)) to ")")
+    @Test fun `SK-07 the result comes from the first-pressed key - symbol right over symbol2 is still the symbol key's`() =
+        expect("symbol", listOf(Leg.R(80.0)) to ">")
 
     @Test fun `SK-08 symbol3 tap and its directions, left is the screen edge and down has no symbol`() =
         expect("symbol3", TAP to "/", R to "=", U to "?", L to "/", D to "/", R_BACK to "=", U_RUB to "?", D_BACK to "/")

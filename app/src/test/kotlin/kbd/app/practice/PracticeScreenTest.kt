@@ -11,6 +11,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import java.io.File
 import kbd.app.feedback.Feedback
+import kbd.app.graffiti.GraffitiGuideLayout
+import kbd.app.graffiti.GraffitiGuidePanel
+import kbd.app.graffiti.GraffitiPadGeometry
+import kbd.app.graffiti.GraffitiPadView
 import kbd.app.store.ErrorLog
 import kbd.app.store.KeyboardAlign
 import kbd.app.store.Settings
@@ -19,9 +23,14 @@ import kbd.app.swipe.impl.SwipeGeometry
 import kbd.app.swipe.impl.SwipeKeyboardView
 import kbd.app.view.Touches
 import kbd.app.view.ViewTestSdk
+import kbd.graffiti.guide.GuideCatalog
+import kbd.graffiti.guide.GuideSection
+import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
+import kbd.stroke.layout.FunctionKey
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -37,6 +46,7 @@ import org.robolectric.annotation.Config
  * LLD-11 PR-23 (FSS#54): the practice screen itself — the real topic list, explanation, item lines and swipe board —
  * with the owner's tablet strokes (key 42 dp, right aligned, 711 dp wide). 가 then the space is ✓: the solved item
  * stays on screen with its ✓ for [PracticeFlow.RIGHT_HOLD_MS], taking no input, then the next item's target is shown.
+ * PR-28, PR-29 (FSS#72): the graffiti items on the real pad and stroke guide, written with touches.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [ViewTestSdk.SDK], qualifiers = "w711dp-h1138dp-port")
@@ -110,5 +120,117 @@ class PracticeScreenTest {
         assertEquals(1, flow.index)
         compose.onNodeWithText("쓸 것: 고").assertExists()        // the next target is drawn (the bug: 가 stayed)
         compose.onNodeWithText("✓").assertDoesNotExist()
+    }
+
+    private val templates: TemplateSet by lazy {
+        TemplateLoader::class.java.getResourceAsStream("/graffiti/templates.json")!!.use { TemplateLoader.load(it) }
+    }
+
+    /** The practice screen at item [target] of [topic], the earlier items solved, the clock held for the ✓ (as PR-23). */
+    private fun openAt(topic: PracticeTopic, target: String): PracticeFlow {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            PracticeScreen(flow, flowOf(settings), settings, BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), templates)) {}
+        }
+        compose.runOnIdle {
+            flow.open(topic)
+            flow.start()
+            for (it in topic.items.takeWhile { i -> i.target != target }) { flow.onAction(it.target + " ", it.target); flow.advance() }
+        }
+        compose.waitForIdle()
+        return flow
+    }
+
+    private fun padNow() = checkNotNull(find(compose.activity.window.decorView, GraffitiPadView::class.java))
+
+    private fun panelNow() = checkNotNull(find(compose.activity.window.decorView, GraffitiGuidePanel::class.java))
+
+    private fun idle() {
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
+    }
+
+    /** Draws the polyline [pts] (dp in the pad) with one finger on the board frame, as the screen gets it. */
+    private fun draw(pts: List<Pair<Float, Float>>) {
+        val pad = padNow()
+        val column = pad.parent as View
+        val d = pad.resources.displayMetrics.density
+        val t = Touches(column.parent as View)
+        fun x(p: Pair<Float, Float>) = column.left + p.first * d
+        fun y(p: Pair<Float, Float>) = pad.top + p.second * d
+        t.down(0, x(pts[0]), y(pts[0]))
+        for (p in pts.drop(1)) t.move(0, x(p), y(p), steps = 2)
+        t.up(0)
+        idle()
+    }
+
+    /** Stroke 0 of template [id] in a 100 dp box of the letter area (as PracticeGraffitiItemsTest). */
+    private fun drawTemplate(id: String) =
+        draw(templates.sets.values.flatten().single { it.id == id }.strokes[0].map { (x, y) -> 20f + x * 100f to 20f + y * 100f })
+
+    private fun pressSpace() {
+        val pad = padNow()
+        val column = pad.parent as View
+        val d = pad.resources.displayMetrics.density
+        val r = GraffitiPadGeometry(pad.width / d, pad.height / d, pad.letterRatio).keys.first { it.key == FunctionKey.SPACE }.rect
+        Touches(column.parent as View).tap(0, column.left + (r.left + r.right) / 2 * d, pad.top + (r.top + r.bottom) / 2 * d)
+        idle()
+    }
+
+    /** The scroll that brings [label]'s first cell to the top of the panel (LLD-05 §10.2). */
+    private fun scrollFor(panel: GraffitiGuidePanel, section: GuideSection, label: String): Float {
+        val d = panel.resources.displayMetrics.density
+        val l = GraffitiGuideLayout(panel.width / d, GuideCatalog.groups.filter { it.section == section })
+        return (l.cells.first { it.cell.label == label }.rect.top - GraffitiGuideLayout.PAD_DP).coerceIn(0f, l.maxScrollDp(panel.height / d))
+    }
+
+    @Test
+    fun `PR-28 a double consonant on the real pad - without shift wrong and both cells marked, the shift stroke is no action, then right (FSS#72)`() {
+        val flow = openAt(PracticeTopics.GRAFFITI_KO, "ㄸ")
+        compose.onNodeWithText("쓸 것: ㄸ (시프트 + ㄷ)").assertExists()
+        assertEquals(scrollFor(panelNow(), GuideSection.HANGUL, "ㄷ"), panelNow().scrollDp, 0.01f)   // the base cell is in view from the start
+        compose.mainClock.autoAdvance = false
+        drawTemplate("ko_d")                                              // no shift stroke: ㄷ, closed by the space, is ✗
+        pressSpace()
+        assertEquals(Verdict.WRONG, flow.verdict)
+        assertEquals("ㄸ = 시프트(아래에서 위로) → ㄷ → 스페이스", flow.howTo)
+        idle()
+        compose.mainClock.advanceTimeByFrame()                            // the new try's keyboard is built
+        compose.waitForIdle()
+        assertEquals(setOf("ㄷ", "ㄲ"), panelNow().highlight)              // the consonant's cell and the guide's shift cell
+        assertEquals(scrollFor(panelNow(), GuideSection.HANGUL, "ㄷ"), panelNow().scrollDp, 0.01f)
+        draw(listOf(60f to 120f, 60f to 80f, 60f to 40f))                 // ↑: nothing shows, nothing is judged
+        assertEquals(null, flow.verdict)
+        assertEquals("", flow.echo)
+        drawTemplate("ko_d")
+        assertEquals("ㄸ", flow.echo)
+        assertEquals(null, flow.verdict)                                  // composing: no result yet
+        pressSpace()
+        assertEquals(Verdict.RIGHT, flow.verdict)
+        assertEquals("ㄸ", flow.echo)
+    }
+
+    @Test
+    fun `PR-29 a letter deep in the guide is in view from the start, after a wrong one marked, and written it is right (FSS#72)`() {
+        val flow = openAt(PracticeTopics.GRAFFITI_EN, "q")
+        val want = scrollFor(panelNow(), GuideSection.ENGLISH, "Q")
+        assertTrue(want > 0f)
+        assertEquals(want, panelNow().scrollDp, 0.01f)
+        assertEquals(emptySet<String>(), panelNow().highlight)            // unmarked before a ✗ (SWIPE 10.1 ③)
+        compose.mainClock.autoAdvance = false
+        val tries = flow.tryNo
+        drawTemplate("en_a")
+        assertEquals(Verdict.WRONG, flow.verdict)
+        assertEquals("q = 안내표의 Q 칸처럼", flow.howTo)
+        assertEquals(tries + 1, flow.tryNo)
+        idle()
+        compose.mainClock.advanceTimeByFrame()                            // the new try's keyboard is built
+        compose.waitForIdle()
+        assertEquals(setOf("Q"), panelNow().highlight)
+        assertEquals(want, panelNow().scrollDp, 0.01f)
+        drawTemplate("en_q")
+        assertEquals(Verdict.RIGHT, flow.verdict)                         // English commits at once: no space
+        assertEquals("q", flow.echo)
     }
 }
