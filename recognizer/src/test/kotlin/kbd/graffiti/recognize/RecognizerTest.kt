@@ -5,7 +5,6 @@ import kbd.graffiti.ink.InkPoint
 import kbd.graffiti.ink.InkStroke
 import kbd.graffiti.ink.PadArea
 import kbd.graffiti.ink.RectF2
-import kbd.hangul.jamo.Jamo
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -123,7 +122,7 @@ internal object TestStrokes {
     }
 }
 
-/** `Recognizer` (LLD-05 §3.1–3.2) acceptance tests GR-01..GR-20, GR-25, GR-26 (LLD-11 §6.1). */
+/** `Recognizer` (LLD-05 §3.1–3.2) acceptance tests GR-01..GR-19, GR-25, GR-26 (LLD-11 §6.1). */
 class RecognizerTest {
 
     private companion object {
@@ -313,22 +312,6 @@ class RecognizerTest {
         fun c(len: Float) = InkStroke(listOf(InkPoint(5f, 5f, 0), InkPoint(5f, 5f + len, 40)), PadArea.LETTER, TestStrokes.LETTER_RECT)
         assertEquals(StrokeToken.CornerTap, ko(c(7.9f)))
         assertEquals(StrokeToken.LineDown, ko(c(8.0f)))
-    }
-
-    @Test
-    fun `GR-20 one-stroke 77, CC, W, M and alpha-alpha are the five double consonants`() {
-        val cases = listOf(
-            TestStrokes.SEVEN_SEVEN to Jamo.GG,
-            TestStrokes.CC to Jamo.DD,
-            TestStrokes.W to Jamo.BB,
-            TestStrokes.M to Jamo.SS,
-            TestStrokes.ALPHA_ALPHA to Jamo.JJ,
-        )
-        for ((shape, jamo) in cases) {
-            val token = ko(TestStrokes.letter(TestStrokes.points(shape)))
-            val id = (token as? StrokeToken.Symbol)?.id
-            assertEquals("$jamo", TemplateOutput.Jamo(jamo), id?.let { TestStrokes.templates.outputOf(it) })
-        }
     }
 
     @Test

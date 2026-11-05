@@ -14,6 +14,9 @@ import org.junit.Test
 /** The stroke guide catalog against the production templates (LLD-11 §6.6 GC-01~GC-08, LLD-05 §10.1, SRS FR-GRF-09b·09c). */
 class GuideCatalogTest {
 
+    /** The owner's own strokes (FSS#64): recognition only, the guide shows the drawn templates. */
+    private val OWNER_ID = Regex("ko_.+_o[0-9]+")
+
     private val templates: TemplateSet =
         GuideCatalogTest::class.java.getResourceAsStream("/graffiti/templates.json")!!.use { TemplateLoader.load(it) }
 
@@ -49,9 +52,9 @@ class GuideCatalogTest {
     @Test
     fun `GC-02 cell counts per section`() {
         val ko = groups[0].cells
-        assertEquals(25, ko.size)   // 14 consonants + ㅁ②, ㅎ② + 5 one-stroke doubles + shift + consonant + 3 elements
+        assertEquals(20, ko.size)   // 14 consonants + ㅁ②, ㅎ② + shift + consonant + 3 elements
         assertEquals("ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ".toList().map { "$it" }, ko.take(16).filter { it.alt != 2 }.map { it.label })
-        assertEquals(listOf("ㄲ", "ㄸ", "ㅃ", "ㅆ", "ㅉ"), ko.subList(16, 21).map { it.label })
+        assertEquals("시프트 + 자음", ko[16].note)
         assertEquals(listOf("ㅣ", "ㅡ", "ㆍ"), ko.takeLast(3).map { it.label })
         assertEquals(21, groups[1].cells.size)   // GRAFFITI 4.2 vowel table
         assertTrue(groups[1].cells.all { it.marks.isEmpty() && it.note != null })
@@ -104,7 +107,7 @@ class GuideCatalogTest {
     fun `GC-06 every template is in a cell except the recognition-only variants`() {
         val used = cells.flatMap { it.marks }.filterIsInstance<GuideMark.Template>().map { it.id }.toSet()
         val all = templates.sets.values.flatten().filter { it.rule == null }.map { it.id }.toSet()
-        assertEquals(setOf("ko_d2", "ko_b2", "ko_bb2"), all - used)
+        assertEquals(setOf("ko_d2", "ko_b2"), (all - used).filterNot { OWNER_ID.matches(it) }.toSet())
         assertTrue(used.all { it in all })
     }
 
