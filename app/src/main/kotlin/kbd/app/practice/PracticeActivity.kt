@@ -60,7 +60,6 @@ import kbd.app.view.KeyboardRootView
 import kbd.app.view.OffKeyboardPointers
 import kbd.app.view.TapKeyboardView
 import kbd.graffiti.guide.GuideCatalog
-import kbd.graffiti.guide.GuideSection
 import kbd.graffiti.ink.GraffitiLang
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
@@ -154,7 +153,8 @@ internal class BoardFactory(
                 val handler = input.graffiti(templates, item.lang ?: GraffitiLang.KO, { pad?.flash(it) }, { pad?.invalidate() })
                 val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
                 // The stroke guide, always open above the pad (not over it), only the item's section (SWIPE 10.1 ③).
-                val panel = GraffitiGuidePanel(context, templates, input.feedback, GuideCatalog.groups.filter { it.section == sectionOf(item) }, showClose = false) {}
+                val panel = GraffitiGuidePanel(context, templates, input.feedback, GuideCatalog.groups.filter { it.section == item.guideSection() }, showClose = false) {}
+                panel.reveal = item.guideCells.toSet()   // the target's cell is in view from the start (FSS#72)
                 panel.highlight = flow.highlight.toSet()
                 column.addView(panel, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, px(GUIDE_DP)))
                 val p = GraffitiPadView(context, input.tapSink, handler, input.guard, input.feedback)
@@ -166,12 +166,6 @@ internal class BoardFactory(
             }
         }
         return frame
-    }
-
-    private fun sectionOf(item: PracticeItem): GuideSection = when {
-        item.target.all { it.isDigit() } -> GuideSection.NUMBER
-        item.lang == GraffitiLang.EN -> GuideSection.ENGLISH
-        else -> GuideSection.HANGUL
     }
 
     private companion object {

@@ -26,7 +26,7 @@ import kotlin.math.sin
  * fields too (FR-GRF-09d).
  *
  * The input practice (SWIPE 10.1 ③, LLD-07 §2.3) shows it always open above the pad, not over it: [groups] = only the
- * item's sections, [showClose] = false (no ✕), and [highlight] marks the target's cells after a ✗.
+ * item's sections, [showClose] = false (no ✕), and [reveal] brings the target's cell into view and [highlight] marks the target's cells after a ✗.
  */
 class GraffitiGuidePanel(
     context: Context,
@@ -46,6 +46,14 @@ class GraffitiGuidePanel(
 
     /** Labels of the cells drawn highlighted (the practice's ✗, SWIPE 10.1 ③); the first one is scrolled into view. */
     var highlight: Set<String> = emptySet()
+        set(v) {
+            field = v
+            scrollToHighlight()
+            invalidate()
+        }
+
+    /** Labels of the cells scrolled into view, unmarked, while none is highlighted (the practice's target, FSS#72). */
+    var reveal: Set<String> = emptySet()
         set(v) {
             field = v
             scrollToHighlight()
@@ -99,7 +107,8 @@ class GraffitiGuidePanel(
 
     private fun scrollToHighlight() {
         val l = layout ?: return
-        val c = l.cells.firstOrNull { it.cell.label in highlight } ?: return
+        val labels = highlight.ifEmpty { reveal }
+        val c = l.cells.firstOrNull { it.cell.label in labels } ?: return
         scrollDp = (c.rect.top - GraffitiGuideLayout.PAD_DP).coerceIn(0f, maxScroll())
     }
 
