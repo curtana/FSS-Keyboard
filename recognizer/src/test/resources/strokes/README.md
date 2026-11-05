@@ -5,6 +5,7 @@
 | `dev/` | tuning the templates (`GraffitiEvalTest` "dev set" test prints accuracy, misses and the top-3 templates of each miss) |
 | `eval/` | GR-EVAL accuracy only — never looked at while tuning (NFR-09) |
 | `device/` | real tablet strokes (FSS#47, GR-36 `DeviceStrokeTest`): every one must be recognized; not part of GR-EVAL |
+| `device_held/` | real strokes of the owner that are not templates (FSS#64, GR-39 `DeviceStrokeTest`): accuracy must stay at 95 % or more; not part of GR-EVAL |
 | `tools/` | `build_templates.py` (writes `recognizer/src/main/resources/graffiti/templates.json` and `TEMPLATES.md`), `gen_strokes.py` (writes `dev/`, `eval/`), `shapes.py` (shared shapes, matcher mirror for `corners`) |
 
 Sub-folders: `ko` (KO letter area), `en` (EN letter area), `num` (number area), `punct` (punctuation shift pending: template symbols in the number area, tap and line symbols in either area), `ext` (extended shift pending: template symbols in the letter area, line symbols in either area).
@@ -22,7 +23,9 @@ One file = one stroke: `{ "area": "LETTER", "lang": "KO", "points": [[x, y, t], 
 
 So GR-EVAL measures robustness of the templates to distortion of the shapes they were drawn from, not accuracy on real users. Real-device strokes (GRAFFITI 7) should replace or join these sets before TBD-12 is set.
 
-`device/ko/` is the exception: raw touches read with `adb shell getevent` on a tablet (density 360, so px / 2.25 = dp) while "갸" (ㄱ ㅣ ㆍ ㆍ) was written over and over, shifted into the letter area (taps on the auxiliary bar left out): 84 strokes, 23 of them ㅣ. The long ㅣ strokes end in a short move back up as the finger lifts (LLD-05 §3.1 step 2 lift-off tail).
+`device/ko/` is the exception: raw touches read with `adb shell getevent` on a tablet (density 360, so px / 2.25 = dp) while "갸" (ㄱ ㅣ ㆍ ㆍ) was written over and over, shifted into the letter area (taps on the auxiliary bar left out): 84 strokes, 23 of them ㅣ. The long ㅣ strokes end in a short move back up as the finger lifts (LLD-05 §3.1 step 2 lift-off tail). `ko_n_*` and `ko_b_*` are later finger or pen strokes (FSS#52: a ㄴ with a long bottom stroke read as ㅃ, a narrow ㅂ as ㅎ), one from the tablet, the rest from a phone (density 450, px / 2.8125 = dp).
+
+`tools/owner_strokes.json` holds the owner's finger strokes that `build_templates.py` adds to `KO_LETTER` (FSS#64; none of them is a stroke of `device/` or `device_held/`). `gen_strokes.py` does not use them. Since FSS#64 the one-stroke double consonants have no template, and their files were taken out of `dev/` and `eval/` without regenerating, so the other samples stay as they were; running `gen_strokes.py` again would shift them.
 
 Regenerate (repository root, project venv):
 

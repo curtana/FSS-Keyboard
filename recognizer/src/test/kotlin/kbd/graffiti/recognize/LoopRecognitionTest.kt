@@ -46,7 +46,8 @@ class LoopRecognitionTest {
         val bad = ArrayList<String>()
         for (s in starts) for (w in sweeps) for ((kx, ky) in shapes) for (dir in dirs) {
             val t = rec.recognize(arc(cx, cy, r * kx, r * ky, s, dir * w, area, rect), lang, expect)
-            if (t == StrokeToken.Symbol(want)) continue
+            // The owner's own strokes (FSS#64) are other templates with the same output.
+            if (t is StrokeToken.Symbol && templates.outputOf(t.id) == templates.outputOf(want)) continue
             // D (en_d2) starts at its bottom-left corner going up and round clockwise: a tall loop begun there the same
             // way is a D-like stroke, so D is an accepted reading of it (LLD-05 §3.2 step 4a).
             val dLike = want == "en_o" && kx < ky && dir == 1 && s in 90..150 && t == StrokeToken.Symbol("en_d2")

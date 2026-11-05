@@ -26,8 +26,8 @@ class TemplateFileTest {
     private fun outputs(set: SetName): Set<TemplateOutput> = templates.sets[set].orEmpty().map { it.output }.toSet()
 
     @Test
-    fun `KO_LETTER has the 14 consonants, the 5 one-stroke doubles, SPACE_V and FINISH_J`() {
-        val jamo = "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ" + "ㄲㄸㅃㅆㅉ"     // GRAFFITI 4.2
+    fun `KO_LETTER has the 14 consonants, SPACE_V and FINISH_J, no doubles (those are shift + consonant)`() {
+        val jamo = "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ"     // FSS#64
         val expected = jamo.map { TemplateOutput.Jamo(Jamo.ofCompat(it)!!) }.toSet() +
             TemplateLoader.CONTROL_VALUES.map { TemplateOutput.Control(it) }
         assertEquals(expected, outputs(SetName.KO_LETTER))
