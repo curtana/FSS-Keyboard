@@ -16,8 +16,10 @@ pending. `interim` = GRAFFITI marks a detail of the stroke unconfirmed and the T
 (LLD-05 §7); strokes GRAFFITI marks unconfirmed that T28 did not have are left out (see OMITTED).
 """
 
+import glob
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +29,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *[".."] * 6))
 OUT_JSON = os.path.join(ROOT, "recognizer", "src", "main", "resources", "graffiti", "templates.json")
 OUT_MD = os.path.join(ROOT, "recognizer", "src", "test", "resources", "strokes", "TEMPLATES.md")
 OWNER_STROKES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "owner_strokes.json")
+OWNER_EN = os.path.join(os.path.dirname(OUT_MD), "owner_en")
 
 
 def rev(points):
@@ -248,7 +251,7 @@ OMITTED = [
 
 
 def owner_templates():
-    """The owner's own consonant strokes (FSS#64), one id each because every stroke has its own corner count.
+    """The owner's own consonant (FSS#64) and English letter (FSS#80) strokes, one id each because every stroke has its own corner count.
     They come after the drawn templates, which keep their ids: the stroke guide shows the drawn shapes."""
     with open(OWNER_STROKES, encoding="utf-8") as f:
         strokes = json.load(f)
@@ -258,9 +261,26 @@ def owner_templates():
         # As the JSON will hold it, so `corners` is counted on the same numbers the matcher reads.
         return [(round(x, 3), round(y, 3)) for x, y in fit_box(resample([tuple(p) for p in s]))]
 
-    return [
+    ko = [
         ("KO_LETTER", f"{base[c]}_o{i}", "jamo", c, [stored(s)], "owner's handwriting (FSS#64)", False)
         for c, ss in strokes.items() for i, s in enumerate(ss, start=1)
+    ]
+
+    # English letters (FSS#80): the stroke files of owner_en/ are the source and name their template. The tests read
+    # the same files to measure one day with the other day's templates only. en_i_rN is a down line: a rule, no template.
+    en = []
+    for path in glob.glob(os.path.join(OWNER_EN, "day*", "en_*_o*.json")):
+        m = re.fullmatch(r"en_([a-z])_o([0-9]+)\.json", os.path.basename(path))
+        assert m, path
+        with open(path, encoding="utf-8") as f:
+            sample = json.load(f)
+        assert sample["expect"] == m[1], path
+        day = os.path.basename(os.path.dirname(path))
+        en.append((m[1], int(m[2]), [p[:2] for p in sample["points"]], day))
+    en.sort(key=lambda e: e[:2])
+    return ko + [
+        ("EN_LETTER", f"en_{c}_o{i}", "text", c, [stored(s)], f"owner's handwriting, {day} (FSS#80)", False)
+        for c, i, s, day in en
     ]
 
 
@@ -328,7 +348,7 @@ def main():
         "`rule` = a symbol-table entry for a tap or straight line, used only while that shift is pending "
         "(LLD-05 §3.1 step 3, §7). `interim` = GRAFFITI marks a detail of the stroke unconfirmed and the T28 "
         "interim stroke is kept until real-device strokes settle it (GRAFFITI 7, LLD-05 §7). "
-        "Ids ending in `_oN` are the owner's own strokes (`tools/owner_strokes.json`, FSS#64). "
+        "Ids ending in `_oN` are the owner's own strokes (Korean: `tools/owner_strokes.json`, FSS#64; English: `owner_en/`, FSS#80). "
         "Double consonants have no template: they are shift (↑) + consonant (FSS#64).",
         "",
         "| set | id | output | rule | alt strokes | corners | interim | source |",
