@@ -93,8 +93,8 @@ internal object GraffitiEval {
         override fun toString() = "%-6s %4d / %4d = %6.2f %%".format(name, correct, total, accuracy)
     }
 
-    fun score(name: String, strokes: List<EvalStroke>): Score {
-        val rec = Recognizer(templates)
+    fun score(name: String, strokes: List<EvalStroke>, set: TemplateSet = templates): Score {
+        val rec = Recognizer(set)
         val misses = sortedMapOf<String, Int>()
         var correct = 0
         for (s in strokes) {
