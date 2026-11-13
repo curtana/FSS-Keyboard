@@ -105,6 +105,9 @@ object KeyboardWidth {
 data class PxRect(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     val isEmpty: Boolean get() = right <= left || bottom <= top
 
+    val width: Int get() = right - left
+    val height: Int get() = bottom - top
+
     /** True when the px at ([x], [y]) is in the rectangle. */
     fun contains(x: Int, y: Int): Boolean = x >= left && x < right && y >= top && y < bottom
 

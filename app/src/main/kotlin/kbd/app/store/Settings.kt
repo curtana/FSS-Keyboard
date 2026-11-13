@@ -26,6 +26,10 @@ data class Settings(
     val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
     /** The swipe keyboard's stroke trail (FR-DSP-09, FSS#57); off = no trail lines, the center syllable and dots stay. Default on. */
     val showStrokeTrail: Boolean = true,
+    /** Floating and the place last put, on the portrait screen (FR-CMN-15, FR-SET-09, FSS#86). Default off, never put. */
+    val portraitFloat: FloatSetting = FloatSetting.DEFAULT,
+    /** The same on the landscape screen; the two are kept apart (FR-CMN-15 ⑤). */
+    val landscapeFloat: FloatSetting = FloatSetting.DEFAULT,
 ) {
     /** The modes on in the keyboard, for `ModeController.applyEnabled` (FR-CMN-03f). */
     val enabledModes: Set<InputMode>

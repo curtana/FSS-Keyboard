@@ -61,6 +61,20 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[SWIPE_ENABLED] = s.swipeEnabled
             writeWidth(p, s.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT)
             writeWidth(p, s.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE)
+            writeFloat(p, s.portraitFloat, FLOAT_PORTRAIT, FLOAT_X_PORTRAIT, FLOAT_Y_PORTRAIT)
+            writeFloat(p, s.landscapeFloat, FLOAT_LANDSCAPE, FLOAT_X_LANDSCAPE, FLOAT_Y_LANDSCAPE)
+        }
+    }
+
+    /**
+     * The floating keyboard was put somewhere on the landscape ([landscape]) or portrait screen (FR-CMN-15 ⑨): only the
+     * shares given are written, a null one leaves what is stored on that axis as it is.
+     */
+    suspend fun setFloatPosition(landscape: Boolean, fx: Float?, fy: Float?) {
+        if (fx == null && fy == null) return
+        ds.edit { p ->
+            fx?.let { p[if (landscape) FLOAT_X_LANDSCAPE else FLOAT_X_PORTRAIT] = it }
+            fy?.let { p[if (landscape) FLOAT_Y_LANDSCAPE else FLOAT_Y_PORTRAIT] = it }
         }
     }
 
@@ -93,8 +107,24 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             swipeEnabled = p[SWIPE_ENABLED] ?: d.swipeEnabled,
             portraitWidth = readWidth(p, d.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT),
             landscapeWidth = readWidth(p, d.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE),
+            portraitFloat = readFloat(p, FLOAT_PORTRAIT, FLOAT_X_PORTRAIT, FLOAT_Y_PORTRAIT),
+            landscapeFloat = readFloat(p, FLOAT_LANDSCAPE, FLOAT_X_LANDSCAPE, FLOAT_Y_LANDSCAPE),
         )
     }
+
+    /** A null share removes its key (never put on that axis, FR-CMN-15 ⑥). */
+    private fun writeFloat(p: MutablePreferences, s: FloatSetting, on: Preferences.Key<Boolean>, x: Preferences.Key<Float>, y: Preferences.Key<Float>) {
+        p[on] = s.on
+        if (s.fx == null) p.remove(x) else p[x] = s.fx
+        if (s.fy == null) p.remove(y) else p[y] = s.fy
+    }
+
+    /** Absent = off, never put. A stored share outside 0–1 reads as the nearer end (FR-CMN-15 ⑤), not a number as none. */
+    private fun readFloat(p: Preferences, on: Preferences.Key<Boolean>, x: Preferences.Key<Float>, y: Preferences.Key<Float>) = FloatSetting(
+        on = p[on] ?: false,
+        fx = FloatingKeyboard.ratio(p[x]),
+        fy = FloatingKeyboard.ratio(p[y]),
+    )
 
     /** A null key size removes the key (the default, FR-CMN-14 ③); [KeyboardWidth.FULL] is stored as it is. */
     private fun writeWidth(p: MutablePreferences, s: WidthSetting, keyDp: Preferences.Key<Float>, align: Preferences.Key<String>) {
@@ -130,5 +160,12 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         val ALIGN_PORTRAIT = stringPreferencesKey("align_portrait")
         val KEY_LANDSCAPE = floatPreferencesKey("key_landscape_dp")
         val ALIGN_LANDSCAPE = stringPreferencesKey("align_landscape")
+        /** FR-CMN-15 (FSS#86): absent = docked; the shares are absent until the keyboard is put on that axis. */
+        val FLOAT_PORTRAIT = booleanPreferencesKey("float_portrait")
+        val FLOAT_X_PORTRAIT = floatPreferencesKey("float_x_portrait")
+        val FLOAT_Y_PORTRAIT = floatPreferencesKey("float_y_portrait")
+        val FLOAT_LANDSCAPE = booleanPreferencesKey("float_landscape")
+        val FLOAT_X_LANDSCAPE = floatPreferencesKey("float_x_landscape")
+        val FLOAT_Y_LANDSCAPE = floatPreferencesKey("float_y_landscape")
     }
 }

@@ -36,6 +36,8 @@
     <string name="settings_align_left">왼손모드</string>
     <string name="settings_align_center">중앙모드</string>
     <string name="settings_align_right">오른손모드</string>
+    <string name="settings_float">띄우기</string>
+    <string name="settings_float_summary">자판 위 손잡이를 길게 눌러 옮깁니다. 옮긴 뒤에는 정렬 대신 옮긴 자리를 씁니다.</string>
     <string name="settings_graffiti_ratio">그래피티 영역 비율 (문자 : 숫자)</string>
     <string name="settings_graffiti_ratio_1_1">1 : 1</string>
     <string name="settings_graffiti_ratio_2_1">2 : 1</string>
