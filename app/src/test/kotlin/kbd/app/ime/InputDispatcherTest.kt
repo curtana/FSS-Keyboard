@@ -343,11 +343,11 @@ class InputDispatcherTest {
         d.onFunctionDown(FunctionKey.MODE)
         assertEquals(listOf("finish"), port.calls)
         assertEquals(1, s.resets)
-        assertEquals(InputMode.GRAFFITI, modes.current)   // typed, no previous → next in order
+        assertEquals(InputMode.QWERTY, modes.current)   // typed, no previous → next in order (FSS#93: Dubeolsik → QWERTY)
         assertEquals(InputMode.DUBEOLSIK, modes.previous)
         assertFalse(modes.typed)                           // the mode key is not input
-        assertEquals(listOf(InputMode.GRAFFITI), saved)
-        assertEquals(listOf(InputMode.GRAFFITI), shown)
+        assertEquals(listOf(InputMode.QWERTY), saved)
+        assertEquals(listOf(InputMode.QWERTY), shown)
     }
 
     @Test
