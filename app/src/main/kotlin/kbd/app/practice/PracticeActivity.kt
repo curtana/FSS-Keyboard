@@ -2,6 +2,7 @@ package kbd.app.practice
 
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Canvas
 import android.media.AudioManager
 import android.os.Bundle
 import android.view.MotionEvent
@@ -51,13 +52,16 @@ import kbd.app.ime.InputMode
 import kbd.app.settings.AppStores
 import kbd.app.settings.KeyboardAppTheme
 import kbd.app.store.ErrorLog
+import kbd.app.store.KeyboardPlate
 import kbd.app.store.KeyboardSpan
 import kbd.app.store.KeyboardWidth
+import kbd.app.store.PxRect
 import kbd.app.store.Settings
 import kbd.app.store.WidthSetting
 import kbd.app.swipe.SwipeModuleProvider
-import kbd.app.view.KeyboardRootView
 import kbd.app.view.OffKeyboardPointers
+import kbd.app.view.PlatePainter
+import kbd.app.view.PlateView
 import kbd.app.view.TapKeyboardView
 import kbd.app.view.applySideMargin
 import kbd.graffiti.guide.GuideCatalog
@@ -183,8 +187,10 @@ internal class BoardFactory(
  *
  * The board has the keyboard width and alignment of the screen's orientation (SRS FR-CMN-14 ⑥, LLD-07 §2.3, FSS#25):
  * the frame's width is the available width, [KeyboardWidth.place] gives the keyboard rectangle in it, the board sits
- * on the rectangle's keys and is told the side margin (FSS#84), and the side margins and the rest are keyboard-coloured
- * place of the frame whose touches are taken with no input and are no action of the practice.
+ * on the rectangle's keys and is told the side margin (FSS#84). The frame has no background: it paints the keyboard
+ * rectangle only ([plate], FR-CMN-14 ⑫, FSS#85), so the side margins are keyboard-coloured and the rest shows the
+ * practice screen. Touches on the margins and on the rest are taken by the frame with no input and are no action of
+ * the practice.
  *
  * A gesture that begins while [held] (a right item on show, FSS#54) is taken whole with no input and no action.
  */
@@ -196,16 +202,25 @@ private class BoardFrame(
     private val held: () -> Boolean,
     private val onDown: () -> Unit,
     private val onUp: (reversed: Boolean) -> Unit,
-) : FrameLayout(context) {
+) : FrameLayout(context), PlateView {
 
     private val starts = HashMap<Int, Pair<Float, Float>>()
     private var span = KeyboardSpan(0, 0, 0)
+
+    /** The keyboard rectangle by the frame's height: the frame has no system bar padding ([KeyboardPlate.rect]). */
+    override var plate: PxRect = PxRect.EMPTY
+        private set
+    private val platePainter = PlatePainter()
     /** The gesture began while [held]: none of it reaches the board. */
     private var heldGesture = false
     private val offBoard = OffKeyboardPointers { x, y -> x >= span.keysLeft && x < span.keysLeft + span.keysWidth && y >= 0 && y < height }
 
     init {
-        setBackgroundColor(KeyboardRootView.BACKGROUND_COLOR)
+        setWillNotDraw(false)   // no background: only the plate is painted
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        platePainter.draw(canvas, plate)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -219,6 +234,11 @@ private class BoardFrame(
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        val p = KeyboardPlate.rect(right - left, bottom - top, 0, 0, span)
+        if (p != plate) {
+            plate = p
+            invalidate()
+        }
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             c.layout(span.keysLeft, 0, span.keysLeft + c.measuredWidth, c.measuredHeight)

@@ -100,3 +100,42 @@ object KeyboardWidth {
         return KeyboardSpan(left, width, (width / (2f * RECT_UNITS)).roundToInt())
     }
 }
+
+/** A rectangle in px: [left] and [top] are inside, [right] and [bottom] are the first px outside. */
+data class PxRect(val left: Int, val top: Int, val right: Int, val bottom: Int) {
+    val isEmpty: Boolean get() = right <= left || bottom <= top
+
+    /** True when the px at ([x], [y]) is in the rectangle. */
+    fun contains(x: Int, y: Int): Boolean = x >= left && x < right && y >= top && y < bottom
+
+    companion object {
+        val EMPTY = PxRect(0, 0, 0, 0)
+    }
+}
+
+/**
+ * The keyboard plate (SRS FR-CMN-14 ⑫, HLD 5A, LLD-08 §7.3, FSS#85): the one rectangle of the input view that the
+ * keyboard paints and that takes touches. What the input view has outside it is left clear: not painted, and not in
+ * the window's touch region, so that the app below can show and be touched there. Painting and the touch region
+ * read the rectangle this gives and work out no place of their own, so the two cannot differ. No Android: unit
+ * tested.
+ */
+object KeyboardPlate {
+    /**
+     * The plate in a view of [viewWidth] × [viewHeight] px whose system bar padding is [padLeft] and [padRight] wide
+     * and whose keyboard rectangle is [span] (in the width between the two paddings, [KeyboardWidth.place]).
+     *
+     * Left and right are the keyboard rectangle's; a side where the rectangle reaches the end of the available width
+     * (none of the rest on that side, in the px the rectangle is placed with) goes on over that side's padding to the
+     * view's edge, so a keyboard set against a side bar is one plate with it. Top and bottom are the view's: the rows
+     * and the bottom padding under them. A full-width keyboard's plate is the whole view.
+     */
+    fun rect(viewWidth: Int, viewHeight: Int, padLeft: Int, padRight: Int, span: KeyboardSpan): PxRect {
+        if (viewWidth <= 0 || viewHeight <= 0) return PxRect.EMPTY
+        val restLeft = span.left
+        val restRight = viewWidth - padLeft - padRight - span.left - span.width
+        val left = if (restLeft <= 0) 0 else padLeft + span.left
+        val right = if (restRight <= 0) viewWidth else padLeft + span.left + span.width
+        return PxRect(left, 0, right, viewHeight)
+    }
+}
