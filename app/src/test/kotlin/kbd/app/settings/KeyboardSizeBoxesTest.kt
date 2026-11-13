@@ -13,7 +13,9 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import kbd.app.store.KeyboardAlign
 import kbd.app.store.Settings
+import kbd.app.store.WidthSetting
 import kbd.app.view.ViewTestSdk
 import org.junit.Rule
 import org.junit.Test
@@ -22,8 +24,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.model.Statement
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import kbd.app.store.KeyboardAlign
-import kbd.app.store.WidthSetting
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 

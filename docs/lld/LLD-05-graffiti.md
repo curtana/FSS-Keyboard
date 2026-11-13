@@ -1,7 +1,8 @@
 # LLD-05 그래피티
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
-- 버전 **0.34** (2026-11-06)
+- 버전 **0.35** (2026-11-13)
+- 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑧, HLD 0.75 5A): 패드·보조 줄·덮개는 자판 폭 W 그대로이고 여유 칸은 비운다(배치 코드 그대로). `GraffitiPadView.sideMarginPx`(`SideMarginView`) — 보조 줄 모드 키의 `KeyGeom`을 만들 때 테두리의 왼쪽·오른쪽을 여유 칸만큼 밖으로 준다(8절). 인식·영역 판정은 그대로다.
 - 0.34(FSS#80, SRS 0.81): 영문 오너 획 템플릿 156개를 `EN_LETTER`에 더했다(7절). 판정 코드와 안내표 칸은 그대로다.
 - 0.33(FSS#72, SWIPE 0.56 10.1 ③, LLD-07 0.32): `GraffitiGuidePanel.reveal`(10.2). 강조 없이 그 칸이 보이게 넘긴다. 키보드의 덮개는 쓰지 않는다.
 - 0.32(FSS#70, SRS 0.78): 인식 전용 변형 `en_q2`를 더했다(7절). Q의 꼬리가 고리 폭 밖으로 나가면 `en_q`보다 `en_v`에 가까워져 v가 되던 문제다. 안내표 칸은 그대로다.
@@ -483,7 +484,7 @@ class GraffitiPadView(context: Context, private val sink: TapSink,          // �
 
 ```
 DOWN: 보조 줄 안 → feedback.key()(키 입력 피드백은 누를 때, FR-CMN-11a ②)
-                   모드 키(0.22, #205): 입력 없음. KeyGeom(키 사각형, 창 = 패드 뷰) + TapGestureClassifier(minCrossDp).begin(p)
+                   모드 키(0.22, #205): 입력 없음. KeyGeom(키 사각형, 창 = 패드 뷰, 0.35: sideDp = sideMarginPx / density — LLD-08 7.2) + TapGestureClassifier(minCrossDp).begin(p)
                    그 밖 기능키는 누를 때 처리(FR-CMN-11a ①): guard.stroke("Graffiti.fn") { sink.onFunctionDown(key) }
       (⌫는 InputDispatcher.backspace → handler.backspace, LLD-08 6절). ⌫면 RepeatTimer 시작
       패드 안 → InkCollector.onDown, 잉크 그리기 시작. 키가 아니므로 키 입력 피드백 없음(FR-CMN-11a ②, GRAFFITI 6.2-9)

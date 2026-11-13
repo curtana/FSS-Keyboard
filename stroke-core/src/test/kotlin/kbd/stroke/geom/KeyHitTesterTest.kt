@@ -74,7 +74,7 @@ class KeyHitTesterTest {
 
     /** FSS#84: the border's left and right sides lie a side margin outside the key area. */
     @Test
-    fun `KG-02 with a side margin the end keys' left and right edges are not outer, bottom and top stay`() {
+    fun `KH-07 with a side margin the end keys' left and right edges are not outer, bottom and top stay`() {
         fun build(r: RectDp, side: Float) = KeyGeom.build("k", r, windowW, windowH, side)
         assertEquals(emptySet<Edge>(), build(a.rect, 8f).outerEdges)
         assertTrue(build(a.rect, 8f).topAtWindow)

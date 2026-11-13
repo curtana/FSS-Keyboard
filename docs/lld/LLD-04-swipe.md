@@ -1,7 +1,8 @@
 # LLD-04 긋기 입력 처리
 
 - 대응 HLD 절: 4장(4.1 한 획의 흐름, 4.2 StrokeClassifier, 4.3 SwipeInputMapper, 4.4 HangulComposer)
-- 버전 **0.34** (2026-11-05)
+- 버전 **0.35** (2026-11-13)
+- 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑧·FR-SWP-45, HLD 0.75 4.2·5A): `KeyGeom.build`에 `sideDp`(테두리의 왼쪽·오른쪽이 자판에서 여유 칸만큼 밖, 2절). `SwipeGeometry.build(widthDp, rowHeightDp, sideDp)`, `SwipeKeyboardView.sideMarginPx`(9.2). 양 끝 열(1·8·0·천지인·기호3·모드 키, 7·9·⌫·↵·기호2)의 바깥쪽 획은 보통 변 통과다. `EdgeCrossingTracker`·분류기·배정표는 그대로(새 배정 없음).
 - 0.34(FSS#75, SRS 0.80 FR-SWP-42~44, SWIPE 0.57 7·8장): 8.2 숫자 5 ← `-`, 8.3 기호 = ← `<` → `>` ↑ `'` ↓ `_`, 기호2 = ← `♥` ↑ `"` ↓ `★`. 판정·라벨 코드는 그대로이고 표만 바뀐다(`classifySymbol`·`drawSides`·안내가 표를 읽는다). `( )`는 9·0 ↑에만 있어 PC 특수 문자에 겹침이 없다(시험 SL-10).
 - 0.33(FSS#57, SRS 0.76 FR-DSP-09·FR-SET-02, SWIPE 0.55 9.3·9.4): 획 자국 설정 — `onDraw`는 `host.settings.showStrokeTrail`이 켜졌을 때만 `TrailPainter`로 그린다(9.4).
 - 0.32(FSS#36·FSS#37, SWIPE 0.52 9.5·3.6.5, SRS 0.72 FR-DSP-10, HLD 0.65 6장): ① 가운데 자리 C를 **반 키 높이 아래로** — `consonantBox` 위 끝 = `(1 + 0.5) × 줄 높이 + 4dp`(상수 `C_DROP_ROWS = 0.5`, 줄 높이를 따라감), 360dp·48dp에서 ≈ (139.2, 76)–(220.8, 172)(8.1). 그림과 판정이 같은 함수라 판정 C도 같이 내려간다. ② 9.5를 **가운데 글자**로: 그릴 것은 `SwipeHost.centerText`(= `InputDispatcher.centerText()`, LLD-08 6.1) — 지금 조합 중인 한 글자(후보 표시 없음, 낱모음이면 null), 아직 모음이 아닌 모음 획은 획마다 점을 자리에 찍음(세로 획 = 자음 아래 수평 나란히, 가로 획 = 자음 오른쪽 수직, 오너 보충 2026-11-02). 조립기 `pendingDots`(6.3), 매퍼 `pendingDots()`(6.1). 이름 `CenterConsonantPainter`는 그대로. ③ 10.1 시퀀스의 가운데 표시. 획 안내의 "다음 획 자리"는 0.18부터 그리지 않았고 이제 할 일도 아니다(SRS FR-DSP-01, 5.2 0.18 끝 문장).
@@ -55,9 +56,11 @@ class KeyHitTester(val keys: List<KeyGeom>, val windowW: Float, val windowH: Flo
 - 오류: 키 목록이 비면 null.
 - 근거: HLD 4.1("이웃 틈은 가까운 키로"), SRS 3.3(들여쓰기 빈칸은 가장 가까운 키). 시험: KH-01~KH-04.
 
-#### `KeyGeom.build(id, rect, windowW, windowH): KeyGeom` (companion)
-- `outerEdges` = { LEFT if `rect.left ≤ 0.5`, RIGHT if `rect.right ≥ windowW − 0.5`, BOTTOM if `rect.bottom ≥ windowH − 0.5` }. 0.5dp는 부동소수 오차 여유다. TOP은 넣지 않는다(LLD-03 3.3).
-- 시험: KH-05(쿼티 1·0·q·p·⌫·↵·맨 아랫줄), KH-06(긋기 자판 1·8·0·7·9·⌫·↵·맨 아랫줄, ㅋ의 왼쪽 = 빈 칸이라 바깥 변 아님).
+#### `KeyGeom.build(id, rect, windowW, windowH, sideDp = 0): KeyGeom` (companion)
+- `windowW`·`windowH` = 키 영역(모드 뷰)의 폭·높이. `sideDp`(0.35, FSS#84) = 테두리의 왼쪽·오른쪽이 키 영역보다 밖에 있는 거리, 곧 자판의 여유 칸 폭(LLD-08 7.2). 테두리의 왼쪽 = −`sideDp`, 오른쪽 = `windowW + sideDp`.
+- `outerEdges` = { LEFT if `rect.left ≤ −sideDp + 0.5`, RIGHT if `rect.right ≥ windowW + sideDp − 0.5`, BOTTOM if `rect.bottom ≥ windowH − 0.5` }. 0.5dp는 부동소수 오차 여유다. TOP은 넣지 않는다(LLD-03 3.3). `topAtWindow`는 그대로(`rect.top ≤ 0.5`).
+- 실제 자판은 늘 `sideDp` = 여유 칸 폭(> 0.5dp)으로 부르므로 끝 키(`rect.left` = 0, `rect.right` = `windowW`)의 LEFT·RIGHT가 들지 않는다. `sideDp` = 0은 0.34와 같은 결과이고 순수 함수 시험(KH-05·KH-06)이 쓴다.
+- 시험: KH-05(쿼티 1·0·q·p·⌫·↵·맨 아랫줄), KH-06(긋기 자판 1·8·0·7·9·⌫·↵·맨 아랫줄, ㅋ의 왼쪽 = 빈 칸이라 바깥 변 아님) — 둘 다 `sideDp` 0. KH-07(`sideDp` 8: 끝 키 LEFT·RIGHT 없음, 아래·위 그대로), SM-02·SM-04(실제 기하).
 
 ## 3. 변 통과 추적 (EdgeCrossingTracker, stroke-core)
 
@@ -89,6 +92,7 @@ data class ZoneState(val x: XZone, val y: YZone) { val inside get() = x == XZone
 - **들어옴(IN):** 밖 → 안으로 바뀐 표본에서 기록한다. 마지막으로 IN이 된 축의 변이 들어옴 변이다.
 - 밖에서 밖으로(모서리를 돌아감)는 기록하지 않는다. 키 위쪽 바깥에서 아래로 내려와 위 변으로 들어오면 IN(TOP)이다.
 - ~~**바깥 변 제외(FR-SWP-45)**~~(0.27, 이슈 #237로 대체): 0.26까지는 바깥 변 쪽 OUT 구역으로 전이하지 않아 바깥으로만 나간 획은 기록이 없었다. 이제 바깥 변도 아래 "창 테두리에 붙은 점"으로 나감이 된다. 그 방향에 배정이 없으면 결과는 탭과 같다(숫자 1 ←·7 →, 기호2 →, 기호3 ←, 천지인 ← = ㆍ, 모드 키 ←·↓ = 모드 전환. 새 기호는 배정하지 않음).
+- **여유 칸 쪽 변(0.35, FSS#84):** 자판 왼쪽·오른쪽 끝 키의 바깥쪽 변은 테두리에 붙은 변이 아니다(2절 `sideDp`). 그래서 위 표의 X 전이 그대로, 실제 점이 `rect.left − m`·`rect.right + m`에 닿을 때 나감이다 — 아래 "테두리에 붙은 점" 규칙(닿으면 나감, 누른 점에서 `minCrossDp` 이동 조건)은 이 변에 걸리지 않는다. 손가락은 여유 칸(모드 뷰 밖, x < 0 또는 x > 폭) 위에 있고 그 좌표가 모드 뷰에 그대로 온다(LLD-08 7.2). 시험 EC-16, SM-03·SM-04.
 - **창 테두리에 붙은 점(0.27, 이슈 #237):** 플랫폼은 창 밖으로 나간 터치를 창 테두리에 붙여 보낸다(위 y = 0, 왼쪽 x = 0 …). 그래서 키 변이 테두리에 있으면(`KeyGeom.windowEdges` = 바깥 변 + 맨 윗줄의 위 변) 그 테두리에서 0.5dp(`OUTER_TOLERANCE_DP`) 안의 점을 그 변을 `minCrossDp`만큼 넘은 점으로 보고 판정한다(나감). 단 **그 방향으로 누른 점에서 `minCrossDp` 이상 움직였을 때만**이다(0.28, SRS 0.60 FR-SWP-45 설계 결정: 왼쪽 테두리면 `누른 x − x ≥ m`, 오른쪽 `x − 누른 x ≥ m`, 위 `누른 y − y ≥ m`, 아래 `y − 누른 y ≥ m`) — 테두리에 붙여 누른 탭, 흔들림, 위로 긋다 옆 테두리를 스친 대각선은 나감이 아니다. 다시 키 안으로 들어오는 판정(변 안쪽 `minCrossDp`)은 실제 점으로 한다. 0.26까지는 이런 획이 탭(숫자)이 되었다(실기기 `FSSStroke`: key=1 (68,39.6)→(68,0.0) = "1").
 - **대각선(FR-SWP-04):** 한 표본 사이에 두 축이 함께 OUT이 되면, 직전 표본과 이번 표본을 잇는 선분에서 각 축이 문턱(`변 ± m`)에 닿는 비율 `f`를 구해 작은 쪽을 나감 변으로 한다. 같으면 가로 변(LEFT·RIGHT)을 고른다(D-04). 들어옴도 같은 방식(나중에 IN이 된 축)으로 정한다.
 - 기록 시각 `t`는 조건을 만족한 표본의 시각이다(보간하지 않는다, D-05).
@@ -576,7 +580,8 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `onMeasure` | 폭 = 부모 폭, 높이 = `SwipeLayout.ROWS`(6, 0.17) × 줄 높이 | SRS 3.3 |
-| `onLayout`/`rebuildGeometry()` | `SwipeLayout.KEYS`로 `KeyGeom`(dp)과 `KeyHitTester`를 만든다. 창 크기는 루트 뷰 크기(LLD-08 7절)로 바깥 변을 계산. 0.31: `mapper.setKeyWidth(폭 / 7)`(위치 허용 오차 t = 키 폭 × 0.4, HLD 7.2) | FR-SWP-45, FR-CMN-12 |
+| `onLayout`/`rebuildGeometry()` | `SwipeLayout.KEYS`로 `KeyGeom`(dp)과 `KeyHitTester`를 만든다(`SwipeGeometry.build(폭, 줄 높이, sideDp)`). 창 크기는 루트 뷰 크기(LLD-08 7절)로 바깥 변을 계산. 0.31: `mapper.setKeyWidth(폭 / 7)`(위치 허용 오차 t = 키 폭 × 0.4, HLD 7.2). 0.35: `sideDp` = `sideMarginPx / density` — 폭·줄 높이·`sideDp`가 모두 같을 때만 다시 만들지 않는다 | FR-SWP-45, FR-CMN-12, FR-CMN-14 ⑧ |
+| `sideMarginPx`(0.35, `SideMarginView`) | 부모(`KeyboardRootView`, 연습 화면의 `BoardFrame`)가 재기 전에 여유 칸 폭을 알린다. 값이 바뀌면 `rebuildGeometry()`. 기본 0 | FR-CMN-14 ⑧⑪, LLD-08 7.2 |
 | `onDraw` | 키 배경·글자. 둘레 숫자 키 글자는 배치표 그대로(변 가운데), 기호·기호2 키는 가운데 탭 기호 + 변 가운데 배정 기호(8.3, 0.27) | FR-SWP-50, 43a |
 | `onTouchEvent` | 아래 9.3 | FR-CMN-11 |
 
