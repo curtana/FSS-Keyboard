@@ -5,6 +5,8 @@ import android.graphics.Rect
 import android.inputmethodservice.InputMethodService
 import android.os.Looper
 import android.widget.FrameLayout
+import kbd.app.store.FloatSetting
+import kbd.app.store.FloatingKeyboard
 import kbd.app.store.KeyboardAlign
 import kbd.app.store.KeyboardWidth
 import kbd.app.store.WidthSetting
@@ -139,6 +141,84 @@ class KeyboardInsetsTest {
         KeyboardInsets.compute(fresh, insets)
         assertEquals(InputMethodService.Insets.TOUCHABLE_INSETS_VISIBLE, insets.touchableInsets)
         assertTrue(insets.touchableRegion.isEmpty)
+    }
+
+    /** FSS#86: the parent here lets the root be as high as the window's content, as the input method's window does. */
+    private fun float(on: Boolean, fx: Float? = null, fy: Float? = null) {
+        root.portraitFloat = FloatSetting(on, fx, fy)
+        root.relayout()
+        traverse()
+    }
+
+    @Test
+    fun `KI-05 floating - the insets start at the input view's bottom, the touchable region is the plate`() {
+        set(WidthSetting(40f, KeyboardAlign.CENTER))
+        val dockedHeight = root.height
+        float(true, 0.25f, 0.5f)
+        assertTrue(root.floated)
+        assertTrue(root.height > dockedHeight)
+        val loc = location()
+        val plate = root.plate
+        assertTrue(plate.top > 0 && plate.bottom < root.height)   // in the middle: not at an end
+        compute()
+        assertEquals(loc[1] + root.height, insets.contentTopInsets)   // the app is left no less than it had
+        assertEquals(loc[1] + root.height, insets.visibleTopInsets)
+        assertEquals(InputMethodService.Insets.TOUCHABLE_INSETS_REGION, insets.touchableInsets)
+        assertTrue(insets.touchableRegion.isRect)
+        assertEquals(Rect(loc[0] + plate.left, loc[1] + plate.top, loc[0] + plate.right, loc[1] + plate.bottom), insets.touchableRegion.bounds)
+        // Handle and keyboard rectangle: 24 dp and six rows high, the rectangle's width.
+        val d = root.resources.displayMetrics.density
+        assertEquals(root.rectWidth, insets.touchableRegion.bounds.width())
+        assertEquals(Math.round(FloatingKeyboard.HANDLE_DP * d) + Math.round(KeyboardRootView.WINDOW_ROWS * root.rowHeightDp * d), insets.touchableRegion.bounds.height())
+        // A full-width floating keyboard: still the region, never the visible insets (they leave nothing to touch).
+        set(WidthSetting.DEFAULT)
+        assertTrue(root.floated)
+        compute()
+        assertEquals(InputMethodService.Insets.TOUCHABLE_INSETS_REGION, insets.touchableInsets)
+        assertEquals(Rect(location()[0], location()[1] + root.plate.top, location()[0] + root.width, location()[1] + root.plate.bottom), insets.touchableRegion.bounds)
+        assertEquals(location()[1] + root.height, insets.visibleTopInsets)
+    }
+
+    @Test
+    fun `KI-06 the region and the insets follow - moved, put, switched off and on`() {
+        set(WidthSetting(40f, KeyboardAlign.CENTER))
+        compute()
+        val dockedRegion = Rect(insets.touchableRegion.bounds)
+        val dockedTop = insets.contentTopInsets
+        float(true)
+        compute()
+        val first = Rect(insets.touchableRegion.bounds)
+        // Moved by its handle and put: after the traversal the put asks for, the region is the new plate.
+        val t = kbd.app.view.Touches(root)
+        val d = root.resources.displayMetrics.density
+        val x = root.plate.left + root.plate.width / 2f
+        val y = root.plate.top + 12 * d
+        t.down(0, x, y)
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(android.view.ViewConfiguration.getLongPressTimeout().toLong()))
+        t.move(0, x - 50 * d, y - 70 * d)
+        t.up(0)
+        traverse()
+        compute()
+        val moved = Rect(insets.touchableRegion.bounds)
+        assertEquals(Rect(first.left - Math.round(50 * d), first.top - Math.round(70 * d), first.right - Math.round(50 * d), first.bottom - Math.round(70 * d)), moved)
+        assertEquals(location()[1] + root.height, insets.contentTopInsets)
+        // Off: what the docked keyboard reports, nothing of the floating one left.
+        float(false, root.portraitFloat.fx, root.portraitFloat.fy)
+        assertFalse(root.floated)
+        compute()
+        assertEquals(dockedRegion, insets.touchableRegion.bounds)
+        assertEquals(dockedTop, insets.contentTopInsets)
+        assertEquals(dockedTop, insets.visibleTopInsets)
+        set(WidthSetting.DEFAULT)
+        compute()
+        assertEquals(InputMethodService.Insets.TOUCHABLE_INSETS_VISIBLE, insets.touchableInsets)   // KI-03, as before
+        assertTrue(insets.touchableRegion.isEmpty)
+        // On again: the place it was put at.
+        set(WidthSetting(40f, KeyboardAlign.CENTER))
+        float(true, root.portraitFloat.fx, root.portraitFloat.fy)
+        compute()
+        assertEquals(moved, insets.touchableRegion.bounds)
+        assertEquals(location()[1] + root.height, insets.visibleTopInsets)
     }
 
     private companion object {

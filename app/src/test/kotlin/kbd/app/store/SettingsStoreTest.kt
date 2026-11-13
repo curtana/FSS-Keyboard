@@ -131,6 +131,64 @@ class SettingsStoreTest {
     }
 
     @Test
+    fun `SS-12 floating is off and never put by default, each orientation reads back by itself`() {
+        val d = SettingsStore(open()).loadBlocking()
+        assertEquals(FloatSetting(false, null, null), d.portraitFloat)
+        assertEquals(FloatSetting(false, null, null), d.landscapeFloat)
+        runBlocking { SettingsStore(reopen()).update { it.copy(landscapeFloat = FloatSetting(true, 0.25f, 0.75f)) } }
+        var s = SettingsStore(reopen()).loadBlocking()
+        assertEquals(FloatSetting(true, 0.25f, 0.75f), s.landscapeFloat)
+        assertEquals(FloatSetting(false, null, null), s.portraitFloat)   // the other orientation is as it was
+        runBlocking { SettingsStore(reopen()).update { it.copy(portraitFloat = FloatSetting(true, null, 0.5f)) } }
+        s = SettingsStore(reopen()).loadBlocking()
+        assertEquals(FloatSetting(true, null, 0.5f), s.portraitFloat)
+        assertEquals(FloatSetting(true, 0.25f, 0.75f), s.landscapeFloat)
+        // Switched off: the place stays stored. A null share removes its key.
+        runBlocking { SettingsStore(reopen()).update { it.copy(landscapeFloat = it.landscapeFloat.copy(on = false, fx = null)) } }
+        val r = reopen()
+        assertEquals(FloatSetting(false, null, 0.75f), SettingsStore(r).loadBlocking().landscapeFloat)
+        assertNull(runBlocking { r.data.first()[SettingsStore.FLOAT_X_LANDSCAPE] })
+    }
+
+    @Test
+    fun `SS-13 setFloatPosition writes only the shares given, for the orientation given`() {
+        runBlocking { SettingsStore(open()).update { it.copy(portraitFloat = FloatSetting(true, null, null), landscapeFloat = FloatSetting(true, 0.1f, 0.2f)) } }
+        runBlocking { SettingsStore(reopen()).setFloatPosition(landscape = false, fx = null, fy = 0.4f) }
+        var s = SettingsStore(reopen()).loadBlocking()
+        assertEquals(FloatSetting(true, null, 0.4f), s.portraitFloat)   // across: still never put
+        assertEquals(FloatSetting(true, 0.1f, 0.2f), s.landscapeFloat)
+        runBlocking { SettingsStore(reopen()).setFloatPosition(landscape = true, fx = 0.9f, fy = null) }
+        s = SettingsStore(reopen()).loadBlocking()
+        assertEquals(FloatSetting(true, 0.9f, 0.2f), s.landscapeFloat)   // down: what was stored stays
+        assertEquals(FloatSetting(true, null, 0.4f), s.portraitFloat)
+        runBlocking { SettingsStore(reopen()).setFloatPosition(landscape = false, fx = 0.3f, fy = 0.6f) }
+        runBlocking { SettingsStore(reopen()).setFloatPosition(landscape = false, fx = null, fy = null) }   // nothing to write
+        s = SettingsStore(reopen()).loadBlocking()
+        assertEquals(FloatSetting(true, 0.3f, 0.6f), s.portraitFloat)
+        // The switch written from the settings screen keeps the place (update writes what it read).
+        runBlocking { SettingsStore(reopen()).update { it.copy(portraitFloat = it.portraitFloat.copy(on = false)) } }
+        assertEquals(FloatSetting(false, 0.3f, 0.6f), SettingsStore(reopen()).loadBlocking().portraitFloat)
+    }
+
+    @Test
+    fun `SS-14 a stored share outside 0 to 1 reads as the nearer end, not a number as none`() {
+        val cases = listOf(-0.5f to 0f, 1.5f to 1f, 0f to 0f, 1f to 1f, 0.37f to 0.37f, Float.NaN to null)
+        for ((stored, expected) in cases) {
+            runBlocking {
+                reopen().edit {
+                    it[SettingsStore.FLOAT_X_PORTRAIT] = stored
+                    it[SettingsStore.FLOAT_Y_LANDSCAPE] = stored
+                }
+            }
+            val s = SettingsStore(reopen()).loadBlocking()
+            assertEquals("stored $stored", expected, s.portraitFloat.fx)
+            assertEquals("stored $stored", expected, s.landscapeFloat.fy)
+            assertNull(s.portraitFloat.fy)
+            assertFalse(s.portraitFloat.on)
+        }
+    }
+
+    @Test
     fun `SS-05 setPracticeListShown true reads back`() {
         runBlocking { SettingsStore(open()).setPracticeListShown(true) }
         assertTrue(SettingsStore(reopen()).loadBlocking().practiceListShown)
