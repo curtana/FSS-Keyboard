@@ -1,8 +1,8 @@
 # 상위 수준 설계 (HLD)
 
-- 문서: HLD, 버전 **0.76** (2026-11-13)
+- 문서: HLD, 버전 **0.77** (2026-11-14)
 - 상태: 초안. LLD 0.1이 올린 설계 변경 요청 DCR-01~21(오너 승인 2026-10-27)을 반영했다.
-- 요구사항: [SRS.md](SRS.md) 0.83
+- 요구사항: [SRS.md](SRS.md) 0.84
 - 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.59, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
 
 ## 1. 설계 원칙
@@ -320,7 +320,7 @@ PracticeActivity(옛 TutorActivity)
 
 | 시점 | 처리 |
 |---|---|
-| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드. 꺼진 모드면 순서상 다음 켜진 모드, FR-CMN-03f ③)의 입력 뷰 생성(FR-CMN-10) |
+| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드 = 한글 두벌식, FSS#93. 꺼진 모드면 순서상 다음 켜진 모드, FR-CMN-03f ③)의 입력 뷰 생성(FR-CMN-10) |
 | `onStartInputView(info)` | **자판 선택:** 클래스가 숫자·전화·날짜시간이거나 비밀번호(아래 판별, 학습 금지 플래그만 있는 경우는 제외)면 **숫자류 입력창** → `ModeController.enterNumericField()`(영문 쿼티로 시작), 아니면 `leaveNumericField()`(돌아갈 모드로 복귀). 8.1, FR-CMN-04·04b. **비밀번호 판별(클래스와 변형을 함께):** (클래스 = `TYPE_CLASS_TEXT`이고 변형 ∈ {`TYPE_TEXT_VARIATION_PASSWORD`, `VISIBLE_PASSWORD`, `WEB_PASSWORD`}) 또는 (클래스 = `TYPE_CLASS_NUMBER`이고 변형 = `TYPE_NUMBER_VARIATION_PASSWORD`) → 표시 제한·기록 안 함(FR-CMN-08 ①). `imeOptions`에 `IME_FLAG_NO_PERSONALIZED_LEARNING`만 있으면 → 기록 안 함(학습·통계·오류 기록), 표시는 평소대로(FR-CMN-08 ②). 변형 값만 비교하면 안 된다(`NUMBER_VARIATION_PASSWORD`와 `TEXT_VARIATION_URI`가 같은 값 0x10). 조합 확정, BlockParser·천지인 조립기 초기화, `ModeController.typed = false`(previous 유지, FR-CMN-03e). 이어서 `ModeController.applyEnabled(켜진 모드)`(FR-CMN-03f, 8.1) |
 | `onUpdateSelection(oldSel, newSel, candStart, candEnd)` | 조합 중이고 **새 커서가 조합 구간 끝(candEnd)과 다르거나 입력기가 마지막으로 기대한 위치와 다를 때만** 사용자 커서 이동으로 보고 확정·초기화. 입력기 자신의 `setComposingText`·`commitText`로 생긴 변화는 무시(FR-CMN-06) |
 | `onFinishInput` | 조합 확정 |
@@ -337,7 +337,7 @@ PracticeActivity(옛 TutorActivity)
 
 ```
 상태: current, previous(없을 수 있음), typed
-순서: SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → SWIPE … (설정에서 꺼진 모드는 건너뜀, FR-CMN-03f)
+순서: DUBEOLSIK → QWERTY → SWIPE → GRAFFITI → DUBEOLSIK … (설정에서 꺼진 모드는 건너뜀, FR-CMN-03f. FSS#93)
 켜진 모드: enabled ⊇ {QWERTY, DUBEOLSIK}(늘 켜짐), GRAFFITI·SWIPE는 SettingsStore 값(기본 켬, FR-SET-08)
 nextEnabled(m) = 순서상 m 다음의 첫 켜진 모드
 
@@ -585,3 +585,4 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 | 0.74 | 2026-11-06 | SRS 0.81 반영(오너 결정 2026-11-06, FSS#80): 5장 템플릿 — 영문 글자에도 오너 손 획 추가. 12장 결정 |
 | 0.75 | 2026-11-13 | SRS 0.82·SWIPE 0.58 반영(오너 요청 2026-11-13, FSS#84: 자판 좌우 여유 칸): 5A 자판 폭과 정렬 — 낱말(자판·여유 칸·자판 사각형·남는 자리), `KeyboardWidth` 출력(자판 사각형 R = min(A, max(352, 11u)), 여유 칸 m = R / 22, W = R − 2m), 루트가 모드 뷰를 x + m에 폭 W로 놓음, 여유 칸은 루트의 자리(터치는 자식 밖 길), 테두리의 왼쪽·오른쪽 = 자판 사각형 바깥 변(끝 키 바깥쪽은 보통 변 통과), 입력 연습·설정 화면. 3장 stroke-core 행, 4.2 테두리 문단(검수 1회차 경미 지적 반영: 테두리에 붙은 변 = 아랫변 `outerEdges`·윗변 `topAtWindow`, 가로 기본과 하한의 순서)·천지인·기호 행, 8.2 모드 키 문구·시험, 10장 R1·R10, 11장 시험(`KeyboardWidth`, 입력 뷰), 12장 결정, 13장 FR-CMN-14. 5A 배치 수치는 배치 단위임을 적음 |
 | 0.76 | 2026-11-13 | SRS 0.83·SWIPE 0.59 반영(오너 요청 2026-11-13, FSS#85: 자판 옆 남는 자리를 투명하게 하고 터치를 아래 앱으로): 5A — 시스템 막대 여백(자판 판에 드는 부분만 칠함), 낱말(자판 판·투명한 자리), 놓기(루트 배경 대신 자판 판만 칠함, 자식 밖 터치 소비는 자판 판 안), **자판 판과 투명한 자리 문단 신설**(사각형 계산 순수 함수, 칠하기, `onComputeInsets`의 터치 영역 = 자판 판·내용/보이는 인셋 그대로, 갱신, 터치 길과 `OffKeyboardPointers` 유지), 입력 연습 자판 틀. 8장 `onComputeInsets` 행, 10장 R11(실기 미확인 항목), 11장 시험(자판 판 계산, 입력 뷰·서비스, 연습 자판 틀, 실기기), 12장 결정, 13장 FR-CMN-14. 판정·폭 계산(`KeyboardWidth`)은 바뀌지 않음. 검수 1회차 경미 지적 반영("닿음" = 그쪽 남는 자리 0px와 1px 시험 사례, 플랫폼 동작 단정 두 곳을 미확인으로 낮춤, R11 ⑦) |
+| 0.77 | 2026-11-14 | SRS 0.84 반영(오너 결정 2026-11-14, FSS#93: 모드 키 순환 순서 바꿈): 8.1 순서 DUBEOLSIK → QWERTY → SWIPE → GRAFFITI(0.76까지 SWIPE → QWERTY → DUBEOLSIK → GRAFFITI). 8장 `onCreateInputView` 처음 설치 시작 모드 = 순서의 첫 모드 = 한글 두벌식. 버전 참조 갱신(SRS 0.84) |
