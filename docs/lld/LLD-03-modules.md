@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.29** (2026-11-02)
+- 버전 **0.30** (2026-11-13)
+- 0.30(FSS#84, SRS 0.82 FR-CMN-14 ⑧, HLD 0.75 3장·5A): 3.3 바깥 변 — 테두리의 왼쪽·오른쪽은 자판 사각형의 바깥 변(자판에서 여유 칸만큼 밖)이라 끝 키의 왼쪽·오른쪽 변은 바깥 변이 아니다(`KeyGeom.build`의 `sideDp`, LLD-04 2절).
 - 0.29(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `SwipeHost.centerText`(가운데 글자 = 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에, LLD-04 9.5), `SwipeEngineState.pendingDots()`(2.2). `centerConsonant`는 판정 C를 줄지 정하는 데만 쓴다.
 - 0.28(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): `kbd.app.tutor` → `kbd.app.practice`(LLD-07 2절), `ThresholdStore` 삭제. `SwipeModule.tutorSteps()` 삭제(연습은 같은 `createSwipeView`를 연습용 `SwipeHost`로 부름). 기준값은 고정 상수(3.4), `posTolDp`는 실행 때 키 폭 × 0.4(`ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth`).
 - 0.27(이슈 #251 오너 결정: 공개판·개인판을 하나로, SRS 0.65·HLD 0.59 — CON-5·NFR-11·FR-CMN-03b·FR-TUT-08·HLD 3.1 삭제): 2절 제목을 "빌드와 SwipeModule"로. HLD가 `SwipeModule`을 LLD 표기로 따르므로 인터페이스 이름은 그대로 둔다. 빌드 변형(productFlavors) 삭제, 빌드 하나(`assembleDebug`, 앱 ID `kbd.app`), `gesture-engine`은 일반 `implementation`. `app/src/personal`·`public`·`testPersonal`·`testPublic`를 `main`·`test`로 합침. `SwipeModule`에서 `available`·`thresholdFields()`와 public `NoSwipeModule`을 지움, `PersonalSwipeModule` → `SwipeEngineModule`, `PersonalTutorSteps` → `TutorSteps`. 공개판 튜터 1-1(`MinCrossOnQwertyStep`, `QwertyPracticeEcho`, `PracticeLayout.QWERTY_LETTER_KEY`)과 긋기를 빼는 모드 순서도 지움. 아래 표·코드는 이 판 기준이고, 0.26까지의 변형 설명은 이 줄로 대신한다.
@@ -226,6 +227,7 @@ data class KeyGeom(val id: String, val rect: RectDp, val outerEdges: Set<Edge>)
 
 - `Dir.axis`: LEFT·RIGHT = HORIZONTAL, UP·DOWN = VERTICAL. `Dir.opposite`, `Dir.unit`(UP = (0,−1) 등)을 확장 속성으로 둔다.
 - **바깥 변(`outerEdges`):** 키의 변이 창의 왼쪽(x = 0), 오른쪽(x = 창 폭), 아래쪽(y = 창 높이) 경계와 겹치면 바깥 변이다. 창의 **위쪽 경계는 바깥 변이 아니다**(긋기 자판도 탭 자판도 6줄이 창을 채우고 위는 앱 화면으로 이어짐(0.17, 이슈 #168로 긋기 자판의 빈 띠 없어짐). SRS 3.3 창 높이 규칙, SWIPE 2.1). 빈칸·빈 칸·빈 띠와 맞닿은 변은 바깥 변이 아니다(SRS 3.3 들여쓰기 빈칸 문단). 계산은 배치 데이터를 만들 때 한 번 한다(`KeyGeom` 생성 함수, LLD-04 2절).
+  - **0.30(FSS#84):** 위 문장의 "창"은 입력기 테두리이고, 그 왼쪽·오른쪽 변은 자판(키 10칸, 모드 뷰)의 끝이 아니라 **자판 사각형의 바깥 변**이다 — 모드 뷰 좌표로 x = −m과 x = 폭 + m(m = 여유 칸 폭, SRS FR-CMN-14 ⑧, LLD-08 7.2). 그래서 실제 자판에서는 끝 키의 왼쪽·오른쪽 변이 바깥 변이 아니고(변 너머 최소 통과 거리에서 나감, 다른 변과 같음), 바깥 변은 맨 아랫줄의 아래 변뿐이다. 맨 윗줄의 위 변(`topAtWindow`, 0.25)은 그대로다. m = 0으로 만들면(순수 함수 시험) 0.29와 같다.
 
 ### 3.4 기준값 (`kbd.stroke.threshold`)
 

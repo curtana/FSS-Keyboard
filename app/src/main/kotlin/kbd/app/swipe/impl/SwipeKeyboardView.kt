@@ -15,6 +15,7 @@ import android.view.ViewConfiguration
 import kbd.app.swipe.SwipeHost
 import kbd.app.view.RepeatSchedule
 import kbd.app.view.RepeatTimer
+import kbd.app.view.SideMarginView
 import kbd.gesture.classify.SwipeKeyKind
 import kbd.gesture.input.SwipeInputMapper
 import kbd.gesture.layout.NumberKeyTable
@@ -32,7 +33,7 @@ import kbd.stroke.layout.FunctionKey
  * [SwipeTouchLogic] (LLD-04 §9.3); this view converts events, draws the keys and owns the
  * [SwipeInputMapper], ⌫ repeat and the guide popup.
  */
-class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(context) {
+class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(context), SideMarginView {
 
     private val density = resources.displayMetrics.density
     private val handler = Handler(Looper.getMainLooper())
@@ -90,6 +91,14 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
 
     private val rowHeightDp: Float get() = host.settings.rowHeightDp
 
+    /** The keyboard's side margin, set by the parent before it measures this view (FR-CMN-14 ⑧, LLD-08 §7.2). */
+    override var sideMarginPx: Int = 0
+        set(v) {
+            if (field == v) return
+            field = v
+            rebuildGeometry()
+        }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         setMeasuredDimension(w, px(SwipeLayout.ROWS * rowHeightDp)) // SRS 3.3
@@ -100,13 +109,17 @@ class SwipeKeyboardView(context: Context, private val host: SwipeHost) : View(co
         rebuildGeometry()
     }
 
-    /** Key geometry in dp from [SwipeLayout.KEYS] and the current size (FR-SWP-45, FR-CMN-12). */
+    /** The side margin the key geometry was built with, dp; null before the first size (tests). */
+    internal val geometrySideDp: Float? get() = logic.geometry?.sideDp
+
+    /** Key geometry in dp from [SwipeLayout.KEYS], the current size and the side margin (FR-SWP-45, FR-CMN-12). */
     fun rebuildGeometry() {
         if (width <= 0) return
         val g = logic.geometry
         val wDp = width / density
-        if (g != null && g.widthDp == wDp && g.rowHeightDp == rowHeightDp) return
-        logic.geometry = SwipeGeometry.build(wDp, rowHeightDp)
+        val sideDp = sideMarginPx / density
+        if (g != null && g.widthDp == wDp && g.rowHeightDp == rowHeightDp && g.sideDp == sideDp) return
+        logic.geometry = SwipeGeometry.build(wDp, rowHeightDp, sideDp)
         mapper.setKeyWidth(wDp / SwipeLayout.COLS)   // t = the drawn key width × 0.4 (HLD 7.2, FSS#17)
         labelPaint.textSize = rowHeightDp * density * LABEL_SCALE
         sidePaint.textSize = rowHeightDp * density * SIDE_SCALE

@@ -122,6 +122,50 @@ class PracticeScreenTest {
         compose.onNodeWithText("✓").assertDoesNotExist()
     }
 
+    /** FSS#84: the practice board has the keyboard's side margins; a touch that begins on one is no action. */
+    @Test
+    fun `PR-31 the practice board sits on the keys of the keyboard rectangle, the side margins take touches with no action`() {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            PracticeScreen(flow, flowOf(settings), settings, BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+        }
+        compose.onNodeWithText(PracticeTopics.SWIPE.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        val sv = checkNotNull(find(compose.activity.window.decorView, SwipeKeyboardView::class.java))
+        val frame = sv.parent as View
+        val d = sv.resources.displayMetrics.density
+        // 42 dp keys, right aligned: rectangle 462 dp at the right end, margins 21 dp, keys 420 dp.
+        val m = Math.round(21 * d)
+        assertEquals(Math.round(420 * d), sv.width)
+        assertEquals(frame.width - m, sv.right)
+        assertEquals(frame.width - Math.round(462 * d) + m, sv.left)
+        assertEquals(m, sv.sideMarginPx)
+        assertEquals(m / d, sv.geometrySideDp)
+        val t = Touches(frame)
+        val tries = flow.tryNo
+        for (x in listOf(sv.left - 1f, sv.left - m + 0f, sv.right + 0f, frame.width - 1f)) {
+            t.down(0, x, sv.height / 2f); t.move(0, sv.left + sv.width / 2f, sv.height / 2f); t.up(0)
+            assertTrue(t.lastHandled)
+        }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
+        assertEquals("", flow.echo)
+        assertEquals(null, flow.verdict)
+        assertEquals(tries, flow.tryNo)
+    }
+
+    /** FSS#84: the graffiti pad inside the practice column is told the side margin too. */
+    @Test
+    fun `PR-32 the graffiti practice pad gets the side margin`() {
+        openAt(PracticeTopics.GRAFFITI_EN, "a")
+        val pad = padNow()
+        val d = pad.resources.displayMetrics.density
+        assertEquals(Math.round(21 * d), pad.sideMarginPx)
+        assertEquals(Math.round(420 * d), pad.width)
+    }
+
     private val templates: TemplateSet by lazy {
         TemplateLoader::class.java.getResourceAsStream("/graffiti/templates.json")!!.use { TemplateLoader.load(it) }
     }

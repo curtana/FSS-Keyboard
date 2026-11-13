@@ -378,6 +378,20 @@ class SwipeKeyboardViewTest {
         assertEquals(1, count("events:1"))
     }
 
+    /** FSS#84: the parent tells the side margin; the key geometry is rebuilt with it, at the same size too. */
+    @Test
+    fun `SW-20 the side margin goes into the key geometry`() {
+        assertEquals(0f, view.geometrySideDp)
+        view.sideMarginPx = Math.round(16 * density)
+        assertEquals(Math.round(16 * density) / density, view.geometrySideDp)
+        // 1 (left end column): a left stroke over the margin is still that key's stroke — one input on release.
+        touch.down(0, cx(0), cy(0))
+        touch.move(0, -dp(12f), cy(0), steps = 4)
+        touch.up(0)
+        looper.idle()
+        assertEquals(listOf("text:1"), host.calls.filter { it.startsWith("text:") })   // ← has no symbol on 1: the tap's
+    }
+
     @Test
     fun `the view registers its swipe mapper state`() {
         assertNotNull(host.registered)

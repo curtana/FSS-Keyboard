@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.29** (2026-11-02)
+- 버전 **0.30** (2026-11-13)
+- 0.30(FSS#84, SRS 0.82 FR-CMN-14 ④⑧⑪·FR-SET-09, HLD 0.75 5A): **자판 좌우 여유 칸**(7.2) — `KeyboardWidth.place`가 자판 사각형(11칸)과 여유 칸 폭을 낸다(`KeyboardSpan(left, width, margin)`, `RECT_UNITS` = 11, `MIN_DP` = 352, `fullKeyDp` = 가용 폭 / 11 올림, 픽셀 반올림 규칙). `KeyboardRootView`는 모드 뷰·덮개·버튼을 자판(`keysLeft`·`keysWidth`)에 놓고 여유 칸은 자식 없는 제 자리로 둔다. 모드 뷰는 `SideMarginView.sideMarginPx`로 여유 칸 폭을 받아 키 기하의 테두리 왼쪽·오른쪽을 (−m, W + m)으로 준다(`KeyGeom.build`의 `sideDp`). `OffKeyboardPointers`·`EdgeCrossingTracker`는 그대로.
 - 0.29(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): **자판 폭과 정렬**(새 7.2) — `KeyboardWidth.place`(키 한 칸 폭 × 10, 가용 폭에서 멈춤, 하한 320dp, 왼손/중앙/오른손), `KeyboardRootView`의 `portraitWidth`·`landscapeWidth`, `onMeasure`·`onLayout`(모드 뷰·덮개·버튼을 줄인 자판에), 자식 밖에서 내려온 포인터를 거르는 `OffKeyboardPointers`, 다시 놓기(화면 방향·설정 흐름).
 - 0.28(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `InputDispatcher.centerText()`(가운데 글자, 6.1). `KeyboardService.centerText = dispatcher.centerText()`(3절 표).
 - 0.27(FSS#31, SRS 0.69 FR-SET-08·FR-CMN-03f, HLD 0.62 8.1·8장): **켜진 모드.** `ModeController`에 켜진 모드 집합 `enabled`(영문 쿼티·한글 두벌식은 늘 켬), `nextEnabled`(`nextInOrder` 대신), `applyEnabled`(이전 모드 비움, 돌아갈 모드·지금 모드를 다음 켜진 모드로, 저장할 모드를 돌려줌), `fixedStart`(시작 때 고친 모드)(5절). 서비스: 생성 때 켜진 모드를 넘기고 `fixedStart`를 저장, `onStartInputView`에서 `applyEnabled`(3.1), 설정 `flow`가 바뀌면 `applyEnabledModes` — 키보드가 떠 있으면 곧바로 확정하고 새 모드의 뷰로 바꿈(3.2).
@@ -346,18 +347,24 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
 - 시험: GD-01·GD-02·GD-06~GD-09(LLD-11 6.6, Robolectric). 실기기 DV-28(LLD-11 8절).
 
-### 7.2 자판 폭과 정렬 (0.29, FSS#25)
+### 7.2 자판 폭과 정렬, 좌우 여유 칸 (0.29, FSS#25; 0.30, FSS#84)
 
-근거: SRS 0.71 FR-CMN-14·FR-SET-09·3.3 창 규칙 ④·FR-SWP-45, HLD 0.64 5A "자판 폭과 정렬", SWIPE 0.51 2.1·9.5. 설정값과 저장은 LLD-07 6.1·7절.
+근거: SRS 0.82 FR-CMN-14·FR-SET-09·3.3 창 규칙 ④·FR-SWP-03·45, HLD 0.75 5A "자판 폭과 정렬, 좌우 여유 칸", SWIPE 0.58 2.1·9.5. 설정값과 저장은 LLD-07 6.1·7절.
+
+낱말(HLD 5A): **자판** = 키 10칸(폭 W). **여유 칸** = 자판 양쪽 바깥의 띠(폭 m씩). **자판 사각형** = 여유 칸 + 자판 + 여유 칸(폭 R = W + 2m). **남는 자리** = 가용 폭 A − R. 아래에서 px 값은 모두 정수다.
 
 ```kotlin
 // kbd.app.store (안드로이드 없음)
 enum class KeyboardAlign { LEFT, CENTER, RIGHT }                 // 왼손모드 · 중앙모드 · 오른손모드
 data class WidthSetting(val keyDp: Float?, val align: KeyboardAlign)  // 키 한 칸 폭, null = 기본값, FULL = 꽉 채움
-data class KeyboardSpan(val left: Int, val width: Int)           // 가용 폭 왼쪽 끝에서 px
+data class KeyboardSpan(val left: Int, val width: Int, val margin: Int) {   // 자판 사각형(가용 폭 왼쪽 끝에서 px)과 여유 칸 폭 (0.30)
+    val keysLeft: Int   // = left + margin, 자판(모드 뷰) 왼쪽 끝
+    val keysWidth: Int  // = width − 2 × margin, 자판 폭 W
+}
 object KeyboardWidth {
     const val UNITS = 10                                          // 배치 단위 360 = 키 10칸
-    const val MIN_KEY_DP = 32f; const val MAX_KEY_DP = 160f; const val MIN_DP = 320f
+    const val RECT_UNITS = 11                                     // 자판 사각형 = 10칸 + 반 칸 둘 (0.30)
+    const val MIN_KEY_DP = 32f; const val MAX_KEY_DP = 160f; const val MIN_DP = 352f   // 자판 사각형 하한 (0.30, 0.29는 320)
     const val FULL = Float.POSITIVE_INFINITY                      // "꽉 채움" 표식(가로 슬라이더 위 끝)
     fun snap(k: Float): Float                                     // 정수 dp, 32~160 안(FULL은 그대로)
     fun fullKeyDp(availDp: Float): Int                            // 슬라이더 위 끝(설정 화면, LLD-07 7절)
@@ -366,24 +373,32 @@ object KeyboardWidth {
 }
 // KeyboardRootView
 var portraitWidth: WidthSetting; var landscapeWidth: WidthSetting   // 바꾼 뒤 relayout()
-// kbd.app.view
+internal val rectLeft: Int; internal val rectWidth: Int; internal val sideMargin: Int   // 자판 사각형과 여유 칸(px, 0.30). 남는 자리 = 그 밖
+internal val keyboardLeft: Int; internal val keyboardWidth: Int                         // 자판(모드 뷰)의 왼쪽 끝과 폭
+// kbd.app.view (0.30)
+interface SideMarginView { var sideMarginPx: Int }              // 모드 뷰가 구현: 부모가 재기 전에 여유 칸 폭을 알림
+internal fun View.applySideMargin(margin: Int)                   // 이 뷰와 그 안의 SideMarginView 모두에(연습 화면의 안내표 + 패드 묶음)
 internal class OffKeyboardPointers(onKeyboard: (x: Float, y: Float) -> Boolean) { fun filter(ev): MotionEvent?; val active: Boolean }
 ```
 
 | 항목 | 처리 |
 |---|---|
-| `KeyboardWidth.place` | `availPx ≤ 0`이면 (0, 0). s = 그 방향의 설정. 원하는 폭 = s.keyDp가 `FULL`이면 `availPx`, 숫자면 `round(keyDp × 10 × density)`, null이면 — 세로: `availPx`(꽉 채움), 가로: 세로 설정의 keyDp(숫자면 × 10, `FULL`이면 `portraitAvailPx`), 그것도 null이면 `portraitAvailPx`(세로 꽉 채움의 폭 = 짧은 변). 폭 = `min(availPx, max(원하는 폭, round(320 × density)))`. 남는 자리 rest = `availPx − 폭`, left = 0(LEFT) / `rest / 2`(CENTER, 정수 나눗셈) / rest(RIGHT) (FR-CMN-14 ②③④⑤) |
-| `onMeasure` | 가용 폭 = 잰 폭 − 왼쪽·오른쪽 padding(시스템 막대, 7절). 방향 = `resources.configuration.orientation`(가로인가). `portraitAvailPx` = `min(displayMetrics.widthPixels, heightPixels)`(화면 짧은 변 = 세로 화면 가용 폭, FR-CMN-14 ③). `span = place(…, portraitWidth, landscapeWidth, 가로인가)`. `MATCH_PARENT` 폭 자식(모드 뷰·안내표 덮개)은 폭 `span.width`, 폭이 정해진 자식(안내표 버튼)은 그 폭. 높이는 7절 그대로 |
-| `onLayout` | 0.26까지의 `FrameLayout` gravity 대신 직접 놓는다. x = 왼쪽 padding + `span.left`. 안내표 버튼 = (x + 폭 − 버튼 폭, 위 padding), 그 밖의 자식 = (x, 줄 바닥 − 자식 높이) — 줄 바닥 = 높이 − 아래 padding. `GONE` 자식은 건너뜀 |
+| `KeyboardWidth.place` | `availPx ≤ 0`이면 (0, 0, 0). s = 그 방향의 설정. **자판 사각형**의 원하는 폭 = s.keyDp가 `FULL`이면 `availPx`, 숫자면 `round(keyDp × 11 × density)`, null이면 — 세로: `availPx`(꽉 채움), 가로: 세로 설정의 keyDp(숫자면 × 11, `FULL`이면 `portraitAvailPx`), 그것도 null이면 `portraitAvailPx`(세로 꽉 채움의 사각형 폭 = 짧은 변, 곧 u = A_v / 11). `width` R = `min(availPx, max(원하는 폭, round(352 × density)))` — 하한이 먼저, A에서 멈춤이 그 뒤(A_v가 352dp보다 작으면 가로 기본은 `min(A, 352dp)`). 남는 자리 rest = `availPx − R`, `left` = 0(LEFT) / `rest / 2`(CENTER, 정수 나눗셈) / rest(RIGHT) (FR-CMN-14 ②③④⑤). 0.29까지 저장된 keyDp는 **바꾸지 않고** 같은 식에 넣는다: 자판 폭은 같고 사각형이 한 칸 넓어지며 A를 넘으면 A에서 멈춘다(예: A 360dp·keyDp 36 → 396 > 360이라 R = 360, 꽉 채움과 같은 모양. A 411dp·keyDp 34 → R 374, W 340) |
+| 픽셀 반올림(0.30) | `margin` m = `round(R / 22)`(px, R의 1/22 = 반 칸), 자판 폭 W = `R − 2m`. 여유 칸 폭을 먼저 정수로 정하고 자판이 나머지를 받으므로 **두 여유 칸의 폭이 늘 같고 m + W + m = R이 px까지 정확히 맞는다**. 반올림 몫(1px 미만 × 2)은 자판 쪽에 들어가 키 한 칸이 0.1px 안쪽으로만 달라진다(예: R 360px → m 16, W 328; R 1080px → m 49, W 982; R 711px → m 32, W 647). 꽉 채움이면 R = `availPx` 그대로다(R을 22의 배수로 줄이지 않는다 — 사각형이 A와 같아야 함, FR-CMN-14 ③) |
+| `onMeasure` | 가용 폭 = 잰 폭 − 왼쪽·오른쪽 padding(시스템 막대, 7절). 방향 = `resources.configuration.orientation`(가로인가). `portraitAvailPx` = `min(displayMetrics.widthPixels, heightPixels)`(화면 짧은 변 = 세로 화면 가용 폭, FR-CMN-14 ③). `span = place(…, portraitWidth, landscapeWidth, 가로인가)`. 자식마다 재기 **전에** `applySideMargin(span.margin)`(모드 뷰가 `SideMarginView`면 여유 칸 폭을 받는다). `MATCH_PARENT` 폭 자식(모드 뷰·안내표 덮개)은 폭 `span.keysWidth`(W), 폭이 정해진 자식(안내표 버튼)은 그 폭. 높이는 7절 그대로 |
+| `onLayout` | 0.26까지의 `FrameLayout` gravity 대신 직접 놓는다. x = 왼쪽 padding + `span.keysLeft`(= 옆 여백 + 사각형 왼쪽 + m). 안내표 버튼 = (x + W − 버튼 폭, 위 padding), 그 밖의 자식 = (x, 줄 바닥 − 자식 높이) — 줄 바닥 = 높이 − 아래 padding. `GONE` 자식은 건너뜀. **여유 칸에는 자식을 놓지 않는다**: 루트 배경(`BACKGROUND_COLOR`)이 보이고 따로 그리는 것이 없다 |
+| 자판 사각형을 아는 곳(0.30) | 루트의 `rectLeft`(= 왼쪽 padding + `span.left`)·`rectWidth`(R)·`sideMargin`(m). 남는 자리는 `[paddingLeft, rectLeft)`와 `[rectLeft + rectWidth, width − paddingRight)`다. 지금은 남는 자리도 같은 루트 배경이고 터치도 같은 길이다. 남는 자리만 다르게 하는 일(FSS#85)은 이 값으로 루트에서 한다 |
 | 다시 놓기 | `relayout()`(7절)이 `requestLayout`. 서비스가 `onConfigurationChanged`(화면 방향)와 설정 흐름의 폭·정렬 변경(`applySettings`, 줄 높이와 같은 길)에서 부른다. `onCreateInputView`가 새 루트에 두 값을 넣는다. 모드·조합 상태는 건드리지 않는다(FR-CMN-14 ⑩) |
-| 여백 터치 | 자식 밖(빈 띠·옆 여백·시스템 막대 여백)의 터치는 7절 `onTouchEvent` = 소비 그대로 |
+| 여백·여유 칸 터치 | 자식 밖(빈 띠·**여유 칸**·남는 자리·시스템 막대 여백)의 터치는 7절 `onTouchEvent` = 소비 그대로. 여유 칸은 모드 뷰 밖이라 `onKeyboard`가 false이고, 거기서 내려온 포인터는 아래 `OffKeyboardPointers`가 버린다 — 탭 자판의 "틈·빈칸은 가까운 키로"(`TapGeometry.indexAt`, LLD-05A 4절)는 모드 뷰가 받은 내려옴에만 쓰이므로 여유 칸으로 번지지 않는다(FR-CMN-14 ⑪ "가까운 끝 키로 치지 않는다"). 자판에서 내려온 포인터는 여유 칸·남는 자리로 나가도 안드로이드가 그 모드 뷰에 계속 보낸다(모드 뷰 좌표로 음수 또는 W 초과) |
 | `dispatchTouchEvent` | `OffKeyboardPointers.filter`를 거친 이벤트만 `super`로 보낸다. 판정 `onKeyboard(x, y)` = 보이는(`VISIBLE`) 자식의 사각형 안. 결과가 null이면(자식 밖에서 내려온 포인터만의 이벤트) `true`(소비, 입력 없음). 돌려준 값 = `super`의 결과 또는 버린 포인터가 남아 있음 |
 | `OffKeyboardPointers.filter` | `ACTION_DOWN`이면 버린 집합을 비우고, `ACTION_CANCEL`이면 비운 뒤 원래 이벤트(모든 자식이 멈춰야 함). `ACTION_DOWN`·`POINTER_DOWN`의 점이 자식 밖이면 그 포인터 id를 버린다. 버린 것이 없으면 원래 이벤트. 있으면: 버린 포인터의 내려옴·올라옴은 null, 그 밖은 버린 포인터를 뺀 새 이벤트 — 남은 포인터가 하나뿐인 내려옴은 `ACTION_DOWN`(그 때를 `downTime`으로), 남은 하나의 올라옴은 `ACTION_UP`, 그 밖은 새 색인의 `POINTER_DOWN`·`POINTER_UP`, 이동은 묶인 표본(history)까지 옮긴다(획이 history를 읽음). 올라온 포인터는 집합에서 뺀다. 새 이벤트는 부른 쪽이 `recycle` |
 | 왜 거르나 | 안드로이드는 다른 손가락이 자식을 누르고 있으면 자식 밖에 내려온 새 손가락도 그 자식에 붙인다(탭 자판은 틈을 가장 가까운 키로 침 → 여백 입력). 또 첫 손가락이 자식 밖이면 그 제스처의 뒤 손가락은 자식에 가지 않는다(`ViewGroup`이 가로챔) — 여백에 손을 얹으면 자판이 막힌다. 거르면 둘 다 없다(SRS FR-CMN-14 ⑤ 둘째 손가락, HLD 5A). 그래피티 빈 띠도 같다 |
-| 안내표 | 덮개는 모드 뷰와 같은 x·폭, 버튼은 줄인 자판 오른쪽 끝(7.1 표 "자식과 z 순서"의 `END`는 이 x로 바뀜). 열기·닫기·삼키기는 7.1 그대로(삼키기 `onInterceptTouchEvent`는 거른 이벤트를 본다) |
-| 판정 | 모드 뷰는 받은 폭으로 기하를 만든다: 탭 자판 `TapGeometry.build(layout, widthDp, rowDp)`, 긋기 `SwipeGeometry.build(widthDp, rowDp)`(가운데 글자 자리 C = `SwipeLayout.consonantBox(widthDp, …)`, 가로 중심 = 자판 가운데), 그래피티 패드 `GraffitiPadGeometry`. 위치 허용 오차 = 실제 키 폭 × 0.4, `minCrossDp` = 8dp 그대로. 테두리(FR-SWP-45)는 모드 뷰 좌표의 0과 폭 = 줄인 자판의 바깥 변. 바꾸는 코드 없음 |
+| 안내표 | 덮개는 모드 뷰와 같은 x·폭(W), 버튼은 자판 오른쪽 끝(x + W − 버튼 폭. 7.1 표 "자식과 z 순서"의 `END`는 이 x로 바뀜). 둘 다 여유 칸에 들어가지 않는다(FR-CMN-14 ⑥). 열기·닫기·삼키기는 7.1 그대로(삼키기 `onInterceptTouchEvent`는 거른 이벤트를 본다) |
+| 판정 | 모드 뷰는 받은 폭 W로 기하를 만든다: 탭 자판 `TapGeometry.build(layout, widthDp, rowDp, sideDp)`, 긋기 `SwipeGeometry.build(widthDp, rowDp, sideDp)`(가운데 글자 자리 C = `SwipeLayout.consonantBox(widthDp, …)`, 가로 중심 = 자판 가운데), 그래피티 패드 `GraffitiPadGeometry`. 위치 허용 오차 = 실제 키 폭 × 0.4, `minCrossDp` = 8dp 그대로 |
+| 테두리의 왼쪽·오른쪽(0.30, FR-CMN-14 ⑧) | `sideDp` = `sideMarginPx / density`. 세 모드 뷰가 `KeyGeom.build(id, rect, widthDp, heightDp, sideDp)`(LLD-04 2절)로 키 기하를 만든다 — 테두리의 왼쪽 = −`sideDp`, 오른쪽 = `widthDp + sideDp`(자판 사각형의 바깥 변), 위·아래는 그대로. 그러면 끝 키의 왼쪽·오른쪽 변은 `outerEdges`에 들지 않고, `EdgeCrossingTracker`(고치지 않음)가 다른 변처럼 변 너머 `minCrossDp`에서 나감으로 기록한다. `TapKeyboardView`·`SwipeKeyboardView`: `sideMarginPx`가 바뀌면 크기가 같아도 기하를 다시 만든다(`rebuildGeometry`의 같은지 비교에 `sideDp`를 더함). `GraffitiPadView`: 키 기하를 쓰는 곳이 보조 줄 모드 키뿐이라 누를 때 그 값을 읽는다(패드·보조 줄 배치는 그대로 W 기준, LLD-05 8절). `KeyHitTester(keys, windowW, windowH)`는 창 크기를 판정에 쓰지 않으므로 그대로다. `sideDp` 기본값 0은 여유 칸을 모르는 부름(순수 함수 시험)에서 0.29와 같은 결과다 |
+| 꽉 채움에서 닿는가 | 꽉 채움에서는 여유 칸의 바깥 변이 화면 끝이라 그 너머 좌표는 오지 않는다. m ≥ `minCrossDp`이면(A ≥ 176dp) 화면 끝에 닿기 전에 통과가 선다(360dp: m 약 16.4dp) |
 
-- 시험: KW-01~KW-08(`KeyboardWidthTest`, JVM), KR-01~KR-06(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), SS-10·SS-11(LLD-11 7.5·7.7). 실기기 DV-30(LLD-11 8절).
+- 시험: KW-01~KW-10(`KeyboardWidthTest`, JVM), SM-01~SM-05(`SideMarginStrokeTest`, JVM), KR-01~KR-11(`KeyboardRootViewTest`)·OP-01~OP-05(`OffKeyboardPointersTest`, Robolectric), SS-10·SS-11(LLD-11 7.5·7.7). 실기기 DV-30·DV-35(LLD-11 8절).
 
 ## 8. Feedback
 

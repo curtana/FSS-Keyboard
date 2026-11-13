@@ -13,7 +13,9 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import kbd.app.store.KeyboardAlign
 import kbd.app.store.Settings
+import kbd.app.store.WidthSetting
 import kbd.app.view.ViewTestSdk
 import org.junit.Rule
 import org.junit.Test
@@ -49,11 +51,11 @@ class KeyboardSizeBoxesTest {
 
     private var orientation by mutableIntStateOf(Configuration.ORIENTATION_PORTRAIT)
 
-    private fun show() {
+    private fun show(settings: Settings = Settings.DEFAULT) {
         compose.setContent {
             val config = Configuration(LocalConfiguration.current).also { it.orientation = orientation }
             CompositionLocalProvider(LocalConfiguration provides config) {
-                Column { KeyboardSizeBoxes(Settings.DEFAULT) {} }
+                Column { KeyboardSizeBoxes(settings) {} }
             }
         }
     }
@@ -71,6 +73,30 @@ class KeyboardSizeBoxesTest {
         }
         compose.onNode(inBox(BOX_PORTRAIT, "세로 화면")).assertExists()
         compose.onNode(inBox(BOX_LANDSCAPE, "가로 화면")).assertExists()
+    }
+
+    /** FSS#84: the slider's top and the width beside it count the keyboard rectangle, 11 cells. */
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-port")
+    fun `OB-03 the width shown is the keyboard rectangle - 11 keys, the full mark at the screen width over 11`() {
+        show()
+        compose.onNode(inBox(BOX_PORTRAIT, "꽉 채움 · 키 약 37 dp · 411 dp")).assertExists()   // 411 / 11 = 37.4
+        compose.onNode(inBox(BOX_LANDSCAPE, "키 37 dp · 전체 407 dp")).assertExists()          // the portrait key size, 11 × 37
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-port")
+    fun `OB-04 a stored key size shows 11 times its width, one that no longer fits shows the full mark`() {
+        show(Settings.DEFAULT.copy(portraitWidth = WidthSetting(34f, KeyboardAlign.CENTER)))
+        compose.onNode(inBox(BOX_PORTRAIT, "키 34 dp · 전체 374 dp")).assertExists()
+        compose.onNode(inBox(BOX_LANDSCAPE, "키 34 dp · 전체 374 dp")).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-port")
+    fun `OB-05 a key size stored when ten keys filled the screen shows the full mark`() {
+        show(Settings.DEFAULT.copy(portraitWidth = WidthSetting(41f, KeyboardAlign.CENTER)))   // 11 × 41 > 411
+        compose.onNode(inBox(BOX_PORTRAIT, "꽉 채움 · 키 약 37 dp · 411 dp")).assertExists()
     }
 
     @Test

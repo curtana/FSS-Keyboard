@@ -18,6 +18,7 @@ import kbd.app.store.Settings
 import kbd.app.view.KeyboardRootView
 import kbd.app.view.RepeatSchedule
 import kbd.app.view.RepeatTimer
+import kbd.app.view.SideMarginView
 import kbd.app.view.TapSink
 import kbd.graffiti.ink.GraffitiLang
 import kbd.graffiti.ink.RectF2
@@ -46,7 +47,7 @@ class GraffitiPadView(
     private val handler: GraffitiInputHandler,
     private val guard: EngineGuard,
     private val feedback: FeedbackPort,
-) : View(context) {
+) : View(context), SideMarginView {
 
     private val density = resources.displayMetrics.density
     private val looper = Handler(Looper.getMainLooper())
@@ -63,6 +64,9 @@ class GraffitiPadView(
         }
 
     private var geometry: GraffitiPadGeometry? = null
+
+    /** The keyboard's side margin, set by the parent (FR-CMN-14 ⑧, LLD-08 §7.2): read when the mode key is pressed. */
+    override var sideMarginPx: Int = 0
 
     /** The mode key's exit threshold, the tap keyboards' (FR-TAP-02b); set by the service from the thresholds. */
     var minCrossDp: Float = ThresholdDefaults.VALUES.minCrossDp
@@ -220,7 +224,7 @@ class GraffitiPadView(
                     heldKey = k.key
                     feedback.key()   // key feedback on press (FR-CMN-11a ②)
                     val r = k.rect
-                    val geom = KeyGeom.build(k.key.name, RectDp(r.left, r.top, r.right, r.bottom), g.widthDp, g.heightDp)
+                    val geom = KeyGeom.build(k.key.name, RectDp(r.left, r.top, r.right, r.bottom), g.widthDp, g.heightDp, sideMarginPx / density)
                     modeStroke = TapGestureClassifier(geom, minCrossDp).also { it.begin(StrokePoint(x, y, e.eventTime)) }   // nothing on press (issue #205)
                 } else if (k != null) {
                     keyPointer = e.getPointerId(idx)
