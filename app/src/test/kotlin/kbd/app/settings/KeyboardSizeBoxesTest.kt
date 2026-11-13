@@ -4,19 +4,29 @@ import android.content.ComponentName
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import kbd.app.store.FloatSetting
 import kbd.app.store.KeyboardAlign
 import kbd.app.store.Settings
 import kbd.app.store.WidthSetting
 import kbd.app.view.ViewTestSdk
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -51,11 +61,15 @@ class KeyboardSizeBoxesTest {
 
     private var orientation by mutableIntStateOf(Configuration.ORIENTATION_PORTRAIT)
 
+    /** What the boxes asked to store, applied to the settings shown. */
+    private var shown by mutableStateOf(Settings.DEFAULT)
+
     private fun show(settings: Settings = Settings.DEFAULT) {
+        shown = settings
         compose.setContent {
             val config = Configuration(LocalConfiguration.current).also { it.orientation = orientation }
             CompositionLocalProvider(LocalConfiguration provides config) {
-                Column { KeyboardSizeBoxes(settings) {} }
+                Column(Modifier.verticalScroll(rememberScrollState())) { KeyboardSizeBoxes(shown) { f -> shown = f(shown) } }
             }
         }
     }
@@ -97,6 +111,46 @@ class KeyboardSizeBoxesTest {
     fun `OB-05 a key size stored when ten keys filled the screen shows the full mark`() {
         show(Settings.DEFAULT.copy(portraitWidth = WidthSetting(41f, KeyboardAlign.CENTER)))   // 11 × 41 > 411
         compose.onNode(inBox(BOX_PORTRAIT, "꽉 채움 · 키 약 37 dp · 411 dp")).assertExists()
+    }
+
+    /** FSS#86: each box has its own "띄우기" switch under the alignment, off by default, with the line on how to move. */
+    @Test
+    fun `OB-06 each box has its floating switch, off by default - one is switched without the other or the place`() {
+        show(Settings.DEFAULT.copy(landscapeFloat = FloatSetting(false, 0.25f, 0.75f)))
+        for (tag in listOf(BOX_PORTRAIT, BOX_LANDSCAPE)) {
+            compose.onNode(inBox(tag, "띄우기")).assertExists()
+            compose.onNode(inBox(tag, "자판 위 손잡이를 길게 눌러 옮깁니다. 옮긴 뒤에는 정렬 대신 옮긴 자리를 씁니다.")).assertExists()
+        }
+        compose.onNode(hasTestTag(FLOAT_PORTRAIT) and hasAnyAncestor(hasTestTag(BOX_PORTRAIT))).assertIsNotSelected()
+        compose.onNode(hasTestTag(FLOAT_LANDSCAPE) and hasAnyAncestor(hasTestTag(BOX_LANDSCAPE))).assertIsNotSelected()
+
+        compose.onNode(hasTestTag(FLOAT_LANDSCAPE)).performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals(FloatSetting(true, 0.25f, 0.75f), shown.landscapeFloat)   // the place is kept
+        assertEquals(FloatSetting.DEFAULT, shown.portraitFloat)
+        compose.onNode(hasTestTag(FLOAT_LANDSCAPE)).assertIsSelected()
+        compose.onNode(hasTestTag(FLOAT_PORTRAIT)).assertIsNotSelected()
+
+        compose.onNode(hasTestTag(FLOAT_PORTRAIT)).performScrollTo().performClick()
+        compose.onNode(hasTestTag(FLOAT_LANDSCAPE)).performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals(FloatSetting(true, null, null), shown.portraitFloat)
+        assertEquals(FloatSetting(false, 0.25f, 0.75f), shown.landscapeFloat)
+        assertEquals(Settings.DEFAULT.portraitWidth, shown.portraitWidth)   // nothing else was touched
+    }
+
+    /** FSS#86: floating does not grey the alignment out; only a full-width keyboard does, as before. */
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-port")
+    fun `OB-07 the alignment can be chosen while floating is on`() {
+        show(Settings.DEFAULT.copy(
+            portraitWidth = WidthSetting(34f, KeyboardAlign.CENTER), portraitFloat = FloatSetting(true, 0.5f, 0.5f),
+            landscapeWidth = WidthSetting(34f, KeyboardAlign.CENTER), landscapeFloat = FloatSetting(true, null, null),
+        ))
+        compose.onNode(inBox(BOX_PORTRAIT, "오른손모드")).performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals(KeyboardAlign.RIGHT, shown.portraitWidth.align)
+        assertEquals(FloatSetting(true, 0.5f, 0.5f), shown.portraitFloat)
     }
 
     @Test

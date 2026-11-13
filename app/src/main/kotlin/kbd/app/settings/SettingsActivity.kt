@@ -229,6 +229,8 @@ private val ALIGNS = listOf(
  * long side; the keyboard computes the exact width, FR-CMN-14 ④); that top stop is "꽉 채움": no key size on the
  * portrait screen, [KeyboardWidth.FULL] on the landscape one. Until it is moved the landscape slider sits at the
  * portrait key size (FR-CMN-14 ③). The alignment is greyed out when the keyboard fills (no rest to place).
+ * Under the alignment each box has its "띄우기" switch (FR-CMN-15, FSS#86, default off); the alignment can be chosen
+ * whether it is on or off.
  */
 @Composable
 internal fun KeyboardSizeBoxes(settings: Settings, update: ((Settings) -> Settings) -> Unit) {
@@ -251,16 +253,22 @@ internal fun KeyboardSizeBoxes(settings: Settings, update: ((Settings) -> Settin
     OrientationBox(R.string.settings_box_portrait, now = !landscapeNow, BOX_PORTRAIT) {
         KeyRow(pKey, pTop, shortDp) { k -> update { it.copy(portraitWidth = it.portraitWidth.copy(keyDp = if (k >= pTop) null else k.toFloat())) } }
         AlignRow(p.align, enabled = pKey < pTop) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
+        FloatRow(settings.portraitFloat.on, FLOAT_PORTRAIT) { v -> update { it.copy(portraitFloat = it.portraitFloat.copy(on = v)) } }
     }
     OrientationBox(R.string.settings_box_landscape, now = landscapeNow, BOX_LANDSCAPE) {
         KeyRow(lKey, lTop, longDp) { k -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = if (k >= lTop) KeyboardWidth.FULL else k.toFloat())) } }
         AlignRow(l.align, enabled = lKey < lTop) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
+        FloatRow(settings.landscapeFloat.on, FLOAT_LANDSCAPE) { v -> update { it.copy(landscapeFloat = it.landscapeFloat.copy(on = v)) } }
     }
 }
 
 /** Test tags of the two boxes (FSS#44). */
 internal const val BOX_PORTRAIT = "box_portrait"
 internal const val BOX_LANDSCAPE = "box_landscape"
+
+/** Test tags of the two "띄우기" switches (FSS#86). */
+internal const val FLOAT_PORTRAIT = "float_portrait"
+internal const val FLOAT_LANDSCAPE = "float_landscape"
 
 /** One orientation's box: its title, "지금 화면" at the right end when [now], then [content] (FSS#44). */
 @Composable
@@ -326,6 +334,24 @@ private fun AlignRow(stored: KeyboardAlign, enabled: Boolean, onChange: (Keyboar
                 }
             }
         }
+    }
+}
+
+/**
+ * The "띄우기" switch of one orientation's box, under its alignment, with a line on how the keyboard is moved and what
+ * the alignment then means (FR-SET-09, FR-CMN-15 ①⑥, FSS#86). Only the switch is stored here: the place stays as it is.
+ */
+@Composable
+private fun FloatRow(checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().testTag(tag).selectable(checked, role = Role.Switch) { onChange(!checked) }
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.settings_float), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Switch(checked = checked, onCheckedChange = null)
+        }
+        Text(stringResource(R.string.settings_float_summary), style = MaterialTheme.typography.bodySmall)
     }
 }
 
