@@ -113,6 +113,18 @@ class FeedbackTest {
         assertEquals(emptyList<Int>(), sounds)
     }
 
+    /** FR-CMN-15 ⑦ 나 (FSS#86): the start of a move is one vibration, never a sound, and follows the vibration setting. */
+    @Test
+    fun `FB-05 grab vibrates once with no sound, and not at all when vibration is off`() {
+        Feedback({ view }, audio, { Settings.DEFAULT.copy(sound = true) }).grab()
+        assertEquals(listOf(HapticFeedbackConstants.LONG_PRESS), view.haptics)
+        assertEquals(emptyList<Int>(), sounds)
+        Feedback({ view }, audio, { Settings.DEFAULT.copy(haptic = false, sound = true) }).grab()
+        assertEquals(listOf(HapticFeedbackConstants.LONG_PRESS), view.haptics)
+        assertEquals(emptyList<Int>(), sounds)
+        Feedback({ null }, audio, { Settings.DEFAULT }).grab()   // no view yet
+    }
+
     @Test
     fun `error vibrates with the reject pattern only when vibration is on`() {
         Feedback({ view }, audio, { Settings.DEFAULT }).error()

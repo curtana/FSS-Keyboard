@@ -118,6 +118,11 @@ class KeyboardService : InputMethodService(), SwipeHost {
             it.rowHeightDp = settings.rowHeightDp
             it.portraitWidth = settings.portraitWidth   // FR-CMN-14
             it.landscapeWidth = settings.landscapeWidth
+            it.portraitFloat = settings.portraitFloat   // FR-CMN-15
+            it.landscapeFloat = settings.landscapeFloat
+            it.moveFeedback = feedback
+            it.onFloatMoved = ::saveFloatPosition
+            it.relayout()   // the move handle, when this orientation floats
         }
         showModeView(modes.current, dispatcher.field)
         return root
@@ -150,8 +155,9 @@ class KeyboardService : InputMethodService(), SwipeHost {
     }
 
     /**
-     * FR-CMN-06. The cancel reaches the mode view, which drops its guide and repeat timer. The stroke guide
-     * closes when the keyboard goes down (`finishingInput == false`) and stays open on a field change (FR-GRF-09).
+     * FR-CMN-06. The cancel reaches the mode view, which drops its guide and repeat timer, and the root, which gives
+     * up a move of the floating keyboard (FR-CMN-15 ⑩). The stroke guide closes when the keyboard goes down
+     * (`finishingInput == false`) and stays open on a field change (FR-GRF-09).
      */
     override fun onFinishInputView(finishingInput: Boolean) {
         dispatcher.finishAll()
@@ -179,7 +185,10 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /** FR-CMN-12. */
     override fun onEvaluateFullscreenMode(): Boolean = false
 
-    /** Same layout with the new orientation's keyboard width (FR-CMN-12, FR-CMN-14 ⑩), same row height. */
+    /**
+     * Same layout with the new orientation's keyboard width (FR-CMN-12, FR-CMN-14 ⑩), same row height; docked or
+     * floating at that orientation's place, a move in progress given up first (FR-CMN-15 ⑩⑬).
+     */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (::root.isInitialized) root.relayout()
@@ -188,7 +197,8 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /**
      * Content and visible insets at the top of the input view; the keyboard plate, blank band included, takes
      * touches (SRS 3.3, FR-CMN-14 ⑫, [KeyboardInsets]). The platform asks again on each traversal of the window, so
-     * a new layout of the root gives the new plate (LLD-08 §7.3).
+     * a new layout of the root gives the new plate (LLD-08 §7.3). A floating keyboard's insets start at the input
+     * view's bottom, and its plate is the handle and the keyboard rectangle (FR-CMN-15 ③⑫, LLD-08 §7.4).
      */
     override fun onComputeInsets(outInsets: Insets) {
         super.onComputeInsets(outInsets)
@@ -260,10 +270,14 @@ class KeyboardService : InputMethodService(), SwipeHost {
         settings = s
         if (trailChanged && ::root.isInitialized) root.redrawModeView()   // FSS#57: the swipe view reads it when it draws
         pad?.let { if (it.letterRatio != s.graffitiLetterRatio) it.letterRatio = s.graffitiLetterRatio }
-        if ((rowChanged || widthChanged) && ::root.isInitialized) {
+        // The root already has the shares of a place it was just put at: that coming back is no change (FR-CMN-15 ⑨).
+        val floatChanged = ::root.isInitialized && (s.portraitFloat != root.portraitFloat || s.landscapeFloat != root.landscapeFloat)
+        if ((rowChanged || widthChanged || floatChanged) && ::root.isInitialized) {
             root.rowHeightDp = s.rowHeightDp
             root.portraitWidth = s.portraitWidth   // FR-CMN-14 ⑩: placed again at once
             root.landscapeWidth = s.landscapeWidth
+            root.portraitFloat = s.portraitFloat   // FR-CMN-15 ⑬
+            root.landscapeFloat = s.landscapeFloat
             root.relayout()
         }
         applyEnabledModes(s.enabledModes)
@@ -283,6 +297,14 @@ class KeyboardService : InputMethodService(), SwipeHost {
         if (modes.current == before || !isInputViewShown) return
         showModeView(modes.current, dispatcher.field)
         if (modes.current == InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
+    }
+
+    /** The floating keyboard was put somewhere (FR-CMN-15 ⑨): the shares given are stored, and kept here until they come back. */
+    private fun saveFloatPosition(landscape: Boolean, fx: Float?, fy: Float?) {
+        val old = if (landscape) settings.landscapeFloat else settings.portraitFloat
+        val new = old.copy(fx = fx ?: old.fx, fy = fy ?: old.fy)
+        settings = if (landscape) settings.copy(landscapeFloat = new) else settings.copy(portraitFloat = new)
+        scope.launch { settingsStore.setFloatPosition(landscape, fx, fy) }
     }
 
     private fun saveLastMode(m: InputMode) {

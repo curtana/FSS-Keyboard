@@ -19,6 +19,10 @@ class Feedback(
         if (s.sound) audio.playSoundEffect(AudioManager.FX_KEY_CLICK)
     }
 
+    override fun grab() {
+        if (settings().haptic) view()?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+
     override fun error() {
         if (!settings().haptic) return
         val c = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS
