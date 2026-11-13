@@ -36,11 +36,13 @@ import kbd.graffiti.recognize.TemplateSet
  * mode view; while it is open the mode view gets no touch (the touch in progress is cancelled when it opens).
  * The open state is view state only: a new root starts closed.
  *
- * Keyboard width (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2, FSS#25): the mode view, the guide panel and the band's
- * guide button sit in a [KeyboardWidth.place] span of the width left by the system bar padding, with the setting of
- * the screen's orientation. The rest is margin like the band: [BACKGROUND_COLOR], touches taken with no input, and a
- * finger that comes down there is not given to the mode view even while another finger is on it
- * ([OffKeyboardPointers]).
+ * Keyboard width (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2, FSS#25, FSS#84): [KeyboardWidth.place] gives the keyboard
+ * rectangle in the width left by the system bar padding, with the setting of the screen's orientation. The rectangle
+ * is a side margin, the keys and a side margin; the mode view, the guide panel and the band's guide button sit on the
+ * keys ([keyboardLeft], [keyboardWidth]), and the mode view is told the margin's width ([SideMarginView]). The side
+ * margins and the rest of the width are this view's own place, like the band: [BACKGROUND_COLOR], touches taken with
+ * no input, and a finger that comes down there is not given to the mode view even while another finger is on it
+ * ([OffKeyboardPointers]). A stroke that began on the mode view stays with it when it goes out over a margin.
  */
 class KeyboardRootView(context: Context) : FrameLayout(context) {
 
@@ -56,14 +58,26 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     var portraitWidth: WidthSetting = WidthSetting.DEFAULT
     var landscapeWidth: WidthSetting = WidthSetting.DEFAULT
 
-    /** The keyboard's span in the available width, set by [onMeasure]. */
-    private var span = KeyboardSpan(0, 0)
+    /** The keyboard rectangle's span in the available width, set by [onMeasure]. */
+    private var span = KeyboardSpan(0, 0, 0)
 
-    /** Left end of the keyboard in this view, px (tests). */
-    internal val keyboardLeft: Int get() = paddingLeft + span.left
+    /**
+     * Left end of the keyboard rectangle (side margins included) in this view, px. What lies outside
+     * [rectLeft] until [rectLeft] + [rectWidth] is the rest of the width (FR-CMN-14 ⑤).
+     */
+    internal val rectLeft: Int get() = paddingLeft + span.left
 
-    /** Width of the keyboard, px (tests). */
-    internal val keyboardWidth: Int get() = span.width
+    /** Width of the keyboard rectangle, px. */
+    internal val rectWidth: Int get() = span.width
+
+    /** Width of one side margin, px. */
+    internal val sideMargin: Int get() = span.margin
+
+    /** Left end of the keys (the mode view) in this view, px. */
+    internal val keyboardLeft: Int get() = paddingLeft + span.keysLeft
+
+    /** Width of the keys, px. */
+    internal val keyboardWidth: Int get() = span.keysWidth
 
     private val offKeyboard = OffKeyboardPointers(::onChild)
 
@@ -215,8 +229,9 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
     /**
      * Height = [WINDOW_ROWS] rows + the bottom padding. Children of `MATCH_PARENT` width (the mode view and the guide
-     * panel) get the keyboard width of the orientation's setting (FR-CMN-14 ④); the available width is the measured
-     * width less the side padding (system bars), the portrait width is the screen's short side (③).
+     * panel) get the width of the keys of the orientation's setting (FR-CMN-14 ④); the available width is the measured
+     * width less the side padding (system bars), the portrait width is the screen's short side (③). The mode view is
+     * told the side margin before it is measured (⑧).
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
@@ -228,7 +243,8 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             val lp = c.layoutParams
-            val cw = if (lp.width >= 0) lp.width else span.width
+            val cw = if (lp.width >= 0) lp.width else span.keysWidth
+            c.applySideMargin(span.margin)
             c.measure(
                 MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(lp.height.coerceAtLeast(0), MeasureSpec.EXACTLY),
@@ -238,8 +254,8 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     }
 
     /**
-     * The mode view and the guide panel at the bottom of the rows, at the keyboard's left end; the guide button at the
-     * top, at the keyboard's right end (FR-CMN-14 ⑥, FR-GRF-09).
+     * The mode view and the guide panel at the bottom of the rows, at the keys' left end; the guide button at the
+     * top, at the keys' right end (FR-CMN-14 ⑥, FR-GRF-09). The side margins stay empty.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         val x = keyboardLeft
@@ -248,7 +264,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
             val c = getChildAt(i)
             if (c.visibility == GONE) continue
             if (c === guideButton) {
-                c.layout(x + span.width - c.measuredWidth, paddingTop, x + span.width, paddingTop + c.measuredHeight)
+                c.layout(x + span.keysWidth - c.measuredWidth, paddingTop, x + span.keysWidth, paddingTop + c.measuredHeight)
             } else {
                 c.layout(x, rowsBottom - c.measuredHeight, x + c.measuredWidth, rowsBottom)
             }
@@ -256,8 +272,8 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     }
 
     /**
-     * Touches the children did not take (the blank band, the side margins, the system bar padding) are consumed with
-     * no input (SRS 3.3, FR-CMN-14 ⑤, FR-CMN-11a ②).
+     * Touches the children did not take (the blank band, the keyboard's side margins, the rest of the width, the system
+     * bar padding) are consumed with no input (SRS 3.3, FR-CMN-14 ⑤⑪, FR-CMN-11a ②).
      */
     override fun onTouchEvent(event: MotionEvent): Boolean = true
 

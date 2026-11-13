@@ -34,7 +34,7 @@ class TapKeyboardView(
     private val sink: TapSink,
     private val guard: EngineGuard,
     private val feedback: FeedbackPort,
-) : View(context) {
+) : View(context), SideMarginView {
 
     private val density = resources.displayMetrics.density
     private val handler = Handler(Looper.getMainLooper())
@@ -65,6 +65,14 @@ class TapKeyboardView(
         setBackgroundColor(KeyboardRootView.BACKGROUND_COLOR)   // one colour with the root's margin (OD-2 A)
         ViewCompat.setAccessibilityDelegate(this, access)
     }
+
+    /** The keyboard's side margin, set by the parent before it measures this view (FR-CMN-14 ⑧, LLD-08 §7.2). */
+    override var sideMarginPx: Int = 0
+        set(v) {
+            if (field == v) return
+            field = v
+            rebuildGeometry()
+        }
 
     /** Layout, thresholds and row height; key geometry is rebuilt at the next size (FR-TAP-03). */
     fun setLayout(layout: TapLayout, th: Thresholds, rowHeightDp: Float) {
@@ -101,9 +109,10 @@ class TapKeyboardView(
         if (width <= 0 || height <= 0) return
         val wDp = width / density
         val rowDp = height / density / l.rows
+        val sideDp = sideMarginPx / density
         val g = logic.geometry
-        if (g != null && g.layout === l && g.widthDp == wDp && g.rowHeightDp == rowDp) return
-        logic.geometry = TapGeometry.build(l, wDp, rowDp)
+        if (g != null && g.layout === l && g.widthDp == wDp && g.rowHeightDp == rowDp && g.sideDp == sideDp) return
+        logic.geometry = TapGeometry.build(l, wDp, rowDp, sideDp)
         labelPaint.textSize = rowDp * density * LABEL_SCALE
         hintPaint.textSize = labelPaint.textSize * HINT_SCALE   // D-15
         access.invalidateRoot()
@@ -188,6 +197,9 @@ class TapKeyboardView(
     // For TapKeyAccessHelper: px coordinates, key indices into the geometry.
 
     internal val keyCount: Int get() = logic.geometry?.keys?.size ?: 0
+
+    /** The side margin the key geometry was built with, dp; null before the first size (tests). */
+    internal val geometrySideDp: Float? get() = logic.geometry?.sideDp
 
     internal fun keyIndexAtPx(x: Float, y: Float): Int = logic.geometry?.indexAt(x / density, y / density) ?: -1
 
