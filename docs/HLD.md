@@ -1,9 +1,9 @@
 # 상위 수준 설계 (HLD)
 
-- 문서: HLD, 버전 **0.76** (2026-11-13)
+- 문서: HLD, 버전 **0.77** (2026-11-14)
 - 상태: 초안. LLD 0.1이 올린 설계 변경 요청 DCR-01~21(오너 승인 2026-10-27)을 반영했다.
-- 요구사항: [SRS.md](SRS.md) 0.83
-- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.59, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
+- 요구사항: [SRS.md](SRS.md) 0.84
+- 상세 규칙: [SWIPE_INPUT_DESIGN.md](SWIPE_INPUT_DESIGN.md) 0.60, 그래피티 규칙 문서(비공개, `docs-private/GRAFFITI_FEASIBILITY.md` — 저장소에 올리지 않음, 이슈 #249. 아래의 "GRAFFITI n.n"은 이 문서의 절)
 
 ## 1. 설계 원칙
 
@@ -282,6 +282,8 @@ PracticeActivity(옛 TutorActivity)
        │     항목 시작·다시 할 때 연습 자판·조합 상태를 비움(탭 자판 항목은 ✗ 뒤 비우지 않고 ⌫로 이어 씀)
        └─ 재는 것·저장하는 것 없음
 첫 실행: SettingsActivity가 처음 한 번 주제 목록만 연다(연습은 시작하지 않음, SRS FR-TUT-01). 그 뒤는 설정의 "입력 연습"으로만
+        단, 그래피티·긋기가 둘 다 꺼져 있으면(기본 설정, FSS#94) 열지 않고 "보였음" 표시도 저장하지 않음 → 하나를 켠 뒤 앱을 열 때 한 번
+        (판정은 앱을 열 때 SettingsStore의 켜진 모드 값으로, 판정 규칙은 안드로이드 없는 정책 함수, LLD)
 ```
 
 - **판정 입력:** `PracticeItemJudge`는 Android 의존 없는 순수 Kotlin으로 `app` 소스에 두고 JVM으로 시험한다. 입력인 동작 기록은 공통 타입이다(넣은 글자 또는 자모·천지인 요소, 무시·인식 실패 표시). 탭 자판 항목은 ⌫를 반영한 글자열로 판정한다(앞부분이 아니면 ✗, 항목을 비우지 않고 ⌫로 고쳐 이어 씀, 같아지면 ✓, SWIPE 10.2). 이름·타입 세부, ✓·✗ 표시 시간, 화면 문구는 LLD.
@@ -313,14 +315,14 @@ PracticeActivity(옛 TutorActivity)
 | 데이터 | 형식 | 위치 |
 |---|---|---|
 | ~~기준값~~ | – | 삭제(FSS#17): 고정값은 코드 상수(7.2), 내보내기·가져오기 없음 |
-| 설정(마지막 모드, 켜진 모드(그래피티·긋기, 기본 켬, FSS#31), 표시, 피드백, 줄 높이, 세로·가로 자판 폭·정렬(FSS#25) 등) | 키-값 | Jetpack DataStore(Preferences) |
+| 설정(마지막 모드, 켜진 모드(그래피티·긋기, 기본 끔 — 저장값이 없으면 기본값, FSS#31·FSS#94), 표시, 피드백, 줄 높이, 세로·가로 자판 폭·정렬(FSS#25) 등) | 키-값 | Jetpack DataStore(Preferences) |
 | 오류 기록 | 텍스트 | 앱 내부 저장소, 크기 제한 순환. **오류 종류·코드 위치만**, 입력 글자·좌표 없음. 비밀번호·학습 금지 입력창에서는 기록 안 함(NFR-05) |
 
 ## 8. 입력기 생명주기와 플랫폼 처리
 
 | 시점 | 처리 |
 |---|---|
-| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 모드. 꺼진 모드면 순서상 다음 켜진 모드, FR-CMN-03f ③)의 입력 뷰 생성(FR-CMN-10) |
+| `onCreateInputView` | 마지막 모드(없으면 순서의 첫 켜진 모드 — 기본 설정이면 영문 쿼티, FSS#94. 꺼진 모드면 순서상 다음 켜진 모드, FR-CMN-03f ③)의 입력 뷰 생성(FR-CMN-10) |
 | `onStartInputView(info)` | **자판 선택:** 클래스가 숫자·전화·날짜시간이거나 비밀번호(아래 판별, 학습 금지 플래그만 있는 경우는 제외)면 **숫자류 입력창** → `ModeController.enterNumericField()`(영문 쿼티로 시작), 아니면 `leaveNumericField()`(돌아갈 모드로 복귀). 8.1, FR-CMN-04·04b. **비밀번호 판별(클래스와 변형을 함께):** (클래스 = `TYPE_CLASS_TEXT`이고 변형 ∈ {`TYPE_TEXT_VARIATION_PASSWORD`, `VISIBLE_PASSWORD`, `WEB_PASSWORD`}) 또는 (클래스 = `TYPE_CLASS_NUMBER`이고 변형 = `TYPE_NUMBER_VARIATION_PASSWORD`) → 표시 제한·기록 안 함(FR-CMN-08 ①). `imeOptions`에 `IME_FLAG_NO_PERSONALIZED_LEARNING`만 있으면 → 기록 안 함(학습·통계·오류 기록), 표시는 평소대로(FR-CMN-08 ②). 변형 값만 비교하면 안 된다(`NUMBER_VARIATION_PASSWORD`와 `TEXT_VARIATION_URI`가 같은 값 0x10). 조합 확정, BlockParser·천지인 조립기 초기화, `ModeController.typed = false`(previous 유지, FR-CMN-03e). 이어서 `ModeController.applyEnabled(켜진 모드)`(FR-CMN-03f, 8.1) |
 | `onUpdateSelection(oldSel, newSel, candStart, candEnd)` | 조합 중이고 **새 커서가 조합 구간 끝(candEnd)과 다르거나 입력기가 마지막으로 기대한 위치와 다를 때만** 사용자 커서 이동으로 보고 확정·초기화. 입력기 자신의 `setComposingText`·`commitText`로 생긴 변화는 무시(FR-CMN-06) |
 | `onFinishInput` | 조합 확정 |
@@ -338,7 +340,7 @@ PracticeActivity(옛 TutorActivity)
 ```
 상태: current, previous(없을 수 있음), typed
 순서: SWIPE → QWERTY → DUBEOLSIK → GRAFFITI → SWIPE … (설정에서 꺼진 모드는 건너뜀, FR-CMN-03f)
-켜진 모드: enabled ⊇ {QWERTY, DUBEOLSIK}(늘 켜짐), GRAFFITI·SWIPE는 SettingsStore 값(기본 켬, FR-SET-08)
+켜진 모드: enabled ⊇ {QWERTY, DUBEOLSIK}(늘 켜짐), GRAFFITI·SWIPE는 SettingsStore 값(기본 끔, 저장값이 없으면 기본값, FR-SET-08, FSS#94)
 nextEnabled(m) = 순서상 m 다음의 첫 켜진 모드
 
 입력 이벤트(글자·숫자·기호, 그래피티 천지인 요소 획, 스페이스, 엔터, 탭, 지우기) → typed = true
@@ -364,7 +366,7 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
   if returnMode == null: 마지막 모드 저장(DataStore)   // 숫자류 입력창 안에서 바꾼 모드는 저장 안 함, FR-CMN-04b
 ```
 
-- 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 8행(FR-CMN-03f)을 단위 시험한다. 켜진 모드 집합은 밖(`SettingsStore`)에서 받아 넣는다.
+- 순수 Kotlin 상태 기계로 만들어 SRS 모드 키 예시 표 10행, 숫자류 입력창 사례 표 7행, 꺼진 모드 사례 표 9행(FR-CMN-03f)을 단위 시험한다. 켜진 모드 집합은 밖(`SettingsStore`)에서 받아 넣는다.
 - **설정 변경 전달:** `KeyboardService`가 `SettingsStore`의 켜진 모드 값(Flow)을 구독한다. 값이 바뀌면 `applyEnabled`를 부르고, 입력 뷰가 떠 있는 동안 `current`가 바뀌었으면 입력 뷰를 새 모드의 뷰로 바꾼다(`setInputView`, 모드 전환과 같은 경로). 떠 있지 않으면 다음 `onStartInputView`의 `applyEnabled`가 맡는다.
 - 그래피티 안의 한영 상태(`GraffitiState`, 5장)는 `ModeController`와 따로이고 켜진 모드와 상관없다(FR-CMN-03f ⑥).
 - 숫자류 입력창 안에서도 모드 키는 위 규칙 그대로다(typed·previous 포함). 마지막 모드 저장만 하지 않으므로, 숫자류 입력창 안에서 프로세스가 다시 시작되면 저장된 마지막 모드(= 돌아갈 모드)를 `returnMode`로 삼아 다시 쿼티로 시작한다(사례 표 7행).
@@ -585,3 +587,4 @@ applyEnabled(enabled)  — 설정이 바뀌었을 때(키보드가 떠 있으면
 | 0.74 | 2026-11-06 | SRS 0.81 반영(오너 결정 2026-11-06, FSS#80): 5장 템플릿 — 영문 글자에도 오너 손 획 추가. 12장 결정 |
 | 0.75 | 2026-11-13 | SRS 0.82·SWIPE 0.58 반영(오너 요청 2026-11-13, FSS#84: 자판 좌우 여유 칸): 5A 자판 폭과 정렬 — 낱말(자판·여유 칸·자판 사각형·남는 자리), `KeyboardWidth` 출력(자판 사각형 R = min(A, max(352, 11u)), 여유 칸 m = R / 22, W = R − 2m), 루트가 모드 뷰를 x + m에 폭 W로 놓음, 여유 칸은 루트의 자리(터치는 자식 밖 길), 테두리의 왼쪽·오른쪽 = 자판 사각형 바깥 변(끝 키 바깥쪽은 보통 변 통과), 입력 연습·설정 화면. 3장 stroke-core 행, 4.2 테두리 문단(검수 1회차 경미 지적 반영: 테두리에 붙은 변 = 아랫변 `outerEdges`·윗변 `topAtWindow`, 가로 기본과 하한의 순서)·천지인·기호 행, 8.2 모드 키 문구·시험, 10장 R1·R10, 11장 시험(`KeyboardWidth`, 입력 뷰), 12장 결정, 13장 FR-CMN-14. 5A 배치 수치는 배치 단위임을 적음 |
 | 0.76 | 2026-11-13 | SRS 0.83·SWIPE 0.59 반영(오너 요청 2026-11-13, FSS#85: 자판 옆 남는 자리를 투명하게 하고 터치를 아래 앱으로): 5A — 시스템 막대 여백(자판 판에 드는 부분만 칠함), 낱말(자판 판·투명한 자리), 놓기(루트 배경 대신 자판 판만 칠함, 자식 밖 터치 소비는 자판 판 안), **자판 판과 투명한 자리 문단 신설**(사각형 계산 순수 함수, 칠하기, `onComputeInsets`의 터치 영역 = 자판 판·내용/보이는 인셋 그대로, 갱신, 터치 길과 `OffKeyboardPointers` 유지), 입력 연습 자판 틀. 8장 `onComputeInsets` 행, 10장 R11(실기 미확인 항목), 11장 시험(자판 판 계산, 입력 뷰·서비스, 연습 자판 틀, 실기기), 12장 결정, 13장 FR-CMN-14. 판정·폭 계산(`KeyboardWidth`)은 바뀌지 않음. 검수 1회차 경미 지적 반영("닿음" = 그쪽 남는 자리 0px와 1px 시험 사례, 플랫폼 동작 단정 두 곳을 미확인으로 낮춤, R11 ⑦) |
+| 0.77 | 2026-11-14 | SRS 0.84·SWIPE 0.60 반영(오너 결정 2026-11-14, FSS#94 "일단 동결"): 7.1 첫 실행 — 그래피티·긋기가 둘 다 꺼져 있으면 주제 목록을 열지 않고 "보였음" 표시도 저장하지 않음. 7.3 저장 데이터 표의 켜진 모드 기본값 끔(저장값이 없으면 기본값), 8장 `onCreateInputView` 시작 모드 = 순서의 첫 켜진 모드(기본 설정이면 영문 쿼티), 8.1 켜진 모드 기본값, 꺼진 모드 사례 표 9행. 구조 변경 없음, 모드 순서 그대로 |
