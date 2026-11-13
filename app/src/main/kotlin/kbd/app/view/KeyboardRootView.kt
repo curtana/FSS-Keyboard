@@ -49,8 +49,9 @@ import kbd.graffiti.recognize.TemplateSet
  * Keyboard plate (SRS FR-CMN-14 ⑫, HLD 5A, LLD-08 §7.3, FSS#85): this view has no background. It paints one rectangle,
  * [plate] (the keyboard rectangle's width, with the side padding it reaches, by the view's height), and the service
  * reports the same rectangle as the window's touchable region. The rest of the width and the padding under it are
- * left clear: nothing is drawn there, and a touch that begins there is not sent to this window. One that is sent all
- * the same is, as before, off the children: taken with no input.
+ * left clear: nothing is drawn there, and a touch that begins there should not be sent to this window (the platform's
+ * part, not confirmed on a device: LLD-08 §7.3). One that is sent all the same is, as before, off the children: taken
+ * with no input.
  */
 class KeyboardRootView(context: Context) : FrameLayout(context) {
 

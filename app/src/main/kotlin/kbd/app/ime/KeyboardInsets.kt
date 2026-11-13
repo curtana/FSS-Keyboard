@@ -9,7 +9,7 @@ import kbd.app.view.KeyboardRootView
  * Content and visible insets start at the top of the input view, as before: the app is resized or panned by the
  * input view's height whatever the keyboard's width. The touchable place is the keyboard plate
  * ([KeyboardRootView.plate]), the same rectangle the root paints, in window coordinates; a touch that begins outside
- * it is not this window's. While the plate is the whole input view (a full-width keyboard) or the view is not laid
+ * it should go to the window below (the platform's part, not confirmed on a device: LLD-08 §7.3). While the plate is the whole input view (a full-width keyboard) or the view is not laid
  * out yet, the platform's `TOUCHABLE_INSETS_VISIBLE` is kept, which is what the keyboard reported before there was a
  * plate.
  */

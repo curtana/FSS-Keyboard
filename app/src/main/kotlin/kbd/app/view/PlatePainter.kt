@@ -6,7 +6,8 @@ import kbd.app.store.PxRect
 
 /**
  * Paints a keyboard plate (SRS FR-CMN-14 ⑫, HLD 5A, LLD-08 §7.3, FSS#85): the view that has the plate has no
- * background of its own and fills only this rectangle with the keyboard colour, so what lies outside it stays clear.
+ * background of its own and fills only this rectangle with the keyboard colour, so the view draws nothing outside it
+ * (what shows there is the window's and the platform's part, not confirmed on a device: LLD-08 §7.3).
  */
 internal class PlatePainter {
     private val paint = Paint().apply { color = KeyboardRootView.BACKGROUND_COLOR }
