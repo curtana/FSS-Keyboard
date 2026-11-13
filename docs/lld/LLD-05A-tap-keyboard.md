@@ -1,7 +1,8 @@
 # LLD-05A 탭 자판 (쿼티·두벌식)
 
 - 대응 HLD 절: 5A장(탭 자판)
-- 버전 **0.16** (2026-11-05)
+- 버전 **0.17** (2026-11-13)
+- 0.17(FSS#84, SRS 0.82 FR-CMN-14 ⑧⑪, HLD 0.75 5A): `TapGeometry.build(layout, widthDp, rowHeightDp, sideDp)`, `TapKeyboardView.sideMarginPx` — 테두리의 왼쪽·오른쪽이 자판에서 여유 칸만큼 밖이라 끝 키(Esc·1·q·한/영, ⌫·0·p·↵·`/`)의 바깥쪽 변은 보통 변이다(3.1). 배정표는 그대로다(새 배정 없음 — 그 방향은 여전히 탭과 같은 결과).
 - 0.16(FSS#62 오너 요청): m 오른쪽 키의 탭과 ←를 맞바꿨다 — 탭 `=`, ← `-`(3.2·3.3). ↑ `_`, ↓ `+`는 그대로. 키 id `minus`는 그대로 둔다.
 - 0.15(이슈 #246 오너 결정): ㅄ을 ㅂ(q) ←에서 **ㅂ →**로 옮겼다 — ㅂ은 창 왼쪽 끝 키라 실기기에서 ←가 잘 안 된다. ㅂ ←는 기본 ㅂ(배정 없음).
 - 0.14(이슈 #242 오너 결정(두벌식 겹받침 한 번에)): 두벌식 글자 키의 겹받침 11개(3.3): ㄱ(r) ← ㄳ, ㄴ(s) ← ㄵ → ㄶ, ㄹ(f) ↑ ㅀ ← ㄺ → ㄻ ↓ ㄼ, ㅂ(q) ← ㅄ(0.15: → ㅄ로 옮김), ㅅ(t) ← ㄽ, ㅌ(x) ← ㄾ, ㅍ(v) ← ㄿ(`TapLayouts.COMPOUND_JAMO` → `TapKeyDef.compoundJamo`). `TapKeyResolver` 두벌식: ↑ = 시프트 자모 ?: 겹받침 ?: 기본(ㄱ·ㅂ·ㅅ ↑는 ㄲ·ㅃ·ㅆ 그대로), ←→↓ = 겹받침 ?: 배정 기호 ?: 기본. 출력은 자모(`TapOutput.jamo`)라 조합기로 간다(LLD-04 7절). 쿼티는 그대로. 변 가운데 표시(`edgeHints`)에 나온다. ㄱ(r) ←는 창 테두리가 아니라 보통 변 통과다(0.15: 0.14의 "ㅂ ←·ㄱ ←는 테두리 판정"은 틀렸다 — ㄱ은 왼쪽 끝 키가 아니고, ㅂ ←는 이슈 #246으로 →에 옮겼다).
@@ -123,6 +124,7 @@ object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 
 - 화면 좌표: `x_px = x / 360 × 폭`, 줄 y = 창 위에서 `row × 줄 높이`(쿼티·두벌식은 6줄로 창 전체). 가로 화면에서는 폭만 늘고 줄 높이는 그대로(FR-CMN-12).
 - "불가" 방향은 데이터에 넣지 않는다. 그 방향은 바깥 변이라 기록이 생기지 않는다(LLD-03 3.3).
+- **여유 칸(0.17, FSS#84):** `TapGeometry.build(layout, widthDp, rowHeightDp, sideDp)`가 키마다 `KeyGeom.build(id, rect, widthDp, heightDp, sideDp)`를 부른다(LLD-04 2절). `sideDp` = 뷰의 `sideMarginPx / density`(부모가 재기 전에 알림, LLD-08 7.2). 그래서 왼쪽·오른쪽 끝 키의 바깥쪽 변은 바깥 변이 아니고, 그 방향 획은 변 너머 `minCrossDp`에서 `Exit`이다(안쪽 키와 같은 기준). 그 방향에 배정이 없는 키는 결과가 탭과 같다(`TapKeyResolver`, 그대로). `TapKeyboardView.rebuildGeometry`는 배치·폭·줄 높이·`sideDp`가 모두 같을 때만 다시 만들지 않는다. 들여쓰기 빈칸(░)의 "같은 줄 키로" 규칙(4절 `hit`)은 뷰가 받은 내려옴에만 쓰이고, 여유 칸은 뷰 밖이라 거기서 내려온 터치는 뷰에 오지 않는다(입력 없음).
 
 ### 3.2 쿼티 배치 (SRS 3.3 그림, FR-TAP-03)
 

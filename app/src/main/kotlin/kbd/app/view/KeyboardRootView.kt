@@ -14,8 +14,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kbd.app.feedback.FeedbackPort
 import kbd.app.graffiti.GraffitiGuidePanel
+import kbd.app.store.KeyboardPlate
 import kbd.app.store.KeyboardSpan
 import kbd.app.store.KeyboardWidth
+import kbd.app.store.PxRect
 import kbd.app.store.RowHeight
 import kbd.app.store.WidthSetting
 import kbd.graffiti.recognize.TemplateSet
@@ -28,19 +30,28 @@ import kbd.graffiti.recognize.TemplateSet
  * the IME window is edge-to-edge (target SDK 35+), so the navigation bar and the system's tappable row
  * under the keyboard (hide-keyboard and IME switcher buttons), the larger of the two on each side, are
  * padding below the rows and, when the bar is at the side (landscape 3-button navigation), beside them.
- * The mode view gets the width that is left. The padding is painted [BACKGROUND_COLOR] and, like the
- * blank band, takes touches with no input.
+ * The mode view gets the width that is left. The padding inside the keyboard plate (below) is painted
+ * [BACKGROUND_COLOR] and, like the blank band, takes touches with no input.
  *
  * Stroke guide (SRS FR-GRF-09~09a, HLD 5장, LLD-08 §7.1): in graffiti mode ([enableGuide]) the band has a
  * 1 × 1 row guide button at its right end. It toggles, on press, an opaque [GraffitiGuidePanel] over the
  * mode view; while it is open the mode view gets no touch (the touch in progress is cancelled when it opens).
  * The open state is view state only: a new root starts closed.
  *
- * Keyboard width (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2, FSS#25): the mode view, the guide panel and the band's
- * guide button sit in a [KeyboardWidth.place] span of the width left by the system bar padding, with the setting of
- * the screen's orientation. The rest is margin like the band: [BACKGROUND_COLOR], touches taken with no input, and a
- * finger that comes down there is not given to the mode view even while another finger is on it
- * ([OffKeyboardPointers]).
+ * Keyboard width (SRS FR-CMN-14, HLD 5A, LLD-08 §7.2, FSS#25, FSS#84): [KeyboardWidth.place] gives the keyboard
+ * rectangle in the width left by the system bar padding, with the setting of the screen's orientation. The rectangle
+ * is a side margin, the keys and a side margin; the mode view, the guide panel and the band's guide button sit on the
+ * keys ([keyboardLeft], [keyboardWidth]), and the mode view is told the margin's width ([SideMarginView]). The side
+ * margins are this view's own place, like the band: [BACKGROUND_COLOR], touches taken with no input, and a finger
+ * that comes down there is not given to the mode view even while another finger is on it ([OffKeyboardPointers]).
+ * A stroke that began on the mode view stays with it when it goes out over a margin or the rest of the width.
+ *
+ * Keyboard plate (SRS FR-CMN-14 ⑫, HLD 5A, LLD-08 §7.3, FSS#85): this view has no background. It paints one rectangle,
+ * [plate] (the keyboard rectangle's width, with the side padding it reaches, by the view's height), and the service
+ * reports the same rectangle as the window's touchable region. The rest of the width and the padding under it are
+ * left clear: nothing is drawn there, and a touch that begins there should not be sent to this window (the platform's
+ * part, not confirmed on a device: LLD-08 §7.3). One that is sent all the same is, as before, off the children: taken
+ * with no input.
  */
 class KeyboardRootView(context: Context) : FrameLayout(context) {
 
@@ -56,14 +67,38 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     var portraitWidth: WidthSetting = WidthSetting.DEFAULT
     var landscapeWidth: WidthSetting = WidthSetting.DEFAULT
 
-    /** The keyboard's span in the available width, set by [onMeasure]. */
-    private var span = KeyboardSpan(0, 0)
+    /** The keyboard rectangle's span in the available width, set by [onMeasure]. */
+    private var span = KeyboardSpan(0, 0, 0)
 
-    /** Left end of the keyboard in this view, px (tests). */
-    internal val keyboardLeft: Int get() = paddingLeft + span.left
+    /**
+     * Left end of the keyboard rectangle (side margins included) in this view, px. What lies outside
+     * [rectLeft] until [rectLeft] + [rectWidth] is the rest of the width (FR-CMN-14 ⑤).
+     */
+    internal val rectLeft: Int get() = paddingLeft + span.left
 
-    /** Width of the keyboard, px (tests). */
-    internal val keyboardWidth: Int get() = span.width
+    /** Width of the keyboard rectangle, px. */
+    internal val rectWidth: Int get() = span.width
+
+    /** Width of one side margin, px. */
+    internal val sideMargin: Int get() = span.margin
+
+    /** Left end of the keys (the mode view) in this view, px. */
+    internal val keyboardLeft: Int get() = paddingLeft + span.keysLeft
+
+    /** Width of the keys, px. */
+    internal val keyboardWidth: Int get() = span.keysWidth
+
+    /**
+     * The keyboard plate in this view, px ([KeyboardPlate.rect]), set by [onLayout]: the one place this view paints
+     * and the window takes touches. Empty until the first layout.
+     */
+    internal var plate: PxRect = PxRect.EMPTY
+        private set
+
+    /** True when [plate] is the whole view: nothing is left clear (a full-width keyboard). */
+    internal val plateFillsView: Boolean get() = plate == PxRect(0, 0, width, height)
+
+    private val platePainter = PlatePainter()
 
     private val offKeyboard = OffKeyboardPointers(::onChild)
 
@@ -81,7 +116,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     val guideOpen: Boolean get() = guidePanel?.visibility == VISIBLE
 
     init {
-        setBackgroundColor(BACKGROUND_COLOR)   // the padding shows this (OD-2 A)
+        setWillNotDraw(false)   // no background: only the plate is painted (onDraw, FR-CMN-14 ⑫)
         ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
             // The union type gives, side by side, the larger of the two insets (OD-1 A, OD-3 A).
             val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.tappableElement())
@@ -215,8 +250,9 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
     /**
      * Height = [WINDOW_ROWS] rows + the bottom padding. Children of `MATCH_PARENT` width (the mode view and the guide
-     * panel) get the keyboard width of the orientation's setting (FR-CMN-14 ④); the available width is the measured
-     * width less the side padding (system bars), the portrait width is the screen's short side (③).
+     * panel) get the width of the keys of the orientation's setting (FR-CMN-14 ④); the available width is the measured
+     * width less the side padding (system bars), the portrait width is the screen's short side (③). The mode view is
+     * told the side margin before it is measured (⑧).
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
@@ -228,7 +264,8 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             val lp = c.layoutParams
-            val cw = if (lp.width >= 0) lp.width else span.width
+            val cw = if (lp.width >= 0) lp.width else span.keysWidth
+            c.applySideMargin(span.margin)
             c.measure(
                 MeasureSpec.makeMeasureSpec(cw, MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(lp.height.coerceAtLeast(0), MeasureSpec.EXACTLY),
@@ -238,26 +275,38 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     }
 
     /**
-     * The mode view and the guide panel at the bottom of the rows, at the keyboard's left end; the guide button at the
-     * top, at the keyboard's right end (FR-CMN-14 ⑥, FR-GRF-09).
+     * The mode view and the guide panel at the bottom of the rows, at the keys' left end; the guide button at the
+     * top, at the keys' right end (FR-CMN-14 ⑥, FR-GRF-09). The side margins stay empty. The plate is set here, from
+     * the same span the children are placed with.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        val p = KeyboardPlate.rect(right - left, bottom - top, paddingLeft, paddingRight, span)
+        if (p != plate) {
+            plate = p
+            invalidate()
+        }
         val x = keyboardLeft
         val rowsBottom = bottom - top - paddingBottom
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             if (c.visibility == GONE) continue
             if (c === guideButton) {
-                c.layout(x + span.width - c.measuredWidth, paddingTop, x + span.width, paddingTop + c.measuredHeight)
+                c.layout(x + span.keysWidth - c.measuredWidth, paddingTop, x + span.keysWidth, paddingTop + c.measuredHeight)
             } else {
                 c.layout(x, rowsBottom - c.measuredHeight, x + c.measuredWidth, rowsBottom)
             }
         }
     }
 
+    /** The plate in the keyboard colour; outside it nothing is drawn (FR-CMN-14 ⑫). The children draw over it. */
+    override fun onDraw(canvas: Canvas) {
+        platePainter.draw(canvas, plate)
+    }
+
     /**
-     * Touches the children did not take (the blank band, the side margins, the system bar padding) are consumed with
-     * no input (SRS 3.3, FR-CMN-14 ⑤, FR-CMN-11a ②).
+     * Touches the children did not take (the blank band, the keyboard's side margins, the system bar padding, and any
+     * touch outside the plate that the window was sent) are consumed with no input (SRS 3.3, FR-CMN-14 ⑤⑪⑫,
+     * FR-CMN-11a ②).
      */
     override fun onTouchEvent(event: MotionEvent): Boolean = true
 
@@ -297,7 +346,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         /** QWERTY and Dubeolsik have 6 rows, the tallest layout (LLD-08 §7). */
         const val WINDOW_ROWS = 6
 
-        /** Keyboard background; mode views and the system bar padding share it (SRS 3.3 ②, OD-2 A). */
+        /** Keyboard background; mode views and the keyboard plate share it (SRS 3.3 ②, OD-2 A, FR-CMN-14 ⑫). */
         const val BACKGROUND_COLOR = Color.BLACK
 
         /** The guide button's mark (LLD-08 §7.1). */
