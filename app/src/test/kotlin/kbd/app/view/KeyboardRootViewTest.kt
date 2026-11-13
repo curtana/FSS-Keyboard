@@ -228,10 +228,15 @@ class KeyboardRootViewTest {
     @Test
     fun `KR-11 the mode view gets a changed side margin even when its own width stays`() {
         val child = root.getChildAt(0) as TapKeyboardView
-        layoutAt(360f)
-        val before = child.geometrySideDp
-        child.sideMarginPx = child.sideMarginPx + 3   // as the parent does before measuring
-        assertEquals(before!! + 3 / density, child.geometrySideDp!!, 1e-4f)
+        // Full width 361 px and 363 px: the margin is 16 and 17 px (361 / 22 = 16.4, 363 / 22 = 16.5), the keys 329 px both.
+        root.measure(View.MeasureSpec.makeMeasureSpec(361, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        assertEquals(16 to 329, root.sideMargin to child.width)
+        assertEquals(16 / density, child.geometrySideDp!!, 0f)
+        root.measure(View.MeasureSpec.makeMeasureSpec(363, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        assertEquals(17 to 329, root.sideMargin to child.width)   // the same child width
+        assertEquals(17 / density, child.geometrySideDp!!, 0f)   // the geometry was built again with the new margin
     }
 
     @Test

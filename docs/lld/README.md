@@ -85,7 +85,7 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | FR-CMN-11 | LLD-05A 4절·5절 `MultiPointerQueue`, LLD-04 9.3, LLD-05 8.2 | MQ-01~MQ-06, DV-13 |
 | FR-CMN-11a | ① LLD-05A 4절, LLD-04 9.3, LLD-05 8.3(기능키 누를 때) ② LLD-08 8절 `Feedback.key` 부르는 곳 ③ LLD-05A 4절 CANCEL·5절 `onCancelAll`, LLD-04 9.3, LLD-05 8.3 | MQ-07, MQ-08, FB-01~FB-03, SW-02~SW-04, RT-05, ID-24, DV-21 |
 | FR-CMN-12 | LLD-08 3절 `onEvaluateFullscreenMode`·`onConfigurationChanged`, 7절(시스템 막대 여백), LLD-03 3.4 | TS-08, DV-07, DV-08 |
-| FR-CMN-14 (0.36, FSS#25; 0.47, FSS#84 여유 칸) | LLD-08 7.2 `KeyboardWidth.place`(`KeyboardSpan` 사각형·여유 칸)·`KeyboardRootView` `onMeasure`·`onLayout`·`SideMarginView`·`OffKeyboardPointers`, LLD-04 2절 `KeyGeom.build`의 `sideDp`, LLD-07 2.3 `BoardFrame` | KW-01~KW-05, KW-07, KW-09, KW-10, SM-01~SM-05, KH-07, EC-16, KR-01~KR-06, KR-08~KR-11, SW-20, PR-31, PR-32, DV-30, DV-35 |
+| FR-CMN-14 (0.36, FSS#25; 0.47, FSS#84 여유 칸) | LLD-08 7.2 `KeyboardWidth.place`(`KeyboardSpan` 사각형·여유 칸)·`KeyboardRootView` `onMeasure`·`onLayout`·`SideMarginView`·`OffKeyboardPointers`, LLD-04 2절 `KeyGeom.build`의 `sideDp`, LLD-07 2.3 `BoardFrame` | KW-01~KW-05, KW-07, KW-09, KW-10, SM-01~SM-05, KH-07, EC-16, KR-01~KR-06, KR-08~KR-11, SW-20, MK-09, PR-31, PR-32, DV-30, DV-35 |
 | FR-HGL-01~03 | LLD-04 7.2 `step`, 7.3 `apply` | HC-06~HC-20 |
 | FR-HGL-04, 04a, 04b | LLD-03 3.1 `MergeTables`(0.15: 긋기 = `NONE`), LLD-04 7.1 `ComposePolicy` | HC-01, HC-02, HC-05, HC-12~HC-14, HC-21, HC-22 |
 | FR-HGL-04c | LLD-05 4절 `CheonjiinAssembler`(이어질 수 없는 요소 무시 포함), 6절 `onStroke`(무시 요소 flash 없음), LLD-04 7.2 `ReplaceVowel` | CJ-01~CJ-24, CJ-26, CJ-41, HC-24, GH-27~GH-29, GH-36 |
