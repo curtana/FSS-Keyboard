@@ -14,8 +14,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kbd.app.feedback.FeedbackPort
 import kbd.app.graffiti.GraffitiGuidePanel
+import kbd.app.store.KeyboardPlate
 import kbd.app.store.KeyboardSpan
 import kbd.app.store.KeyboardWidth
+import kbd.app.store.PxRect
 import kbd.app.store.RowHeight
 import kbd.app.store.WidthSetting
 import kbd.graffiti.recognize.TemplateSet
@@ -28,8 +30,8 @@ import kbd.graffiti.recognize.TemplateSet
  * the IME window is edge-to-edge (target SDK 35+), so the navigation bar and the system's tappable row
  * under the keyboard (hide-keyboard and IME switcher buttons), the larger of the two on each side, are
  * padding below the rows and, when the bar is at the side (landscape 3-button navigation), beside them.
- * The mode view gets the width that is left. The padding is painted [BACKGROUND_COLOR] and, like the
- * blank band, takes touches with no input.
+ * The mode view gets the width that is left. The padding inside the keyboard plate (below) is painted
+ * [BACKGROUND_COLOR] and, like the blank band, takes touches with no input.
  *
  * Stroke guide (SRS FR-GRF-09~09a, HLD 5장, LLD-08 §7.1): in graffiti mode ([enableGuide]) the band has a
  * 1 × 1 row guide button at its right end. It toggles, on press, an opaque [GraffitiGuidePanel] over the
@@ -40,9 +42,16 @@ import kbd.graffiti.recognize.TemplateSet
  * rectangle in the width left by the system bar padding, with the setting of the screen's orientation. The rectangle
  * is a side margin, the keys and a side margin; the mode view, the guide panel and the band's guide button sit on the
  * keys ([keyboardLeft], [keyboardWidth]), and the mode view is told the margin's width ([SideMarginView]). The side
- * margins and the rest of the width are this view's own place, like the band: [BACKGROUND_COLOR], touches taken with
- * no input, and a finger that comes down there is not given to the mode view even while another finger is on it
- * ([OffKeyboardPointers]). A stroke that began on the mode view stays with it when it goes out over a margin.
+ * margins are this view's own place, like the band: [BACKGROUND_COLOR], touches taken with no input, and a finger
+ * that comes down there is not given to the mode view even while another finger is on it ([OffKeyboardPointers]).
+ * A stroke that began on the mode view stays with it when it goes out over a margin or the rest of the width.
+ *
+ * Keyboard plate (SRS FR-CMN-14 ⑫, HLD 5A, LLD-08 §7.3, FSS#85): this view has no background. It paints one rectangle,
+ * [plate] (the keyboard rectangle's width, with the side padding it reaches, by the view's height), and the service
+ * reports the same rectangle as the window's touchable region. The rest of the width and the padding under it are
+ * left clear: nothing is drawn there, and a touch that begins there should not be sent to this window (the platform's
+ * part, not confirmed on a device: LLD-08 §7.3). One that is sent all the same is, as before, off the children: taken
+ * with no input.
  */
 class KeyboardRootView(context: Context) : FrameLayout(context) {
 
@@ -79,6 +88,18 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     /** Width of the keys, px. */
     internal val keyboardWidth: Int get() = span.keysWidth
 
+    /**
+     * The keyboard plate in this view, px ([KeyboardPlate.rect]), set by [onLayout]: the one place this view paints
+     * and the window takes touches. Empty until the first layout.
+     */
+    internal var plate: PxRect = PxRect.EMPTY
+        private set
+
+    /** True when [plate] is the whole view: nothing is left clear (a full-width keyboard). */
+    internal val plateFillsView: Boolean get() = plate == PxRect(0, 0, width, height)
+
+    private val platePainter = PlatePainter()
+
     private val offKeyboard = OffKeyboardPointers(::onChild)
 
     private var rows = WINDOW_ROWS
@@ -95,7 +116,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     val guideOpen: Boolean get() = guidePanel?.visibility == VISIBLE
 
     init {
-        setBackgroundColor(BACKGROUND_COLOR)   // the padding shows this (OD-2 A)
+        setWillNotDraw(false)   // no background: only the plate is painted (onDraw, FR-CMN-14 ⑫)
         ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
             // The union type gives, side by side, the larger of the two insets (OD-1 A, OD-3 A).
             val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.tappableElement())
@@ -255,9 +276,15 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
     /**
      * The mode view and the guide panel at the bottom of the rows, at the keys' left end; the guide button at the
-     * top, at the keys' right end (FR-CMN-14 ⑥, FR-GRF-09). The side margins stay empty.
+     * top, at the keys' right end (FR-CMN-14 ⑥, FR-GRF-09). The side margins stay empty. The plate is set here, from
+     * the same span the children are placed with.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        val p = KeyboardPlate.rect(right - left, bottom - top, paddingLeft, paddingRight, span)
+        if (p != plate) {
+            plate = p
+            invalidate()
+        }
         val x = keyboardLeft
         val rowsBottom = bottom - top - paddingBottom
         for (i in 0 until childCount) {
@@ -271,9 +298,15 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         }
     }
 
+    /** The plate in the keyboard colour; outside it nothing is drawn (FR-CMN-14 ⑫). The children draw over it. */
+    override fun onDraw(canvas: Canvas) {
+        platePainter.draw(canvas, plate)
+    }
+
     /**
-     * Touches the children did not take (the blank band, the keyboard's side margins, the rest of the width, the system
-     * bar padding) are consumed with no input (SRS 3.3, FR-CMN-14 ⑤⑪, FR-CMN-11a ②).
+     * Touches the children did not take (the blank band, the keyboard's side margins, the system bar padding, and any
+     * touch outside the plate that the window was sent) are consumed with no input (SRS 3.3, FR-CMN-14 ⑤⑪⑫,
+     * FR-CMN-11a ②).
      */
     override fun onTouchEvent(event: MotionEvent): Boolean = true
 
@@ -313,7 +346,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         /** QWERTY and Dubeolsik have 6 rows, the tallest layout (LLD-08 §7). */
         const val WINDOW_ROWS = 6
 
-        /** Keyboard background; mode views and the system bar padding share it (SRS 3.3 ②, OD-2 A). */
+        /** Keyboard background; mode views and the keyboard plate share it (SRS 3.3 ②, OD-2 A, FR-CMN-14 ⑫). */
         const val BACKGROUND_COLOR = Color.BLACK
 
         /** The guide button's mark (LLD-08 §7.1). */
