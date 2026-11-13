@@ -213,7 +213,7 @@ class KeyboardRootViewTest {
         layoutAt(360f)
         val child = root.getChildAt(0)
         val m = root.sideMargin
-        val y = (2 * ROW + ROW / 2) * density   // child row 1: the q row
+        val y = child.top + child.height * 2.5f / 6   // the layout's row 2 (edit row, numbers, then q–p)
         touch.down(0, m + 10 * density, y)   // q, the left end key
         touch.move(0, 2f, y, steps = 4)   // out over the margin, 8 dp and more past the key's edge
         touch.up(0)

@@ -150,7 +150,8 @@ class GraffitiGuideTest {
         val p = panel()
         assertEquals(px(48f), p.top)                     // pad + auxiliary bar: 5 rows, the band stays free
         assertEquals(px(288f), p.bottom)
-        assertEquals(px(WIDTH), p.width)
+        assertEquals(root.keyboardWidth, p.width)   // the keys' width: the side margins stay free (FR-CMN-14 ⑥, FSS#84)
+        assertEquals(root.sideMargin, p.left)
         button()
         assertFalse(root.guideOpen)
         assertEquals(listOf("key", "key"), events)
@@ -213,7 +214,7 @@ class GraffitiGuideTest {
             touch.move(0, 150f * density, 60f * density, steps = 5)
             touch.up(0)
         }
-        val l = GraffitiGuideLayout(WIDTH, GuideCatalog.groups)
+        val l = GraffitiGuideLayout(p.width / density, GuideCatalog.groups)   // the panel is as wide as the keys (FSS#84)
         assertEquals(l.maxScrollDp(240f), p.scrollDp, 1f)
         assertTrue(root.guideOpen)
         button()

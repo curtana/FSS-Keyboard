@@ -3,6 +3,7 @@ package kbd.stroke.geom
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** LLD-11 §3 KH-01, KH-02, KH-04 (KH-03, KH-05, KH-06 need layout data and belong to later tasks). */
@@ -69,5 +70,20 @@ class KeyHitTesterTest {
         assertEquals(0f to -1f, Dir.UP.unit)
         assertEquals(1f to 0f, Dir.RIGHT.unit)
         assertEquals(Dir.UP, Edge.TOP.dir)
+    }
+
+    /** FSS#84: the border's left and right sides lie a side margin outside the key area. */
+    @Test
+    fun `KG-02 with a side margin the end keys' left and right edges are not outer, bottom and top stay`() {
+        fun build(r: RectDp, side: Float) = KeyGeom.build("k", r, windowW, windowH, side)
+        assertEquals(emptySet<Edge>(), build(a.rect, 8f).outerEdges)
+        assertTrue(build(a.rect, 8f).topAtWindow)
+        assertEquals(emptySet<Edge>(), build(c.rect, 8f).outerEdges)
+        assertEquals(setOf(Edge.BOTTOM), build(d.rect, 8f).outerEdges)
+        // A rect that reaches the border itself is still outer there (within the tolerance).
+        assertEquals(setOf(Edge.LEFT, Edge.RIGHT), build(RectDp(-7.5f, 0f, 160.5f, 48f), 8f).outerEdges)
+        assertEquals(emptySet<Edge>(), build(RectDp(-7.4f, 0f, 160.4f, 48f), 8f).outerEdges)
+        // No margin: as before.
+        assertEquals(a, build(a.rect, 0f).copy(id = "a"))
     }
 }
