@@ -186,17 +186,14 @@ class KeyboardService : InputMethodService(), SwipeHost {
     }
 
     /**
-     * Content and visible insets at the top of the input view; the whole input view, blank band
-     * included, takes touches (SRS 3.3). See the PR note on `TOUCHABLE_INSETS_VISIBLE`.
+     * Content and visible insets at the top of the input view; the keyboard plate, blank band included, takes
+     * touches (SRS 3.3, FR-CMN-14 ⑫, [KeyboardInsets]). The platform asks again on each traversal of the window, so
+     * a new layout of the root gives the new plate (LLD-08 §7.3).
      */
     override fun onComputeInsets(outInsets: Insets) {
         super.onComputeInsets(outInsets)
         if (!::root.isInitialized || !root.isAttachedToWindow) return
-        val loc = IntArray(2)
-        root.getLocationInWindow(loc)
-        outInsets.contentTopInsets = loc[1]
-        outInsets.visibleTopInsets = loc[1]
-        outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_VISIBLE
+        KeyboardInsets.compute(root, outInsets)
     }
 
     /**
