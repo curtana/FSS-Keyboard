@@ -29,7 +29,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** SS-01..SS-05, SS-07, SS-08 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
+/** SS-01..SS-05, SS-07..SS-09 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
 class SettingsStoreTest {
 
     @get:Rule
@@ -163,7 +163,7 @@ class SettingsStoreTest {
     }
 
     @Test
-    fun `update writes every field and null lastMode removes the key`() {
+    fun `SS-09 update writes every field and null lastMode removes the key`() {
         val changed = Settings(
             lastMode = GRAFFITI,
             showDirectionGuide = false,

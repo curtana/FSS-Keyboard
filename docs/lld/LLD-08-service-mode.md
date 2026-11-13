@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.31** (2026-11-13)
+- 버전 **0.32** (2026-11-14)
+- 0.32(FSS#94, SRS 0.84 FR-SET-08·FR-CMN-03f ③·FR-CMN-10, HLD 0.77): **그래피티·긋기 기본값 끔**(LLD-07 6.1). `ModeController`는 바뀌지 않았다. 기본 설정의 켜진 모드는 {QWERTY, DUBEOLSIK}라 처음 설치(마지막 모드 없음)는 `nextEnabled(available[0] = SWIPE)` = **영문 쿼티**로 시작하고(저장하지 않음), 마지막 모드가 긋기·그래피티인 채 저장값 없이 업데이트한 기기도 영문 쿼티로 시작해 그것을 마지막 모드로 저장한다(`fixedStart`). 모드 키는 영문 ↔ 한글만 돈다(5절, 시험 OM-10).
 - 0.31(FSS#85, SRS 0.83 FR-CMN-14 ⑤⑫·3.3, HLD 0.76 5A·8장·R11): **자판 판과 투명한 자리**(새 7.3) — 순수 함수 `KeyboardPlate.rect`(입력 뷰 좌표의 사각형 `PxRect`), `KeyboardRootView`는 배경을 두지 않고 `plate`만 칠한다(`onLayout`에서 정함, `PlatePainter`), `KeyboardService.onComputeInsets`는 `KeyboardInsets.compute`로 줄인 자판에서 `TOUCHABLE_INSETS_REGION` + `touchableRegion` = 자판 판(창 좌표), 꽉 채움·첫 배치 전에는 `TOUCHABLE_INSETS_VISIBLE` 그대로. 내용·보이는 인셋은 그대로. 플랫폼 동작의 근거와 미확인 항목 표. 3절 `onComputeInsets` 행(코드와 달랐던 옛 값도 함께 고침), 7절 여백 색·`onTouchEvent`, 7.2 `onLayout`·"자판 사각형을 아는 곳"·"여백·여유 칸 터치" 행. `OffKeyboardPointers`·`KeyboardWidth.place`·판정은 그대로.
 - 0.30(FSS#84, SRS 0.82 FR-CMN-14 ④⑧⑪·FR-SET-09, HLD 0.75 5A): **자판 좌우 여유 칸**(7.2) — `KeyboardWidth.place`가 자판 사각형(11칸)과 여유 칸 폭을 낸다(`KeyboardSpan(left, width, margin)`, `RECT_UNITS` = 11, `MIN_DP` = 352, `fullKeyDp` = 가용 폭 / 11 올림, 픽셀 반올림 규칙). `KeyboardRootView`는 모드 뷰·덮개·버튼을 자판(`keysLeft`·`keysWidth`)에 놓고 여유 칸은 자식 없는 제 자리로 둔다. 모드 뷰는 `SideMarginView.sideMarginPx`로 여유 칸 폭을 받아 키 기하의 테두리 왼쪽·오른쪽을 (−m, W + m)으로 준다(`KeyGeom.build`의 `sideDp`). `OffKeyboardPointers`·`EdgeCrossingTracker`는 그대로.
 - 0.29(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): **자판 폭과 정렬**(새 7.2) — `KeyboardWidth.place`(키 한 칸 폭 × 10, 가용 폭에서 멈춤, 하한 320dp, 왼손/중앙/오른손), `KeyboardRootView`의 `portraitWidth`·`landscapeWidth`, `onMeasure`·`onLayout`(모드 뷰·덮개·버튼을 줄인 자판에), 자식 밖에서 내려온 포인터를 거르는 `OffKeyboardPointers`, 다시 놓기(화면 방향·설정 흐름).
@@ -119,7 +120,7 @@ if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모�
 ```
 - `resetParsers()`는 기본 이유(`FIELD_CHANGED`)다: 사용자가 누른 키가 아니므로 버린 획에 진동하지 않는다(D-57과 같음).
 - 자동 전환이라 `typed`·`previous`는 바꾸지 않는다(5절). 저장은 `applyEnabled`가 돌려준 모드만 한다(숫자류 입력창 안이면 고친 돌아갈 모드, 밖이면 새 모드).
-- `Settings.enabledModes` = {QWERTY, DUBEOLSIK} ∪ (`graffitiEnabled`면 GRAFFITI) ∪ (`swipeEnabled`면 SWIPE)(LLD-07 6.1).
+- `Settings.enabledModes` = {QWERTY, DUBEOLSIK} ∪ (`graffitiEnabled`면 GRAFFITI) ∪ (`swipeEnabled`면 SWIPE)(LLD-07 6.1). 기본 설정(0.32, FSS#94: 둘 다 끔)이면 {QWERTY, DUBEOLSIK}.
 
 #### `showModeView(mode, f)`
 | 조건 | 보이는 뷰 |
@@ -221,7 +222,7 @@ class ModeController(private val available: List<InputMode>, saved: InputMode?, 
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| 생성 | `enabled = 정규화(enabled)`. `current = saved`가 `available`에 있으면 그 값(꺼져 있으면 `nextEnabled(saved)`), 없으면 `available[0]`(= SWIPE, 0.25: 모든 빌드가 모든 모드. 꺼져 있으면 `nextEnabled(available[0])`). `fixedStart = saved != null && saved != current`면 `current`, 아니면 null(저장된 모드가 없을 때 고친 첫 모드는 저장하지 않음). `previous = null`, `typed = false`, `returnMode = null`(프로세스 시작) | FR-CMN-10, 03b, 03e, 03f ③, HLD 8.1 |
+| 생성 | `enabled = 정규화(enabled)`. `current = saved`가 `available`에 있으면 그 값(꺼져 있으면 `nextEnabled(saved)`), 없으면 `available[0]`(= SWIPE, 0.25: 모든 빌드가 모든 모드. 꺼져 있으면 `nextEnabled(available[0])`). `fixedStart = saved != null && saved != current`면 `current`, 아니면 null(저장된 모드가 없을 때 고친 첫 모드는 저장하지 않음). 기본 설정(0.32, 그래피티·긋기 끔)이면 저장된 모드 없음 → QWERTY(`fixedStart` null), 저장된 SWIPE·GRAFFITI → QWERTY(`fixedStart` QWERTY). `previous = null`, `typed = false`, `returnMode = null`(프로세스 시작) | FR-CMN-10, 03b, 03e, 03f ③, HLD 8.1 |
 | `onInput()` | `typed = true` | FR-CMN-03a |
 | `onFieldChanged()` | `typed = false`(previous·returnMode 유지) | FR-CMN-03e |
 | `onModeKey()` | HLD 8.1 그대로: `next = if (typed && previous != null && previous != current) previous else nextEnabled(current)`; `if (typed) previous = current`; `current = next`; `typed = false`; `return next`. 숫자류 입력창 안에서도 같다(`returnMode`는 바꾸지 않음). `previous`는 늘 켜진 모드다(`applyEnabled`가 꺼진 것을 비움) | FR-CMN-03, 03c, 03f ①②, 04b |

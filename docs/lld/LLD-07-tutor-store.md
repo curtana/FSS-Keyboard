@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.35** (2026-11-13)
+- 버전 **0.36** (2026-11-14)
+- 0.36(FSS#94, SRS 0.84 FR-SET-08·FR-TUT-01·FR-CMN-03f ③, HLD 0.77): **그래피티·긋기 기본값 끔.** `graffiti_enabled`·`swipe_enabled`의 기본값(저장값이 없을 때)을 false로(6.1). 저장값이 있으면 그 값을 따르고, 저장값이 없는 기기는 업데이트 뒤 끔이다. `PracticeLaunchPolicy`는 둘 다 꺼져 있으면 주제 목록을 열지 않고 표시도 저장하지 않는다(2.5). "앱을 열 때"의 경계를 `SettingsActivity.onCreate`로 적었다(2.5). 두 모드의 기능 코드·설정 화면 문구·체크 상자 동작은 그대로다. 시험 SS-08·PR-09·PR-14 고침, OM-10 새로(LLD-11).
 - 0.35(FSS#85, SRS 0.83 FR-CMN-14 ⑫ 자, HLD 0.76 5A "입력 연습"): 입력 연습의 `BoardFrame`은 틀 전체 배경을 두지 않고 자판 사각형만 칠한다(`KeyboardPlate.rect`·`PlatePainter`, LLD-08 7.3). 남는 자리에는 연습 화면 배경이 보이고 그 터치는 지금처럼 틀이 소비한다(2.3).
 - 0.34(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑪·FR-TUT-02·FR-SET-09, HLD 0.75 5A): 입력 연습의 `BoardFrame`이 자판 사각형·여유 칸을 실제 키보드와 같게 놓는다(2.3). 설정 화면의 키 크기 슬라이더 위 끝 = 가용 폭 / 11 올림, 미리보기 전체 폭 = 11 × 키 크기(7절). 저장 형식·키 이름은 그대로다(6.1).
 - 0.33(FSS#75, SWIPE 0.57 10.1): ② 기호 입력의 긋기 항목 `(`의 쓰는 법을 `9 키에서 위로`로, 설명 줄을 "숫자 키와 / 키"로 맞췄다(긋기 `.` 키의 ←·↑가 바뀜). 항목 목록은 그대로.
@@ -133,8 +134,14 @@ object PracticeItemJudge {
 
 ### 2.5 첫 실행 `PracticeLaunchPolicy` (FR-TUT-01, 안드로이드 없음)
 
-- `SettingsActivity.onCreate`에서 `onAppOpen(settings, markShown, openList)`: `practiceListShown`이 거짓이면 **먼저** `setPracticeListShown(true)`를 저장하고(D-34) `PracticeActivity`를 연다. 화면은 주제 목록으로 시작하고 연습은 시작하지 않으며 [닫기] 한 번으로 나간다(오너 결정 ②). 그 뒤에는 설정의 "입력 연습"으로만 연다(FR-TUT-06).
-- 시험: PR-09.
+- `shouldShowList(s)` = `!s.practiceListShown && (s.graffitiEnabled || s.swipeEnabled)`(0.36, FSS#94).
+- `SettingsActivity.onCreate`에서 `onAppOpen(settings, markShown, openList)`: `shouldShowList`가 참이면(`practiceListShown`이 거짓이고 그래피티·긋기 중 하나라도 켜짐) **먼저** `setPracticeListShown(true)`를 저장하고(D-34) `PracticeActivity`를 연다. 화면은 주제 목록으로 시작하고 연습은 시작하지 않으며 [닫기] 한 번으로 나간다(오너 결정 ②). 그 뒤에는 설정의 "입력 연습"으로만 연다(FR-TUT-06).
+- **그래피티·긋기가 둘 다 꺼져 있으면**(기본 설정, 0.36) 아무것도 하지 않는다 — 목록을 열지 않고 `setPracticeListShown`도 부르지 않는다. 판정에는 `Settings`의 두 값만 쓴다(`enabledModes`와 같은 근거).
+- **"앱을 열 때"의 경계(0.36, FR-TUT-01 "판정은 앱을 열 때"):** 판정은 `SettingsActivity.onCreate`에서만, 그때 저장소에서 읽은 `Settings`(`flow.first()`)로 한다(지금 동작 그대로). 그래서
+  - 설정 화면에서 그래피티나 긋기를 켠 바로 그때는 열지 않는다(체크 상자는 `update`만 부르고 판정을 부르지 않는다).
+  - 설정 화면이 다시 앞으로 오는 것(`onStart`·`onResume`: 다른 앱이나 입력 연습 화면에서 돌아옴)은 앱을 여는 것이 아니다.
+  - `SettingsActivity`가 새로 만들어지는 때는 모두 앱을 여는 것이다: 런처에서 처음 열기, 닫은 뒤 다시 열기, 프로세스가 끝난 뒤 다시 열기, 그리고 **화면 회전 등 구성 변경으로 다시 만들어질 때**(`SettingsActivity`는 `configChanges`를 두지 않는다). 따라서 둘 다 끈 채 연 설정 화면에서 하나를 켜고 화면을 돌리면 그때 목록이 한 번 열린다. 표시를 먼저 저장하므로(D-34) 그 뒤 회전에서는 다시 열지 않는다.
+- 시험: PR-09(판정과 저장·열기 순서. `onCreate` 경계는 안드로이드 생명주기라 단위 시험 밖, DV-11).
 
 ## 3. 기준값 (HLD 7.2, SRS 1.3)
 
@@ -161,7 +168,7 @@ data class Settings(val lastMode: InputMode?, val showDirectionGuide: Boolean, v
                     val haptic: Boolean, val sound: Boolean, val rowHeightDp: Float,
                     val graffitiLetterRatio: Float, val tutorAutoStarted: Boolean,
                     val practiceDone: Set<String> = emptySet(),
-                    val graffitiEnabled: Boolean = true, val swipeEnabled: Boolean = true,   // 0.25, FR-SET-08
+                    val graffitiEnabled: Boolean = false, val swipeEnabled: Boolean = false,   // 0.25, FR-SET-08; 기본 끔 0.36
                     val portraitWidth: WidthSetting = WidthSetting.DEFAULT,    // 0.27, FSS#25 (LLD-08 7.2)
                     val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
                     val showStrokeTrail: Boolean = true) {   // 0.31, FSS#57
@@ -191,8 +198,8 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 | `graffiti_letter_ratio` | 2/3 (문자 2 : 숫자 1). 고를 수 있는 값은 1/2(1 : 1)·2/3(2 : 1)·3/4(3 : 1) 셋뿐 | FR-GRF-01, FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
 | `tutor_auto_started` | false | FR-TUT-01: 첫 실행에 주제 목록을 보였는가(2.5). 값 이름은 `practiceListShown`, 키 이름은 옛 것 그대로라 옛 튜터를 이미 연 설치본은 목록을 다시 열지 않는다 |
 | `practice_done` | 빈 집합 | 끝까지 한 주제 id(`upper`·`symbol`·`graffiti_ko`·`graffiti_en`·`swipe`), 주제 목록의 ✓(SWIPE 10.0). 판정에 쓰지 않는다 |
-| `graffiti_enabled` (0.25) | **true** | FR-SET-08(오너 결정 2026-11-02, FSS#31): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절) |
-| `swipe_enabled` (0.25) | **true** | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
+| `graffiti_enabled` (0.25) | **false**(0.36, 0.35까지 true) | FR-SET-08(오너 결정 2026-11-02, FSS#31; 기본 끔 오너 결정 2026-11-14, FSS#94): 그래피티를 키보드에서 쓰는가. 끄면 모드 키 순환에서 건너뜀(FR-CMN-03f, LLD-08 5절). 키가 없으면 끔 — 이 설정을 한 번도 저장하지 않은 기기는 업데이트 뒤 끔이다. 저장된 값은 그대로 따른다 |
+| `swipe_enabled` (0.25) | **false**(0.36, 0.35까지 true) | 〃 긋기 입력. 영문 쿼티·한글 두벌식은 키가 없다(늘 켜짐) |
 | `key_portrait_dp`, `align_portrait` (0.27) | 없음(= 꽉 채움), `CENTER` | FR-CMN-14 ②③, FR-SET-09(FSS#25). 키 한 칸 폭(Float, dp)과 정렬 이름(`LEFT`·`CENTER`·`RIGHT`). 읽을 때 키 폭은 `KeyboardWidth.snap`(정수 dp, 32~160 안, D-33과 같은 생각). 세로 슬라이더 위 끝(꽉 채움)은 키를 지운다(없음 = 꽉 채움). 모르는 정렬 이름은 `CENTER` |
 | `key_landscape_dp`, `align_landscape` (0.27) | 없음(= 세로와 같은 키 크기), `CENTER` | FR-CMN-14 ③, FR-SET-09. 없으면 `keyDp = null`이고 `KeyboardWidth.place`가 세로 키 크기(세로가 꽉 채움이면 화면 짧은 변 ÷ 10)를 쓴다. 가로 슬라이더 위 끝은 `KeyboardWidth.FULL`(양의 무한대, 숫자가 아닌 "꽉 채움" 표식)로 저장한다(방향·막대가 바뀌어도, 세로 키 크기를 바꿔도 꽉 채움, SRS FR-SET-09). `update`에서 `keyDp = null`이면 키를 지운다 |
 

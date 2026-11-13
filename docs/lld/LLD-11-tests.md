@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.55** (2026-11-13)
+- 버전 **0.56** (2026-11-14)
+- 0.56(FSS#94, LLD-07 0.36·LLD-08 0.32, SRS 0.84 FR-SET-08·FR-TUT-01·FR-CMN-03f ③): 그래피티·긋기 기본값 끔 — SS-01·SS-08 기본값, SS-09 새로(모든 값 쓰기, 기본값과 다른 값), PR-09에 둘 다 끔 사례, PR-14에 기본 설정 사례(그래피티·긋기를 켠 경우는 시험 안에서 명시적으로 켬), 7.2b에 OM-10(사례 표 9행: 기본 설정의 처음 설치·저장된 긋기/그래피티·모드 키 영문 ↔ 한글), DV-11 기본 설정 절차.
 - 0.55(FSS#85, LLD-08 0.31 7.3, LLD-07 0.35): 자판 판과 투명한 자리 — 7.5에 KP-01~KP-07(`KeyboardPlateTest`, JVM), 7.6에 PR-33, 7.7에 PL-01~PL-08(`KeyboardPlateViewTest`)·KI-01~KI-04(`KeyboardInsetsTest`, Robolectric), 8절에 DV-36(실기 미확인 항목), 9절 표. 기존 시험의 기대값은 바꾸지 않았다(KR-02~KR-04·KR-09의 "남는 자리 터치 소비"는 터치가 창에 온 경우의 길로 그대로 맞다).
 - 0.54(FSS#84, LLD-08 0.30 7.2, LLD-04 0.35, LLD-07 0.34): 자판 좌우 여유 칸 — KW-01~KW-05·KW-07·KW-08의 기대값을 자판 사각형(11칸)·여유 칸으로 고치고 KW-09(두 여유 칸이 같고 합이 px까지 맞음)·KW-10(저장된 키 크기 그대로 읽기) 신설. KR-01·KR-05·KR-06의 기대값을 고치고 KR-08~KR-11 신설(꽉 채움에서 사각형 = 가용 폭·여유 칸 = 반 칸, 여유 칸 터치 입력 없음, 끝 키에서 여유 칸으로 나간 획, 여유 칸 폭만 바뀜). 새 SM-01~SM-05(`SideMarginStrokeTest`: 끝 키 바깥쪽 획이 변 너머 8dp에서 나감, 안쪽 키와 같은 기준, 꽉 채움·줄인 자판), KH-07·EC-16(`stroke-core`), SW-20, MK-09(그래피티 보조 줄 모드 키), PR-31·PR-32, OB-03~OB-05. GD-01·GD-05는 덮개 폭이 자판 폭(W)임에 맞췄다. 실기기 DV-35. **기대값을 바꾼 기존 시험의 근거는 7.5·7.7 표의 근거 칸과 아래 7.7 "0.54에서 바꾼 기대값"에 적었다.**
 - 0.53(FSS#80, LLD-05 0.34): 6.1에 GR-41(영문 오너 획, 한 날을 뺀 구성으로 그 날을 잼)·GR-42(그중 h)·GR-43(획 파일과 템플릿이 같은 획). `strokes/owner_en/`을 더했다.
@@ -797,7 +798,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 
 - 사례 표의 "보이는 자판"은 `current`로 본다(`showModeView`, LLD-08 3.1). 실기기 확인은 DV-20.
 
-### 7.2b 꺼진 모드 (SRS 꺼진 모드 사례 표 8행, FR-CMN-03f·FR-SET-08, HLD 8.1, 0.38)
+### 7.2b 꺼진 모드 (SRS 꺼진 모드 사례 표 9행, FR-CMN-03f·FR-SET-08, HLD 8.1, 0.38; 9행 0.56)
 
 `ModeController(ALL, 저장된 모드, 켜진 모드)`. "설정 바뀜"은 `applyEnabled(켜진 모드)`(LLD-08 3.2, 돌려준 값 = 저장), "입력창 시작"은 7.2a 순서 뒤 `applyEnabled`(LLD-08 3.1). 그래피티 꺼짐 = {SWIPE, QWERTY, DUBEOLSIK}, 둘 다 꺼짐 = {QWERTY, DUBEOLSIK}.
 
@@ -811,6 +812,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | OM-06 | 6 긋기로 쓰다 둘 다 끔 | 설정 바뀜(previous DUBEOLSIK / previous GRAFFITI 두 번) | QWERTY / null / DUBEOLSIK / QWERTY 1회, 이어서 QWERTY / null / **null** / QWERTY 1회 |
 | OM-07 | 7 긋기 꺼짐, 저장된 마지막 모드 SWIPE로 프로세스 시작 | 생성 | QWERTY / null / null, typed false, `fixedStart` = QWERTY. 켜져 있으면 `fixedStart` null, 저장된 모드 없이 둘 다 꺼짐이면 QWERTY·`fixedStart` null |
 | OM-08 | 8 그래피티 → 숫자 입력창(돌아갈 모드 GRAFFITI) → 그래피티를 끔 → 문자 입력창 | (가) 숫자 입력창 안에서 설정 바뀜, 문자 입력창 시작 (나) 설정이 문자 입력창 시작 때 처음 반영 | (가) 설정 뒤 QWERTY / SWIPE / null / SWIPE 1회, 문자 입력창 뒤 SWIPE / null / null / 더 없음 (나) SWIPE / null / null / SWIPE 1회 |
+| OM-10 | 9 기본 설정(그래피티·긋기 끔, `Settings.DEFAULT.enabledModes`, 0.56): 저장된 모드 없음 / 저장된 SWIPE / 저장된 GRAFFITI. 순서는 `InputMode.entries`(서비스와 같음) | 생성, 이어서 (처음 설치 것에) 모드 키, 모드 키, `onInput`·모드 키, `onInput`·모드 키 | QWERTY / null / null, `fixedStart` null / QWERTY, `fixedStart` QWERTY / 같음. 모드 키 DUBEOLSIK, QWERTY, DUBEOLSIK, QWERTY(이전 모드로 돌아감, previous DUBEOLSIK), 저장 넷 |
 | OM-09 | (정규화) | `applyEnabled(빈 집합)`, `applyEnabled(넷)`, `nextEnabled(GRAFFITI)`, `ModeController(listOf(SWIPE), SWIPE, 둘 다 꺼짐)` | 켜진 모드 {QWERTY, DUBEOLSIK}, 저장 없음 / 넷, 저장 없음 / SWIPE(처음으로 돎) / SWIPE(연습 자판의 한 모드) |
 
 - 키보드가 떠 있을 때의 즉시 뷰 교체(LLD-08 3.2)는 안드로이드 생명주기라 실기기에서 본다(DV-20과 함께: 그래피티로 쓰다 모드 키 ↑로 설정을 열어 그래피티를 끄고 돌아오면 긋기 자판).
@@ -903,13 +905,14 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | GT-08 | 〃 | 다음 글자 끔 | showNext false | FR-DSP-08 |
 | GT-09 | – | (삭제, 0.12: 누르고 있기 타이머 없음, GT-04로 합침) | – | – |
 | GT-10 | `GuideFlags.of` | 기본 설정 + 보통 입력창 / 입력창 없음(튜터) / 세 설정 끔 / 비밀번호 입력창 / 학습 금지 입력창 | 모두 켬 / 모두 켬 / 모두 끔 / `bigCurrentOn` false(설정과 상관없이) / 모두 켬(0.21: 학습 금지 칸은 표시 그대로), 다음 글자는 늘 그대로 | FR-DSP-08, FR-CMN-08 ①② (0.21), FR-TUT-11 (0.11) |
-| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합, 세 안내 true, 획 자국 true(0.46)) | 6.1, FR-SET-03 (DCR-14) |
+| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합, 세 안내 true, 획 자국 true(0.46), 그래피티·긋기 false(0.56)) | 6.1, FR-SET-03 (DCR-14), FR-SET-08 |
 | SS-02 | 〃 | `lastMode` 저장 뒤 다시 읽기 | 같은 값 | FR-CMN-10 |
 | SS-03 | 〃 | 저장된 `last_mode`가 모르는 이름 | `lastMode` = 없음(null) | LLD-07 4절 (0.35: public `lastMode = SWIPE` 사례는 FR-CMN-03b와 함께 삭제, 이슈 #251) |
 | SS-04 | 〃 | 저장된 `row_height_dp` 30 / 70 / 44 / 40 / 64 | 40 / 64 / 44 / 40 / 64 (40~47도 그대로 허용) | FR-SET-06, TBD-16 (DCR-14), D-33 |
 | SS-05 | 〃 | `setPracticeListShown(true)` 뒤 다시 읽기 | true | FR-TUT-01 (0.36) |
 | SS-07 | 〃 | `markPracticeDone`(swipe, upper, swipe) 뒤 다시 읽기 | {swipe, upper} | SWIPE 10.0 ✓ (0.36) |
-| SS-08 | 〃 | 빈 저장소 / `graffitiEnabled = false` 뒤 다시 읽기 / 이어서 `swipeEnabled = false` | 둘 다 true·`enabledModes` 넷 / 그래피티 뺀 셋 / {QWERTY, DUBEOLSIK} | FR-SET-08 (0.38) |
+| SS-08 | 〃 | 빈 저장소 / `graffitiEnabled = true` 뒤 다시 읽기 / 이어서 `swipeEnabled = true` / 이어서 `graffitiEnabled = false` | 둘 다 false·`enabledModes` {QWERTY, DUBEOLSIK} / 그래피티 더한 셋 / 넷 / 긋기 더한 셋(저장된 끔을 그대로 읽음) | FR-SET-08 (0.38, 0.56 기본 끔) |
+| SS-09 | 〃 | 모든 값을 기본값과 다르게(그래피티·긋기 켬 포함) `update` 뒤 다시 읽기 / `lastMode = null`로 `update` | 같은 값 / `last_mode` 키 없음 | 6.1 (0.56, 시험 이름 "update writes every field") |
 | SS-10 | 〃 | 빈 저장소 / 세로 (40, 왼손)·가로 (`FULL`, 오른손) 저장 뒤 / 가로 keyDp null로 update 뒤 | 둘 다 (null, 중앙) / 같은 값 / 가로 (null, 오른손), `key_landscape_dp` 키 없음 | FR-CMN-14 ③, FR-SET-09 (0.40) |
 | SS-11 | 〃 | 저장된 `key_portrait_dp` 10 / 400 / 36.4 / 36.6, `align_landscape` "UP" | 32 / 160 / 36 / 37, 중앙 | FR-SET-09, D-33 (0.40) |
 | KW-01 | `KeyboardWidth.place`(밀도 1). 결과 = (사각형 left, 사각형 폭, 여유 칸 폭), 0.54 | 세로 기본, 가용 711 / 360 | (0, 711, 32) / (0, 360, 16), 360에서 자판 폭 328·자판 왼쪽 16 | FR-CMN-14 ③④⑪ (0.40, 0.54) |
@@ -961,7 +964,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | PR-06 | `PracticeFlow`(긋기 가) | ㄴ / 누름 / ㄱ, (기, 진동, 위로) / 누름, ㄱ 기 가 | ✗(확정 ㄴ), 입력 표시 ㄴ, 새 시도 / ✓·✗·표시 지움, 쓰는 법 남음 / 덧붙임 / ✓, 쓰는 법·덧붙임 지움, 다음 항목 | SWIPE 10.2 |
 | PR-07 | `PracticeFlow`(그래피티 ㄱ) | ㄴ + 스페이스 / ㄱ + 스페이스 | 강조 칸 ㄱ, 쓰는 법 / 강조 지움, 다음 항목 ㄴ | SWIPE 10.1 ③ |
 | PR-08 | `PracticeFlow` | 목록 → upper 열기 → 시작 → A Hi OK / 그만 → swipe 시작 → 그만 | 끝 화면, `markDone(upper)` 한 번 / 목록, 표시 더 없음 | SWIPE 10.0 |
-| PR-09 | `PracticeLaunchPolicy` | 처음 / `practiceListShown` true | 표시 저장 1, 목록 열기 1 / 아무것도 안 함 | FR-TUT-01, D-34 |
+| PR-09 | `PracticeLaunchPolicy` | 그래피티·긋기 켬: 처음 / `practiceListShown` true. 기본 설정(둘 다 끔, 0.56): 처음 / 이어서 그래피티만 켬 / 긋기만 켬(`shouldShowList`) / 긋기 켬·`practiceListShown` true | 표시 저장 1, 목록 열기 1 / 아무것도 안 함. 표시 저장 0, 목록 열기 0 / 저장 1, 열기 1 / 참 / 거짓 | FR-TUT-01, D-34 |
 | PR-10 | 긋기 항목(실제 매퍼·분류기·조합기, 350 × 6 × 50dp, t 20) | ④ 가·고·아·과·의를 필순대로, 끝에 스페이스 | 동작마다 편집기 글자열 = `steps`, 가는 동안 판정 대기(0.41), 스페이스 뒤 ✓(기호는 바로 ✓) | SWIPE 10.1 ④, D-65 |
 | PR-11 | 〃 | 천지인 가: ㄱ 탭, 천지인 키 ↑, 천지인 키 탭 | ㄱ, 기, 가 → ✓ | 〃 |
 | PR-12 | 〃 | ② 긋기: 2 ↑, 9 ↑, / ↑ | @ / ( / ? → ✓ (쓰는 법 `( = 9 키에서 위로`, 0.52) | SWIPE 10.1 ② |
@@ -970,7 +973,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | PR-33 | 연습 화면(PR-31과 같은 구성, 0.55) | 긋기 주제 시작 / 틀을 기록용 `Canvas`에 그림 / 남는 자리(x 0·가운데·사각형 바로 왼쪽)에서 눌러 자판으로 끌고 뗌 | 틀 `plate` = (틀 폭 − 462, 0, 틀 폭, 틀 높이), 틀 배경 없음·`willNotDraw` 거짓 / 처음 그려진 사각형 = `plate`·키보드 배경색 / 소비, 입력 표시·판정·시도 번호 그대로 | FR-CMN-14 ⑫ 자, LLD-07 2.3 (FSS#85) |
 | PR-30 | 실제 긋기 엔진 + `InputDispatcher` + 편집기 | `.`·`,`·5 키의 탭과 네 방향(SWIPE 7·8장 표의 모든 칸, 테두리 쪽 `,` → = 탭) | 칸마다 표의 글자가 그대로 확정됨(♥ ★ 포함, 대소문자·이체 선택자 변화 없음, 조합 없음) | FR-SWP-42·43, FSS#75 (0.52) |
 | PR-13 | 〃 | 가에 ㄴ 탭 → ㅣ → 점 → 스페이스 / ㄱ 탭 뒤 ㅣ를 위로 | 대기, 대기(나 조합), ✗(나 확정) / 오류 진동, ✗ | SWIPE 10.2 (0.41) |
-| PR-14 | `PracticeTopic.offInKeyboard` | 기본 설정 / 그래피티·긋기 끔 / 긋기만 끔 | 표시 없음 / graffiti·swipe / swipe(기호 주제는 긋기 항목이 있어도 표시 없음) | FR-CMN-03f ⑦, SWIPE 10.0 (0.38) |
+| PR-14 | `PracticeTopic.offInKeyboard` | 넷 다 켬 / 그래피티·긋기 끔 / 긋기만 끔 / 기본 설정(0.56) | 표시 없음 / graffiti_ko·graffiti_en·swipe / swipe(기호 주제는 긋기 항목이 있어도 표시 없음) / graffiti_ko·graffiti_en·swipe(둘 다 끔과 같음) | FR-CMN-03f ⑦, SWIPE 10.0 (0.38, 0.56) |
 | PR-16 | 긋기 항목(실제 엔진, 350 × 6 × 50dp) | 고에 ㄱ 탭, ㅣ, 점, 스페이스 / 고 필순 + 스페이스 / 가가: ㄱ ㅣ 점 ㄱ ㅣ 점 + 스페이스 | 기 대기·가운데 글자 "기", 가, ✗(가 확정) / ✓ / ㄱ 기 가 각 가기 가가 모두 대기, ✓ | SWIPE 10.2, FSS#43 (0.41) |
 | PR-20 | 그래피티 항목(실제 템플릿·`GraffitiInputHandler`) | 가: ko_g, ↓, 탭 / 고: ko_g, 탭, → / a: en_a / 1: 숫자 영역 ↓ | ㄱ 기 가 / ㄱ ㄱㆍ 고 / a / 1, 모두 ✓(0.41: 가·고는 가는 동안 대기, 보조 줄 스페이스 뒤 ✓. a·1은 바로 ✓) | SWIPE 10.1 ③, D-65 |
 | PR-21 | 〃 | 템플릿에 없는 지그재그(a 차례) | ✗ | FR-GRF-08, SWIPE 10.2 |
@@ -1056,7 +1059,7 @@ KR-02~KR-04는 이름만 "여백" → "남는 자리"로 바꿨고(좌표·기�
 | DV-08 | 가로 화면 | 같은 배치, 줄 높이 같음, 전체 화면 모드 아님. 3버튼 내비게이션 막대가 옆이면 그 폭만큼 옆 여백(배경색)이 생기고 자판은 남은 폭에 같은 배치(0.7) | FR-CMN-12, #93 OD-3 A |
 | DV-09 | 화면 끝 뒤로 가기 제스처 | 1·7·8·9·0 키 안쪽 밀기 관찰 | R1, TBD-7 |
 | DV-10 | TalkBack | 쿼티·두벌식 키 읽기·입력 | NFR-07 |
-| DV-11 | 설정·입력 연습(0.36) | 설치 뒤 처음 앱을 열면 입력 연습의 주제 목록만 한 번 뜸([닫기] 한 번으로 나감, 다시 열어도 안 뜸). 설정 "입력 연습"으로 열림. 기준값 초기화·내보내기·가져오기 메뉴 없음 | FR-TUT-01, 06, FR-SET-04 |
+| DV-11 | 설정·입력 연습(0.36, 0.56) | 새로 설치(기본 설정: 그래피티·긋기 끔): 앱을 열어도 주제 목록이 안 뜸, 설정 "입력 모드"에 그래피티·긋기 체크 꺼짐, 키보드는 영문 쿼티로 시작하고 모드 키는 영문 ↔ 한글. 설정에서 그래피티를 켠 그때는 안 뜸, 앱을 닫고 다시 열면 입력 연습의 주제 목록만 한 번 뜸([닫기] 한 번으로 나감, 다시 열어도 안 뜸). 설정 "입력 연습"으로 열림. 기준값 초기화·내보내기·가져오기 메뉴 없음 | FR-TUT-01, 06, FR-SET-04 |
 | DV-12 | q 윗첨자 글꼴 | 𐞥 표시 여부 | D-14 |
 | DV-13 | 여러 손가락 | 겹쳐 친 글자 순서, ⌫ 누른 채 입력 | FR-CMN-11 |
 | DV-14 | 비밀번호 입력창 | 현재 글자 크게 안 보임, 그래피티 인식 글자 표시 안 됨(그래피티로 바꿔 확인), 오류 기록 안 됨 | FR-CMN-08, FR-GRF-07 |
