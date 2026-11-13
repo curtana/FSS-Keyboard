@@ -148,16 +148,18 @@ class SettingsStoreTest {
     }
 
     @Test
-    fun `SS-08 modes on by default, graffiti and swipe turn off and read back`() {
-        val all = setOf(InputMode.SWIPE, InputMode.QWERTY, InputMode.DUBEOLSIK, GRAFFITI)
+    fun `SS-08 graffiti and swipe off by default, turn on and off and read back`() {
+        val tap = setOf(InputMode.QWERTY, InputMode.DUBEOLSIK)
         val d = SettingsStore(open()).loadBlocking()
-        assertTrue(d.graffitiEnabled)
-        assertTrue(d.swipeEnabled)
-        assertEquals(all, d.enabledModes)
+        assertFalse(d.graffitiEnabled)                                   // FSS#94: a new install has them off
+        assertFalse(d.swipeEnabled)
+        assertEquals(tap, d.enabledModes)
+        runBlocking { SettingsStore(reopen()).update { it.copy(graffitiEnabled = true) } }
+        assertEquals(tap + GRAFFITI, SettingsStore(reopen()).loadBlocking().enabledModes)
+        runBlocking { SettingsStore(reopen()).update { it.copy(swipeEnabled = true) } }
+        assertEquals(tap + GRAFFITI + InputMode.SWIPE, SettingsStore(reopen()).loadBlocking().enabledModes)
         runBlocking { SettingsStore(reopen()).update { it.copy(graffitiEnabled = false) } }
-        assertEquals(all - GRAFFITI, SettingsStore(reopen()).loadBlocking().enabledModes)
-        runBlocking { SettingsStore(reopen()).update { it.copy(swipeEnabled = false) } }
-        assertEquals(setOf(InputMode.QWERTY, InputMode.DUBEOLSIK), SettingsStore(reopen()).loadBlocking().enabledModes)
+        assertEquals(tap + InputMode.SWIPE, SettingsStore(reopen()).loadBlocking().enabledModes)   // a stored off is kept
     }
 
     @Test
@@ -173,8 +175,8 @@ class SettingsStoreTest {
             graffitiLetterRatio = 0.5f,
             practiceListShown = true,
             practiceDone = setOf("graffiti"),
-            graffitiEnabled = false,
-            swipeEnabled = false,
+            graffitiEnabled = true,                                      // not the defaults (FSS#94)
+            swipeEnabled = true,
             portraitWidth = WidthSetting(44f, KeyboardAlign.RIGHT),
             landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.LEFT),
             showStrokeTrail = false,

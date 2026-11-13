@@ -38,12 +38,16 @@ class PracticeFlowTest {
 
     @Test
     fun `PR-14 graffiti and swipe topics show off in keyboard when their mode is off`() {
-        val on = Settings.DEFAULT.enabledModes
-        assertTrue(PracticeTopics.ALL.none { it.offInKeyboard(on) })
-        val off = Settings.DEFAULT.copy(graffitiEnabled = false, swipeEnabled = false).enabledModes
+        val allOn = Settings.DEFAULT.copy(graffitiEnabled = true, swipeEnabled = true)
+        assertTrue(PracticeTopics.ALL.none { it.offInKeyboard(allOn.enabledModes) })
+        val off = allOn.copy(graffitiEnabled = false, swipeEnabled = false).enabledModes
         assertEquals(listOf("graffiti_ko", "graffiti_en", "swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(off) }.map { it.id })
-        val noSwipe = Settings.DEFAULT.copy(swipeEnabled = false).enabledModes
+        val noSwipe = allOn.copy(swipeEnabled = false).enabledModes
         assertEquals(listOf("swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(noSwipe) }.map { it.id })   // symbol's swipe items stay
+        // The default settings (FSS#94): graffiti and swipe off, so their topics show off in keyboard.
+        assertEquals(off, Settings.DEFAULT.enabledModes)
+        assertEquals(listOf("graffiti_ko", "graffiti_en", "swipe"),
+            PracticeTopics.ALL.filter { it.offInKeyboard(Settings.DEFAULT.enabledModes) }.map { it.id })
     }
 
     @Test
@@ -259,13 +263,25 @@ class PracticeFlowTest {
     }
 
     @Test
-    fun `PR-09 the first app open shows the topic list once`() {
+    fun `PR-09 the first app open shows the topic list once, not while graffiti and swipe are both off`() {
         var marked = 0
         var opened = 0
-        PracticeLaunchPolicy.onAppOpen(Settings.DEFAULT, { marked++ }, { opened++ })
+        val on = Settings.DEFAULT.copy(graffitiEnabled = true, swipeEnabled = true)
+        PracticeLaunchPolicy.onAppOpen(on, { marked++ }, { opened++ })
         assertEquals(1 to 1, marked to opened)
-        PracticeLaunchPolicy.onAppOpen(Settings.DEFAULT.copy(practiceListShown = true), { marked++ }, { opened++ })
+        PracticeLaunchPolicy.onAppOpen(on.copy(practiceListShown = true), { marked++ }, { opened++ })
         assertEquals(1 to 1, marked to opened)
-        assertFalse(PracticeLaunchPolicy.shouldShowList(Settings.DEFAULT.copy(practiceListShown = true)))
+        assertFalse(PracticeLaunchPolicy.shouldShowList(on.copy(practiceListShown = true)))
+
+        // FSS#94: graffiti and swipe both off - no list and no flag; one of them on later - the list once.
+        marked = 0
+        opened = 0
+        PracticeLaunchPolicy.onAppOpen(Settings.DEFAULT, { marked++ }, { opened++ })   // the default: both off
+        assertEquals(0 to 0, marked to opened)
+        assertFalse(PracticeLaunchPolicy.shouldShowList(Settings.DEFAULT))
+        PracticeLaunchPolicy.onAppOpen(Settings.DEFAULT.copy(graffitiEnabled = true), { marked++ }, { opened++ })
+        assertEquals(1 to 1, marked to opened)
+        assertTrue(PracticeLaunchPolicy.shouldShowList(Settings.DEFAULT.copy(swipeEnabled = true)))
+        assertFalse(PracticeLaunchPolicy.shouldShowList(Settings.DEFAULT.copy(swipeEnabled = true, practiceListShown = true)))
     }
 }

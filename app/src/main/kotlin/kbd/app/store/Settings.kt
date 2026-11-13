@@ -17,9 +17,12 @@ data class Settings(
     val practiceListShown: Boolean,
     /** Ids of the practice topics done to the end (the ✓ of the topic list, SWIPE 10.0); never used for judgement. */
     val practiceDone: Set<String> = emptySet(),
-    /** Graffiti and swipe on in the keyboard (FR-SET-08, FSS#31); QWERTY and Dubeolsik are always on. Default on. */
-    val graffitiEnabled: Boolean = true,
-    val swipeEnabled: Boolean = true,
+    /**
+     * Graffiti and swipe on in the keyboard (FR-SET-08, FSS#31); QWERTY and Dubeolsik are always on. Default off
+     * (FSS#94): a new install starts with English and Korean only; a stored value is kept.
+     */
+    val graffitiEnabled: Boolean = false,
+    val swipeEnabled: Boolean = false,
     /** Key size and alignment on the portrait screen (FR-CMN-14, FR-SET-09, FSS#25); the default key size fills. */
     val portraitWidth: WidthSetting = WidthSetting.DEFAULT,
     /** The same on the landscape screen; the default key size is the portrait one (FR-CMN-14 ③). */
@@ -37,7 +40,7 @@ data class Settings(
         }
 
     companion object {
-        /** LLD-07 §6.1 defaults: vibration on, sound off (DCR-14), row 48 dp, letters 2 : numbers 1. */
+        /** LLD-07 §6.1 defaults: vibration on, sound off (DCR-14), row 48 dp, letters 2 : numbers 1, graffiti and swipe off. */
         val DEFAULT = Settings(
             lastMode = null,
             showDirectionGuide = true,

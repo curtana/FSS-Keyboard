@@ -2,9 +2,12 @@ package kbd.app.practice
 
 import kbd.app.store.Settings
 
-/** First app open (FR-TUT-01, LLD-07 §2.5): the practice topic list once, no practice started. */
+/**
+ * First app open (FR-TUT-01, LLD-07 §2.5): the practice topic list once, no practice started. Not while graffiti and
+ * swipe are both off (FSS#94): the flag stays unset, so the first open after one of them is turned on shows it.
+ */
 object PracticeLaunchPolicy {
-    fun shouldShowList(s: Settings): Boolean = !s.practiceListShown
+    fun shouldShowList(s: Settings): Boolean = !s.practiceListShown && (s.graffitiEnabled || s.swipeEnabled)
 
     /**
      * App open (`SettingsActivity.onCreate`): on the first open, store the flag **before** opening the topic list

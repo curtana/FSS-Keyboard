@@ -4,13 +4,14 @@ import kbd.app.ime.InputMode.DUBEOLSIK
 import kbd.app.ime.InputMode.GRAFFITI
 import kbd.app.ime.InputMode.QWERTY
 import kbd.app.ime.InputMode.SWIPE
+import kbd.app.store.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** MC-01..MC-10, MC-12 (MC-11, MC-13 went with the public edition, issue #251), NF-01, NF-02, NF-04..NF-09, OM-01..OM-09 (LLD-11 §7.2, §7.2a, §7.2b; LLD-08 §5, §3.1). NF-03 is T31. */
+/** MC-01..MC-10, MC-12 (MC-11, MC-13 went with the public edition, issue #251), NF-01, NF-02, NF-04..NF-09, OM-01..OM-10 (LLD-11 §7.2, §7.2a, §7.2b; LLD-08 §5, §3.1). NF-03 is T31. */
 class ModeControllerTest {
 
     private companion object {
@@ -327,5 +328,31 @@ class ModeControllerTest {
         assertEquals(ALL.toSet(), mc.enabled)
         assertEquals(SWIPE, mc.nextEnabled(GRAFFITI)) // wraps
         assertEquals(SWIPE, ModeController(listOf(SWIPE), SWIPE, tapOnly).current) // a practice board's one mode
+    }
+
+    @Test
+    fun `OM-10 default settings - first install starts in qwerty, saved swipe or graffiti moves on, mode key cycles English and Korean`() {
+        val order = InputMode.entries.toList()                    // as KeyboardService
+        val on = Settings.DEFAULT.enabledModes                     // FSS#94: graffiti and swipe off
+        assertEquals(tapOnly, on)
+
+        val fresh = ModeController(order, null, on)                // nothing saved: the first mode on in the order
+        assertState(fresh, QWERTY, null, null)
+        assertNull(fresh.fixedStart)                               // nothing to save
+
+        for (last in listOf(SWIPE, GRAFFITI)) {                    // a device updated with that mode last and no stored switch
+            val mc = ModeController(order, last, on)
+            assertState(mc, QWERTY, null, null)                    // the next mode on from it (FR-CMN-03f ③)
+            assertEquals(QWERTY, mc.fixedStart)                    // saved as the last mode
+        }
+
+        assertEquals(DUBEOLSIK, fresh.modeKey())                   // not typed: in order, graffiti and swipe skipped
+        assertEquals(QWERTY, fresh.modeKey())
+        fresh.onInput()
+        assertEquals(DUBEOLSIK, fresh.modeKey())                   // typed without previous: in order
+        fresh.onInput()
+        assertEquals(QWERTY, fresh.modeKey())                      // typed: back to the previous
+        assertEquals(DUBEOLSIK, fresh.previous)
+        assertEquals(listOf(DUBEOLSIK, QWERTY, DUBEOLSIK, QWERTY), saved)
     }
 }
