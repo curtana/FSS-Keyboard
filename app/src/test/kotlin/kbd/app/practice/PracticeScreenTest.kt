@@ -17,10 +17,14 @@ import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
 import kbd.app.store.ErrorLog
 import kbd.app.store.KeyboardAlign
+import kbd.app.store.PxRect
 import kbd.app.store.Settings
 import kbd.app.store.WidthSetting
 import kbd.app.swipe.impl.SwipeGeometry
 import kbd.app.swipe.impl.SwipeKeyboardView
+import kbd.app.view.KeyboardRootView
+import kbd.app.view.PlateView
+import kbd.app.view.RectCanvas
 import kbd.app.view.Touches
 import kbd.app.view.ViewTestSdk
 import kbd.graffiti.guide.GuideCatalog
@@ -146,6 +150,43 @@ class PracticeScreenTest {
         val t = Touches(frame)
         val tries = flow.tryNo
         for (x in listOf(sv.left - 1f, sv.left - m + 0f, sv.right + 0f, frame.width - 1f)) {
+            t.down(0, x, sv.height / 2f); t.move(0, sv.left + sv.width / 2f, sv.height / 2f); t.up(0)
+            assertTrue(t.lastHandled)
+        }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
+        assertEquals("", flow.echo)
+        assertEquals(null, flow.verdict)
+        assertEquals(tries, flow.tryNo)
+    }
+
+    /** FSS#85: the practice frame paints the keyboard rectangle only; a touch on the rest beside it is no action. */
+    @Test
+    fun `PR-33 the practice frame paints the keyboard rectangle only, the rest takes touches with no action`() {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            PracticeScreen(flow, flowOf(settings), settings, BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+        }
+        compose.onNodeWithText(PracticeTopics.SWIPE.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        val sv = checkNotNull(find(compose.activity.window.decorView, SwipeKeyboardView::class.java))
+        val frame = sv.parent as View
+        val d = sv.resources.displayMetrics.density
+        // 42 dp keys, right aligned: the rectangle is the 462 dp at the right end, the rest is on its left.
+        val plate = (frame as PlateView).plate
+        assertEquals(PxRect(frame.width - Math.round(462 * d), 0, frame.width, frame.height), plate)
+        assertTrue(plate.left > 0)
+        assertEquals(null, frame.background)
+        assertTrue(!frame.willNotDraw())
+        val canvas = RectCanvas()
+        frame.draw(canvas)
+        // The first thing drawn is the frame's own: the plate (the board draws over it).
+        assertEquals(listOf(plate.left.toFloat(), 0f, plate.right.toFloat(), plate.bottom.toFloat()) to KeyboardRootView.BACKGROUND_COLOR, canvas.rects.first())
+        val t = Touches(frame)
+        val tries = flow.tryNo
+        for (x in listOf(0f, plate.left / 2f, plate.left - 1f)) {
             t.down(0, x, sv.height / 2f); t.move(0, sv.left + sv.width / 2f, sv.height / 2f); t.up(0)
             assertTrue(t.lastHandled)
         }
