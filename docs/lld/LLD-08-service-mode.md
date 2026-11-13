@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.31** (2026-11-13)
+- 버전 **0.32** (2026-11-14)
+- 0.32(FSS#86, SRS 0.84 FR-CMN-15·1.3·TBD-33, HLD 0.77 5A "띄운 자판"·8장·R12): **띄운 자판**(새 7.4) — 순수 함수 `FloatingKeyboard.place`·`drag`·`ratios`(이동 영역 S, 자판 판 = 손잡이 띠 + 자판 사각형, 비율 fx·fy, 들어가지 않으면 붙은 자판), 순수 상태 기계 `PlateMover`(HLD ⓐ~ⓚ), `KeyboardRootView`의 `portraitFloat`·`landscapeFloat`·손잡이 띠 뷰 `MoveHandle`·`movePlate`·이동 영역의 위 t(상태 막대·컷아웃, 붙은 동안은 큰 값만), `KeyboardInsets`의 띄운 자판 인셋(내용·보이는 인셋 = 입력 뷰 아래 끝, 늘 `REGION`), `FeedbackPort.grab()`(8절), 서비스의 `saveFloatPosition`·설정 흐름의 띄우기 변경(3절). 플랫폼 동작 ⑨~⑭(문서 근거·미확인). 띄우기 끔이면 0.31과 모든 길이 같다.
 - 0.31(FSS#85, SRS 0.83 FR-CMN-14 ⑤⑫·3.3, HLD 0.76 5A·8장·R11): **자판 판과 투명한 자리**(새 7.3) — 순수 함수 `KeyboardPlate.rect`(입력 뷰 좌표의 사각형 `PxRect`), `KeyboardRootView`는 배경을 두지 않고 `plate`만 칠한다(`onLayout`에서 정함, `PlatePainter`), `KeyboardService.onComputeInsets`는 `KeyboardInsets.compute`로 줄인 자판에서 `TOUCHABLE_INSETS_REGION` + `touchableRegion` = 자판 판(창 좌표), 꽉 채움·첫 배치 전에는 `TOUCHABLE_INSETS_VISIBLE` 그대로. 내용·보이는 인셋은 그대로. 플랫폼 동작의 근거와 미확인 항목 표. 3절 `onComputeInsets` 행(코드와 달랐던 옛 값도 함께 고침), 7절 여백 색·`onTouchEvent`, 7.2 `onLayout`·"자판 사각형을 아는 곳"·"여백·여유 칸 터치" 행. `OffKeyboardPointers`·`KeyboardWidth.place`·판정은 그대로.
 - 0.30(FSS#84, SRS 0.82 FR-CMN-14 ④⑧⑪·FR-SET-09, HLD 0.75 5A): **자판 좌우 여유 칸**(7.2) — `KeyboardWidth.place`가 자판 사각형(11칸)과 여유 칸 폭을 낸다(`KeyboardSpan(left, width, margin)`, `RECT_UNITS` = 11, `MIN_DP` = 352, `fullKeyDp` = 가용 폭 / 11 올림, 픽셀 반올림 규칙). `KeyboardRootView`는 모드 뷰·덮개·버튼을 자판(`keysLeft`·`keysWidth`)에 놓고 여유 칸은 자식 없는 제 자리로 둔다. 모드 뷰는 `SideMarginView.sideMarginPx`로 여유 칸 폭을 받아 키 기하의 테두리 왼쪽·오른쪽을 (−m, W + m)으로 준다(`KeyGeom.build`의 `sideDp`). `OffKeyboardPointers`·`EdgeCrossingTracker`는 그대로.
 - 0.29(FSS#25, SRS 0.71 FR-CMN-14·FR-SET-09, HLD 0.64 5A): **자판 폭과 정렬**(새 7.2) — `KeyboardWidth.place`(키 한 칸 폭 × 10, 가용 폭에서 멈춤, 하한 320dp, 왼손/중앙/오른손), `KeyboardRootView`의 `portraitWidth`·`landscapeWidth`, `onMeasure`·`onLayout`(모드 뷰·덮개·버튼을 줄인 자판에), 자식 밖에서 내려온 포인터를 거르는 `OffKeyboardPointers`, 다시 놓기(화면 방향·설정 흐름).
@@ -75,15 +76,15 @@ class KeyboardService : InputMethodService(), SwipeHost {
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비, `swipe = SwipeModuleProvider.get()`. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.25: 모든 모드, 이슈 #251. 0.27: 켜진 모드). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`. 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
-| `onCreateInputView()` | `root = KeyboardRootView(…)`. `showModeView(modes.current)` | FR-CMN-10 |
+| `onCreateInputView()` | `root = KeyboardRootView(…)`(줄 높이·두 방향 폭, 0.32: 두 방향 띄우기, `moveFeedback = feedback`, `onFloatMoved = ::saveFloatPosition`, 그리고 `relayout()`). `showModeView(modes.current)` | FR-CMN-10, FR-CMN-15 (0.32) |
 | `onStartInputView(info, restarting)` | 아래 3.1 | FR-CMN-03e, 04, 04b, 08 |
 | `onUpdateSelection(oldS, oldE, newS, newE, candS, candE)` | `r = composing.onUpdateSelection(newS, newE, candS, candE)`. `USER_MOVED` → `dispatcher.onCursorMoved(newS, newE, candS, candE)`. `OTHER_MOVED` → `dispatcher.onCursorMovedNoComposing()` | FR-CMN-06, HLD 8장, R4 |
 | `onFinishInputView(finishing)` | `dispatcher.finishAll()`, `guide?.dismiss()`, 반복 타이머 중지. `finishing == false`(키보드가 내려감)면 `root.closeGuide()`. `true`(입력창만 바뀜, 이어서 `onStartInputView`)면 획 안내표는 열린 채(0.24) | FR-CMN-06, FR-GRF-09 |
 | `onFinishInput()` | `dispatcher.finishAll()` | HLD 8장 |
-| `onWindowHidden()` | 진행 중 터치·타이머 버림(`root.cancelTouches()`), `root.closeGuide()`(0.24) | D-27, FR-GRF-09 |
+| `onWindowHidden()` | 진행 중 터치·타이머 버림(`root.cancelTouches()` — 0.32: 띄운 자판의 옮기기·기다림도 취소, 7.4), `root.closeGuide()`(0.24) | D-27, FR-GRF-09, FR-CMN-15 ⑩ |
 | `onEvaluateFullscreenMode()` | `false` | FR-CMN-12 |
-| `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2) | FR-CMN-12, FR-CMN-14 ⑩ |
-| `onComputeInsets(out)` | `super` 뒤, 루트가 창에 붙어 있으면 `KeyboardInsets.compute(root, out)`(7.3): `contentTopInsets = visibleTopInsets` = 입력 뷰 위 끝(창 좌표), 터치를 받는 자리 = **자판 판**(줄인 자판: `TOUCHABLE_INSETS_REGION` + `touchableRegion`, 꽉 채움: `TOUCHABLE_INSETS_VISIBLE` = 입력 뷰 전체). 빈 띠는 자판 판 안이라 터치를 받는다 | SRS 3.3 빈 띠, FR-CMN-14 ⑫ (0.31) |
+| `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2. 0.32: 그 방향의 띄우기·자리로, 옮기기 중이면 먼저 취소, 7.4) | FR-CMN-12, FR-CMN-14 ⑩, FR-CMN-15 ⑩⑬ |
+| `onComputeInsets(out)` | `super` 뒤, 루트가 창에 붙어 있으면 `KeyboardInsets.compute(root, out)`(7.3): `contentTopInsets = visibleTopInsets` = 입력 뷰 위 끝(창 좌표), 터치를 받는 자리 = **자판 판**(줄인 자판: `TOUCHABLE_INSETS_REGION` + `touchableRegion`, 꽉 채움: `TOUCHABLE_INSETS_VISIBLE` = 입력 뷰 전체). 빈 띠는 자판 판 안이라 터치를 받는다. 0.32: 띄운 자판이면 내용·보이는 인셋 = 입력 뷰 아래 끝, 터치를 받는 자리 = 띄운 자판의 자판 판(늘 `REGION`, 7.4) | SRS 3.3 빈 띠, FR-CMN-14 ⑫ (0.31), FR-CMN-15 ⑫ (0.32) |
 | `SwipeHost` 구현 | `onSwipeEvents(ev, errorVibe) = dispatcher.onJamoEvents(ev, errorVibe)`(0.18), `feedback` = 8절 `Feedback`, `centerConsonant = dispatcher.composer?.lastConsonant()`(0.21, 판정 C), `centerText = dispatcher.centerText()`(0.28, LLD-04 9.5) 등 | LLD-03 2.2 |
 
 ### 3.1 `onStartInputView(info, restarting)`
@@ -312,6 +313,9 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     val guideOpen: Boolean
     fun enableGuide(templates: TemplateSet, feedback: FeedbackPort); fun disableGuide()
     fun openGuide(); fun closeGuide()
+    // 띄운 자판(0.32, 7.4)
+    var portraitFloat: FloatSetting; var landscapeFloat: FloatSetting
+    var moveFeedback: FeedbackPort?; var onFloatMoved: ((Boolean, Float?, Float?) -> Unit)?
 }
 ```
 
@@ -319,7 +323,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 |---|---|---|
 | 시스템 막대 여백(0.7) | 창 인셋 `navigationBars() ∪ tappableElement()`(두 종류 중 **변마다 큰 값**)를 아래·왼쪽·오른쪽 padding으로 둔다(위는 0). `ViewCompat.setOnApplyWindowInsetsListener`로 받고 값이 바뀌면 padding을 고쳐 `requestLayout`, 붙을 때 `requestApplyInsets`. 바닥 = 시스템 막대 위. 가로 화면 3버튼 내비게이션처럼 막대가 옆이면 그 폭만큼 옆 여백이 생기고 자판은 남은 폭에 같은 배치로 놓인다 | SRS 3.3 "시스템 막대와의 관계", FR-CMN-12, HLD 5A, SWIPE 2장, 오너 결정 #93 OD-1·OD-3 A |
 | 여백 색(0.7, 0.31) | 루트는 배경을 두지 않고 **자판 판**(7.3)만 `BACKGROUND_COLOR`(키보드 배경색, 지금 검정)로 칠한다(0.30까지는 루트 배경). 모드 뷰도 같은 상수를 배경으로 쓴다(그래서 자판 판 안의 여백과 키 영역이 한 색으로 이어짐). 꽉 채움이면 자판 판 = 루트 전체라 0.30과 같은 모습이다 | 오너 결정 #93 OD-2 A, FR-CMN-14 ⑫ |
-| `onMeasure` | 높이 = `6 × rowHeightDp`(쿼티·두벌식 6줄이 가장 높음, 기본 288dp) **+ 아래 padding**(시스템 막대 여백). 폭 = 부모. 자식 폭 = 폭 − 왼쪽 padding − 오른쪽 padding(안내표 버튼처럼 폭이 정해진 자식은 그 폭), 자식 높이 = 그 자식 `layoutParams.height`. `rowHeightDp`는 설정값(40~64dp, LLD-07 6.1) | SRS 3.3, HLD 5A, FR-SET-06 |
+| `onMeasure` | 높이 = `6 × rowHeightDp`(쿼티·두벌식 6줄이 가장 높음, 기본 288dp) **+ 아래 padding**(시스템 막대 여백). 0.32: 띄운 자판이면 부모가 허용하는 가장 큰 높이(7.4). 폭 = 부모. 자식 폭 = 폭 − 왼쪽 padding − 오른쪽 padding(안내표 버튼처럼 폭이 정해진 자식은 그 폭), 자식 높이 = 그 자식 `layoutParams.height`. `rowHeightDp`는 설정값(40~64dp, LLD-07 6.1) | SRS 3.3, HLD 5A, FR-SET-06 |
 | `setModeView(v, rows)` | 모드 뷰 자식을 바꾼다(앞 모드 뷰만 빼고, 새 뷰는 맨 아래 z 순서 = 버튼·덮개 밑. 0.24부터 버튼·덮개는 남음). 자식 높이 = `rows × rowHeightDp`, `gravity = BOTTOM`. 긋기 자판 6줄(0.17, 쌍자음 줄), 그래피티 5줄, 쿼티·두벌식 6줄 | HLD 5A |
 | `onTouchEvent` | 자식 밖(위 빈 띠와 시스템 막대 여백)의 터치는 `true`를 돌려 소비하고 아무 입력도 하지 않는다(빈 띠는 키가 아니므로 키 입력 피드백도 없음, FR-CMN-11a ②). 0.31: 자판 판 밖(투명한 자리)에서 시작한 터치는 보통 창에 오지 않고, 오더라도 같은 길로 소비한다(7.3) | SRS 3.3 "빈 띠는 터치를 받되 입력은 없다" |
 | 자식에게 주는 창 크기 | 바깥 변 계산(LLD-03 3.3)은 자식 좌표에서 창 왼쪽·오른쪽·아래가 바깥, 자식 위 끝은 바깥이 아님(빈 띠로 이어짐) | SWIPE 2.1 |
@@ -431,7 +435,7 @@ internal object KeyboardInsets { fun compute(root: KeyboardRootView, out: InputM
 | `KeyboardRootView.plate` | `onLayout`에서 `KeyboardPlate.rect(폭, 높이, paddingLeft, paddingRight, span)`으로 정한다(자식을 놓는 것과 같은 `span`, 같은 배치). 값이 바뀌면 `invalidate()`. 첫 배치 전에는 `EMPTY`. `plateFillsView` = `plate`가 (0, 0, 폭, 높이)와 같음 |
 | 칠하기 | 루트는 배경을 두지 않는다(0.30까지의 `setBackgroundColor` 삭제). `setWillNotDraw(false)`(배경 없는 `ViewGroup`은 기본으로 `onDraw`를 건너뜀) + `onDraw`에서 `PlatePainter.draw(canvas, plate)` — 사각형 하나를 `BACKGROUND_COLOR`로 채운다. 자식(모드 뷰·덮개·버튼)은 그 위에 그려지고 자판 폭 W 안이라 그대로다. 여유 칸·그래피티 빈 띠·자판 판 안의 시스템 막대 여백은 이 사각형의 색이 보이고, 그 밖에는 루트가 아무것도 그리지 않는다 |
 | 터치 영역 | `KeyboardService.onComputeInsets` → `super` 뒤 루트가 창에 붙어 있으면 `KeyboardInsets.compute(root, out)`. `loc = root.getLocationInWindow()`. `contentTopInsets = visibleTopInsets = loc[1]`(0.30과 같음 — 앱 화면이 밀리는 양은 그대로). `plate`가 비었거나 `plateFillsView`이면 `touchableInsets = TOUCHABLE_INSETS_VISIBLE`, `touchableRegion.setEmpty()`. 아니면 `touchableInsets = TOUCHABLE_INSETS_REGION`, `touchableRegion.set(loc[0] + plate.left, loc[1] + plate.top, loc[0] + plate.right, loc[1] + plate.bottom)`(창 좌표) |
-| 꽉 채움에서는 `VISIBLE`을 그대로(결정) | 꽉 채움과 첫 배치 전에는 0.30이 알리던 값(`TOUCHABLE_INSETS_VISIBLE`)을 그대로 알린다. 받는 자리가 0.30과 "같은 값"이 아니라 **같은 보고**라서 실기 없이도 꽉 채움 회귀가 없다. 줄인 자판에서만 `REGION`을 쓴다. 두 길을 오갈 때 앞 값이 남지 않도록 `VISIBLE` 쪽에서 영역을 비운다(KI-04). 늘 `REGION`을 쓰는 것은 창 높이가 입력 뷰보다 커지는 작업(FSS#86)에서 정한다 |
+| 꽉 채움에서는 `VISIBLE`을 그대로(결정) | 꽉 채움과 첫 배치 전에는 0.30이 알리던 값(`TOUCHABLE_INSETS_VISIBLE`)을 그대로 알린다. 받는 자리가 0.30과 "같은 값"이 아니라 **같은 보고**라서 실기 없이도 꽉 채움 회귀가 없다. 줄인 자판에서만 `REGION`을 쓴다. 두 길을 오갈 때 앞 값이 남지 않도록 `VISIBLE` 쪽에서 영역을 비운다(KI-04). 늘 `REGION`을 쓰는 것은 창 높이가 입력 뷰보다 커지는 작업(FSS#86)에서 정한다 — 0.32: 띄운 자판만 늘 `REGION`, 붙은 자판은 이 행 그대로(7.4) |
 | 다시 알리는 시점 | 플랫폼은 창을 순회할 때마다(배치가 끝난 뒤) 입력기에 `onComputeInsets`를 다시 묻고, 값이 앞과 다르면 창 관리자에 알린다(아래 "플랫폼 동작" ③). 자판 판을 바꾸는 일은 모두 루트의 `requestLayout`을 거친다: 폭·정렬·줄 높이 설정(`relayout()`), 화면 방향(`onConfigurationChanged` → `relayout()`, 또는 플랫폼이 입력 뷰를 새로 만들면 새 루트의 첫 배치), 시스템 막대 여백(`setPadding`), 창 폭. 그래서 같은 순회에서 `onLayout`(새 `plate`) → `onDraw`(새 자리) → `onComputeInsets`(새 영역) 순서로 함께 새 값이 되고, 따로 갱신을 요청하는 코드는 두지 않는다. 모드 전환(`setModeView`)·덮개 여닫기는 `span`을 바꾸지 않아 `plate`가 그대로다(PL-07) |
 | 터치 길 | 자판 판 안의 자식 밖 자리(여유 칸·빈 띠·판 안의 시스템 막대 여백)는 7절·7.2 그대로 루트가 소비한다. 투명한 자리에서 시작한 터치는 창에 오지 않는 것이 보통이다. 창에 오는 경우(아래 "플랫폼 동작" ⑤·⑥)에도 자식 밖에서 내려온 포인터라 `OffKeyboardPointers`가 자식에 넘기지 않고 루트가 소비한다 — 입력·피드백 없음(코드 그대로, PL-08) |
 | 판에서 시작한 획이 판 밖으로 | 뷰 쪽: 자판에서 내려온 포인터는 남는 자리 좌표로 나가도 안드로이드가 그 모드 뷰에 계속 보낸다(7.2 "여백·여유 칸 터치", PL-08: 끝 키에서 남는 자리까지 그은 획이 꽉 채움과 같은 결과). 창 쪽: 터치 영역은 누를 때 어느 창이 받을지를 고르는 데 쓰이고, 이어지는 이동은 누른 창이 계속 받는 것으로 본다(창 위로 나간 획과 같은 성질, HLD R2·DV-26). **실기 미확인(HLD R11 ⑦, DV-36 ⑦).** 끊기면 획이 이어지는 동안만 영역을 입력 뷰 전체로 넓히는 길(누를 때 `requestLayout` 없이 영역만 다시 알리는 방법이 공개 API에 없어, 루트가 `requestLayout`을 불러 순회를 일으키는 방법)을 그때 검토한다 — 지금은 넣지 않는다 |
@@ -453,10 +457,84 @@ internal object KeyboardInsets { fun compute(root: KeyboardRootView, out: InputM
 - ⑤는 설계(SRS FR-CMN-14 ⑫ "남는 자리 아래 여백도 투명한 자리")와 플랫폼이 어긋날 수 있는 곳이다. 공개 API로 그 띠를 빼는 방법은 찾지 못했다. 임시 처리: 코드는 설계대로 자판 판만 알리고, 플랫폼이 더한 띠로 온 터치는 입력 없이 소비한다. 설계팀에 설계질의로 알렸다(FSS#89, 막히지 않음).
 - 시험: KP-01~KP-07(`KeyboardPlateTest`, JVM, LLD-11 7.5), PL-01~PL-08(`KeyboardPlateViewTest`)·KI-01~KI-04(`KeyboardInsetsTest`, Robolectric, LLD-11 7.7), PR-33(LLD-11 7.6). 실기기 DV-36(LLD-11 8절).
 
+### 7.4 띄운 자판 — 손잡이 띠를 길게 눌러 옮기기 (0.32, FSS#86)
+
+근거: SRS 0.84 FR-CMN-15 ①~⑭·1.3 용어·기준값(손잡이 띠 높이 24dp, 잡기 허용 거리 8dp, 길게 누름 시간)·TBD-33·FR-SET-09, HLD 0.77 5A "띄운 자판"·7.3·8장(`onComputeInsets`, 키보드 내려감)·10장 R12. 저장 키는 LLD-07 6.1, 설정 화면은 LLD-07 7절.
+
+낱말(HLD 5A): **붙은 자판**(띄우기 끔, 또는 켬이지만 들어가지 않음 — 7.2·7.3 그대로) / **띄운 자판**(띄우기 켬이고 들어감). **손잡이 띠** = 띄운 자판의 자판 사각형 바로 위 띠(폭 R, 높이 24dp, 키가 아님). 띄운 자판의 **자판 판** = 손잡이 띠 + 자판 사각형(시스템 막대 여백 없음). **이동 영역 S** = 입력 뷰에서 아래·옆의 시스템 막대 여백과 위의 상태 막대·컷아웃 자리를 뺀 사각형.
+
+```kotlin
+// kbd.app.store (안드로이드 없음)
+data class PxRect(…) { val width: Int; val height: Int }                 // 0.32: 폭·높이 더함
+data class FloatSetting(val on: Boolean, val fx: Float?, val fy: Float?)  // 한 방향의 띄우기와 놓은 자리 비율(null = 그 축은 놓은 적 없음). DEFAULT = (false, null, null)
+data class FloatPlace(val area: PxRect, val plate: PxRect) { val rangeX: Int; val rangeY: Int }   // S와 자판 판(입력 뷰 좌표 px). X = S 폭 − 판 폭, Y = S 높이 − 판 높이
+data class FloatRatio(val fx: Float?, val fy: Float?)                    // 저장할 비율(null = 그 축은 저장하지 않음)
+object FloatingKeyboard {
+    const val HANDLE_DP = 24f; const val GRAB_SLOP_DP = 8f
+    fun ratio(v: Float?): Float?                                          // 0~1로 자름, NaN은 null
+    fun place(viewWidth: Int, viewHeight: Int, left: Int, top: Int, right: Int, bottom: Int,
+              span: KeyboardSpan, plateHeight: Int, s: FloatSetting): FloatPlace?   // null = 붙은 자판
+    fun drag(start: PxRect, dx: Int, dy: Int, area: PxRect): PxRect
+    fun ratios(plate: PxRect, area: PxRect): FloatRatio
+}
+// kbd.app.view (안드로이드 없음 — 시각·좌표·기준값을 값으로 받음)
+internal class PlateMover(longPressMs: Long, slopPx: Float) {
+    sealed interface Effect   // Started, Moved(plate), Put(plate, save: FloatRatio), Cancelled(plate)
+    val waiting: Boolean; val moving: Boolean; val pointer: Int?; val waitEnd: Long?
+    fun down(first: Boolean, id: Int, x: Float, y: Float, time: Long, onHandle: Boolean, place: FloatPlace?): List<Effect>
+    fun move(x: Float, y: Float, time: Long, place: FloatPlace?): List<Effect>
+    fun up(id: Int, time: Long, place: FloatPlace?): List<Effect>
+    fun timeout(time: Long, place: FloatPlace?): List<Effect>; fun cancel(): List<Effect>
+}
+// KeyboardRootView (0.32)
+var portraitFloat: FloatSetting; var landscapeFloat: FloatSetting      // 바꾼 뒤 relayout()
+var moveFeedback: FeedbackPort?                                          // 옮기기 시작 진동(8절 grab)
+var onFloatMoved: ((landscape: Boolean, fx: Float?, fy: Float?) -> Unit)?   // 놓은 자리의 저장할 비율
+internal val floatPlace: FloatPlace? /* private set */; internal val floated: Boolean
+const val HANDLE_NAME = "자판 옮기기 손잡이"                             // 손잡이 띠의 접근성 이름
+// FeedbackPort (0.32): fun grab() {} — 기본은 아무것도 안 함(8절)
+```
+
+| 항목 | 처리 |
+|---|---|
+| `FloatingKeyboard.place` | `s.on`이 거짓이거나 `span.width ≤ 0`이거나 `plateHeight ≤ 0`이면 null. S = (left, top, viewWidth − right, viewHeight − bottom). X = S 폭 − R, Y = S 높이 − `plateHeight`. **X < 0 또는 Y < 0이면 null**(들어가지 않음 → 붙은 자판, FR-CMN-15 ④). 가로: `ratio(fx)`가 있으면 `at(fx, X)`, 없으면 `span.left`를 [0, X]로 자른 값(정렬 설정의 자리 — `KeyboardWidth.place`의 정수 나눗셈까지 붙은 자판과 같은 px. 0.5 × X를 반올림해 쓰지 않는 까닭: 중앙모드에서 X가 홀수일 때 붙은 자판과 1px 어긋나지 않게, FR-CMN-15 ⑥ "자판이 뛰지 않는다"). 세로: `at(ratio(fy) ?: 1, Y)`. `at(f, r)` = `round(f × r)`(Double, 반올림)을 [0, r]로 자름 → 자판 판 전체가 늘 S 안(FK-05). 자판 판 = (left + x, top + y, left + x + R, top + y + `plateHeight`) |
+| 들어가는지의 높이 | 루트가 `plateHeight` = `px(24dp)` + `px(6 × rowHeightDp)`로 부른다. viewHeight는 **부모가 허용하는 가장 큰 높이**(`onMeasure`의 높이 `MeasureSpec` 크기, 아래)이고 지금 놓인 높이가 아니다(FR-CMN-15 ④). 폭은 S 폭 = 가용 폭 A라 X = A − R ≥ 0이 늘 성립한다 |
+| `drag` | x = `start.left + dx`를 [S 왼쪽, max(S 왼쪽, S 오른쪽 − 판 폭)]으로, y도 같은 식으로 **따로** 자른다. 변위 합을 자르므로 한계 너머로 갔다 돌아오면 손가락 자리에서 다시 따라온다(FR-CMN-15 ⑧, FK-06). 범위 0인 축은 S 끝에 머문다 |
+| `ratios` | X > 0이면 fx = (판 왼쪽 − S 왼쪽) / X를 [0, 1]로, 아니면 null. fy도 같다(FR-CMN-15 ⑤ "범위 0인 축은 저장하지 않음", FK-07). 왕복 `place(ratios(p)) == p`는 px까지 같다: Float 몫의 상대 오차(약 6 × 10⁻⁸) × 화면 범위(수천 px)가 0.5px보다 훨씬 작다(FK-08) |
+| 기준값 | 손잡이 띠 높이 `HANDLE_DP` = 24dp(SRS 1.3, TBD-33). 잡기 허용 거리 `GRAB_SLOP_DP` = 8dp(px = × density, 반올림하지 않은 Float로 비교). 길게 누름 시간 = `ViewConfiguration.getLongPressTimeout()`(⌫ 반복 첫 지연과 같은 값, HLD 5A) |
+| 상태 기계 `PlateMover` | HLD 5A ⓐ~ⓚ 그대로. 상태 = 쉼 / 기다림(포인터, 누른 점, 누른 시각, 마지막 위치) / 끄는 중(포인터, 시작 때의 판, 시작 때의 손가락 위치, 지금 판) / 버림(포인터). `down(first = ACTION_DOWN인가)`: ⓐ 쉼 + first + `onHandle` → 기다림. ⓑ 쉼에서 first가 아님 → 그대로. ⓔ 기다림 + 다른 손가락(어디든) → 버림. ⓗ 끄는 중·버림 → 그대로. 새 제스처(first)인데 쉼이 아니면 남은 것을 먼저 `cancel()`(앞 제스처의 끝을 못 받은 경우). `move`: ⓒ 기다림에서 누른 점과 가로 또는 세로 차가 slop **이상** → 버림(미만이면 마지막 위치만 기억, PM-03). ⓖ 끄는 중 → `drag`(변위는 `roundToInt`), 판이 바뀌었을 때만 `Moved`. `up`: ⓓ 기다림의 그 포인터 → 쉼. ⓚ 버림의 그 포인터 → 쉼. ⓘ 끄는 중의 그 포인터 → 쉼 + `Put(판, save)`, save = `ratios(판, S)`에서 **판의 왼쪽(위)이 시작 때와 px로 같은 축은 null**(FR-CMN-15 ⑨, TBD-33 ⑯, PM-09). 다른 포인터의 올라옴은 아무 일 없음(PM-08). `cancel()`(ⓙ): 끄는 중이면 `Cancelled(시작 때의 판)`, 어느 상태든 쉼(PM-11) |
+| 시간 | ⓕ는 사건마다 먼저 따진다(`catchUp`): 기다림이고 `time − 누른 시각 ≥ longPressMs`이면(같으면 지남, PM-01) 그 사건을 다루기 **전에** 끄는 중으로 가며 `Started`를 내고(PM-07), 시작 때의 손가락 위치 = 마지막으로 본 위치, 시작 때의 판 = 그때의 `place.plate`. 그때 `place`가 null(띄운 자판이 아님)이면 쉼으로 가고 아무것도 내지 않는다(PM-12). 루트는 기다림의 끝(`waitEnd`)에 `Handler.postDelayed` 하나를 걸어 `timeout(uptimeMillis)`를 부른다 — 움직이지 않는 손가락의 시작을 그 때로 당길 뿐이다. 효과를 처리할 때마다 타이머를 지우고 기다림이면 다시 건다(`armLongPress`). 사건 시각은 `MotionEvent.eventTime`(uptime 기준, 타이머와 같은 시계) |
+| 터치 길(루트) | `dispatchTouchEvent`가 맨 먼저 `onMoveEvent(ev)`로 상태 기계에 알린 뒤 0.31 길(`OffKeyboardPointers.filter` → `super`)로 간다. `onMoveEvent`: 손잡이 띠 뷰가 없고 따르는 포인터도 없으면 아무것도 하지 않는다(붙은 자판 = 상태 기계가 쉼을 떠나지 않음). `ACTION_DOWN`·`POINTER_DOWN` → `down(first = ACTION_DOWN, onHandle = floated이고 점이 손잡이 띠 뷰의 사각형 안)`, `MOVE` → 따르는 포인터의 점으로 `move`(그 포인터가 이벤트에 없으면 무시), `UP`·`POINTER_UP` → `up`, `CANCEL` → `cancel`. 좌표는 루트(입력 뷰) 좌표 — 끄는 동안 루트는 움직이지 않는다(HLD 5A "좌표") |
+| 효과 처리 | `Started`: `moveFeedback.grab()`(진동 한 번, 8절), 손잡이 표시 `held = true`, `swallowGesture = true` — 7.1과 같은 장치로 **그 제스처의 나머지 전부**를 루트가 가로챈다: 이미 자식이 받은 포인터(손잡이 띠)는 `ACTION_CANCEL`, 그 뒤 새로 닿은 손가락은 자식에 가지 않고, 놓은 뒤에도 모든 손가락을 뗄 때까지(다음 `ACTION_DOWN`까지) 그대로다(FR-CMN-15 ⑧, FL-13). 옮기기가 시작될 때 모드 뷰가 받은 포인터는 없다(⑪ 마 — 시작은 첫 손가락이 띠에 있고 그동안 다른 손가락이 없을 때뿐). `Moved`: `movePlate`. `Put`: `held = false`, `movePlate`, save에 값이 있으면 그 방향(잰 때의 방향)의 `FloatSetting`에 넣고 `onFloatMoved(방향, fx, fy)`를 한 번 부른 뒤 `requestLayout()`. `Cancelled`: `held = false`, `movePlate(시작 때의 판)`, `requestLayout()` |
+| `movePlate(to)` | 다시 재거나 놓지 않고 모든 자식을 `offsetLeftAndRight(dx)`·`offsetTopAndBottom(dy)`로 같은 변위만큼 옮기고 `plate`·`floatPlace.plate`를 바꾼 뒤 `invalidate()`(손잡이 띠·모드 뷰·덮개·버튼이 한 덩어리, FR-CMN-15 ⑧, FL-06). 재기·놓기를 거치지 않아 프레임마다의 일은 자식 옮김과 다시 그리기뿐이다(NFR-01 실측은 실기 R12). 모드 뷰의 키 기하는 모드 뷰 좌표라 다시 만들 일이 없다 |
+| 끄는 동안의 터치 영역(결정) | 놓을 때와 취소할 때 `requestLayout()`으로 순회를 일으켜 `onComputeInsets`가 **새 자판 판**을 알리게 한다(HLD 5A "터치 영역은 놓을 때와 취소할 때 반드시", FL-18 `isLayoutRequested`). 끄는 동안에는 따로 요청하지 않는다: `invalidate`도 창 순회를 일으키고 플랫폼은 순회마다 인셋을 다시 묻는 것으로 읽었으나(7.3 ③, 판마다는 미확인 — 아래 ⑫) 그것에 기대지 않는다. 끄는 동안 영역이 시작 때의 판으로 남아 있어도 잡는 손가락의 이동은 누른 창이 계속 받는 것으로 보고(7.3 ⑦과 같은 성질, 실기 미확인), 새로 닿은 손가락은 어디서든 입력이 없다(⑧) |
+| `onMeasure` | 따르는 포인터가 있으면 먼저 `dropMove()`(다시 재면 옮기기·기다림 취소, ⓙ). span은 7.2 그대로. maxH = 높이 `MeasureSpec`이 `UNSPECIFIED`이면 0, 아니면 그 크기(`AT_MOST`·`EXACTLY`의 크기 = 부모가 허용하는 가장 큰 높이로 본다). 잰 방향을 기억하고(`measuredLandscape`) `measuredFloat` = 손잡이 띠 뷰가 있음(그 방향 띄우기 켬) && `floatPlaceIn(폭, maxH) != null`. 손잡이 띠 뷰는 띄운 자판이면 R × 24dp, 아니면 0 × 0으로 잰다. 그 밖의 자식은 7.2 그대로(같은 크기 — 폭 W, 6줄 안의 높이). 높이 = 띄운 자판이면 **maxH**, 아니면 7절 그대로(6줄 + 아래 padding) |
+| `onLayout` | `measuredFloat`이면 `floatPlace = floatPlaceIn(폭, 높이)`(같은 방향 설정, 같은 span), 아니면 null. `plate` = `floatPlace.plate` 또는 7.3 `KeyboardPlate.rect`. 붙은 자판이면 7.2 놓기 그대로(손잡이 띠 뷰가 있으면 (0, 0, 0, 0)에 놓아 보이지도 닿지도 않게 — 켬이지만 들어가지 않을 때, FL-02). 띄운 자판이면 `layoutOnPlate(p)`: 손잡이 띠 = (p.left, p.top, p.right, p.top + 24dp), 안내표 버튼 = (x + W − 버튼 폭, 띠 아래 끝), 그 밖의 자식 = (x, p.bottom − 자식 높이)(x = p.left + m) — 키 영역 안의 놓기(낮은 자판 바닥 정렬, 그래피티 빈 띠)는 붙은 자판과 같다(HLD 5A "입력 뷰 높이와 놓기", FL-03) |
+| 이동 영역의 위 t | `OnApplyWindowInsetsListener`에서 `statusBars() ∪ displayCutout()`의 위 값(두 종류 중 큰 값)을 받는다. 띄운 자판으로 놓여 있으면 받은 값을 그대로 쓰고(작아져도), 붙은 자판이면 **더 큰 값만** 받아들인다 — 낮은 붙은 자판의 입력 뷰는 위쪽 인셋을 받지 못해 0이 올 수 있는데, 그 0으로 S가 높아져 다시 띄우고 띄운 높은 뷰가 인셋을 받아 다시 붙는 것이 되풀이되지 않게 한다(FR-CMN-15 ④ "판정이 하나로", HLD 5A, FL-20). 값이 바뀌고 그 방향 띄우기가 켜져 있으면 `requestLayout`. 화면 방향이 바뀌면(루트의 `onConfigurationChanged`에서 지금 방향 ≠ 잰 방향) t를 0으로 지우고 `requestApplyInsets`로 다시 받는다(다른 방향의 값이 남지 않게). 새 루트는 t = 0에서 시작하므로 경계 높이에서는 한 번 띄웠다가 인셋을 받고 붙은 자판으로 자리 잡을 수 있다(그 뒤로는 되풀이 없음, FL-20) |
+| 손잡이 띠 뷰 `MoveHandle` | 루트의 자식(HLD 5A "손잡이 띠" — 띠를 누르고 기다리는 동안 키에 닿은 둘째 손가락이 모드 뷰로 가게, FL-14). 그 방향 띄우기가 켜져 있을 때만 있다(`relayout`의 `syncHandle`: 켜면 `addView`(맨 위 z), 끄면 `removeView`). 끈 방향에서는 뷰가 없다(FL-01). `onTouchEvent` = 늘 true(받아 소비, 입력·피드백 없음 — 키가 아님, FL-12). 다른 손가락이 키를 누르고 있는 동안 띠에 닿은 손가락은 `ViewGroup`이 손잡이 띠에 보내고 거기서 소비된다(모드 뷰로 가지 않음, HLD ⓑ, FL-15). 그리기: 배경은 루트가 칠한 자판 판(키보드 배경색), 가운데에 둥근 막대 하나 — 보통 32 × 4dp 회색(`0xFF808080`), 잡힌 동안(`held`) 48 × 4dp 흰색. 접근성 이름 `HANDLE_NAME` |
+| 다시 놓기·취소 | `relayout()`이 맨 먼저 `dropMove()`(상태 기계 `cancel`, 타이머 지움, `held = false` — 판을 되돌려 옮기지 않고 이어지는 배치가 저장값으로 놓음) 뒤 `syncHandle()`, 그 다음 7절 그대로. 서비스가 부르는 곳: 설정 흐름(줄 높이·폭·정렬, 그리고 0.32부터 **띄우기 설정이 루트의 것과 다를 때** — 루트가 놓을 때 이미 넣은 비율이 흐름으로 돌아오면 같으므로 다시 놓지 않는다, FR-CMN-15 ⑨), `onCreateInputView`(새 루트에 두 방향 값·`moveFeedback`·`onFloatMoved`를 넣고 `relayout` — 손잡이 띠가 생김). 루트 자신의 `onConfigurationChanged`도 `relayout()`(서비스의 `onConfigurationChanged` → `relayout()`과 둘 다 불려도 같은 결과, FL-11). 키보드 내려감(`onFinishInputView`·`onWindowHidden` → `cancelTouches()`의 합성 `ACTION_CANCEL`)·플랫폼의 `ACTION_CANCEL`은 `onMoveEvent` → `cancel()` → `Cancelled`(시작 때의 자리로 되돌림, 저장 없음, FL-18). `onDetachedFromWindow`도 `dropMove()`(타이머가 떠난 뷰를 부르지 않게) |
+| 저장 | 루트의 `onFloatMoved` = 서비스의 `saveFloatPosition(landscape, fx, fy)`: 서비스의 `settings` 사본에 그 방향의 비율을 먼저 넣고(null 축은 그대로) `SettingsStore.setFloatPosition`(LLD-07 6.1)을 코루틴으로 부른다. 놓을 때 한 번만 쓴다(끄는 동안 쓰지 않음). 같은 값이 흐름으로 돌아와도 루트의 값과 같아 다시 놓지 않고, 놓더라도 `ratios` → `place` 왕복이 같은 px라 자리가 같다(FK-08, FL-08) |
+| 인셋(`KeyboardInsets.compute`) | 띄운 자판(`root.floated`)이면 `contentTopInsets = visibleTopInsets = loc[1] + root.height`(입력 뷰 아래 끝 = 앱이 내줄 자리 0, FR-CMN-15 ⑫), `touchableInsets = TOUCHABLE_INSETS_REGION`, `touchableRegion` = 창 좌표의 자판 판 — 늘 `REGION`이다(7.3에서 미룬 결정. `VISIBLE`이면 보이는 인셋이 아래 끝이라 터치를 받을 자리가 없다, KI-05). 붙은 자판이면 7.3 그대로(KI-01~KI-04, KI-06의 끔) |
+| 입력 연습 | `BoardFrame`은 띄우기 값을 읽지 않는다(LLD-07 2.3, FR-CMN-15 ⑭, PR-34) |
+| 테두리·획 | 모드 뷰는 고치지 않는다(HLD 5A). 테두리는 자판 사각형의 네 변이고 손잡이 띠는 모드 뷰 밖 — 맨 윗줄에서 위로 그은 획은 모드 뷰가 음수 y로 계속 받아 붙은 자판과 같은 결과다(FL-16). 모드 전환·덮개 여닫기는 span을 바꾸지 않아 판이 그대로이고, 덮개가 열린 채 옮겨진다(FL-17) |
+
+**플랫폼 동작 — 확인한 것과 못 한 것(0.32).** 기기가 없어 실기는 하지 않았다. 7.3 표의 ①~⑧은 그대로 적용된다(창 높이 전체로 넓어졌을 뿐 같은 장치다).
+
+| # | 내용 | 근거 | 상태 |
+|---|---|---|---|
+| ⑨ | `contentTopInsets`는 뒤의 앱을 크기 조절·밀기 하는 데 쓰는 기본 자리를, `visibleTopInsets`는 뒤의 앱을 보이게 덮는 위 부분을 정하고, 둘 다 **입력기 창 위 끝 기준**이다. 그래서 창 높이(입력 뷰 아래 끝)를 주면 앱이 내줄 자리가 0이다 | 공식 문서 `InputMethodService.Insets`(`contentTopInsets`·`visibleTopInsets` 설명) | 값의 뜻은 확인(문서). **앱이 실제로 밀리지 않는지, 앱이 키보드 보임을 어떻게 받는지(API 30 이상의 창 인셋 포함)는 미확인** → 실기 DV-37 ①, R12 ① |
+| ⑩ | `touchableRegion`은 `TOUCHABLE_INSETS_REGION`일 때 쓰이고 창 틀의 원점 기준이다 | 공식 문서 `InputMethodService.Insets` | 확인(문서) |
+| ⑪ | 입력 뷰를 키우는 길: 루트가 높이 `MeasureSpec`의 크기를 제 높이로 잰다. 입력기 창의 높이가 내용을 따라 정해지는지, 루트가 받는 `MeasureSpec`의 종류·크기(상태 막대·컷아웃 아래까지인지), 창 위쪽 인셋(상태 막대·컷아웃)을 받는지 | 공식 문서 `InputMethodService`는 입력 뷰가 화면 아래에 놓이고 전체 화면이 아니면 앱이 그 위로 옮겨지거나 줄어든다고만 적고 창 크기·재기 조건은 적지 않는다(`getInputMethodWindowRecommendedHeight`는 API 29에서 동작이 잘 정의된 적 없다며 폐기). 소스는 이번에 읽지 않았다 | **미확인** → 실기 DV-37 ③, R12 ③. `UNSPECIFIED`가 오면 붙은 자판으로 잰다(위 `onMeasure`). 위쪽 인셋이 오지 않으면 t = 0(S의 위 = 입력 뷰 위 끝) |
+| ⑫ | 끄는 동안 `invalidate`만으로 일어난 순회에서도 `onComputeInsets`가 다시 불려 영역이 따라오는지 | 7.3 ③(소스, 판마다 미확인) | **미확인**. 기대지 않는다(위 "끄는 동안의 터치 영역") → 실기 DV-37 ⑦ |
+| ⑬ | 길게 누름 시간 `ViewConfiguration.getLongPressTimeout()`의 기기 값 | 공식 문서 `ViewConfiguration.getLongPressTimeout`(누름이 길게 누름이 되기까지의 시간). 기기마다의 값은 문서에 없음 | 기기 값은 **미확인** → 실기 DV-37 ⑧ |
+| ⑭ | 화면만 한 투명 입력기 창의 부작용(뜨고 내릴 때의 애니메이션, 그리기 비용, 제조사 기능), 시스템의 키보드 내리기·입력기 전환 버튼, 분할 화면·팝업 창 | 읽은 근거 없음 | **미확인** → 실기 DV-37 ②④⑥ |
+
+- 시험: FK-01~FK-08(`FloatingKeyboardTest`, JVM), PM-01~PM-12(`PlateMoverTest`, JVM), FL-01~FL-20(`KeyboardFloatViewTest`)·KI-05·KI-06(`KeyboardInsetsTest`)·FB-05(`FeedbackTest`)·OB-06·OB-07(`KeyboardSizeBoxesTest`)·PR-34(`PracticeScreenTest`)(Robolectric), SS-12~SS-14(`SettingsStoreTest`). LLD-11 7.5·7.6·7.7. 실기기 DV-37(LLD-11 8절).
+
 ## 8. Feedback
 
 ```kotlin
-interface FeedbackPort { fun key(); fun error() }        // 뷰와 InputDispatcher가 쓰는 경계
+interface FeedbackPort { fun key(); fun error(); fun grab() {} }   // 뷰와 InputDispatcher가 쓰는 경계. grab(0.32)은 기본 빈 구현
 class Feedback(private val view: () -> View?, private val audio: AudioManager,
                private val settings: () -> Settings) : FeedbackPort
 ```
@@ -465,12 +543,13 @@ class Feedback(private val view: () -> View?, private val audio: AudioManager,
 |---|---|---|
 | `key()` | `settings.haptic`이면 `view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)`; `settings.sound`이면 `audio.playSoundEffect(AudioManager.FX_KEY_CLICK)` | HLD 8장, FR-SET-03 |
 | `error()` | `settings.haptic`이면 `performHapticFeedback(HapticFeedbackConstants.REJECT)`(API 30 미만은 `LONG_PRESS`) | FR-TAP-01b, FR-GRF-08 |
+| `grab()`(0.32) | 띄운 자판의 옮기기 시작(7.4). `settings.haptic`이면 `performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)` 한 번. 소리는 없다. 키 입력 피드백이 아니다 | FR-CMN-15 ⑦ 나 |
 
 - **`key()`는 키를 누를 때 부른다**(SRS FR-CMN-11a ②, FR-SET-03, HLD 5A·8장, DCR-11 결정). 부르는 곳: `TapKeyboardView` DOWN(모든 키, LLD-05A 4절), `SwipeKeyboardView` DOWN(빈 칸 제외, LLD-04 9.3), `GraffitiPadView` 보조 줄 DOWN(LLD-05 8.3). 손을 뗄 때·결과가 나올 때·반복 때는 부르지 않는다.
 - 키 입력 피드백을 내지 않는 곳(SRS FR-CMN-11a ②, HLD 8장 피드백, GRAFFITI 6.2-9, 설계질의 #6 Q1·Q3 확정): 그래피티 패드 획(키가 아님, 인식 실패만 `error()`), 긋기 자판 빈 칸·창 위 빈 띠(키가 아님), ⌫·방향키 반복(누를 때 한 번만).
 - `error()`를 부르는 곳: 유니코드에 없는 윗첨자·아래첨자(FR-TAP-01b), 그래피티 인식 실패(FR-GRF-08).
 - 기본값은 진동 켬·소리 끔이다(`Settings.haptic = true`, `sound = false`, LLD-07 6.1, DCR-14 결정).
-- 시험: FB-01~FB-04.
+- 시험: FB-01~FB-05(FB-05: `grab` 진동 한 번·소리 없음·진동 끔이면 없음, 0.32).
 
 ## 9. 시퀀스
 
