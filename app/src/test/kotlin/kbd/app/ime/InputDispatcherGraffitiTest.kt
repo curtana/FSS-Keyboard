@@ -266,9 +266,9 @@ class InputDispatcherGraffitiTest {
         assertEquals(InputMode.GRAFFITI, modes.returnMode)
         assertNull(modes.previous)
         assertNull(d.graffiti)
-        // NF-02: mode key without input.
+        // NF-02: mode key without input goes in order to swipe (SRS numeric-like table row 2, FSS#93).
         d.onModeKey()
-        assertEquals(InputMode.DUBEOLSIK, modes.current)
+        assertEquals(InputMode.SWIPE, modes.current)
         assertEquals(InputMode.GRAFFITI, modes.returnMode)
         assertNull(modes.previous)
         assertEquals(emptyList<InputMode>(), saved)
@@ -340,7 +340,8 @@ class InputDispatcherGraffitiTest {
 
     @Test
     fun `ID-18 mode key into graffiti calls enterMode, KO and caps off`() {
-        mode(InputMode.DUBEOLSIK)
+        mode(InputMode.SWIPE)   // FSS#93: graffiti follows swipe in the cycle
+        d.swipeState = FakeSwipe()
         state.lang = EN
         state.capsLock = true
         state.shiftPending = true

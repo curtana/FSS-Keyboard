@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.56** (2026-11-14)
+- 버전 **0.57** (2026-11-14)
+- 0.57(FSS#93, SRS 0.85 FR-CMN-03 ②·03c·03f·04b·FR-CMN-10·FR-SET-08, HLD 0.78 8.1, LLD-03 0.31·LLD-08 0.33): 모드 키 순환 순서 DUBEOLSIK → QWERTY → SWIPE → GRAFFITI. 7.2 MC-01~MC-10 기대값을 SRS 모드 키 예시 표(새 순서, 처음 설치 = 한글에서 시작)에 맞추고 MC-15(처음 설치 = DUBEOLSIK)·MC-16(넷 다 켜짐 순환)을 더했다. 7.2a NF-02·NF-06·NF-09, 7.2b OM-01·OM-04~OM-09를 새 사례 표에 맞추고 OM-10~OM-12(긋기 꺼짐·그래피티 꺼짐·둘 다 꺼짐 순환)를 더했다. 판정 코드는 그대로이고 순서만 바뀌어 값이 달라졌다. 저장된 마지막 모드 이름 복원은 SS-02가 네 모드 모두 본다.
 - 0.56(FSS#86, LLD-08 0.32 7.4, LLD-07 0.36): 띄운 자판 — 새 7.8에 FK-01~FK-08(`FloatingKeyboardTest`, JVM), PM-01~PM-12(`PlateMoverTest`, JVM), FL-01~FL-20(`KeyboardFloatViewTest`, Robolectric), KI-05·KI-06(`KeyboardInsetsTest`). 7.5에 SS-12~SS-14, 4장 표에 FB-05, 7.6에 PR-34, 7.7에 OB-06·OB-07, 8절에 DV-37(실기 미확인 항목), 9절 표. 기존 시험의 기대값은 바꾸지 않았다(띄우기 끔은 0.55의 길 그대로 — FL-01이 그것을 고정한다).
 - 0.55(FSS#85, LLD-08 0.31 7.3, LLD-07 0.35): 자판 판과 투명한 자리 — 7.5에 KP-01~KP-07(`KeyboardPlateTest`, JVM), 7.6에 PR-33, 7.7에 PL-01~PL-08(`KeyboardPlateViewTest`)·KI-01~KI-04(`KeyboardInsetsTest`, Robolectric), 8절에 DV-36(실기 미확인 항목), 9절 표. 기존 시험의 기대값은 바꾸지 않았다(KR-02~KR-04·KR-09의 "남는 자리 터치 소비"는 터치가 창에 온 경우의 길로 그대로 맞다).
 - 0.54(FSS#84, LLD-08 0.30 7.2, LLD-04 0.35, LLD-07 0.34): 자판 좌우 여유 칸 — KW-01~KW-05·KW-07·KW-08의 기대값을 자판 사각형(11칸)·여유 칸으로 고치고 KW-09(두 여유 칸이 같고 합이 px까지 맞음)·KW-10(저장된 키 크기 그대로 읽기) 신설. KR-01·KR-05·KR-06의 기대값을 고치고 KR-08~KR-11 신설(꽉 채움에서 사각형 = 가용 폭·여유 칸 = 반 칸, 여유 칸 터치 입력 없음, 끝 키에서 여유 칸으로 나간 획, 여유 칸 폭만 바뀜). 새 SM-01~SM-05(`SideMarginStrokeTest`: 끝 키 바깥쪽 획이 변 너머 8dp에서 나감, 안쪽 키와 같은 기준, 꽉 채움·줄인 자판), KH-07·EC-16(`stroke-core`), SW-20, MK-09(그래피티 보조 줄 모드 키), PR-31·PR-32, OB-03~OB-05. GD-01·GD-05는 덮개 폭이 자판 폭(W)임에 맞췄다. 실기기 DV-35. **기대값을 바꾼 기존 시험의 근거는 7.5·7.7 표의 근거 칸과 아래 7.7 "0.54에서 바꾼 기대값"에 적었다.**
@@ -762,24 +763,26 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 
 ### 7.2 ModeController (SRS 모드 키 예시 표 10행, FR-CMN-03c)
 
-MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 다음 행의 시작). 시작: 모든 모드, 저장된 모드 없음.
+MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 다음 행의 시작). 시작: 모든 모드, 저장된 모드 없음(= 처음 설치, current DUBEOLSIK, MC-15). 순서 DUBEOLSIK → QWERTY → SWIPE → GRAFFITI(0.57, FSS#93).
 
 | ID | 상황(행) | 조작 | 기대 current / previous |
 |---|---|---|---|
-| MC-01 | 1 긋기, 입력 안 함 | 모드 키 | QWERTY / null |
-| MC-02 | 2 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / null |
-| MC-03 | 3 한글, 입력함 | `onInput`, 모드 키 | GRAFFITI / DUBEOLSIK |
-| MC-04 | 4 그래피티, 입력 안 함 | 모드 키 | SWIPE / DUBEOLSIK |
-| MC-05 | 5 긋기, 입력함 | `onInput`, 모드 키 | DUBEOLSIK / SWIPE |
-| MC-06 | 6 한글, 입력함 | `onInput`, 모드 키 | SWIPE / DUBEOLSIK |
-| MC-07 | 7 긋기, 입력 안 함 | 모드 키 | QWERTY / DUBEOLSIK |
-| MC-08 | 8 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / DUBEOLSIK |
-| MC-09 | 9 한글, 입력함, 이전 = 지금 | `onInput`, 모드 키 | GRAFFITI / DUBEOLSIK |
-| MC-10 | 10 (따로) current DUBEOLSIK, previous SWIPE, typed | `onFieldChanged`, 모드 키 | GRAFFITI / SWIPE |
+| MC-01 | 1 한글, 입력 안 함 | 모드 키 | QWERTY / null |
+| MC-02 | 2 영문, 입력 안 함 | 모드 키 | SWIPE / null |
+| MC-03 | 3 긋기, 입력함 | `onInput`, 모드 키 | GRAFFITI / SWIPE |
+| MC-04 | 4 그래피티, 입력 안 함 | 모드 키 | DUBEOLSIK / SWIPE |
+| MC-05 | 5 한글, 입력함 | `onInput`, 모드 키 | SWIPE / DUBEOLSIK |
+| MC-06 | 6 긋기, 입력함 | `onInput`, 모드 키 | DUBEOLSIK / SWIPE |
+| MC-07 | 7 한글, 입력 안 함 | 모드 키 | QWERTY / SWIPE |
+| MC-08 | 8 영문, 입력 안 함 | 모드 키 | SWIPE / SWIPE |
+| MC-09 | 9 긋기, 입력함, 이전 = 지금 | `onInput`, 모드 키 | GRAFFITI / SWIPE |
+| MC-10 | 10 (따로) current DUBEOLSIK, previous SWIPE, typed | `onFieldChanged`, 모드 키 | QWERTY / SWIPE |
 | ~~MC-11~~ | public 빌드(available 3개), 저장 없음 | 생성 | QWERTY. 순환 QWERTY → DUBEOLSIK → GRAFFITI → QWERTY | (0.35 삭제, 이슈 #251: FR-CMN-03b 삭제)
 | MC-12 | 저장된 모드 GRAFFITI | 생성 | GRAFFITI, previous null, typed false (FR-CMN-03e·10) |
 | ~~MC-13~~ | public, 저장된 모드 SWIPE | 생성 | QWERTY (FR-CMN-03b) | (0.35 삭제, 이슈 #251: FR-CMN-03b 삭제)
 | MC-14 | (삭제: 숫자 자판 없음. 숫자류 입력창의 typed는 NF-06, ID-11) | – | – |
+| MC-15 | 처음 설치: 저장된 모드 없음, 넷 다 켜짐 (0.57) | 생성 | DUBEOLSIK, previous null, typed false, `fixedStart` null (FR-CMN-10, 03f ③) |
+| MC-16 | 넷 다 켜짐, 저장 없음, 입력 안 함 (0.57) | 모드 키 4번 | QWERTY → SWIPE → GRAFFITI → DUBEOLSIK, previous null (FR-CMN-03 ②) |
 
 ### 7.2a 숫자류 입력창 (SRS 숫자류 입력창 사례 표 7행, FR-CMN-04·04b, HLD 8.1)
 
@@ -788,34 +791,39 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | ID | 사례 표 행 | 조작 | 기대 current / returnMode / previous / 저장 |
 |---|---|---|---|
 | NF-01 | 1 그래피티 → 숫자 입력창 | 숫자 입력창 시작 | QWERTY / GRAFFITI / null / 없음 |
-| NF-02 | 2 입력 없이 모드 키 | 모드 키 | DUBEOLSIK(순서상 다음) / GRAFFITI / null / **없음**(숫자류 입력창 안) |
+| NF-02 | 2 입력 없이 모드 키 | 모드 키 | SWIPE(순서상 다음) / GRAFFITI / null / **없음**(숫자류 입력창 안) |
 | NF-03 | 3 문자 입력창으로 | 문자 입력창 시작 | GRAFFITI / null / null / 없음. `GraffitiInputHandler.enterMode()`(→ `GraffitiState.enterMode()`) 1회 |
 | NF-04 | 4 그래피티 → 비밀번호 → 전화 | 문자 비밀번호 입력창 시작, 이어서 전화 입력창 시작 | QWERTY / GRAFFITI, 이어서 QWERTY / GRAFFITI(유지) |
 | NF-05 | 5 영문 쿼티 → 숫자 → 문자 | current QWERTY에서 숫자 입력창 시작, 이어서 문자 입력창 시작 | QWERTY / QWERTY, 이어서 QWERTY / null |
-| NF-06 | 6 숫자 입력 뒤 모드 키, 이전 모드 = 긋기 | 시작 current GRAFFITI·previous SWIPE. 숫자 입력창 시작, 숫자 줄 3 탭(`markInput`), 모드 키 | SWIPE / GRAFFITI / **QWERTY** / 없음 (typed는 숫자 입력으로 참이 됨, FR-CMN-03a) |
+| NF-06 | 6 숫자 입력 뒤 모드 키, 이전 모드 = 한글 | 시작 current GRAFFITI·previous DUBEOLSIK. 숫자 입력창 시작, 숫자 줄 3 탭(`markInput`), 모드 키 | DUBEOLSIK(순서상 다음인 SWIPE가 아님) / GRAFFITI / **QWERTY** / 없음 (typed는 숫자 입력으로 참이 됨, FR-CMN-03a) |
 | NF-07 | 7 프로세스 재시작 | NF-01 뒤 저장된 마지막 모드(= GRAFFITI, NF-01에서 바뀌지 않음)로 `ModeController` 새로 생성, 같은 숫자 입력창 시작 | QWERTY / GRAFFITI / null / 없음 |
 | NF-08 | (저장 규칙) | 숫자류 입력창 밖 모드 키 / 안 모드 키 / `enterNumericField`·`leaveNumericField` | 저장 1회 / 0회 / 0회 (previous도 자동 전환으로 안 바뀜) | 
-| NF-09 | (같은 칸 재표시, FR-CMN-04b) | NF-02 상태(DUBEOLSIK, ret GRAFFITI)에서 같은 숫자 입력창으로 `onStartInputView` 다시 | QWERTY / GRAFFITI / null / 없음 |
+| NF-09 | (같은 칸 재표시, FR-CMN-04b) | NF-02 상태(SWIPE, ret GRAFFITI)에서 같은 숫자 입력창으로 `onStartInputView` 다시 | QWERTY / GRAFFITI / null / 없음 |
 
 - 사례 표의 "보이는 자판"은 `current`로 본다(`showModeView`, LLD-08 3.1). 실기기 확인은 DV-20.
 
 ### 7.2b 꺼진 모드 (SRS 꺼진 모드 사례 표 8행, FR-CMN-03f·FR-SET-08, HLD 8.1, 0.38)
 
-`ModeController(ALL, 저장된 모드, 켜진 모드)`. "설정 바뀜"은 `applyEnabled(켜진 모드)`(LLD-08 3.2, 돌려준 값 = 저장), "입력창 시작"은 7.2a 순서 뒤 `applyEnabled`(LLD-08 3.1). 그래피티 꺼짐 = {SWIPE, QWERTY, DUBEOLSIK}, 둘 다 꺼짐 = {QWERTY, DUBEOLSIK}.
+`ModeController(ALL, 저장된 모드, 켜진 모드)`. "설정 바뀜"은 `applyEnabled(켜진 모드)`(LLD-08 3.2, 돌려준 값 = 저장), "입력창 시작"은 7.2a 순서 뒤 `applyEnabled`(LLD-08 3.1). 그래피티 꺼짐 = {SWIPE, QWERTY, DUBEOLSIK}, 긋기 꺼짐 = {QWERTY, DUBEOLSIK, GRAFFITI}, 둘 다 꺼짐 = {QWERTY, DUBEOLSIK}. 순서 DUBEOLSIK → QWERTY → SWIPE → GRAFFITI(0.57, FSS#93).
 
 | ID | 사례 표 행 | 조작 | 기대 current / returnMode / previous / 저장 |
 |---|---|---|---|
-| OM-01 | 1 그래피티 꺼짐, 한글, 입력 안 함 | 모드 키 | SWIPE / – / null |
+| OM-01 | 1 그래피티 꺼짐, 긋기, 입력 안 함 | 모드 키 | DUBEOLSIK / – / null |
 | OM-02 | 2 둘 다 꺼짐, 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / – / null |
 | OM-03 | 3 둘 다 꺼짐, 한글, 입력 안 함 | 모드 키, 다시 모드 키 | QWERTY / – / null, 이어서 DUBEOLSIK(영문 ↔ 한글만, ⑤) |
-| OM-04 | 4 넷 다 켜짐, 한글, previous GRAFFITI → 그래피티를 끔 | 설정 바뀜, `onInput`, 모드 키 | 설정 뒤 previous null. 모드 키 뒤 SWIPE / null / DUBEOLSIK |
-| OM-05 | 5 그래피티로 쓰다(previous DUBEOLSIK, typed) 그래피티를 끔 | 설정 바뀜 | SWIPE / null / DUBEOLSIK / SWIPE 1회. typed 그대로(참) |
-| OM-06 | 6 긋기로 쓰다 둘 다 끔 | 설정 바뀜(previous DUBEOLSIK / previous GRAFFITI 두 번) | QWERTY / null / DUBEOLSIK / QWERTY 1회, 이어서 QWERTY / null / **null** / QWERTY 1회 |
-| OM-07 | 7 긋기 꺼짐, 저장된 마지막 모드 SWIPE로 프로세스 시작 | 생성 | QWERTY / null / null, typed false, `fixedStart` = QWERTY. 켜져 있으면 `fixedStart` null, 저장된 모드 없이 둘 다 꺼짐이면 QWERTY·`fixedStart` null |
-| OM-08 | 8 그래피티 → 숫자 입력창(돌아갈 모드 GRAFFITI) → 그래피티를 끔 → 문자 입력창 | (가) 숫자 입력창 안에서 설정 바뀜, 문자 입력창 시작 (나) 설정이 문자 입력창 시작 때 처음 반영 | (가) 설정 뒤 QWERTY / SWIPE / null / SWIPE 1회, 문자 입력창 뒤 SWIPE / null / null / 더 없음 (나) SWIPE / null / null / SWIPE 1회 |
-| OM-09 | (정규화) | `applyEnabled(빈 집합)`, `applyEnabled(넷)`, `nextEnabled(GRAFFITI)`, `ModeController(listOf(SWIPE), SWIPE, 둘 다 꺼짐)` | 켜진 모드 {QWERTY, DUBEOLSIK}, 저장 없음 / 넷, 저장 없음 / SWIPE(처음으로 돎) / SWIPE(연습 자판의 한 모드) |
+| OM-04 | 4 넷 다 켜짐, 한글, previous GRAFFITI → 그래피티를 끔 | 설정 바뀜, `onInput`, 모드 키 | 설정 뒤 previous null. 모드 키 뒤 QWERTY / null / DUBEOLSIK |
+| OM-05 | 5 그래피티로 쓰다(previous QWERTY, typed) 그래피티를 끔 | 설정 바뀜 | DUBEOLSIK(처음으로 돎) / null / QWERTY / DUBEOLSIK 1회. typed 그대로(참) |
+| OM-06 | 6 긋기로 쓰다 둘 다 끔 | 설정 바뀜(previous QWERTY / previous GRAFFITI 두 번) | DUBEOLSIK / null / QWERTY / DUBEOLSIK 1회, 이어서 DUBEOLSIK / null / **null** / DUBEOLSIK 1회 |
+| OM-07 | 7 긋기 꺼짐, 저장된 마지막 모드 SWIPE로 프로세스 시작 | 생성 | GRAFFITI / null / null, typed false, `fixedStart` = GRAFFITI. 켜져 있으면 `fixedStart` null, 저장된 모드 없이 둘 다 꺼짐이면 DUBEOLSIK·`fixedStart` null |
+| OM-08 | 8 그래피티 → 숫자 입력창(돌아갈 모드 GRAFFITI) → 그래피티를 끔 → 문자 입력창 | (가) 숫자 입력창 안에서 설정 바뀜, 문자 입력창 시작 (나) 설정이 문자 입력창 시작 때 처음 반영 | (가) 설정 뒤 QWERTY / DUBEOLSIK / null / DUBEOLSIK 1회, 문자 입력창 뒤 DUBEOLSIK / null / null / 더 없음 (나) DUBEOLSIK / null / null / DUBEOLSIK 1회 |
+| OM-09 | (정규화) | `applyEnabled(빈 집합)`, `applyEnabled(넷)`, `nextEnabled(GRAFFITI)`, `ModeController(listOf(SWIPE), SWIPE, 둘 다 꺼짐)` | 켜진 모드 {QWERTY, DUBEOLSIK}, 저장 없음 / 넷, 저장 없음 / DUBEOLSIK(처음으로 돎) / SWIPE(연습 자판의 한 모드) |
+| OM-10 | (순환, 0.57) 긋기 꺼짐, current DUBEOLSIK, 입력 안 함 | 모드 키 3번 | QWERTY → GRAFFITI → DUBEOLSIK |
+| OM-11 | (순환, 0.57) 그래피티 꺼짐, current DUBEOLSIK, 입력 안 함 | 모드 키 3번 | QWERTY → SWIPE → DUBEOLSIK |
+| OM-12 | (순환, 0.57) 둘 다 꺼짐, current DUBEOLSIK, 입력 안 함 | 모드 키 4번 | QWERTY → DUBEOLSIK → QWERTY → DUBEOLSIK |
 
-- 키보드가 떠 있을 때의 즉시 뷰 교체(LLD-08 3.2)는 안드로이드 생명주기라 실기기에서 본다(DV-20과 함께: 그래피티로 쓰다 모드 키 ↑로 설정을 열어 그래피티를 끄고 돌아오면 긋기 자판).
+- OM-05·OM-06의 previous는 사례 표에 없어("그대로") 시험이 고른 값이다. 결과 모드(DUBEOLSIK)와 달라야 "그대로"가 보이므로 QWERTY로 둔다(0.57).
+
+- 키보드가 떠 있을 때의 즉시 뷰 교체(LLD-08 3.2)는 안드로이드 생명주기라 실기기에서 본다(DV-20과 함께: 그래피티로 쓰다 모드 키 ↑로 설정을 열어 그래피티를 끄고 돌아오면 한글 자판(0.57, 순서 바뀜 FSS#93)).
 
 ### 7.3 ComposingController (가짜 `EditorPort`)
 

@@ -125,10 +125,11 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
                 stringResource(R.string.settings_modes_summary), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
+            // Mode-key cycle order (FR-SET-08, FR-CMN-03 ②)
             CheckRow(R.string.settings_mode_dubeolsik, checked = true, onChange = null)
-            CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
+            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
             CheckRow(R.string.settings_mode_swipe, settings.swipeEnabled) { v -> update { it.copy(swipeEnabled = v) } }
+            CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
 
             Section(R.string.settings_section_input)
             ActionRow(R.string.settings_ime, R.string.settings_ime_summary, actions.openImeSettings)

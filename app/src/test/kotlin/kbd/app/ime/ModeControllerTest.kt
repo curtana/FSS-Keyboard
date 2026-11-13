@@ -10,19 +10,27 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** MC-01..MC-10, MC-12 (MC-11, MC-13 went with the public edition, issue #251), NF-01, NF-02, NF-04..NF-09, OM-01..OM-09 (LLD-11 §7.2, §7.2a, §7.2b; LLD-08 §5, §3.1). NF-03 is T31. */
+/**
+ * MC-01..MC-10, MC-12, MC-15, MC-16 (MC-11, MC-13 went with the public edition, issue #251), NF-01, NF-02, NF-04..NF-09,
+ * OM-01..OM-12 (LLD-11 §7.2, §7.2a, §7.2b; LLD-08 §5, §3.1). NF-03 is T31. Cycle order: Dubeolsik → QWERTY → swipe →
+ * graffiti (SRS 0.85 FR-CMN-03 ②, FSS#93).
+ */
 class ModeControllerTest {
 
     private companion object {
-        val ALL = listOf(SWIPE, QWERTY, DUBEOLSIK, GRAFFITI)
+        val ALL = InputMode.entries.toList()
     }
 
-    // --- MC-01..MC-09: SRS mode-key example table rows 1..9, run as one continuous sequence ---
+    @Test
+    fun `ALL is the cycle order dubeolsik qwerty swipe graffiti`() =
+        assertEquals(listOf(DUBEOLSIK, QWERTY, SWIPE, GRAFFITI), ALL)
+
+    // --- MC-01..MC-09: SRS mode-key example table rows 1..9, run as one continuous sequence from a fresh install ---
 
     /** Row n of the table: whether the user typed before pressing the mode key. */
     private val rowTyped = listOf(false, false, true, false, true, true, false, false, true)
 
-    /** Personal, nothing saved; runs rows 1..[row] in order and returns the controller. */
+    /** Nothing saved (fresh install, starts in DUBEOLSIK); runs rows 1..[row] in order and returns the controller. */
     private fun runRows(row: Int): ModeController {
         val mc = ModeController(ALL, null)
         for (i in 0 until row) {
@@ -40,40 +48,40 @@ class ModeControllerTest {
     }
 
     @Test
-    fun `MC-01 swipe not typed mode key goes to qwerty`() = assertRow(1, QWERTY, null)
+    fun `MC-01 row 1 dubeolsik not typed mode key goes to qwerty`() = assertRow(1, QWERTY, null)
 
     @Test
-    fun `MC-02 qwerty not typed mode key goes to dubeolsik`() = assertRow(2, DUBEOLSIK, null)
+    fun `MC-02 row 2 qwerty not typed mode key goes to swipe`() = assertRow(2, SWIPE, null)
 
     @Test
-    fun `MC-03 dubeolsik typed without previous goes to graffiti in order`() = assertRow(3, GRAFFITI, DUBEOLSIK)
+    fun `MC-03 row 3 swipe typed without previous goes to graffiti in order`() = assertRow(3, GRAFFITI, SWIPE)
 
     @Test
-    fun `MC-04 graffiti not typed goes to swipe in order`() = assertRow(4, SWIPE, DUBEOLSIK)
+    fun `MC-04 row 4 graffiti not typed goes to dubeolsik in order`() = assertRow(4, DUBEOLSIK, SWIPE)
 
     @Test
-    fun `MC-05 swipe typed goes back to previous dubeolsik`() = assertRow(5, DUBEOLSIK, SWIPE)
+    fun `MC-05 row 5 dubeolsik typed goes back to previous swipe`() = assertRow(5, SWIPE, DUBEOLSIK)
 
     @Test
-    fun `MC-06 dubeolsik typed goes back to previous swipe`() = assertRow(6, SWIPE, DUBEOLSIK)
+    fun `MC-06 row 6 swipe typed goes back to previous dubeolsik`() = assertRow(6, DUBEOLSIK, SWIPE)
 
     @Test
-    fun `MC-07 swipe not typed goes to qwerty in order`() = assertRow(7, QWERTY, DUBEOLSIK)
+    fun `MC-07 row 7 dubeolsik not typed goes to qwerty in order`() = assertRow(7, QWERTY, SWIPE)
 
     @Test
-    fun `MC-08 qwerty not typed goes to dubeolsik in order`() = assertRow(8, DUBEOLSIK, DUBEOLSIK)
+    fun `MC-08 row 8 qwerty not typed goes to swipe in order`() = assertRow(8, SWIPE, SWIPE)
 
     @Test
-    fun `MC-09 dubeolsik typed with previous equal to current goes in order`() = assertRow(9, GRAFFITI, DUBEOLSIK)
+    fun `MC-09 row 9 swipe typed with previous equal to current goes in order`() = assertRow(9, GRAFFITI, SWIPE)
 
     @Test
-    fun `MC-10 field change clears typed so mode key goes in order`() {
+    fun `MC-10 row 10 field change clears typed so mode key goes in order`() {
         val mc = ModeController(ALL, DUBEOLSIK)
         mc.previous = SWIPE
         mc.onInput()
         mc.onFieldChanged()
-        assertEquals(GRAFFITI, mc.onModeKey())
-        assertEquals(GRAFFITI, mc.current)
+        assertEquals(QWERTY, mc.onModeKey())
+        assertEquals(QWERTY, mc.current)
         assertEquals(SWIPE, mc.previous)
     }
 
@@ -84,6 +92,22 @@ class ModeControllerTest {
         assertNull(mc.previous)
         assertFalse(mc.typed)
         assertNull(mc.returnMode)
+    }
+
+    @Test
+    fun `MC-15 fresh install with nothing saved and all modes on starts in dubeolsik`() {
+        val mc = ModeController(ALL, null)
+        assertEquals(DUBEOLSIK, mc.current)
+        assertNull(mc.previous)
+        assertFalse(mc.typed)
+        assertNull(mc.fixedStart)
+    }
+
+    @Test
+    fun `MC-16 all on not typed cycles dubeolsik qwerty swipe graffiti and back`() {
+        val mc = ModeController(ALL, null)
+        assertEquals(listOf(QWERTY, SWIPE, GRAFFITI, DUBEOLSIK), List(4) { mc.onModeKey() })
+        assertNull(mc.previous)
     }
 
     // --- NF: replay of LLD-08 §3.1 order with a recording saveMode stub ---
@@ -113,7 +137,7 @@ class ModeControllerTest {
     private fun nfStart() = ModeController(ALL, GRAFFITI)
 
     @Test
-    fun `NF-01 graffiti to numeric field starts in qwerty with return mode graffiti`() {
+    fun `NF-01 row 1 graffiti to numeric field starts in qwerty with return mode graffiti`() {
         val mc = nfStart()
         mc.startField(numericLike = true)
         assertState(mc, QWERTY, GRAFFITI, null)
@@ -122,16 +146,16 @@ class ModeControllerTest {
     }
 
     @Test
-    fun `NF-02 mode key without input inside numeric field goes in order and is not saved`() {
+    fun `NF-02 row 2 mode key without input inside numeric field goes in order to swipe and is not saved`() {
         val mc = nfStart()
         mc.startField(numericLike = true)
-        assertEquals(DUBEOLSIK, mc.modeKey())
-        assertState(mc, DUBEOLSIK, GRAFFITI, null)
+        assertEquals(SWIPE, mc.modeKey())
+        assertState(mc, SWIPE, GRAFFITI, null)
         assertTrue(saved.isEmpty())
     }
 
     @Test
-    fun `NF-04 password then phone field keeps first return mode`() {
+    fun `NF-04 row 4 password then phone field keeps first return mode`() {
         val mc = nfStart()
         mc.startField(numericLike = true) // text password
         assertState(mc, QWERTY, GRAFFITI, null)
@@ -141,7 +165,7 @@ class ModeControllerTest {
     }
 
     @Test
-    fun `NF-05 qwerty to numeric then text field stays qwerty and clears return mode`() {
+    fun `NF-05 row 5 qwerty to numeric then text field stays qwerty and clears return mode`() {
         val mc = ModeController(ALL, QWERTY)
         mc.startField(numericLike = true)
         assertState(mc, QWERTY, QWERTY, null)
@@ -152,19 +176,19 @@ class ModeControllerTest {
     }
 
     @Test
-    fun `NF-06 digit input then mode key goes to previous swipe inside numeric field`() {
+    fun `NF-06 row 6 digit input then mode key goes to previous dubeolsik not next swipe`() {
         val mc = nfStart()
-        mc.previous = SWIPE
+        mc.previous = DUBEOLSIK
         mc.startField(numericLike = true)
         mc.onInput() // digit row "3" tap (markInput)
         assertTrue(mc.typed)
-        assertEquals(SWIPE, mc.modeKey())
-        assertState(mc, SWIPE, GRAFFITI, QWERTY)
+        assertEquals(DUBEOLSIK, mc.modeKey())
+        assertState(mc, DUBEOLSIK, GRAFFITI, QWERTY)
         assertTrue(saved.isEmpty())
     }
 
     @Test
-    fun `NF-07 process restart inside numeric field starts in qwerty with saved mode as return mode`() {
+    fun `NF-07 row 7 process restart inside numeric field starts in qwerty with saved mode as return mode`() {
         val first = nfStart()
         first.startField(numericLike = true) // NF-01: nothing saved, last saved mode stays GRAFFITI
         assertTrue(saved.isEmpty())
@@ -178,8 +202,8 @@ class ModeControllerTest {
     fun `NF-08 only mode key outside numeric field saves and auto switches keep previous`() {
         val mc = nfStart()
         mc.startField(numericLike = false)
-        assertEquals(SWIPE, mc.modeKey()) // outside: saved once
-        assertEquals(listOf(SWIPE), saved)
+        assertEquals(DUBEOLSIK, mc.modeKey()) // outside: saved once
+        assertEquals(listOf(DUBEOLSIK), saved)
 
         saved.clear()
         mc.startField(numericLike = true) // enterNumericField
@@ -204,8 +228,8 @@ class ModeControllerTest {
     fun `NF-09 same numeric field shown again restarts in qwerty and keeps return mode`() {
         val mc = nfStart()
         mc.startField(numericLike = true)
-        mc.modeKey() // NF-02 state: DUBEOLSIK, return GRAFFITI
-        assertState(mc, DUBEOLSIK, GRAFFITI, null)
+        mc.modeKey() // NF-02 state: SWIPE, return GRAFFITI
+        assertState(mc, SWIPE, GRAFFITI, null)
         mc.startField(numericLike = true) // onStartInputView again on the same field
         assertState(mc, QWERTY, GRAFFITI, null)
         assertTrue(saved.isEmpty())
@@ -221,22 +245,24 @@ class ModeControllerTest {
         applyEnabled(on)?.let { saved += it }
     }
 
+    private val noSwipe = setOf(QWERTY, DUBEOLSIK, GRAFFITI)
+
     @Test
-    fun `OM-01 graffiti off, dubeolsik not typed, mode key skips graffiti to swipe`() {
-        val mc = ModeController(ALL, DUBEOLSIK, noGraffiti)
-        assertEquals(SWIPE, mc.modeKey())
+    fun `OM-01 row 1 graffiti off, swipe not typed, mode key skips graffiti to dubeolsik`() {
+        val mc = ModeController(ALL, SWIPE, noGraffiti)
+        assertEquals(DUBEOLSIK, mc.modeKey())
         assertNull(mc.previous)
     }
 
     @Test
-    fun `OM-02 graffiti and swipe off, qwerty not typed, mode key goes to dubeolsik`() {
+    fun `OM-02 row 2 graffiti and swipe off, qwerty not typed, mode key goes to dubeolsik`() {
         val mc = ModeController(ALL, QWERTY, tapOnly)
         assertEquals(DUBEOLSIK, mc.modeKey())
         assertNull(mc.previous)
     }
 
     @Test
-    fun `OM-03 graffiti and swipe off, dubeolsik not typed, mode key goes to qwerty`() {
+    fun `OM-03 row 3 graffiti and swipe off, dubeolsik not typed, mode key goes to qwerty`() {
         val mc = ModeController(ALL, DUBEOLSIK, tapOnly)
         assertEquals(QWERTY, mc.modeKey())
         assertNull(mc.previous)
@@ -244,67 +270,67 @@ class ModeControllerTest {
     }
 
     @Test
-    fun `OM-04 turning graffiti off clears previous graffiti, typed mode key goes in order`() {
+    fun `OM-04 row 4 turning graffiti off clears previous graffiti, typed mode key goes in order to qwerty`() {
         val mc = ModeController(ALL, DUBEOLSIK)
         mc.previous = GRAFFITI
         mc.apply(noGraffiti)
         assertNull(mc.previous)
         assertEquals(DUBEOLSIK, mc.current)
         mc.onInput()
-        assertEquals(SWIPE, mc.modeKey())
+        assertEquals(QWERTY, mc.modeKey())
         assertEquals(DUBEOLSIK, mc.previous)
     }
 
     @Test
-    fun `OM-05 graffiti in use turned off switches to swipe, saves it, keeps typed and previous`() {
+    fun `OM-05 row 5 graffiti in use turned off wraps to dubeolsik, saves it, keeps typed and previous`() {
         val mc = ModeController(ALL, GRAFFITI)
-        mc.previous = DUBEOLSIK
+        mc.previous = QWERTY
         mc.onInput()
         mc.apply(noGraffiti)
-        assertState(mc, SWIPE, null, DUBEOLSIK)
+        assertState(mc, DUBEOLSIK, null, QWERTY)
         assertTrue(mc.typed)
-        assertEquals(listOf(SWIPE), saved)
+        assertEquals(listOf(DUBEOLSIK), saved)
     }
 
     @Test
-    fun `OM-06 swipe in use with graffiti and swipe off switches to qwerty, previous kept or cleared`() {
+    fun `OM-06 row 6 swipe in use with graffiti and swipe off switches to dubeolsik, previous kept or cleared`() {
         val mc = ModeController(ALL, SWIPE)
-        mc.previous = DUBEOLSIK
+        mc.previous = QWERTY
         mc.apply(tapOnly)
-        assertState(mc, QWERTY, null, DUBEOLSIK)
-        assertEquals(listOf(QWERTY), saved)
+        assertState(mc, DUBEOLSIK, null, QWERTY)
+        assertEquals(listOf(DUBEOLSIK), saved)
 
         saved.clear()
         val g = ModeController(ALL, SWIPE)
         g.previous = GRAFFITI
         g.apply(tapOnly)
-        assertState(g, QWERTY, null, null)
-        assertEquals(listOf(QWERTY), saved)
+        assertState(g, DUBEOLSIK, null, null)
+        assertEquals(listOf(DUBEOLSIK), saved)
     }
 
     @Test
-    fun `OM-07 process restart with saved swipe off starts in qwerty and saves it`() {
-        val mc = ModeController(ALL, SWIPE, setOf(QWERTY, DUBEOLSIK, GRAFFITI))
-        assertState(mc, QWERTY, null, null)
+    fun `OM-07 row 7 process restart with saved swipe off starts in graffiti and saves it`() {
+        val mc = ModeController(ALL, SWIPE, noSwipe)
+        assertState(mc, GRAFFITI, null, null)
         assertFalse(mc.typed)
-        assertEquals(QWERTY, mc.fixedStart)
+        assertEquals(GRAFFITI, mc.fixedStart)
         assertNull(ModeController(ALL, SWIPE).fixedStart) // on: nothing to save
         assertNull(ModeController(ALL, null, tapOnly).fixedStart) // nothing saved: first mode on, not saved
-        assertEquals(QWERTY, ModeController(ALL, null, tapOnly).current)
+        assertEquals(DUBEOLSIK, ModeController(ALL, null, tapOnly).current)
     }
 
     @Test
-    fun `OM-08 return mode graffiti turned off returns to swipe`() {
+    fun `OM-08 row 8 return mode graffiti turned off returns to dubeolsik`() {
         // The settings change reaches the service while the keyboard is down in the numeric field.
         val mc = nfStart()
         mc.startField(numericLike = true)
         mc.apply(noGraffiti)
-        assertState(mc, QWERTY, SWIPE, null)
-        assertEquals(listOf(SWIPE), saved) // the fixed return mode is the last mode (FR-CMN-03f ③)
+        assertState(mc, QWERTY, DUBEOLSIK, null)
+        assertEquals(listOf(DUBEOLSIK), saved) // the fixed return mode is the last mode (FR-CMN-03f ③)
         mc.startField(numericLike = false)
         mc.apply(noGraffiti)
-        assertState(mc, SWIPE, null, null)
-        assertEquals(listOf(SWIPE), saved)
+        assertState(mc, DUBEOLSIK, null, null)
+        assertEquals(listOf(DUBEOLSIK), saved)
 
         // It reaches it only at the next onStartInputView (leave first, then applyEnabled).
         saved.clear()
@@ -312,8 +338,8 @@ class ModeControllerTest {
         late.startField(numericLike = true)
         late.startField(numericLike = false)
         late.apply(noGraffiti)
-        assertState(late, SWIPE, null, null)
-        assertEquals(listOf(SWIPE), saved)
+        assertState(late, DUBEOLSIK, null, null)
+        assertEquals(listOf(DUBEOLSIK), saved)
     }
 
     @Test
@@ -325,7 +351,25 @@ class ModeControllerTest {
         assertEquals(DUBEOLSIK, mc.current)
         assertNull(mc.applyEnabled(ALL.toSet()))
         assertEquals(ALL.toSet(), mc.enabled)
-        assertEquals(SWIPE, mc.nextEnabled(GRAFFITI)) // wraps
+        assertEquals(DUBEOLSIK, mc.nextEnabled(GRAFFITI)) // wraps
         assertEquals(SWIPE, ModeController(listOf(SWIPE), SWIPE, tapOnly).current) // a practice board's one mode
     }
+
+    /** Not typed: the mode key goes in order through the modes on, [n] presses from [start]. */
+    private fun cycle(on: Set<InputMode>, start: InputMode, n: Int): List<InputMode> {
+        val mc = ModeController(ALL, start, on)
+        return List(n) { mc.onModeKey() }
+    }
+
+    @Test
+    fun `OM-10 swipe off cycles dubeolsik qwerty graffiti`() =
+        assertEquals(listOf(QWERTY, GRAFFITI, DUBEOLSIK), cycle(noSwipe, DUBEOLSIK, 3))
+
+    @Test
+    fun `OM-11 graffiti off cycles dubeolsik qwerty swipe`() =
+        assertEquals(listOf(QWERTY, SWIPE, DUBEOLSIK), cycle(noGraffiti, DUBEOLSIK, 3))
+
+    @Test
+    fun `OM-12 graffiti and swipe off cycles dubeolsik qwerty only`() =
+        assertEquals(listOf(QWERTY, DUBEOLSIK, QWERTY, DUBEOLSIK), cycle(tapOnly, DUBEOLSIK, 4))
 }

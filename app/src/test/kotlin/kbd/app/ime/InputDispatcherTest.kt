@@ -481,10 +481,10 @@ class InputDispatcherTest {
         modes.enterNumericField()
         assertEquals(InputMode.QWERTY, modes.current)
         d.onFunctionDown(FunctionKey.MODE)
-        assertEquals(InputMode.DUBEOLSIK, modes.current)   // one onModeKey: QWERTY → next in order
+        assertEquals(InputMode.SWIPE, modes.current)   // one onModeKey: QWERTY → next in order (FSS#93: Dubeolsik → QWERTY → swipe → graffiti)
         assertEquals(InputMode.DUBEOLSIK, modes.returnMode)
         assertEquals(emptyList<InputMode>(), saved)
-        assertEquals(listOf(InputMode.DUBEOLSIK), shown)
+        assertEquals(listOf(InputMode.SWIPE), shown)
     }
 
     @Test

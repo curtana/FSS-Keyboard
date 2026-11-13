@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.30** (2026-11-13)
+- 버전 **0.31** (2026-11-14)
+- 0.31(FSS#93, SRS 0.85 FR-CMN-03 ②, HLD 0.78 8.1): 3.5 `InputMode` 선언 순서(= 모드 키 순환 순서)를 `DUBEOLSIK, QWERTY, SWIPE, GRAFFITI`로(0.30까지 `SWIPE, QWERTY, DUBEOLSIK, GRAFFITI`). 저장은 이름이라 순서와 무관하다(LLD-07 6.1 `last_mode`).
 - 0.30(FSS#84, SRS 0.82 FR-CMN-14 ⑧, HLD 0.75 3장·5A): 3.3 바깥 변 — 테두리의 왼쪽·오른쪽은 자판 사각형의 바깥 변(자판에서 여유 칸만큼 밖)이라 끝 키의 왼쪽·오른쪽 변은 바깥 변이 아니다(`KeyGeom.build`의 `sideDp`, LLD-04 2절).
 - 0.29(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `SwipeHost.centerText`(가운데 글자 = 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에, LLD-04 9.5), `SwipeEngineState.pendingDots()`(2.2). `centerConsonant`는 판정 C를 줄지 정하는 데만 쓴다.
 - 0.28(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): `kbd.app.tutor` → `kbd.app.practice`(LLD-07 2절), `ThresholdStore` 삭제. `SwipeModule.tutorSteps()` 삭제(연습은 같은 `createSwipeView`를 연습용 `SwipeHost`로 부름). 기준값은 고정 상수(3.4), `posTolDp`는 실행 때 키 폭 × 0.4(`ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth`).
@@ -259,7 +260,7 @@ object ThresholdDefaults { const val MIN_CROSS_DP = 8f; val VALUES: Thresholds }
 
 ```kotlin
 // kbd.app.ime
-enum class InputMode { SWIPE, QWERTY, DUBEOLSIK, GRAFFITI }    // 선언 순서 = 순환 순서(FR-CMN-03)
+enum class InputMode { DUBEOLSIK, QWERTY, SWIPE, GRAFFITI }    // 선언 순서 = 순환 순서(FR-CMN-03 ②, 0.31 FSS#93). 첫 값 = 처음 설치 시작 모드(FR-CMN-10)
 // kbd.stroke.layout (stroke-core, 1.2절)
 enum class FunctionKey { BACKSPACE, SPACE, ENTER, TAB, MODE, ARROW_LEFT, ARROW_UP, ARROW_DOWN, ARROW_RIGHT, ESC, DELETE }   // SETTINGS(긋기 ⚙, 0.18)는 0.23(#205)에서 삭제. ESC·DELETE: 탭 편집 줄(0.22, 이슈 #198)
 ```
