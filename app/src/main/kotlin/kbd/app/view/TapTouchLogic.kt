@@ -18,10 +18,11 @@ import kbd.stroke.tap.TapOutput
 
 /**
  * Key rectangles of a tap layout in view dp (LLD-05A §3.1): `x_dp = x / 360 × width`, row y =
- * `row × rowHeight`. The view is the whole 6-row key area, so its left, right and bottom borders are
- * the window's (LLD-08 §7); its top border never is (LLD-03 §3.3).
+ * `row × rowHeight`. The view is the whole 6-row key area, so its bottom border is the window's (LLD-08 §7); its
+ * top border never is (LLD-03 §3.3). The window's left and right borders are [sideDp] outside the view, the outer
+ * sides of the keyboard's side margins (SRS FR-CMN-14 ⑧, LLD-08 §7.2): an end key's outer edge is an ordinary edge.
  */
-class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float, val rowHeightDp: Float) {
+class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float, val rowHeightDp: Float, val sideDp: Float) {
     val keys: List<TapKeyDef> = layout.keys
     val heightDp: Float = layout.rows * rowHeightDp
     val geoms: List<KeyGeom>
@@ -32,7 +33,7 @@ class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float,
         val unit = widthDp / LAYOUT_WIDTH_DP
         geoms = keys.map { k ->
             val rect = RectDp(k.x * unit, k.row * rowHeightDp, (k.x + k.w) * unit, (k.row + 1) * rowHeightDp)
-            KeyGeom.build(k.id, rect, widthDp, heightDp)
+            KeyGeom.build(k.id, rect, widthDp, heightDp, sideDp)
         }
         blankRects = layout.blanks.map { b ->
             val rect = RectDp(b.x * unit, b.row * rowHeightDp, (b.x + b.w) * unit, (b.row + 1) * rowHeightDp)
@@ -57,9 +58,9 @@ class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float,
         /** Tap layout row width in dp units (LLD-05A §3.1). */
         const val LAYOUT_WIDTH_DP = 360f
 
-        fun build(layout: TapLayout, widthDp: Float, rowHeightDp: Float): TapGeometry {
+        fun build(layout: TapLayout, widthDp: Float, rowHeightDp: Float, sideDp: Float = 0f): TapGeometry {
             require(widthDp > 0f && rowHeightDp > 0f) { "empty tap view" }
-            return TapGeometry(layout, widthDp, rowHeightDp)
+            return TapGeometry(layout, widthDp, rowHeightDp, sideDp)
         }
     }
 }

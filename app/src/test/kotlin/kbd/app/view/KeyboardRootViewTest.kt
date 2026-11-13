@@ -145,23 +145,102 @@ class KeyboardRootViewTest {
     private val keyY: Float get() = (ROW + ROW / 2) * density   // child row 0
 
     @Test
-    fun `KR-01 a narrowed keyboard is placed left, centre or right, the mode view at its width`() {
+    fun `KR-01 a narrowed keyboard is placed left, centre or right, the mode view on its keys`() {
         val child = root.getChildAt(0)
-        for ((align, left) in listOf(KeyboardAlign.LEFT to 0f, KeyboardAlign.CENTER to 200f, KeyboardAlign.RIGHT to 400f)) {
+        // Key 40 dp: the rectangle is 440 dp (11 cells), each side margin 20 dp, the keys 400 dp (FSS#84).
+        for ((align, rect) in listOf(KeyboardAlign.LEFT to 0f, KeyboardAlign.CENTER to 180f, KeyboardAlign.RIGHT to 360f)) {
             root.portraitWidth = WidthSetting(40f, align)
             layoutAt(800f)
-            assertEquals("$align", px(left), child.left)
+            assertEquals("$align", px(rect), root.rectLeft)
+            assertEquals("$align", px(440f), root.rectWidth)
+            assertEquals("$align", px(rect + 20f), child.left)
             assertEquals("$align", px(400f), child.width)
             assertEquals(px(KeyboardRootView.WINDOW_ROWS * ROW), root.height)   // height unchanged (FR-CMN-14 ⑥)
         }
         root.portraitWidth = WidthSetting.DEFAULT
         layoutAt(800f)
-        assertEquals(0, child.left)
-        assertEquals(px(800f), child.width)
+        assertEquals(px(800f) - 2 * root.sideMargin, child.width)
+        assertEquals(root.sideMargin, child.left)
     }
 
     @Test
-    fun `KR-02 a touch on the side margin is taken with no feedback and no input`() {
+    fun `KR-08 full width - the rectangle is the available width, a margin of half a key on each side`() {
+        val child = root.getChildAt(0) as TapKeyboardView
+        for (w in listOf(360f, 411f, 800f)) {
+            layoutAt(w)
+            val at = "width $w"
+            assertEquals(at, 0, root.rectLeft)
+            assertEquals(at, px(w), root.rectWidth)   // the rectangle = the available width
+            val m = root.sideMargin
+            assertEquals(at, Math.round(px(w) / 22f), m)   // u / 2, u = the width / 11
+            assertEquals(at, m, child.left)   // left margin
+            assertEquals(at, m, root.width - child.right)   // right margin: the same
+            assertEquals(at, child.width / 10f, 2f * m, 1f)   // half the drawn key cell, to a px of rounding
+            assertEquals(at, m, child.sideMarginPx)   // told to the mode view
+            assertEquals(at, m / density, child.geometrySideDp!!, 0f)   // and in its key geometry
+        }
+    }
+
+    @Test
+    fun `KR-09 a touch that begins on a side margin is taken with no feedback and no input`() {
+        // Full width: the margins are the window's left and right ends.
+        layoutAt(360f)
+        val m = root.sideMargin
+        for (x in listOf(0f, m - 1f, root.width - m + 0f, root.width - 1f)) {
+            touch.down(0, x, keyY)
+            assertTrue("x $x", touch.lastHandled)
+            touch.move(0, root.width / 2f, keyY)   // onto the keys: still the margin's touch, no nearest key
+            touch.up(0)
+            assertTrue("x $x", touch.lastHandled)
+        }
+        // Narrowed: the margins lie between the keys and the rest.
+        root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
+        layoutAt(800f)
+        for (xDp in listOf(180f, 199f, 600f, 619f)) touch.tap(0, xDp * density, keyY)
+        assertEquals(emptyList<String>(), events)
+        // A second finger on a margin while a key is held gives nothing; the held key gives its one input.
+        touch.down(0, 400 * density, keyY)
+        touch.down(1, 190 * density, keyY)
+        touch.move(1, 300 * density, keyY)
+        touch.up(1)
+        touch.up(0)
+        assertEquals(1, events.count { it == "key" })
+        assertEquals(1, events.count { it.startsWith("out:") || it.startsWith("down:") })
+    }
+
+    @Test
+    fun `KR-10 a stroke from an end key out over the side margin stays with that key`() {
+        layoutAt(360f)
+        val child = root.getChildAt(0)
+        val m = root.sideMargin
+        val y = child.top + child.height * 2.5f / 6   // the layout's row 2 (edit row, numbers, then q–p)
+        touch.down(0, m + 10 * density, y)   // q, the left end key
+        touch.move(0, 2f, y, steps = 4)   // out over the margin, 8 dp and more past the key's edge
+        touch.up(0)
+        assertEquals(listOf("key", "out:q"), events)   // ← has no letter on q: the tap's (FR-TAP-01a)
+        events.clear()
+        touch.down(0, child.right - 10 * density, y)   // p, the right end key
+        touch.move(0, root.width - 2f, y, steps = 4)
+        touch.up(0)
+        assertEquals(listOf("key", "out:p"), events)
+    }
+
+    @Test
+    fun `KR-11 the mode view gets a changed side margin even when its own width stays`() {
+        val child = root.getChildAt(0) as TapKeyboardView
+        // Full width 361 px and 363 px: the margin is 16 and 17 px (361 / 22 = 16.4, 363 / 22 = 16.5), the keys 329 px both.
+        root.measure(View.MeasureSpec.makeMeasureSpec(361, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        assertEquals(16 to 329, root.sideMargin to child.width)
+        assertEquals(16 / density, child.geometrySideDp!!, 0f)
+        root.measure(View.MeasureSpec.makeMeasureSpec(363, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        assertEquals(17 to 329, root.sideMargin to child.width)   // the same child width
+        assertEquals(17 / density, child.geometrySideDp!!, 0f)   // the geometry was built again with the new margin
+    }
+
+    @Test
+    fun `KR-02 a touch on the rest beside a narrowed keyboard is taken with no feedback and no input`() {
         root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
         layoutAt(800f)
         touch.down(0, 100 * density, keyY)
@@ -173,7 +252,7 @@ class KeyboardRootViewTest {
     }
 
     @Test
-    fun `KR-03 a second finger on the margin gives nothing while the first is on a key`() {
+    fun `KR-03 a second finger on the rest gives nothing while the first is on a key`() {
         root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
         layoutAt(800f)
         touch.down(0, 400 * density, keyY)
@@ -186,7 +265,7 @@ class KeyboardRootViewTest {
     }
 
     @Test
-    fun `KR-04 a finger resting on the margin does not stop another finger's key`() {
+    fun `KR-04 a finger resting on the rest does not stop another finger's key`() {
         root.portraitWidth = WidthSetting(40f, KeyboardAlign.CENTER)
         layoutAt(800f)
         touch.down(0, 50 * density, keyY)
@@ -198,15 +277,16 @@ class KeyboardRootViewTest {
     }
 
     @Test
-    fun `KR-05 the guide button sits at the narrowed keyboard's right end`() {
+    fun `KR-05 the guide button sits at the right end of the narrowed keyboard's keys`() {
         root.portraitWidth = WidthSetting(40f, KeyboardAlign.LEFT)
         root.enableGuide(TemplateSet(emptyMap()), feedback)
         layoutAt(800f)
+        // Rectangle 0–440, keys 20–420: the button and the panel stay off the side margins (FR-CMN-14 ⑥).
         val button = root.getChildAt(root.childCount - 1)
-        assertEquals(px(400f), button.right)
-        assertEquals(px(400f - ROW), button.left)
+        assertEquals(px(420f), button.right)
+        assertEquals(px(420f - ROW), button.left)
         val panel = root.getChildAt(1)
-        assertEquals(0, panel.left)
+        assertEquals(px(20f), panel.left)
         assertEquals(px(400f), panel.width)
     }
 
@@ -215,12 +295,16 @@ class KeyboardRootViewTest {
     fun `KR-06 landscape uses the landscape setting, by default the portrait width centred`() {
         val child = root.getChildAt(0)
         layoutAt(800f)
-        assertEquals(px(400f), child.width)   // the screen's short side
-        assertEquals(px(200f), child.left)
+        assertEquals(px(400f), root.rectWidth)   // the screen's short side
+        assertEquals(px(200f), root.rectLeft)
+        assertEquals(px(18f), root.sideMargin)   // 400 / 22 = 18.2
+        assertEquals(px(364f), child.width)
+        assertEquals(px(218f), child.left)
         root.landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.CENTER)
         root.portraitWidth = WidthSetting(40f, KeyboardAlign.LEFT)   // not used in landscape
         layoutAt(800f)
-        assertEquals(px(800f), child.width)
+        assertEquals(px(800f), root.rectWidth)
+        assertEquals(px(800f) - 2 * root.sideMargin, child.width)
     }
 
     /** FSS#57: the service redraws the mode view when the stroke trail setting changes. */

@@ -224,7 +224,8 @@ private val ALIGNS = listOf(
  * Key size and alignment of the portrait and the landscape screen (FR-SET-09, LLD-07 §7, FSS#25), in two boxes:
  * "세로 화면" and "가로 화면", each with its key size and its alignment (owner decision, FSS#44). The box of the screen's
  * present orientation is marked "지금 화면"; both are always shown and can be changed. Each slider goes from
- * 32 dp in 1 dp steps to the first key size that fills about this screen's width in that orientation (its short or
+ * 32 dp in 1 dp steps to the first key size whose keyboard rectangle (11 cells: the keys and the two side margins,
+ * FSS#84) fills about this screen's width in that orientation (its short or
  * long side; the keyboard computes the exact width, FR-CMN-14 ④); that top stop is "꽉 채움": no key size on the
  * portrait screen, [KeyboardWidth.FULL] on the landscape one. Until it is moved the landscape slider sits at the
  * portrait key size (FR-CMN-14 ③). The alignment is greyed out when the keyboard fills (no rest to place).
@@ -244,7 +245,7 @@ internal fun KeyboardSizeBoxes(settings: Settings, update: ((Settings) -> Settin
     val pKey = stop(p.keyDp, pTop)
     val lKey = when {
         l.keyDp != null -> stop(l.keyDp, lTop)
-        p.keyDp == null || p.keyDp == KeyboardWidth.FULL -> (shortDp / KeyboardWidth.UNITS).roundToInt().coerceAtMost(lTop)
+        p.keyDp == null || p.keyDp == KeyboardWidth.FULL -> (shortDp / KeyboardWidth.RECT_UNITS).roundToInt().coerceIn(KeyboardWidth.MIN_KEY_DP.toInt(), lTop)
         else -> stop(p.keyDp, lTop)
     }
     OrientationBox(R.string.settings_box_portrait, now = !landscapeNow, BOX_PORTRAIT) {
@@ -274,8 +275,9 @@ private fun OrientationBox(title: Int, now: Boolean, tag: String, content: @Comp
 }
 
 /**
- * A key size slider from 32 dp to [top] (= fills about [availDp]) with the keyboard width beside it: "키 36 dp · 전체
- * 360 dp", or at the top "꽉 채움 · 키 약 71 dp · 711 dp". Stored when the slider is released.
+ * A key size slider from 32 dp to [top] (= fills about [availDp]) with the width of the keyboard rectangle (side
+ * margins included, 11 × the key size) beside it: "키 36 dp · 전체 396 dp", or at the top "꽉 채움 · 키 약 65 dp · 711 dp".
+ * Stored when the slider is released.
  */
 @Composable
 private fun KeyRow(stored: Int, top: Int, availDp: Float, onChange: (Int) -> Unit) {
@@ -286,8 +288,8 @@ private fun KeyRow(stored: Int, top: Int, availDp: Float, onChange: (Int) -> Uni
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.settings_key), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
             Text(
-                if (shown >= top) stringResource(R.string.settings_key_full, (availDp / KeyboardWidth.UNITS).roundToInt(), availDp.roundToInt())
-                else stringResource(R.string.settings_key_value, shown, shown * KeyboardWidth.UNITS),
+                if (shown >= top) stringResource(R.string.settings_key_full, (availDp / KeyboardWidth.RECT_UNITS).roundToInt(), availDp.roundToInt())
+                else stringResource(R.string.settings_key_value, shown, shown * KeyboardWidth.RECT_UNITS),
             )
         }
         Slider(

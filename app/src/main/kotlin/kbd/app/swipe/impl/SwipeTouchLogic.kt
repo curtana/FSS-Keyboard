@@ -22,10 +22,12 @@ import kbd.stroke.tap.TapGestureClassifier
 
 /**
  * Key rectangles of the swipe layout in view dp (LLD-04 §8.1, §9.2): column width = width / 7,
- * row height = the row height setting. The view is the window's bottom 5 rows, so its left,
- * right and bottom borders are the window's (LLD-08 §7); its top border never is.
+ * row height = the row height setting. The view is the window's bottom 5 rows, so its bottom border is the
+ * window's (LLD-08 §7); its top border never is. The window's left and right borders are [sideDp] outside the view,
+ * the outer sides of the keyboard's side margins (SRS FR-CMN-14 ⑧, LLD-08 §7.2): an end key's outer edge is an
+ * ordinary edge.
  */
-class SwipeGeometry private constructor(val widthDp: Float, val rowHeightDp: Float) {
+class SwipeGeometry private constructor(val widthDp: Float, val rowHeightDp: Float, val sideDp: Float) {
     val keys: List<SwipeKeyDef> = SwipeLayout.KEYS
     val heightDp: Float = SwipeLayout.ROWS * rowHeightDp
 
@@ -38,7 +40,7 @@ class SwipeGeometry private constructor(val widthDp: Float, val rowHeightDp: Flo
         val colW = widthDp / SwipeLayout.COLS
         geoms = keys.map { k ->
             val rect = RectDp(k.col * colW, k.row * rowHeightDp, (k.col + k.colSpan) * colW, (k.row + 1) * rowHeightDp)
-            KeyGeom.build(k.id, rect, widthDp, heightDp)
+            KeyGeom.build(k.id, rect, widthDp, heightDp, sideDp)
         }
         hitTester = KeyHitTester(geoms, widthDp, heightDp)
     }
@@ -50,9 +52,9 @@ class SwipeGeometry private constructor(val widthDp: Float, val rowHeightDp: Flo
     }
 
     companion object {
-        fun build(widthDp: Float, rowHeightDp: Float): SwipeGeometry {
+        fun build(widthDp: Float, rowHeightDp: Float, sideDp: Float = 0f): SwipeGeometry {
             require(widthDp > 0f && rowHeightDp > 0f) { "empty swipe view" }
-            return SwipeGeometry(widthDp, rowHeightDp)
+            return SwipeGeometry(widthDp, rowHeightDp, sideDp)
         }
     }
 }
