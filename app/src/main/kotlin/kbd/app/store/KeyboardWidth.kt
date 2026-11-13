@@ -116,8 +116,9 @@ data class PxRect(val left: Int, val top: Int, val right: Int, val bottom: Int) 
 /**
  * The keyboard plate (SRS FR-CMN-14 ⑫, HLD 5A, LLD-08 §7.3, FSS#85): the one rectangle of the input view that the
  * keyboard paints and that takes touches. What the input view has outside it is left clear: not painted, and not in
- * the window's touch region, so that the app below can show and be touched there. Painting and the touch region read the rectangle this gives and work out no place of their
- * own, so the two cannot differ. No Android: unit tested.
+ * the window's touch region, so that the app below can show and be touched there. Painting and the touch region
+ * read the rectangle this gives and work out no place of their own, so the two cannot differ. No Android: unit
+ * tested.
  */
 object KeyboardPlate {
     /**
