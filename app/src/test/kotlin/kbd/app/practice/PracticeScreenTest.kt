@@ -16,6 +16,7 @@ import kbd.app.graffiti.GraffitiGuidePanel
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
 import kbd.app.store.ErrorLog
+import kbd.app.store.FloatSetting
 import kbd.app.store.KeyboardAlign
 import kbd.app.store.PxRect
 import kbd.app.store.Settings
@@ -195,6 +196,34 @@ class PracticeScreenTest {
         assertEquals("", flow.echo)
         assertEquals(null, flow.verdict)
         assertEquals(tries, flow.tryNo)
+    }
+
+    /** FSS#86 (FR-CMN-15 ⑭): floating is not for the practice keyboard; with it on the frame is as with it off. */
+    @Test
+    fun `PR-34 floating on - the practice frame is as before, with no move handle`() {
+        fun frameOf(s: Settings): Triple<PxRect, Int, List<View>> {
+            val flow = PracticeFlow()
+            compose.setContent {
+                val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { s })
+                PracticeScreen(flow, flowOf(s), s, BoardFactory(s, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+            }
+            compose.onNodeWithText(PracticeTopics.SWIPE.title).performClick()
+            compose.onNodeWithText("시작").performClick()
+            compose.waitForIdle()
+            val sv = checkNotNull(find(compose.activity.window.decorView, SwipeKeyboardView::class.java))
+            val frame = sv.parent as android.view.ViewGroup
+            return Triple((frame as PlateView).plate, frame.height, (0 until frame.childCount).map(frame::getChildAt))
+        }
+        val on = settings.copy(portraitFloat = FloatSetting(true, 0.1f, 0.1f), landscapeFloat = FloatSetting(true, 0.1f, 0.1f))
+        val (plate, height, children) = frameOf(on)
+        val d = compose.activity.resources.displayMetrics.density
+        // PR-33's frame: the 462 dp at the right end by the frame's whole height, and nothing but the board in it.
+        assertEquals(plate.bottom, height)
+        assertEquals(0, plate.top)
+        assertEquals(Math.round(462 * d), plate.right - plate.left)
+        assertEquals(Math.round(KeyboardRootView.WINDOW_ROWS * settings.rowHeightDp * d), height)
+        assertTrue(children.none { it.contentDescription == KeyboardRootView.HANDLE_NAME })
+        assertEquals(1, children.size)
     }
 
     /** FSS#84: the graffiti pad inside the practice column is told the side margin too. */

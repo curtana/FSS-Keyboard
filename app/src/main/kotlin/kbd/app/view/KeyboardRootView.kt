@@ -287,8 +287,8 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     }
 
     /**
-     * After the guide opened or closed, the rest of that gesture is taken here: its pointers already on the
-     * mode view, the button or the panel get `ACTION_CANCEL` and then nothing (LLD-08 §7.1).
+     * The screen turned: placed again with that orientation's settings, a move in progress given up (FR-CMN-15 ⑩⑬).
+     * The top inset of the other orientation is dropped and asked for again.
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -406,6 +406,11 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         super.onDetachedFromWindow()
     }
 
+    /**
+     * After the guide opened or closed, the rest of that gesture is taken here: its pointers already on the
+     * mode view, the button or the panel get `ACTION_CANCEL` and then nothing (LLD-08 §7.1). The same takes the
+     * gesture whose finger moves the floating keyboard (FR-CMN-15 ⑧).
+     */
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         if (ev.actionMasked == MotionEvent.ACTION_DOWN) swallowGesture = false   // a new gesture
         return swallowGesture
