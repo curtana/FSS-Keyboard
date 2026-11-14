@@ -48,6 +48,7 @@ import kbd.app.feedback.Feedback
 import kbd.app.graffiti.GraffitiGuidePanel
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
+import kbd.app.graffiti.GraffitiRecognizers
 import kbd.app.ime.InputMode
 import kbd.app.settings.AppStores
 import kbd.app.settings.KeyboardAppTheme
@@ -66,6 +67,7 @@ import kbd.app.view.TapKeyboardView
 import kbd.app.view.applySideMargin
 import kbd.graffiti.guide.GuideCatalog
 import kbd.graffiti.ink.GraffitiLang
+import kbd.graffiti.recognize.Recognizer
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
 import kbd.stroke.layout.TapLayouts
@@ -87,7 +89,9 @@ class PracticeActivity : ComponentActivity() {
         val feedback = Feedback({ window?.decorView }, getSystemService(AudioManager::class.java), { settings })
         val templates = loadTemplates(stores.errorLog)
         val flow = PracticeFlow(PracticeTopics.ALL) { id -> lifecycleScope.launch { stores.settings.markPracticeDone(id) } }
-        val boards = BoardFactory(settings, feedback, stores.errorLog, templates)
+        // The keyboard's own recognition (templates and model, FR-TUT-17 ④); read behind the first frame (LLD-05 §11).
+        val recognizers = GraffitiRecognizers(templates, stores.errorLog).also { it.warm() }
+        val boards = BoardFactory(settings, feedback, stores.errorLog, templates, recognizers::get)
         setContent {
             KeyboardAppTheme {
                 PracticeScreen(flow, stores.settings.flow, settings, boards, ::finish)
@@ -119,6 +123,7 @@ internal class BoardFactory(
     private val feedback: Feedback,
     private val errorLog: ErrorLog,
     private val templates: TemplateSet,
+    private val recognizer: () -> Recognizer = Recognizer(templates).let { r -> { r } },
 ) {
     fun build(context: Context, flow: PracticeFlow, item: PracticeItem): View {
         val input = PracticeInput(item.board, feedback, errorLog, settings)
@@ -155,7 +160,7 @@ internal class BoardFactory(
             }
             PracticeBoard.GRAFFITI -> {
                 var pad: GraffitiPadView? = null
-                val handler = input.graffiti(templates, item.lang ?: GraffitiLang.KO, { pad?.flash(it) }, { pad?.invalidate() })
+                val handler = input.graffiti(templates, item.lang ?: GraffitiLang.KO, { pad?.flash(it) }, { pad?.invalidate() }, recognizer)
                 val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
                 // The stroke guide, always open above the pad (not over it), only the item's section (SWIPE 10.1 ③).
                 val panel = GraffitiGuidePanel(context, templates, input.feedback, GuideCatalog.groups.filter { it.section == item.guideSection() }, showClose = false) {}

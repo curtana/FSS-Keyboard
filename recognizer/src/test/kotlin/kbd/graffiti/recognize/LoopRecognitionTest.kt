@@ -58,13 +58,21 @@ class LoopRecognitionTest {
     private val templates: TemplateSet = TestStrokes.production
 
     /** Every synthetic loop in [area]; returns the misreads as "start/sweep/shape: token". */
-    private fun misreads(area: PadArea, lang: GraffitiLang, expect: Expect, want: String, dirs: List<Int> = listOf(1, -1)): List<String> {
+    private fun misreads(
+        area: PadArea, lang: GraffitiLang, expect: Expect, want: String, dirs: List<Int> = listOf(1, -1),
+        known: Map<String, TemplateOutput> = emptyMap(),
+    ): List<String> {
         val rec = TestStrokes.productionRecognizer
         val bad = ArrayList<String>()
         for ((loop, stroke) in LoopStrokes.all(area, dirs)) {
             val t = rec.recognize(stroke, lang, expect)
             // The owner's own strokes (FSS#64) are other templates with the same output.
             if (t is StrokeToken.Symbol && templates.outputOf(t.id) == templates.outputOf(want)) continue
+            // A known limit of the shipped model (LLD-11 6.7): only that loop, only that reading.
+            if (t is StrokeToken.Symbol && known[loop.toString()]?.let { it == templates.outputOf(t.id) } == true) {
+                println("GR-33 known limit: $loop reads as ${templates.outputOf(t.id)}")
+                continue
+            }
             // D (en_d2) starts at its bottom-left corner going up and round clockwise: a tall loop begun there the same
             // way is a D-like stroke, so D is an accepted reading of it (LLD-05 3.2 step 4a). The letter's best-scoring
             // built-in template is what comes back (LLD-05 3.2a), so the reading is told by its output.
@@ -77,10 +85,18 @@ class LoopRecognitionTest {
 
     @Test
     fun `GR-33 loops read as the circle of their area at any start, short or past closing`() {
-        assertEquals(emptyList<String>(), misreads(PadArea.LETTER, GraffitiLang.KO, Expect.NORMAL, "ko_ieung"))
+        assertEquals(emptyList<String>(), misreads(PadArea.LETTER, GraffitiLang.KO, Expect.NORMAL, "ko_ieung", known = KO_KNOWN))
         assertEquals(emptyList<String>(), misreads(PadArea.LETTER, GraffitiLang.EN, Expect.NORMAL, "en_o"))
         assertEquals(emptyList<String>(), misreads(PadArea.NUMBER, GraffitiLang.EN, Expect.NORMAL, "num_0"))
     }
+
+    /**
+     * GR-33's one known limit (FSS#96, LLD-11 6.7): the Korean circle begun at 210° going counter-clockwise 320° (40°
+     * short of closing) reads as ㅁ under the weighted sum — ㅁ template 0.823 / NN 0.966 against ㅇ 0.985 / 0.723. The
+     * training side gets the same answer and scores from the shipped model (not a port defect); the templates alone
+     * read it as ㅇ. Every other loop must still read as its circle.
+     */
+    private val KO_KNOWN: Map<String, TemplateOutput> by lazy { mapOf("210/-320/1.0x1.0" to checkNotNull(templates.outputOf("ko_m"))) }
 
     @Test
     fun `GR-34 a loop while punctuation is pending reads as at, in the direction of its template`() {

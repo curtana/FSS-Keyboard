@@ -18,6 +18,7 @@ import kbd.app.feedback.FeedbackPort
 import kbd.app.graffiti.GraffitiInputHandler
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
+import kbd.app.graffiti.GraffitiRecognizers
 import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.store.SettingsStore
@@ -29,7 +30,6 @@ import kbd.app.view.CenterText
 import kbd.app.view.KeyboardRootView
 import kbd.app.view.TapKeyboardView
 import kbd.hangul.cheonjiin.CheonjiinAssembler
-import kbd.graffiti.recognize.Recognizer
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
 import kbd.graffiti.state.GraffitiState
@@ -70,6 +70,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
     private lateinit var graffiti: GraffitiInputHandler
     /** The graffiti pad on screen, null in the other modes; target of [GraffitiInputHandler]'s flash. */
     private var pad: GraffitiPadView? = null
+    private lateinit var recognizers: GraffitiRecognizers
     /** The built-in templates, also drawn by the stroke guide (FR-GRF-09c, LLD-05 §10). */
     private var templates: TemplateSet = TemplateSet(emptyMap())
 
@@ -141,6 +142,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
         modes.applyEnabled(settings.enabledModes)?.let(::saveLastMode)   // FR-CMN-03f; committed above
         errorLog.enabled = !f.noRecord   // NFR-05, FR-CMN-08 ① ②
         composing.onStart(info.initialSelStart, info.initialSelEnd)
+        recognizers.warm()   // a recognizer for the current personal strokes is on its way (LLD-05 §11)
         showModeView(modes.current, f)
         if (modes.current == InputMode.GRAFFITI && before != InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
     }
@@ -208,15 +210,18 @@ class KeyboardService : InputMethodService(), SwipeHost {
 
     /**
      * Templates are read once at start (LLD-05 §7). A failure is logged and leaves an empty set: rule
-     * strokes still work, template strokes are recognition failures (LLD-09 §4).
+     * strokes still work, template strokes are recognition failures (LLD-09 §4). The model is read and the
+     * recognizer built on a background thread, so the first display does not wait for them (LLD-05 §11).
      */
     private fun createGraffiti() {
         templates = guard.run(SITE_TEMPLATES) {
             val stream = checkNotNull(TemplateLoader::class.java.getResourceAsStream(TEMPLATES_RESOURCE)) { "missing $TEMPLATES_RESOURCE" }
             stream.use { TemplateLoader.load(it) }
         } ?: TemplateSet(emptyMap())
+        recognizers = GraffitiRecognizers(templates, errorLog)
+        recognizers.warm()
         graffiti = GraffitiInputHandler(
-            recognizer = Recognizer(templates),
+            recognizer = recognizers::get,
             state = GraffitiState(templates),
             asm = CheonjiinAssembler(),
             composer = { checkNotNull(dispatcher.composer) },   // graffiti policy while the pad is shown (LLD-08 §6)
