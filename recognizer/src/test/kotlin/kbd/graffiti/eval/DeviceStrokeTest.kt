@@ -1,5 +1,6 @@
 package kbd.graffiti.eval
 
+import kbd.graffiti.recognize.Recognizer
 import kbd.graffiti.recognize.SetName
 import kbd.graffiti.recognize.StrokeRules
 import kbd.graffiti.recognize.TemplateMatcher
@@ -65,15 +66,22 @@ class DeviceStrokeTest {
 
     private fun EvalStroke.id() = file.nameWithoutExtension
 
-    /** The production templates without the strokes of [day], so that day's strokes are measured as ones the set has not seen (FR-GRF-03b). */
-    private fun withoutDay(day: List<EvalStroke>): TemplateSet {
+    /**
+     * The recognizer without the strokes of [day] — neither as templates nor as exemplars of the model (FR-GRF-13 ③ puts the
+     * owner strokes on both sides) — so that day's strokes are measured as ones it has not seen (FR-GRF-03b).
+     */
+    private fun withoutDay(day: List<EvalStroke>): Recognizer {
         val ids = day.map { it.id() }.toSet()
-        return TemplateSet(GraffitiEval.templates.sets.mapValues { (_, list) -> list.filter { it.id !in ids } })
+        val owned = day.filter { OWNER_ID.matches(it.id()) }
+        val model = GraffitiEval.modelWithout(owned, SetName.EN_LETTER)
+        val before = GraffitiEval.model.sets.getValue(SetName.EN_LETTER).exemplarClass.size
+        assertEquals(before - owned.size, model.sets.getValue(SetName.EN_LETTER).exemplarClass.size)
+        return Recognizer(TemplateSet(GraffitiEval.templates.sets.mapValues { (_, list) -> list.filter { it.id !in ids } }), model)
     }
 
     /** FSS#80: both days of the owner's letters are templates, so each day is read with the other day's strokes only. */
     @Test
-    fun `GR-41 owner English strokes of one day are read with only the other day in the templates`() {
+    fun `GR-41 owner English strokes of one day are read with only the other day in the templates and exemplars`() {
         val days = ownerDays()
         assertEquals(setOf("day1", "day2"), days.keys)
         for ((day, list) in days) {
@@ -85,7 +93,7 @@ class DeviceStrokeTest {
 
     /** FSS#80: the owner saw h misread on the phone (h -> l, h -> v). */
     @Test
-    fun `GR-42 owner h strokes of one day are h with only the other day in the templates`() {
+    fun `GR-42 owner h strokes of one day are h with only the other day in the templates and exemplars`() {
         var total = 0
         for ((day, list) in ownerDays()) {
             val h = list.filter { it.expect == "h" }
@@ -104,12 +112,12 @@ class DeviceStrokeTest {
         assertEquals(all.size, all.map { it.id() }.toSet().size)
         val rules = all.filter { StrokeRules.tap(it.stroke) != null || StrokeRules.line(it.stroke) != null }
         assertEquals(rules.map { it.id() }, all.filter { it.expect == "i" }.map { it.id() })
-        val owned = all.filter { Regex("en_[a-z]_o[0-9]+").matches(it.id()) }
+        val owned = all.filter { OWNER_ID.matches(it.id()) }
         assertEquals(setOf("en_d_x1", "en_d_x3", "en_d_x4", "en_d_x7", "en_u_x1", "en_u_x2"), (all - rules.toSet() - owned.toSet()).map { it.id() }.toSet())
         val templates = GraffitiEval.templates.sets.getValue(SetName.EN_LETTER).associateBy { it.id }
         assertEquals(
             owned.map { it.id() }.toSet(),
-            templates.keys.filter { Regex("en_[a-z]_o[0-9]+").matches(it) }.toSet(),
+            templates.keys.filter { OWNER_ID.matches(it) }.toSet(),
         )
         for (s in owned) {
             val t = templates.getValue(s.id())
@@ -123,6 +131,7 @@ class DeviceStrokeTest {
 
     private companion object {
         const val HELD_OUT_MIN = 95.0
+        val OWNER_ID = Regex("en_[a-z]_o[0-9]+")
 
         /** In the matcher's normalized box (long side 1): the template is the file's stroke, resampled like the matcher and rounded to 3 decimals. */
         const val SAME_STROKE_MAX = 0.01f

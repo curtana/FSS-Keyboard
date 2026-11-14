@@ -87,7 +87,7 @@ class TemplateFileTest {
     @Test
     fun `the backspace stroke is LineLeft while punctuation or extended shift is pending, in no symbol table`() {
         // FR-GRF-05c ⑥, GRAFFITI 6.2-8 ①: ← is never a symbol (owner decision #79 OD-3 A, issue #101).
-        val recognizer = Recognizer(templates)
+        val recognizer = GraffitiEval.recognizer
         val left = InkStroke((0..50).map { i -> InkPoint(200f - 2f * i, 120f, i * 8L) }, PadArea.LETTER, GraffitiEval.LETTER_RECT)
         for (lang in GraffitiLang.entries) for (expect in listOf(Expect.PUNCT, Expect.EXTENDED)) {
             assertEquals("$lang $expect", StrokeToken.LineLeft, recognizer.recognize(left, lang, expect))
