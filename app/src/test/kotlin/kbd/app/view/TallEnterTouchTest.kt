@@ -21,7 +21,7 @@ import org.junit.rules.TemporaryFolder
 
 /**
  * LLD-11 §5.7 BE-01..BE-07: the two-row ↵ and the rows without blanks (FSS#105, SRS FR-TAP-03d, LLD-05A §3.2), and
- * §5.8 PV-05: strokes of the Dubeolsik paired vowels onto their neighbours (FSS#104), on
+ * §5.8 PV-01: strokes of the Dubeolsik paired vowels onto their neighbours (FSS#104), on
  * [TapGeometry] and [TapTouchLogic], on the JVM with fakes. The geometry is 360 dp wide, 48 dp rows, 16 dp side margins.
  */
 class TallEnterTouchTest {
@@ -192,7 +192,7 @@ class TallEnterTouchTest {
     }
 
     @Test
-    fun `PV-05 Dubeolsik ㅜ down onto the space bar is ㅠ, the paired vowels of the first-pressed key (FSS#104)`() {
+    fun `PV-01 Dubeolsik ㅜ down onto the space bar is ㅠ, the paired vowels of the first-pressed key (FSS#104)`() {
         val l = logic(TapLayouts.DUBEOLSIK)
         assertEquals("space", idAt(198f, 4.5f * ROW + ROW, TapLayouts.DUBEOLSIK))   // where the stroke ends
         stroke(l, "n", 0f, ROW)          // ↓ from ㅜ into the space bar
