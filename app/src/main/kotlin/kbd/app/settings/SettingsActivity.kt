@@ -125,19 +125,14 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
                 stringResource(R.string.settings_modes_summary), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
+            // In the mode key's cycle order (FR-SET-08, FR-CMN-03 ②).
             CheckRow(R.string.settings_mode_dubeolsik, checked = true, onChange = null)
+            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
             CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
-            CheckRow(R.string.settings_mode_swipe, settings.swipeEnabled) { v -> update { it.copy(swipeEnabled = v) } }
 
             Section(R.string.settings_section_input)
             ActionRow(R.string.settings_ime, R.string.settings_ime_summary, actions.openImeSettings)
 
-            Section(R.string.settings_section_display)   // every build has the swipe guides (issue #251)
-            SwitchRow(R.string.settings_direction_guide, settings.showDirectionGuide) { v -> update { it.copy(showDirectionGuide = v) } }
-            SwitchRow(R.string.settings_next_char, settings.showNextChar) { v -> update { it.copy(showNextChar = v) } }
-            SwitchRow(R.string.settings_current_char, settings.showCurrentChar) { v -> update { it.copy(showCurrentChar = v) } }   // FR-DSP-08, #135
-            SwitchRow(R.string.settings_stroke_trail, settings.showStrokeTrail) { v -> update { it.copy(showStrokeTrail = v) } }   // FR-DSP-09, FSS#57
 
             Section(R.string.settings_section_feedback)
             SwitchRow(R.string.settings_haptic, settings.haptic) { v -> update { it.copy(haptic = v) } }

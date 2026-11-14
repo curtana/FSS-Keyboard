@@ -22,7 +22,9 @@ import kotlinx.coroutines.runBlocking
  * is recorded (LLD-09 §4).
  *
  * `last_mode` is stored as the [InputMode] name; a name this build does not know reads as none and
- * `ModeController` starts in the first mode (FR-CMN-10). Every build has all four modes (issue #251).
+ * `ModeController` starts in the first mode (FR-CMN-10) — so does the name of a mode an older version had
+ * (FR-CMN-10a ①). Keys that older versions wrote and this one does not know are neither read nor removed
+ * (FR-CMN-10a ②, LLD-07 §6.1, D-69): every write here edits the known keys only.
  */
 class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog: ErrorLog? = null) {
 
@@ -47,10 +49,6 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             val s = f(decode(p))
             val mode = s.lastMode
             if (mode == null) p.remove(LAST_MODE) else p[LAST_MODE] = mode.name
-            p[SHOW_DIRECTION_GUIDE] = s.showDirectionGuide
-            p[SHOW_NEXT_CHAR] = s.showNextChar
-            p[SHOW_CURRENT_CHAR] = s.showCurrentChar
-            p[SHOW_STROKE_TRAIL] = s.showStrokeTrail
             p[HAPTIC] = s.haptic
             p[SOUND] = s.sound
             p[ROW_HEIGHT_DP] = s.rowHeightDp
@@ -58,7 +56,6 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             p[TUTOR_AUTO_STARTED] = s.practiceListShown
             p[PRACTICE_DONE] = s.practiceDone
             p[GRAFFITI_ENABLED] = s.graffitiEnabled
-            p[SWIPE_ENABLED] = s.swipeEnabled
             writeWidth(p, s.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT)
             writeWidth(p, s.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE)
             writeFloat(p, s.portraitFloat, FLOAT_PORTRAIT, FLOAT_X_PORTRAIT, FLOAT_Y_PORTRAIT)
@@ -83,7 +80,7 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         ds.edit { it[TUTOR_AUTO_STARTED] = v }
     }
 
-    /** The practice topic [id] was done to the end (SWIPE 10.0 ✓). */
+    /** The practice topic [id] was done to the end (the ✓ of the topic list, SRS appendix A.1). */
     suspend fun markPracticeDone(id: String) {
         ds.edit { it[PRACTICE_DONE] = (it[PRACTICE_DONE] ?: emptySet()) + id }
     }
@@ -92,10 +89,6 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         val d = Settings.DEFAULT
         return Settings(
             lastMode = p[LAST_MODE]?.let { name -> InputMode.entries.firstOrNull { it.name == name } },
-            showDirectionGuide = p[SHOW_DIRECTION_GUIDE] ?: d.showDirectionGuide,
-            showNextChar = p[SHOW_NEXT_CHAR] ?: d.showNextChar,
-            showCurrentChar = p[SHOW_CURRENT_CHAR] ?: d.showCurrentChar,
-            showStrokeTrail = p[SHOW_STROKE_TRAIL] ?: d.showStrokeTrail,
             haptic = p[HAPTIC] ?: d.haptic,
             sound = p[SOUND] ?: d.sound,
             // D-33: out-of-range stored values snap to the nearest end; 40–47 dp are kept (TBD-16).
@@ -104,7 +97,6 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             practiceListShown = p[TUTOR_AUTO_STARTED] ?: d.practiceListShown,
             practiceDone = p[PRACTICE_DONE] ?: d.practiceDone,
             graffitiEnabled = p[GRAFFITI_ENABLED] ?: d.graffitiEnabled,
-            swipeEnabled = p[SWIPE_ENABLED] ?: d.swipeEnabled,
             portraitWidth = readWidth(p, d.portraitWidth, KEY_PORTRAIT, ALIGN_PORTRAIT),
             landscapeWidth = readWidth(p, d.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE),
             portraitFloat = readFloat(p, FLOAT_PORTRAIT, FLOAT_X_PORTRAIT, FLOAT_Y_PORTRAIT),
@@ -141,11 +133,6 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
 
     companion object {
         val LAST_MODE = stringPreferencesKey("last_mode")
-        val SHOW_DIRECTION_GUIDE = booleanPreferencesKey("show_direction_guide")
-        val SHOW_NEXT_CHAR = booleanPreferencesKey("show_next_char")
-        val SHOW_CURRENT_CHAR = booleanPreferencesKey("show_current_char")
-        /** FR-DSP-09 (FSS#57): absent = on. */
-        val SHOW_STROKE_TRAIL = booleanPreferencesKey("show_stroke_trail")
         val HAPTIC = booleanPreferencesKey("haptic")
         val SOUND = booleanPreferencesKey("sound")
         val ROW_HEIGHT_DP = floatPreferencesKey("row_height_dp")
@@ -155,7 +142,6 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         val PRACTICE_DONE = stringSetPreferencesKey("practice_done")
         /** FR-SET-08 (FSS#31): absent = on. */
         val GRAFFITI_ENABLED = booleanPreferencesKey("graffiti_enabled")
-        val SWIPE_ENABLED = booleanPreferencesKey("swipe_enabled")
         val KEY_PORTRAIT = floatPreferencesKey("key_portrait_dp")
         val ALIGN_PORTRAIT = stringPreferencesKey("align_portrait")
         val KEY_LANDSCAPE = floatPreferencesKey("key_landscape_dp")

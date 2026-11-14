@@ -251,10 +251,6 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         guideButton?.invalidate()
     }
 
-    /** Draws the mode view again, for a display setting it reads when it draws (the stroke trail, FSS#57). */
-    fun redrawModeView() {
-        modeView?.invalidate()
-    }
 
     /** Same layout at the new width, row height or floating setting (FR-CMN-12, FR-CMN-15 ⑬); a move in progress is given up. */
     fun relayout() {

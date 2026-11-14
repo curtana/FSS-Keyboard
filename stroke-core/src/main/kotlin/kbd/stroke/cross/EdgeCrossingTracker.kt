@@ -5,8 +5,8 @@ import kbd.stroke.geom.KeyGeom
 import kbd.stroke.geom.StrokePoint
 
 /**
- * Records edge crossings of one stroke on one key (LLD-04 §3.2–3.3), shared by the swipe
- * and tap keyboards. Each axis has a hysteresis zone: a stroke is out once it is
+ * Records edge crossings of one stroke on one key (LLD-04 §3.2–3.3), for the tap keyboards' keys
+ * and every keyboard's mode key. Each axis has a hysteresis zone: a stroke is out once it is
  * [minCrossDp] beyond an edge, and back in once it is [minCrossDp] inside it. An edge on the window border
  * ([KeyGeom.windowEdges]) is crossed when a point reaches the border (issue #237: the platform pins points beyond the
  * window to its border); 0.40's "outer edges are never crossed" (FR-SWP-45) went with it.
@@ -105,7 +105,7 @@ class EdgeCrossingTracker(val key: KeyGeom, val minCrossDp: Float) {
         return Crossing(edge, dir, p.t, p.x, p.y).also { records += it }
     }
 
-    /** Independent copy for progress probes (LLD-04 §5). */
+    /** Independent copy with the records so far (LLD-04 §3.3). */
     fun copy(): EdgeCrossingTracker = EdgeCrossingTracker(key, minCrossDp).also {
         it.records.addAll(records)
         it.prev = prev
@@ -161,7 +161,7 @@ class EdgeCrossingTracker(val key: KeyGeom, val minCrossDp: Float) {
 /** The first OUT record. */
 fun EdgeCrossingTracker.firstOut(): Crossing? = crossings.firstOrNull { it.dir == CrossDir.OUT }
 
-/** Number of OUT and IN records on [edge] — how many times the stroke crossed that edge (SWIPE 1.2). */
+/** Number of OUT and IN records on [edge] — how many times the stroke crossed that edge (SRS 1.3). */
 fun EdgeCrossingTracker.countOf(edge: Edge): Int = crossings.count { it.edge == edge }
 
 /** The [n]-th record (1-based, OUT or IN) on [edge], or null if there are fewer. */

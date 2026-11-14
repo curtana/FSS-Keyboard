@@ -12,7 +12,7 @@ import kbd.stroke.layout.TapKeyKind
  */
 object TapKeyResolver {
     /**
-     * What a stroke out of each edge types, where it differs from the tap (owner #198: every swiped character is shown
+     * What a stroke out of each edge types, where it differs from the tap (owner #198: every stroked character is shown
      * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, the assigned symbols. Function
      * keys have none. The view draws these; it never decides anything with them.
      */

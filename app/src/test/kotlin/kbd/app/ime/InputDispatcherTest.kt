@@ -3,7 +3,6 @@ package kbd.app.ime
 import kbd.app.error.EngineGuard
 import kbd.app.feedback.FeedbackPort
 import kbd.app.store.ErrorLog
-import kbd.app.swipe.SwipeEngineState
 import kbd.hangul.compose.ComposePolicy
 import kbd.hangul.compose.HangulComposer
 import kbd.hangul.event.ComposeResult
@@ -41,6 +40,8 @@ class InputDispatcherTest {
     private class FakePort : EditorPort {
         val calls = mutableListOf<String>()
         var throwOnFinish = false
+        /** The editor fails at the start of the next composing write. */
+        var throwOnBegin = false
         override fun commitText(text: String) { calls += "commit($text)" }
         override fun setComposingText(text: String) { calls += "compose($text)" }
         override fun finishComposingText() {
@@ -51,7 +52,10 @@ class InputDispatcherTest {
         override fun sendKey(key: EditorKey) { calls += "key($key)" }
         override fun performEditorAction(actionId: Int) { calls += "action($actionId)" }
         override fun setSelection(start: Int, end: Int) { calls += "sel($start,$end)" }
-        override fun beginBatch() { calls += "begin" }
+        override fun beginBatch() {
+            if (throwOnBegin) throw IllegalStateException("begin")
+            calls += "begin"
+        }
         override fun endBatch() { calls += "end" }
     }
 
@@ -62,29 +66,6 @@ class InputDispatcherTest {
         override fun error() { errors++ }
     }
 
-    /** Stands in for the wrapped `SwipeInputMapper`: [block] is its state, [backspaces] counts the ⌫ that asked it first. */
-    private class FakeSwipe : SwipeEngineState {
-        var block = ""
-        var resets = 0
-        var throwOnReset = false
-        var throwOnBackspace = false
-        var backspaces = 0
-        /** Strokes "dropped" at the next reset (SWIPE 3.3: the caller vibrates). */
-        var dropOnReset = false
-        override fun reset(): Boolean {
-            block = ""
-            resets++
-            if (throwOnReset) throw IllegalStateException("parser")
-            return dropOnReset.also { dropOnReset = false }
-        }
-        override fun popElement(): kbd.hangul.stroke.StrokePop {
-            if (throwOnBackspace) throw IllegalStateException("mapper")
-            backspaces++
-            return kbd.hangul.stroke.StrokePop.Empty
-        }
-        override fun snapshot(): Any = block
-        override fun restore(s: Any) { block = s as String }
-    }
 
     private val port = FakePort()
     private val feedback = FakeFeedback()
@@ -113,10 +94,6 @@ class InputDispatcherTest {
         d.composer = HangulComposer(ComposePolicy.DUBEOLSIK)
     }
 
-    private fun swipe(): FakeSwipe {
-        d.composer = HangulComposer(ComposePolicy.SWIPE)
-        return FakeSwipe().also { d.swipeState = it }
-    }
 
     /** Dubeolsik letter taps, through the same resolver path as the view. */
     private fun type(text: String) {
@@ -126,12 +103,10 @@ class InputDispatcherTest {
         }
     }
 
-    /** Swipe "고" (ㄱ key ↑). */
-    private fun swipeGo(): FakeSwipe {
-        val s = swipe()
-        d.onJamoEvents(listOf(JamoEvent.Consonant(jamo('ㄱ')), JamoEvent.Vowel(jamo('ㅗ'))))
-        s.block = "ㄱㅗ"
-        return s
+    /** Dubeolsik "고", composing. */
+    private fun composeGo() {
+        dubeolsik()
+        type("ㄱㅗ")
     }
 
     /** One stroke on [key] of a 360×288 dp window with 48 dp rows, through [legs] (dx, dy) from the key centre. */
@@ -267,24 +242,22 @@ class InputDispatcherTest {
 
     /**
      * Issue #205 (owner decision 2026-11-02): the mode key's up stroke commits what is composing and then
-     * opens the settings, also while composing; the ⚙ key's one-syllable completion (issues #173, #180) is gone.
+     * opens the settings, also while composing.
      */
     @Test
     fun `ID-27 the mode key up stroke commits the composing syllable, then opens the settings`() {
         var opened = 0
         val atOpen = mutableListOf<String>()
         d.onOpenSettings = { opened++; atOpen += port.calls }
-        val s = swipeGo()
+        composeGo()
         port.calls.clear()
         modes.typed = false
         val before = modes.current
-        s.dropOnReset = true                                      // an unfinished stroke was open: it vibrates (SWIPE 3.3)
         d.onSettingsStroke()
         assertEquals(listOf("finish"), port.calls)               // 고 committed as it is, no space
         assertEquals(listOf("finish"), atOpen)                    // committed before the settings open
         assertFalse(d.composer!!.isComposing())
-        assertEquals(1, s.resets)
-        assertEquals(1, feedback.errors)
+        assertEquals(0, feedback.errors)
         assertEquals(1, opened)
         assertFalse(modes.typed)                                  // not input, like the mode key
         assertEquals(before, modes.current)                       // no mode change
@@ -292,36 +265,7 @@ class InputDispatcherTest {
         d.onSettingsStroke()                                      // nothing composing: opens again, nothing committed
         assertEquals(2, opened)
         assertEquals(listOf("finish"), port.calls)
-        assertTrue(FunctionKey.entries.none { it.name == "SETTINGS" })   // the swipe ⚙ key is gone
-    }
-
-    @Test
-    fun `ID-05 swipe perimeter 1 while composing 고 finishes and commits 1`() {
-        swipeGo()
-        port.calls.clear()
-        modes.typed = false
-        d.onSwipeText("1", vibe = false)
-        assertEquals(listOf("finish", "commit(1)"), port.calls)
-        assertFalse(d.composer!!.isComposing())
-        assertTrue(modes.typed)
-        assertEquals(0, feedback.errors)
-        // The mapper has already cleared its anchor (LLD-04 §9.3, LLD-08 §6.1); D-30 vibration on request.
-        d.onSwipeText("¹", vibe = true)
-        assertEquals(1, feedback.errors)
-    }
-
-    @Test
-    fun `ID-06 backspace while composing 고 in swipe removes one jamo, the cheonjiin assembler asked first`() {
-        val s = swipeGo()
-        port.calls.clear()
-        d.onFunctionDown(FunctionKey.BACKSPACE)
-        assertEquals("ㄱ", cc.composingShown)                         // FR-CMN-07: one jamo (고 ⌫ = ㄱ, issue #168)
-        assertEquals(1, s.backspaces)
-        d.onFunctionDown(FunctionKey.BACKSPACE)
-        assertEquals("", cc.composingShown)
-        d.onFunctionDown(FunctionKey.BACKSPACE)                          // nothing composing: one character deleted
-        assertEquals(3, s.backspaces)
-        assertEquals(0, s.resets)
+        assertTrue(FunctionKey.entries.none { it.name == "SETTINGS" })   // no settings key: the mode key's up stroke opens them
     }
 
     @Test
@@ -335,19 +279,17 @@ class InputDispatcherTest {
     }
 
     @Test
-    fun `ID-08 mode key finishes, resets parsers, switches mode and saves it`() {
+    fun `ID-08 mode key finishes, switches mode and saves it`() {
         dubeolsik()
-        val s = FakeSwipe().also { d.swipeState = it }
         type("ㄱㅏㄱ")
         port.calls.clear()
         d.onFunctionDown(FunctionKey.MODE)
         assertEquals(listOf("finish"), port.calls)
-        assertEquals(1, s.resets)
-        assertEquals(InputMode.GRAFFITI, modes.current)   // typed, no previous → next in order
+        assertEquals(InputMode.QWERTY, modes.current)     // typed, no previous → next in order (Dubeolsik → QWERTY, FSS#95)
         assertEquals(InputMode.DUBEOLSIK, modes.previous)
         assertFalse(modes.typed)                           // the mode key is not input
-        assertEquals(listOf(InputMode.GRAFFITI), saved)
-        assertEquals(listOf(InputMode.GRAFFITI), shown)
+        assertEquals(listOf(InputMode.QWERTY), saved)
+        assertEquals(listOf(InputMode.QWERTY), shown)
     }
 
     @Test
@@ -362,8 +304,8 @@ class InputDispatcherTest {
     }
 
     @Test
-    fun `ID-12 onStartInputView order finishes, resets parsers and clears typed`() {
-        val s = swipeGo()
+    fun `ID-12 onStartInputView order finishes and clears typed`() {
+        composeGo()
         assertTrue(modes.typed)
         port.calls.clear()
         // LLD-08 §3.1 call order.
@@ -372,7 +314,6 @@ class InputDispatcherTest {
         d.resetParsers()
         modes.onFieldChanged()
         assertEquals(listOf("finish"), port.calls)
-        assertEquals(1, s.resets)
         assertFalse(modes.typed)
         assertFalse(d.composer!!.isComposing())
     }
@@ -426,20 +367,6 @@ class InputDispatcherTest {
         }
     }
 
-    @Test
-    fun `ID-16 enter resets the swipe mapper`() {
-        val s = swipeGo()
-        d.onFunctionDown(FunctionKey.ENTER)
-        assertEquals(1, s.resets)
-    }
-
-    @Test
-    fun `ID-25 tab resets the swipe mapper`() {
-        val s = swipeGo()
-        d.onFunctionDown(FunctionKey.TAB)
-        assertEquals(1, s.resets)
-        assertEquals("", s.block)
-    }
 
     @Test
     fun `ID-17 backspace with nothing composing deletes one character`() {
@@ -454,13 +381,12 @@ class InputDispatcherTest {
     fun `ID-19 engine exception leaves the editor and the composer untouched and is logged once`() {
         val log = ErrorLog(tmp.newFile("err.log"))
         val guard = EngineGuard(log, d)
-        val s = swipeGo()
+        composeGo()
         port.calls.clear()
-        s.throwOnBackspace = true
+        port.throwOnBegin = true   // ⌫ has already taken ㅗ off the composer when the editor write fails
         assertNull(guard.stroke("Tap.fn") { d.onFunctionDown(FunctionKey.BACKSPACE) })
         assertEquals(emptyList<String>(), port.calls)
         assertEquals("고", d.composer!!.composingText())
-        assertEquals("ㄱㅗ", s.block)
         assertEquals(1, log.readAll().lines().count { it.isNotEmpty() })
     }
 
@@ -470,8 +396,8 @@ class InputDispatcherTest {
         val guard = EngineGuard(log, d)
         d.field = field(password = true)
         log.enabled = !d.field.noRecord                       // KeyboardService.onStartInputView (LLD-08 §3.1)
-        val s = swipeGo()
-        s.throwOnBackspace = true
+        composeGo()
+        port.throwOnBegin = true
         assertNull(guard.stroke("Tap.fn") { d.onFunctionDown(FunctionKey.BACKSPACE) })
         assertEquals("", log.readAll())
     }
@@ -481,10 +407,10 @@ class InputDispatcherTest {
         modes.enterNumericField()
         assertEquals(InputMode.QWERTY, modes.current)
         d.onFunctionDown(FunctionKey.MODE)
-        assertEquals(InputMode.DUBEOLSIK, modes.current)   // one onModeKey: QWERTY → next in order
+        assertEquals(InputMode.GRAFFITI, modes.current)    // one onModeKey: QWERTY → next in order (graffiti, FSS#95)
         assertEquals(InputMode.DUBEOLSIK, modes.returnMode)
         assertEquals(emptyList<InputMode>(), saved)
-        assertEquals(listOf(InputMode.DUBEOLSIK), shown)
+        assertEquals(listOf(InputMode.GRAFFITI), shown)
     }
 
     @Test
@@ -502,53 +428,45 @@ class InputDispatcherTest {
     // ---- EG ----
 
     @Test
-    fun `EG-05 exception during finish while composing 고 keeps 고 and the swipe mapper state`() {
+    fun `EG-05 exception during finish while composing 고 keeps 고`() {
         val log = ErrorLog(tmp.newFile("err.log"))
         val guard = EngineGuard(log, d)
-        val s = swipeGo()
+        composeGo()
         port.throwOnFinish = true
-        assertNull(guard.stroke("Swipe.fn") { d.onFunctionDown(FunctionKey.SPACE) })
+        assertNull(guard.stroke("Tap.fn") { d.onFunctionDown(FunctionKey.SPACE) })
         assertEquals("고", d.composer!!.composingText())
         assertEquals("고", cc.composingShown)
-        assertEquals("ㄱㅗ", s.block)
-        assertEquals(0, s.resets)
         assertEquals(1, log.readAll().lines().count { it.isNotEmpty() })
     }
 
     @Test
-    fun `EG-05 restore also undoes a swipe mapper reset and a composer finish done before the failure`() {
-        val s = swipeGo()
+    fun `EG-05 restore also undoes a composer finish done before the failure`() {
+        composeGo()
         val before = d.snapshot()
-        s.reset()
         d.composer!!.finish()
         d.restore(before)
-        assertEquals("ㄱㅗ", s.block)
         assertEquals("고", d.composer!!.composingText())
     }
 
     // ---- cursor moves (LLD-08 §6.1, §4.1; G13) ----
 
     /** CC-16 numbers: "가" + temporary glyph "ㆍ" at 5..7; the glyph path tells finishAfterUserMove from finishComposing. */
-    private fun composingWithGlyph(): FakeSwipe {
-        val s = swipe()
+    private fun composingWithGlyph() {
+        d.composer = HangulComposer(ComposePolicy.GRAFFITI)
         cc.onStart(5, 5)
         d.composer!!.apply(JamoEvent.Consonant(jamo('ㄱ')))
         d.composer!!.apply(JamoEvent.Vowel(jamo('ㅏ')))
         cc.show(ComposeResult("", "가"), "ㆍ")
-        s.block = "ㄱㅏ"
         port.calls.clear()
-        return s
     }
 
     @Test
     fun `onCursorMoved right after USER_MOVED drops the glyph, finishes and keeps the user position`() {
-        val s = composingWithGlyph()
+        composingWithGlyph()
         assertEquals(SelectionVerdict.USER_MOVED, cc.onUpdateSelection(9, 9, 5, 7))
         d.onCursorMoved(9, 9, 5, 7)
         assertEquals(listOf("begin", "compose(가)", "finish", "sel(8,8)", "end"), port.calls)
         assertFalse(d.composer!!.isComposing())
-        assertEquals("", s.block)
-        assertEquals(1, s.resets)
     }
 
     @Test
@@ -560,8 +478,8 @@ class InputDispatcherTest {
     }
 
     @Test
-    fun `onCursorMoved is not input and onCursorMovedNoComposing only resets parsers`() {
-        val s = composingWithGlyph()
+    fun `onCursorMoved is not input and onCursorMovedNoComposing writes nothing`() {
+        composingWithGlyph()
         modes.typed = false
         cc.onUpdateSelection(2, 2, 5, 7)
         d.onCursorMoved(2, 2, 5, 7)
@@ -569,16 +487,7 @@ class InputDispatcherTest {
         port.calls.clear()
         d.onCursorMovedNoComposing()
         assertEquals(emptyList<String>(), port.calls)
-        assertEquals(2, s.resets)
         assertFalse(modes.typed)
-    }
-
-    @Test
-    fun `swipe jamo events show the composer result and set typed`() {
-        swipe()
-        d.onJamoEvents(listOf(JamoEvent.Consonant(jamo('ㄱ')), JamoEvent.Vowel(jamo('ㅗ'))))
-        assertEquals(listOf("begin", "compose(고)", "end"), port.calls)
-        assertTrue(modes.typed)
     }
 
     @Test

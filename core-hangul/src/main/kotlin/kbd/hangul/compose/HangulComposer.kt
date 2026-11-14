@@ -32,8 +32,7 @@ class HangulComposer(
 
     /**
      * Drops the last input unit of the composing syllable; does nothing when the list is empty. It
-     * never crosses a commit (HLD 4.4): the swipe double consonant (`UndoLast` + `DoubleConsonant`,
-     * HLD 4.3) only undoes the tap that is still in the composing syllable.
+     * never crosses a commit (HLD 4.4). Graffiti ⌫ takes back one cheonjiin element with it (LLD-05 §6).
      */
     fun undoLast(): ComposeResult {
         units.removeLastOrNull()
@@ -61,16 +60,6 @@ class HangulComposer(
     fun hasJong(): Boolean = fold().hasJong
 
     fun currentVowel(): Jamo? = fold().jung
-
-    /**
-     * The last consonant of the composing syllable (FR-SWP-39, LLD-04 §6.4): the second consonant
-     * of a compound final, else the final, else the initial when there is no final; a double
-     * consonant is returned as itself (ㄲ). Null when nothing or only a vowel is composing.
-     */
-    fun lastConsonant(): Jamo? {
-        val s = fold()
-        return s.jong2 ?: s.jong1 ?: s.cho
-    }
 
     fun snapshot(): ComposerSnapshot = ComposerSnapshot(units.toList())
 
