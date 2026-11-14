@@ -1,19 +1,20 @@
 # FSS Keyboard
 
-An Android keyboard (IME) written in Kotlin with four ways to type:
+An Android keyboard (IME) written in Kotlin with three ways to type. The mode key cycles through them in this order:
 
-- **QWERTY**: an English tap keyboard
 - **Dubeolsik**: the standard Korean two-set tap keyboard
+- **QWERTY**: an English tap keyboard
 - **Single-stroke handwriting pad**: draw one stroke per letter, for English and Korean
-- **Swipe input**: tap a Korean consonant, then draw the vowel with short strokes
+
+On the tap keyboards a short stroke from a key types its other characters (up for a capital or a double consonant,
+the other directions for symbols), and an up stroke on the mode key opens the settings.
 
 ## Modules
 
 | Module | Kind | Contents |
 |---|---|---|
-| `core-hangul` | Kotlin/JVM | Hangul composition: jamo, syllable assembly, composition policies, input events, vowel stroke and Cheonjiin vowel assembly |
+| `core-hangul` | Kotlin/JVM | Hangul composition: jamo, syllable assembly, composition policies, input events, Cheonjiin vowel assembly |
 | `stroke-core` | Kotlin/JVM | Shared touch geometry, tap keyboard layouts, tap/stroke judgement |
-| `gesture-engine` | Kotlin/JVM | Swipe keyboard layout and the swipe input engine |
 | `recognizer` | Kotlin/JVM | Single-stroke handwriting recognizer and its stroke templates |
 | `app` | Android | Input method service, keyboard views, settings, input practice |
 
@@ -43,20 +44,21 @@ Requirements, software requirements (SRS), high-level design (HLD) and low-level
 
 # FSS Keyboard (한국어)
 
-Kotlin으로 만든 안드로이드 키보드(IME)다. 입력 방식은 넷이다.
+Kotlin으로 만든 안드로이드 키보드(IME)다. 입력 방식은 셋이고, 모드 키를 누르면 이 순서로 바뀐다.
 
-- **쿼티**: 영문 탭 자판
 - **두벌식**: 한글 두벌식 탭 자판
+- **쿼티**: 영문 탭 자판
 - **한 획 손글씨 패드**: 글자마다 한 획으로 그려 쓴다(영문·한글)
-- **긋기 입력**: 한글 자음을 탭하고 모음을 짧은 획으로 긋는다
+
+탭 자판에서는 키에서 짧게 그으면 그 키의 다른 글자가 나온다(위로 = 대문자·쌍자음, 나머지 방향 = 기호).
+모드 키를 위로 그으면 설정이 열린다.
 
 ## 모듈
 
 | 모듈 | 종류 | 내용 |
 |---|---|---|
-| `core-hangul` | Kotlin/JVM | 한글 조합(자모, 음절 조립, 조합 방식, 입력 이벤트, 모음 획·천지인 모음 조립) |
+| `core-hangul` | Kotlin/JVM | 한글 조합(자모, 음절 조립, 조합 방식, 입력 이벤트, 천지인 모음 조립) |
 | `stroke-core` | Kotlin/JVM | 공통 터치 기하, 탭 자판 배치, 탭/획 판정 |
-| `gesture-engine` | Kotlin/JVM | 긋기 자판 배치와 긋기 입력 엔진 |
 | `recognizer` | Kotlin/JVM | 한 획 손글씨 인식기와 획 템플릿 |
 | `app` | Android | 입력기 서비스, 자판 화면, 설정, 입력 연습 |
 
