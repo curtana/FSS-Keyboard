@@ -1,15 +1,14 @@
 package kbd.stroke.layout
 
 /**
- * QWERTY and Dubeolsik tap layouts: six rows filling the window, 360 dp per row including
- * blanks (LLD-05A §3.2, SRS 3.3). Both layouts share key positions, key ids and symbol
+ * QWERTY and Dubeolsik tap layouts: six rows filling the window, 360 dp of keys per row, no
+ * blanks, ↵ two rows high (LLD-05A §3.2, SRS 3.3, FSS#105). Both layouts share key positions, key ids and symbol
  * assignments (the ㅣ key is the l key, §3.3); numeric-like fields use [QWERTY] (§3.5).
  */
 object TapLayouts {
 
     /** One of ten units of a row: letter, number and symbol keys, and since FSS#98 the edit row keys too (LLD-05A §3.2). */
     private const val KEY_W = 36f
-    private const val INDENT_W = 18f
 
     private val LETTER_ROWS = listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")
     private val DUBEOLSIK_ROWS = listOf("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ", "ㅋㅌㅊㅍㅠㅜㅡ")
@@ -56,11 +55,10 @@ object TapLayouts {
 
     private fun build(name: String, dubeolsik: Boolean): TapLayout {
         val keys = mutableListOf<TapKeyDef>()
-        val blanks = mutableListOf<BlankDef>()
 
         var x = 0f
-        fun fn(row: Int, id: String, w: Float, label: String, f: FunctionKey) {
-            keys += TapKeyDef(id, row, x, w, TapKeyKind.FUNCTION, label, function = f)
+        fun fn(row: Int, id: String, w: Float, label: String, f: FunctionKey, rowSpan: Int = 1) {
+            keys += TapKeyDef(id, row, x, w, TapKeyKind.FUNCTION, label, function = f, rowSpan = rowSpan)
             x += w
         }
         fun sym(row: Int, id: String, w: Float, a: KeyAssign) {
@@ -90,14 +88,11 @@ object TapLayouts {
             x += KEY_W
         }
 
-        // Rows 2..4, letters; rows 3 and 4 start with an indent blank; row 4 ends with the `=`/`-` key and ↵.
+        // Rows 2..4, letters from x 0 (FSS#105: no indent blanks); ↵ two rows high at the right of rows 3 and 4,
+        // listed after l; row 4 ends with the `=`/`-` key and `/` left of ↵.
         LETTER_ROWS.forEachIndexed { r, ids ->
             val row = r + 2
             x = 0f
-            if (row >= 3) {
-                blanks += BlankDef(row, x, INDENT_W, ids.first().toString())
-                x += INDENT_W
-            }
             ids.forEachIndexed { i, id ->
                 val symbols = LETTER_SYMBOLS[id]
                 keys += if (dubeolsik) {
@@ -116,24 +111,23 @@ object TapLayouts {
                 x += KEY_W
             }
             if (row == 3) {
-                blanks += BlankDef(row, x, INDENT_W, ids.last().toString())
-                x += INDENT_W
+                // ↵ at x 324 over rows 3 and 4 (FSS#105): one key, so one press, one drawing, one accessibility node.
+                fn(row, "enter", KEY_W, "↵", FunctionKey.ENTER, rowSpan = 2)
             }
             if (row == 4) {
-                // The `=`/`-` key after m (#198; FSS#62 swapped tap and left), then ↵ at the right end.
+                // The `=`/`-` key after m (#198; FSS#62 swapped tap and left), then `/` between it and ↵ (FSS#105).
                 sym(row, "minus", KEY_W, KeyAssign("=", up = "_", left = "-", down = "+"))
-                fn(row, "enter", 54f, "↵", FunctionKey.ENTER)
+                sym(row, "slash", KEY_W, KeyAssign("/", up = "?"))
             }
         }
 
         // Row 5, function row; the mode key is bottom-left in every mode (SRS 3.3).
         x = 0f
         fn(5, "mode", 72f, "한/영", FunctionKey.MODE)
-        fn(5, "space", 180f, "", FunctionKey.SPACE)
+        fn(5, "space", 216f, "", FunctionKey.SPACE)   // 216 since `/` moved up (FSS#105, SRS TBD-36 ①)
         sym(5, "comma", KEY_W, KeyAssign(",", up = "<", left = "'", right = "\""))
-        sym(5, "period", KEY_W, KeyAssign(".", up = ">"))
-        sym(5, "slash", KEY_W, KeyAssign("/", up = "?"))   // right end, no blank (#198)
+        sym(5, "period", KEY_W, KeyAssign(".", up = ">"))   // right end (FSS#105)
 
-        return TapLayout(name, rows = 6, keys = keys, blanks = blanks)
+        return TapLayout(name, rows = 6, keys = keys)
     }
 }

@@ -9,7 +9,6 @@ import kbd.hangul.event.ComposeResult
 import kbd.hangul.event.JamoEvent
 import kbd.hangul.jamo.Jamo
 import kbd.stroke.geom.KeyGeom
-import kbd.stroke.geom.RectDp
 import kbd.stroke.geom.StrokePoint
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
@@ -111,7 +110,7 @@ class InputDispatcherTest {
 
     /** One stroke on [key] of a 360×288 dp window with 48 dp rows, through [legs] (dx, dy) from the key centre. */
     private fun stroke(key: TapKeyDef, vararg legs: Pair<Float, Float>): TapOutput {
-        val rect = RectDp(key.x, key.row * 48f, key.x + key.w, (key.row + 1) * 48f)
+        val rect = key.rect(1f, 48f)
         val geom = KeyGeom.build(key.id, rect, 360f, 288f)
         val cls = TapGestureClassifier(geom, ThresholdDefaults.VALUES.minCrossDp)
         var x = (rect.left + rect.right) / 2

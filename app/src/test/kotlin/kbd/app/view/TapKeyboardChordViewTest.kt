@@ -109,7 +109,7 @@ class TapKeyboardChordViewTest {
     private fun index(id: String) = TapLayouts.QWERTY.keys.indexOfFirst { it.id == id }
     private fun key(id: String) = TapLayouts.QWERTY.keys[index(id)]
     private fun cx(id: String) = key(id).let { (it.x + it.w / 2f) * density }
-    private fun cy(id: String) = key(id).let { (it.row + 0.5f) * 48f * density }
+    private fun cy(id: String) = key(id).let { (it.row + it.rowSpan / 2f) * 48f * density }
 
     /** The keys as drawn: background colour and label text size by label. */
     private class Drawn : Canvas() {

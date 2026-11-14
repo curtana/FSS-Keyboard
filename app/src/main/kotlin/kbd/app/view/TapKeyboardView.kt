@@ -102,7 +102,7 @@ class TapKeyboardView(
         rebuildGeometry()
     }
 
-    /** The key at [p] (view dp): indent blanks first, then the nearest key (LLD-05A §4 `hit`). */
+    /** The key at [p] (view dp): the key whose rectangle holds it, else the nearest key (LLD-05A §4 `hit`). */
     fun hit(p: StrokePoint): TapKeyDef? {
         val g = logic.geometry ?: return null
         return g.keys.getOrNull(g.indexAt(p.x, p.y))
@@ -131,7 +131,7 @@ class TapKeyboardView(
         val g = logic.geometry
         if (g != null && g.layout === l && g.widthDp == wDp && g.rowHeightDp == rowDp && g.sideDp == sideDp) return
         logic.geometry = TapGeometry.build(l, wDp, rowDp, sideDp)
-        labelPaint.textSize = rowDp * density * LABEL_SCALE
+        labelPaint.textSize = rowDp * density * LABEL_SCALE   // from the row height, so the two-row ↵ label is no bigger (FSS#105)
         hintPaint.textSize = labelPaint.textSize * HINT_SCALE   // D-15
         fitWordLabels()
         access.invalidateRoot()

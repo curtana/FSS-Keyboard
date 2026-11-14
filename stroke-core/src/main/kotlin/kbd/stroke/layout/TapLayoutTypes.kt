@@ -1,5 +1,7 @@
 package kbd.stroke.layout
 
+import kbd.stroke.geom.RectDp
+
 /*
  * Tap keyboard layout types (LLD-05A §3.1). x and w are dp on a 360 dp wide window;
  * the app scales x and w to the real width and keeps the row height (FR-CMN-12).
@@ -34,9 +36,23 @@ data class TapKeyDef(
     val function: FunctionKey? = null,
     /** Dubeolsik letter keys only: the compound final each direction types (issue #242), e.g. ㄹ ← ㄺ. */
     val compoundJamo: Map<kbd.stroke.geom.Dir, Char> = emptyMap(),
-)
+    /** Rows the key takes from [row] down (FSS#105): 2 for ↵, 1 for every other key. */
+    val rowSpan: Int = 1,
+) {
+    init {
+        require(rowSpan >= 1) { "$id rowSpan $rowSpan" }
+    }
 
-/** An indent blank; a touch inside it goes to [nearestKeyId] in the same row (SRS 3.3). */
-data class BlankDef(val row: Int, val x: Float, val w: Float, val nearestKeyId: String)
+    /** Whether the key takes row [r]: `row ≤ r < row + rowSpan`. */
+    fun inRow(r: Int): Boolean = r >= row && r < row + rowSpan
 
-data class TapLayout(val name: String, val rows: Int, val keys: List<TapKeyDef>, val blanks: List<BlankDef>)
+    /**
+     * The key rectangle, one formula for every key (LLD-05A §3.1, HLD 5A): (x, row × h, x + w, (row + rowSpan) × h),
+     * x and w times [unit] (dp per layout unit).
+     */
+    fun rect(unit: Float, rowHeight: Float): RectDp =
+        RectDp(x * unit, row * rowHeight, (x + w) * unit, (row + rowSpan) * rowHeight)
+}
+
+/** Since FSS#105 every row is filled with keys: there are no indent blanks (LLD-05A §3.1, D-73). */
+data class TapLayout(val name: String, val rows: Int, val keys: List<TapKeyDef>)

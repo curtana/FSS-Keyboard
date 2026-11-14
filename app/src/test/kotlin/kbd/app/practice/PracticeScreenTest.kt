@@ -1,6 +1,7 @@
 package kbd.app.practice
 
 import android.content.ComponentName
+import android.graphics.Rect
 import android.media.AudioManager
 import android.os.Looper
 import android.view.View
@@ -127,6 +128,54 @@ class PracticeScreenTest {
         assertEquals(1, flow.index)
         compose.onNodeWithText("쓸 것: Hi").assertExists()        // the next target is drawn (the bug: the solved one stayed)
         compose.onNodeWithText("✓").assertDoesNotExist()
+    }
+
+    /** FSS#105: the practice board is the real layout - ↵ two rows high, `/` in row 4 - and `?` (`/` ↑) is still right. */
+    @Test
+    fun `PR-37 the practice tap board has the two-row enter and the moved slash key, slash up is the question mark item`() {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            val boards = BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))
+            PracticeScreen(flow, flowOf(settings), settings, boards) {}
+        }
+        compose.onNodeWithText(PracticeTopics.SYMBOL.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("쓸 것: !").assertExists()
+
+        val sv = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+        val d = sv.resources.displayMetrics.density
+        val geo = TapGeometry.build(TapLayouts.QWERTY, sv.width / d, settings.rowHeightDp, sv.sideMarginPx / d)
+        // The board as shown: ↵ over rows 3 and 4, `/` in row 4 just left of it.
+        val enter = Rect().also { sv.keyBoundsPx(TapLayouts.QWERTY.keys.indexOfFirst { k -> k.function == FunctionKey.ENTER }, it) }
+        val slash = Rect().also { sv.keyBoundsPx(TapLayouts.QWERTY.keys.indexOfFirst { k -> k.id == "slash" }, it) }
+        assertEquals(Math.round(3 * settings.rowHeightDp * d), enter.top)
+        assertEquals(Math.round(5 * settings.rowHeightDp * d), enter.bottom)
+        assertEquals(Math.round(4 * settings.rowHeightDp * d), slash.top)
+        assertEquals(enter.left, slash.right)
+        fun idle() {
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            if (!compose.mainClock.autoAdvance) compose.mainClock.advanceTimeByFrame()
+            compose.waitForIdle()
+        }
+        /** From the middle of the key straight up, 20 dp past its top edge, on the board shown now (each item has its own). */
+        fun up(label: String) = geo.geoms[geo.keys.indexOfFirst { it.label == label }].rect.let {
+            val now = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+            val t = Touches(now.parent as View)
+            val x = now.left + (it.left + it.right) / 2 * d
+            t.down(0, x, (it.top + it.bottom) / 2 * d); t.move(0, x, (it.top - 20f) * d, steps = 8); t.up(0); idle()
+        }
+        compose.mainClock.autoAdvance = false
+        up("1")
+        assertEquals(Verdict.RIGHT, flow.verdict)
+        compose.mainClock.advanceTimeBy(PracticeFlow.RIGHT_HOLD_MS + 100)
+        idle()
+        assertEquals(1, flow.index)
+        compose.onNodeWithText("쓸 것: ?").assertExists()
+        up("/")
+        assertEquals(Verdict.RIGHT, flow.verdict)
+        assertEquals("?", flow.echo)
     }
 
     /** FSS#84: the practice board has the keyboard's side margins; a touch that begins on one is no action. */

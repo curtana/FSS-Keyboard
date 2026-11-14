@@ -4,7 +4,6 @@ import kbd.app.error.EngineGuard
 import kbd.app.feedback.FeedbackPort
 import kbd.stroke.geom.KeyGeom
 import kbd.stroke.geom.KeyHitTester
-import kbd.stroke.geom.RectDp
 import kbd.stroke.geom.StrokePoint
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
@@ -17,8 +16,8 @@ import kbd.stroke.tap.TapKeyResolver
 import kbd.stroke.tap.TapOutput
 
 /**
- * Key rectangles of a tap layout in view dp (LLD-05A §3.1): `x_dp = x / 360 × width`, row y =
- * `row × rowHeight`. The view is the whole 6-row key area, so its bottom border is the window's (LLD-08 §7); its
+ * Key rectangles of a tap layout in view dp (LLD-05A §3.1): `x_dp = x / 360 × width`, rows `row` to `row + rowSpan`
+ * times `rowHeight` ([TapKeyDef.rect]; ↵ is two rows high, FSS#105). The view is the whole 6-row key area, so its bottom border is the window's (LLD-08 §7); its
  * top border never is (LLD-03 §3.3). The window's left and right borders are [sideDp] outside the view, the outer
  * sides of the keyboard's side margins (SRS FR-CMN-14 ⑧, LLD-08 §7.2): an end key's outer edge is an ordinary edge.
  */
@@ -26,30 +25,19 @@ class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float,
     val keys: List<TapKeyDef> = layout.keys
     val heightDp: Float = layout.rows * rowHeightDp
     val geoms: List<KeyGeom>
-    private val blankRects: List<Pair<RectDp, Int>>
     private val hitTester: KeyHitTester
 
     init {
         val unit = widthDp / LAYOUT_WIDTH_DP
-        geoms = keys.map { k ->
-            val rect = RectDp(k.x * unit, k.row * rowHeightDp, (k.x + k.w) * unit, (k.row + 1) * rowHeightDp)
-            KeyGeom.build(k.id, rect, widthDp, heightDp, sideDp)
-        }
-        blankRects = layout.blanks.map { b ->
-            val rect = RectDp(b.x * unit, b.row * rowHeightDp, (b.x + b.w) * unit, (b.row + 1) * rowHeightDp)
-            rect to keys.indexOfFirst { it.id == b.nearestKeyId }
-        }
+        geoms = keys.map { k -> KeyGeom.build(k.id, k.rect(unit, rowHeightDp), widthDp, heightDp, sideDp) }
         hitTester = KeyHitTester(geoms, widthDp, heightDp)
     }
 
     /**
-     * Index into [keys]/[geoms] of the key at (x, y) dp (LLD-05A §4 `hit`): ① inside an indent blank →
-     * its same-row key, even when the row above is nearer; ② otherwise [KeyHitTester]. −1 for no keys.
+     * Index into [keys]/[geoms] of the key at (x, y) dp (LLD-05A §4 `hit`): [KeyHitTester] — the key whose rectangle
+     * holds the point (no blanks since FSS#105, so every point of the view), else the nearest key. −1 for no keys.
      */
     fun indexAt(x: Float, y: Float): Int {
-        for ((r, i) in blankRects) {
-            if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return i
-        }
         val g = hitTester.hit(x, y) ?: return -1
         return geoms.indexOf(g)
     }
@@ -118,7 +106,7 @@ class TapTouchLogic(
         val i = g.indexAt(p.x, p.y)
         if (i < 0) return
         val key = g.keys[i]
-        feedback.key()   // on press, blanks included (FR-CMN-11a ②)
+        feedback.key()   // on press (FR-CMN-11a ②)
         if (key.kind == TapKeyKind.FUNCTION && key.function == FunctionKey.MODE) {
             val c = TapGestureClassifier(g.geoms[i], minCrossDp)
             c.begin(p)

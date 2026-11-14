@@ -97,7 +97,7 @@ class TapKeyboardViewTest {
 
     /** Centre of key [id] in px. */
     private fun cx(id: String): Float = key(id).let { (it.x + it.w / 2f) * density }
-    private fun cy(id: String): Float = key(id).let { (it.row + 0.5f) * ROW * density }
+    private fun cy(id: String): Float = key(id).let { (it.row + it.rowSpan / 2f) * ROW * density }
 
     private fun down(pointer: Int, id: String) = touch.down(pointer, cx(id), cy(id))
 
@@ -109,22 +109,22 @@ class TapKeyboardViewTest {
     }
 
     @Test
-    fun `KH-03 an indent blank goes to its same-row key even when the row above is nearer`() {
+    fun `KH-03 no blanks since FSS#105 - where the indent blanks were are a, z and enter themselves`() {
         fun hit(x: Float, y: Float) = view.hit(StrokePoint(x, y, 0))?.id
         val row3 = 3 * ROW
         val row4 = 4 * ROW
         assertEquals("a", hit(5f, row3 + 1))
         assertEquals("a", hit(5f, row3 + ROW / 2))
-        assertEquals("l", hit(355f, row3 + 1))
+        assertEquals("enter", hit(355f, row3 + 1))
         assertEquals("z", hit(5f, row4 + 1))
     }
 
     @Test
-    fun `KH-03 a tap on the indent blank types its same-row key`() {
+    fun `KH-03 a tap where the indent blanks were types a, enter and z`() {
         touch.tap(0, 5f * density, (3 * ROW + 1) * density)
         touch.tap(0, 355f * density, (3 * ROW + 1) * density)
         touch.tap(0, 5f * density, (4 * ROW + 1) * density)
-        assertEquals(listOf("key", "out:a", "key", "out:l", "key", "out:z"), events)
+        assertEquals(listOf("key", "out:a", "key", "down:ENTER", "up:ENTER", "key", "out:z"), events)
     }
 
     @Test
