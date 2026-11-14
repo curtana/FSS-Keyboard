@@ -16,7 +16,6 @@ import kbd.stroke.layout.TapLayouts
 import kbd.stroke.tap.TapOutput
 import kbd.stroke.threshold.ThresholdDefaults
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -111,7 +110,10 @@ class TallEnterViewTest {
             val (text, at, size) = d.labels.single { it.first == "↵" }
             assertEquals(layout.name, "↵", text)
             assertEquals(layout.name, r.centerX(), at.first, 0.01f)
-            assertTrue(layout.name, at.second > 3.6f * ROW * density && at.second < 4.4f * ROW * density)   // baseline about mid-height
+            // Vertically centred on the rectangle (= the boundary of its two rows), as the view centres every label.
+            val p = Paint().apply { textSize = size }
+            assertEquals(layout.name, r.centerY() - (p.ascent() + p.descent()) / 2, at.second, 1f)
+            assertEquals(layout.name, 4 * ROW * density, r.centerY(), 0.5f)
             assertEquals(layout.name, view.labelTextSizePx, size, 0f)
             assertEquals(layout.name, 0.4f * ROW * density, size, 0.01f)
             assertEquals(layout.name, d.labels.first { it.first == layout.keys[index("q")].label }.third, size, 0f)
