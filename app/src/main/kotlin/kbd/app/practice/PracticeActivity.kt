@@ -86,12 +86,15 @@ class PracticeActivity : ComponentActivity() {
         val feedback = Feedback({ window?.decorView }, getSystemService(AudioManager::class.java), { settings })
         val templates = loadTemplates(stores.errorLog)
         val flow = PracticeFlow(PracticeTopics.ALL) { id -> lifecycleScope.launch { stores.settings.markPracticeDone(id) } }
-        // The keyboard's own recognition (templates and model, FR-TUT-17 ④); read behind the first frame (LLD-05 §11).
-        val recognizers = GraffitiRecognizers(templates, stores.errorLog).also { it.warm() }
+        // The keyboard's own recognition, personal strokes included (FR-TUT-17 ④); read behind the first frame (LLD-05 §11).
+        val personal = stores.personalStrokes
+        val recognizers = GraffitiRecognizers(templates, stores.errorLog, { personal.revision }, { personal.book().strokes }).also { it.warm() }
         val boards = BoardFactory(settings, feedback, stores.errorLog, templates, recognizers::get)
+        val my = MyStrokesModel(templates, personal, recognizers)   // "내 획 학습" (LLD-07 §8)
+        val myBoard = MyStrokesBoard(settings, feedback, stores.errorLog, templates, recognizers::get)
         setContent {
             KeyboardAppTheme {
-                PracticeScreen(flow, stores.settings.flow, settings, boards, ::finish)
+                PracticeScreen(flow, stores.settings.flow, settings, boards, my, myBoard, ::finish)
             }
         }
     }
@@ -192,7 +195,7 @@ internal class BoardFactory(
  *
  * A gesture that begins while [held] (a right item on show, FSS#54) is taken whole with no input and no action.
  */
-private class BoardFrame(
+internal class BoardFrame(
     context: Context,
     private val portraitWidth: WidthSetting,
     private val landscapeWidth: WidthSetting,
@@ -286,6 +289,8 @@ internal fun PracticeScreen(
     settingsFlow: kotlinx.coroutines.flow.Flow<Settings>,
     start: Settings,
     boards: BoardFactory,
+    my: MyStrokesModel? = null,          // "내 획 학습" (LLD-07 §8.3); null = no topic line for it
+    myBoard: MyStrokesBoard? = null,
     close: () -> Unit,
 ) {
     val now by settingsFlow.collectAsState(start)   // the topic ✓ marks as stored (SRS appendix A.1)
@@ -302,15 +307,21 @@ internal fun PracticeScreen(
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.practice_title), style = MaterialTheme.typography.headlineSmall)
-                when (flow.screen) {
-                    PracticeFlow.Screen.LIST -> TopicList(flow, done, enabled, close)
+                if (my != null && my.screen != MyStrokesModel.Screen.CLOSED) MyStrokesPanel(my)
+                else when (flow.screen) {
+                    PracticeFlow.Screen.LIST -> TopicList(flow, done, enabled, close, my)
                     PracticeFlow.Screen.INTRO -> Intro(flow)
                     PracticeFlow.Screen.ITEM -> Item(flow)
                     PracticeFlow.Screen.DONE -> Finished(flow)
                 }
             }
             val item = flow.item
-            if (flow.screen == PracticeFlow.Screen.ITEM && item != null) {
+            val myLetter = my?.letter
+            if (my != null && myBoard != null && my.screen == MyStrokesModel.Screen.WRITE && myLetter != null) {
+                key(myLetter) {
+                    AndroidView(factory = { ctx -> myBoard.build(ctx, my, myLetter) }, modifier = Modifier.fillMaxWidth().navigationBarsPadding())
+                }
+            } else if (flow.screen == PracticeFlow.Screen.ITEM && item != null) {
                 key(flow.topic?.id, flow.index, flow.tryNo) {
                     AndroidView(
                         factory = { ctx -> boards.build(ctx, flow, item) },
@@ -323,7 +334,7 @@ internal fun PracticeScreen(
 }
 
 @Composable
-private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled: Set<InputMode>, close: () -> Unit) {
+private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled: Set<InputMode>, close: () -> Unit, my: MyStrokesModel?) {
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.practice_list_hint), style = MaterialTheme.typography.bodyMedium)
         for (t in flow.topics) {
@@ -340,6 +351,7 @@ private fun ColumnScope.TopicList(flow: PracticeFlow, done: Set<String>, enabled
                 }
             }
         }
+        if (my != null) MyStrokesTopicRow(my, enabled)   // below the practice topics (FR-TUT-14)
     }
     Button(onClick = close) { Text(stringResource(R.string.practice_close)) }
 }

@@ -1,7 +1,8 @@
 # LLD-05 그래피티
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
-- 버전 **0.37** (2026-11-14)
+- 버전 **0.38** (2026-11-14)
+- 0.38(FSS#96, SRS 0.88 FR-TUT-14·17, LLD-07 0.39 8절): **내 획 학습에 잇기** — 8.3 `GraffitiPadView.onInk`(쓰기 화면의 획을 입력하지 않고 받음), 11절 `revision`·`personal`에 개인 획 저장소(`PersonalStrokeStore`)를 잇는 곳. 인식·특징·모델은 그대로다.
 - 0.37(FSS#96, SRS 0.88 FR-GRF-10~14·NFR-13·TBD-35, HLD 0.81 5.1·10.1 R14~R19): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지와 잰 영향·APK 증가분), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획의 판과 목록을 인자로 받음 — 저장소는 내 획 학습에서 잇는다). 학습·내보내기 스크립트 `tools/graffiti-nn/`. 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
 - 0.36(FSS#95, 긋기 입력 모드 삭제): 긋기 참조만 지웠다 — `CheonjiinAssembler`를 가지는 곳은 그래피티뿐이다(4절). 조합기 명세는 `LLD-04-stroke-hangul.md` 7절(절 번호 그대로). 동작·표는 그대로. 아래 이력의 "긋기 천지인 키"·"SWIPE n.n"은 그때의 일이다(SWIPE 10.1 ③은 지금 SRS 부록 A.2).
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑧, HLD 0.75 5A): 패드·보조 줄·덮개는 자판 폭 W 그대로이고 여유 칸은 비운다(배치 코드 그대로). `GraffitiPadView.sideMarginPx`(`SideMarginView`) — 보조 줄 모드 키의 `KeyGeom`을 만들 때 테두리의 왼쪽·오른쪽을 여유 칸만큼 밖으로 준다(8절). 인식·영역 판정은 그대로다.
@@ -640,6 +641,8 @@ UP:   패드 획 → stroke = onUp → guard.stroke("Graffiti.onStroke") { handl
 CANCEL: 진행 중 획 버림(InkCollector.cancel, 잉크 지움, 입력 없음), 반복 중지, 이미 처리한 기능키는 되돌리지 않음(FR-CMN-11a ③, HLD 4.1). 떼지 않은 모드 키는 입력 없음(0.22)
 ```
 
+- **`onInk: ((InkStroke) -> Unit)?`(0.38, FSS#96):** 값이 있으면 패드 획을 `handler.onStroke` 대신 여기로 넘긴다(`guard.stroke("Graffiti.onInk")` 안에서). 내 획 학습의 쓰기 화면만 쓴다(LLD-07 8.3) — 그 화면의 획은 글자로 입력되지 않는다. 키보드와 연습 주제는 `null`이라 지금과 같다. 패드의 상태 표시(언어 글자)는 그대로 `handler`의 상태에서 그린다. 시험 MV-02·MV-03(LLD-11 7.10).
+
 #### `flash(label: String)`
 - 인식한 글자를 패드 위에 `FLASH_MS = 600ms` 보인다(FR-GRF-07, 표시 시간 D-13). 부르는 쪽(`onStroke`)이 비밀번호 입력창(`hidesDisplay`, FR-CMN-08 ①. 학습 금지 칸은 보임, ②, 0.21)과 인식 실패에서는 부르지 않는다(SRS FR-CMN-08, FR-GRF-07, GRAFFITI 6.2-6, HLD 5장, DCR-19 결정).
 
@@ -760,7 +763,7 @@ class GraffitiRecognizers(templates: TemplateSet, log: ErrorLog,
 
 - **읽는 때(HLD 5.1 "읽는 때", R15):** 모델(862 kB)을 읽고 `Recognizer`를 꾸미는 일은 **뒤 스레드 하나**(`background`, 데몬 스레드 하나짜리 실행기)에서 한다. `KeyboardService.onCreate`가 `warm()`을 부르므로 키보드의 첫 표시(`onCreateInputView`·`onStartInputView`)는 이 일을 기다리지 않는다. 첫 획이 그보다 먼저 오면 `get()`이 남은 시간만 기다린다. 태블릿에서 잰 값(LLD-11 6.7): 모델 첫 읽기 44 ms, 인식기 첫 구성 68 ms, 개인 획 328개(한도 가까이) 반영 427 ms.
 - **모델은 프로세스에 하나:** `sharedModel()`이 리소스를 한 번 읽어 간직한다(키보드와 입력 연습이 같은 프로세스다). 읽지 못하면(리소스 없음, 형식 오류) `ErrorLog`에 `GraffitiModelLoader.load`로 한 번 적고 `null`을 간직한다 → 3.6 "모델 없는 구성".
-- **판과 개인 획:** `revision()`이 간직한 인식기의 판과 다르면 `get()`·`warm()`이 새로 만든다 — 앞의 인식기에 `withPersonal(personal())`을 불러 바뀐 획만 계산한다. 같은 판 안에서는 같은 인식기 객체를 돌려준다. 한 판에 만드는 일은 하나뿐이다(`warm()`을 여러 번 불러도). 만든 결과는 판이 더 새것일 때만 바꿔 끼운다. 이 PR(인식)에서는 쓰는 쪽이 기본값(판 0, 개인 획 없음)으로 만들므로 인식기는 출고 모델 + 템플릿 하나다. 개인 획 저장소를 이 두 인자에 잇는 것은 내 획 학습(LLD-07 8절)이다.
+- **판과 개인 획:** `revision()`이 간직한 인식기의 판과 다르면 `get()`·`warm()`이 새로 만든다 — 앞의 인식기에 `withPersonal(personal())`을 불러 바뀐 획만 계산한다. 같은 판 안에서는 같은 인식기 객체를 돌려준다. 한 판에 만드는 일은 하나뿐이다(`warm()`을 여러 번 불러도). 만든 결과는 판이 더 새것일 때만 바꿔 끼운다. **쓰는 쪽은 개인 획 저장소를 잇는다(0.38, SRS FR-TUT-17 ③):** 키보드와 입력 연습 모두 `revision = { store.revision }`(쓰기마다 1 증가, LLD-07 8.2), `personal = { store.book().strokes }`로 만든다(`store`는 프로세스에 하나인 `AppStores.personalStrokes`). `KeyboardService.onStartInputView`가 `warm()`을 부르므로 **키보드가 뜰 때** 뒤에서 다시 만들기 시작하고, 획을 인식할 때의 `get()`이 늘 지금 판을 돌려준다(늦어도 다음에 키보드가 뜰 때 반영). 학습 화면은 저장·삭제 바로 뒤 `warm()`을 부른다(LLD-07 8.3). 키보드는 저장소를 읽기만 한다(FR-TUT-17 ①).
 - **쓰는 쪽:** `GraffitiInputHandler`의 첫 인자는 `recognizer: () -> Recognizer`다(획마다 불러 그 획을 끝까지 그 인식기로 본다). `Recognizer`를 바로 받는 보조 생성자도 둔다(시험). 입력 연습의 `BoardFactory`·`PracticeInput.graffiti`도 같은 `() -> Recognizer`를 받는다(기본값 = 템플릿만, 시험용).
 - **실패:** `personal()`이 예외를 내면 `ErrorLog`(`GraffitiRecognizers.build`)에 적고 개인 획 없이 만든다. 만들다 예외가 나면(`IllegalStateException` = 글자 목록 어긋남, 모델 읽기 예외 등) `ErrorLog`에 적고 `Recognizer(templates)`(모델 없는 구성)로 내려간다. 그것도 안 되면 빈 템플릿의 인식기(규칙 획만, LLD-09 4절과 같은 결과)다. `build`는 예외를 내지 않으므로 입력기는 멈추지 않는다(NFR-03). 획 좌표는 기록하지 않는다(NFR-05).
 - 한 획의 특징 계산·순전파에서 난 예외는 지금처럼 `GraffitiPadView`의 `EngineGuard.stroke`가 잡아 그 획을 버린다(8.3, LLD-09 2절).
