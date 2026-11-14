@@ -65,7 +65,8 @@ class TemplateSet(val sets: Map<SetName, List<Template>>) {
     /** Output of the template [id] in any set, or null (interim, gap G3: GraffitiState.interpret, LLD-05 §5.2). */
     fun outputOf(id: String): TemplateOutput? = byId[id]
 
-    private companion object {
+    companion object {
+        /** The set searched for this context (LLD-05 §3.3 table). */
         fun setNameFor(area: PadArea, lang: GraffitiLang, expect: Expect): SetName = when (expect) {
             Expect.PUNCT -> SetName.PUNCT
             Expect.EXTENDED -> SetName.EXTENDED

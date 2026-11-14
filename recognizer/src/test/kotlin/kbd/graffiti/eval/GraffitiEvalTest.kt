@@ -6,6 +6,11 @@ import kbd.graffiti.ink.InkPoint
 import kbd.graffiti.ink.InkStroke
 import kbd.graffiti.ink.PadArea
 import kbd.graffiti.ink.RectF2
+import kbd.graffiti.nn.GraffitiModel
+import kbd.graffiti.nn.GraffitiModelLoader
+import kbd.graffiti.nn.ModelSet
+import kbd.graffiti.nn.StrokeFeatures
+import kbd.graffiti.recognize.SetName
 import kbd.graffiti.recognize.Expect
 import kbd.graffiti.recognize.Recognizer
 import kbd.graffiti.recognize.StrokeToken
@@ -35,6 +40,52 @@ internal object GraffitiEval {
         GraffitiEval::class.java.getResourceAsStream("/graffiti/templates.json")!!.use { TemplateLoader.load(it) }
     }
 
+    /** The shipped model (LLD-05 §7.1), as the keyboard reads it. */
+    val model: GraffitiModel by lazy {
+        GraffitiEval::class.java.getResourceAsStream(GraffitiModelLoader.RESOURCE)!!.use { GraffitiModelLoader.load(it) }
+    }
+
+    /** The recognizer of the keyboard: production templates and the shipped model (SRS FR-GRF-10). */
+    val recognizer: Recognizer by lazy { Recognizer(templates, model) }
+
+    /** The production templates alone, as recognition was before the network score came in (the baseline of LLD-11 §6.7). */
+    val templateOnly: Recognizer by lazy { Recognizer(templates) }
+
+    /**
+     * The shipped model without the exemplars that are [strokes] themselves (for each stroke the exemplar of its letter
+     * nearest to the stroke's own embedding, cosine 1 but for the arithmetic): what the model would be had those owner strokes not been put in (FR-GRF-13 ③).
+     */
+    fun modelWithout(strokes: List<EvalStroke>, set: SetName): GraffitiModel {
+        val ms = model.sets.getValue(set)
+        val n = ms.exemplarClass.size
+        val size = ms.exemplars.size / n
+        val drop = BooleanArray(n)
+        for (s in strokes) {
+            val p = s.stroke.points
+            val z = ms.body.embed(StrokeFeatures.compute(DoubleArray(p.size) { p[it].x.toDouble() }, DoubleArray(p.size) { p[it].y.toDouble() }))
+            val c = ms.classes.indexOf(s.expect)
+            var best = -1
+            var bestDot = SAME_STROKE_COS
+            for (e in 0 until n) {
+                if (ms.exemplarClass[e] != c || drop[e]) continue
+                var dot = 0f
+                for (k in 0 until size) dot += ms.exemplars[e * size + k] * z[k]
+                if (dot > bestDot) {
+                    bestDot = dot
+                    best = e
+                }
+            }
+            check(best >= 0) { "${s.file.name} is no exemplar of the model" }
+            drop[best] = true
+        }
+        val keep = (0 until n).filter { !drop[it] }
+        val cut = ModelSet(ms.body, ms.bodyIndex, ms.classes, IntArray(keep.size) { ms.exemplarClass[keep[it]] }, FloatArray(keep.size * size) { ms.exemplars[keep[it / size] * size + it % size] })
+        return GraffitiModel(model.sets + (set to cut), model.bodyCount)
+    }
+
+    /** An exemplar made from the same stroke: cosine 1 but for a step falling in the next cell when the points are read as 32-bit floats (measured 0.9998 or more). */
+    const val SAME_STROKE_COS = 0.999f
+
     /** Every `*.json` under `strokes/<split>/`, grouped by sub-folder; throws if the folder or a file cannot be read. */
     fun load(split: String): Map<String, List<EvalStroke>> {
         val url = GraffitiEval::class.java.getResource("/strokes/$split") ?: error("strokes/$split not on the test classpath")
@@ -42,6 +93,12 @@ internal object GraffitiEval {
         val files = root.walkTopDown().filter { it.isFile && it.extension == "json" }.sortedBy { it.path }.toList()
         check(files.isNotEmpty()) { "no stroke files in $root" }
         return files.map { read(it) }.groupBy { it.file.parentFile.name }.toSortedMap()
+    }
+
+    /** One stroke file by its path under `strokes/`. */
+    fun file(path: String): EvalStroke {
+        val url = GraffitiEval::class.java.getResource("/strokes/$path") ?: error("strokes/$path not on the test classpath")
+        return read(File(url.toURI()))
     }
 
     private fun read(file: File): EvalStroke = try {
@@ -93,8 +150,10 @@ internal object GraffitiEval {
         override fun toString() = "%-6s %4d / %4d = %6.2f %%".format(name, correct, total, accuracy)
     }
 
-    fun score(name: String, strokes: List<EvalStroke>, set: TemplateSet = templates): Score {
-        val rec = Recognizer(set)
+    /** [strokes] read with [set] and the shipped model. */
+    fun score(name: String, strokes: List<EvalStroke>, set: TemplateSet): Score = score(name, strokes, Recognizer(set, model))
+
+    fun score(name: String, strokes: List<EvalStroke>, rec: Recognizer = recognizer): Score {
         val misses = sortedMapOf<String, Int>()
         var correct = 0
         for (s in strokes) {
@@ -131,7 +190,7 @@ class GraffitiEvalTest {
     @Test
     fun `dev set accuracy with misses, for tuning the templates`() {
         println(GraffitiEval.report("dev", withMisses = true))
-        val rec = Recognizer(GraffitiEval.templates)
+        val rec = GraffitiEval.recognizer
         for ((_, list) in GraffitiEval.load("dev")) for (s in list) {
             val got = GraffitiEval.label(rec.recognize(s.stroke, s.lang, s.shift), s)
             if (got == s.expect) continue

@@ -30,7 +30,7 @@ data class GraffitiSnapshot(val asm: CjSnapshot, val state: GraffitiStateSnapsho
  * Every commit goes through [finishAll], which drops the temporary glyph (FR-HGL-04e, DCR-21).
  */
 class GraffitiInputHandler(
-    private val recognizer: Recognizer,
+    private val recognizer: () -> Recognizer,     // asked for each stroke: the recognizer with the personal strokes as they are now (LLD-05 §11)
     private val state: GraffitiState,
     private val asm: CheonjiinAssembler,
     private val composer: () -> HangulComposer,   // graffiti-policy composer (LLD-08 §6)
@@ -39,6 +39,12 @@ class GraffitiInputHandler(
     private val flash: (String) -> Unit,           // GraffitiPadView.flash (LLD-05 §8.3)
     private val redraw: () -> Unit = {},           // pad status redraw after changes from outside the pad (LLD-05 §8.1)
 ) {
+
+    /** With one fixed recognizer (tests). */
+    constructor(
+        recognizer: Recognizer, state: GraffitiState, asm: CheonjiinAssembler, composer: () -> HangulComposer, out: ComposingController,
+        sink: InputSink, flash: (String) -> Unit, redraw: () -> Unit = {},
+    ) : this({ recognizer }, state, asm, composer, out, sink, flash, redraw)
 
     /** The last [handle] was an element the assembler dropped ([CjPush.Ignored] or [CjPush.NotExtendable]). */
     private var lastElementDropped = false
@@ -49,7 +55,7 @@ class GraffitiInputHandler(
             state.punctPending -> Expect.PUNCT
             else -> Expect.NORMAL
         }
-        val t = recognizer.recognize(stroke, state.lang, expect)
+        val t = recognizer().recognize(stroke, state.lang, expect)
         val a = state.interpret(t, stroke.area)
         handle(a)
         // FR-GRF-07: only a stroke that means a glyph is shown, never in password fields (FR-CMN-08 ①;

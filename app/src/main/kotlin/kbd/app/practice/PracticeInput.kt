@@ -137,12 +137,15 @@ class PracticeInput(
         override fun onSettingsStroke() = Unit
     }
 
-    /** The graffiti engine of this try, the pad's language set to [lang] (SRS appendix A.2 ③: the item sets it, no switching stroke). */
-    fun graffiti(templates: TemplateSet, lang: GraffitiLang, flash: (String) -> Unit, redraw: () -> Unit): GraffitiInputHandler {
+    /**
+     * The graffiti engine of this try, the pad's language set to [lang] (SRS appendix A.2 ③: the item sets it, no switching stroke).
+     * [recognizer] is the practice screen's supply (templates and model, LLD-05 §11); the default is the templates alone.
+     */
+    fun graffiti(templates: TemplateSet, lang: GraffitiLang, flash: (String) -> Unit, redraw: () -> Unit, recognizer: () -> Recognizer = Recognizer(templates).let { r -> { r } }): GraffitiInputHandler {
         check(board == PracticeBoard.GRAFFITI) { "graffiti engine on $board" }
         val state = GraffitiState(templates).also { it.lang = lang }
         return GraffitiInputHandler(
-            recognizer = Recognizer(templates),
+            recognizer = recognizer,   // the keyboard's own judgement (FR-TUT-17 ④)
             state = state,
             asm = CheonjiinAssembler(),
             composer = { checkNotNull(dispatcher.composer) },
