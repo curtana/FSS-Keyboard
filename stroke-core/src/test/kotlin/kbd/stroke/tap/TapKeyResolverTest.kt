@@ -240,7 +240,7 @@ class TapKeyResolverTest {
     }
 
     @Test
-    fun `TA-20 edge hints - every swiped character that differs from the tap, the capital and the shift jamo too (owner 198)`() {
+    fun `TA-20 edge hints - every stroked character that differs from the tap, the capital and the shift jamo too (owner 198)`() {
         fun h(layout: TapLayout, id: String) = TapKeyResolver.edgeHints(layout.keys.single { it.id == id })
         assertEquals(mapOf(Dir.UP to "I", Dir.LEFT to "[", Dir.RIGHT to "]"), h(TapLayouts.QWERTY, "i"))
         assertEquals(mapOf(Dir.UP to "S"), h(TapLayouts.QWERTY, "s"))

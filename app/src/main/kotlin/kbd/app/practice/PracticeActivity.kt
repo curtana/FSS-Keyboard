@@ -68,7 +68,6 @@ import kbd.graffiti.ink.GraffitiLang
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
 import kbd.stroke.layout.TapLayouts
-import kbd.stroke.threshold.ThresholdDefaults
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
