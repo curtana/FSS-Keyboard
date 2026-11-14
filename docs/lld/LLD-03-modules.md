@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.30** (2026-11-13)
+- 버전 **0.31** (2026-11-14)
+- 0.31(FSS#98, SRS 0.86 FR-TAP-15~18, HLD 0.79 5A "조합 키 Ctrl·Alt"): `FunctionKey.CTRL`·`ALT`(탭 자판 편집 줄의 조합 키, LLD-05A 3.2), stroke-core `kbd.stroke.tap`에 `ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`(조합 키 대응, 안드로이드 없음, LLD-05A 2.4). 새 모듈·의존·라이브러리는 없다.
 - 0.30(FSS#84, SRS 0.82 FR-CMN-14 ⑧, HLD 0.75 3장·5A): 3.3 바깥 변 — 테두리의 왼쪽·오른쪽은 자판 사각형의 바깥 변(자판에서 여유 칸만큼 밖)이라 끝 키의 왼쪽·오른쪽 변은 바깥 변이 아니다(`KeyGeom.build`의 `sideDp`, LLD-04 2절).
 - 0.29(FSS#36, SWIPE 0.52 9.5, SRS 0.72 FR-DSP-10): `SwipeHost.centerText`(가운데 글자 = 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에, LLD-04 9.5), `SwipeEngineState.pendingDots()`(2.2). `centerConsonant`는 판정 C를 줄지 정하는 데만 쓴다.
 - 0.28(FSS#17: 튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48): `kbd.app.tutor` → `kbd.app.practice`(LLD-07 2절), `ThresholdStore` 삭제. `SwipeModule.tutorSteps()` 삭제(연습은 같은 `createSwipeView`를 연습용 `SwipeHost`로 부름). 기준값은 고정 상수(3.4), `posTolDp`는 실행 때 키 폭 × 0.4(`ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth`).
@@ -60,7 +61,7 @@ core-hangul ──► (없음)
 | stroke-core | `kbd.stroke.geom` | `Dir`, `Edge`, `Axis`, `RectDp`, `StrokePoint`, `KeyGeom`, `KeyHitTester` | 이 문서 3.3, [LLD-04-swipe.md#2](LLD-04-swipe.md#2-키-찾기-keyhittester-stroke-core) |
 | stroke-core | `kbd.stroke.cross` | `EdgeCrossingTracker`, `Crossing`, `ZoneState` | [LLD-04-swipe.md#3](LLD-04-swipe.md#3-변-통과-추적-edgecrossingtracker-stroke-core) |
 | stroke-core | `kbd.stroke.threshold` | `Thresholds`, `ThresholdDefaults` | 이 문서 3.4 |
-| stroke-core | `kbd.stroke.tap` | `TapGesture`, `TapGestureClassifier`, `TapKeyResolver`, `ScriptTables` | [LLD-05A-tap-keyboard.md#2](LLD-05A-tap-keyboard.md#2-탭-자판-동작-표-판정-stroke-core) |
+| stroke-core | `kbd.stroke.tap` | `TapGesture`, `TapGestureClassifier`, `TapKeyResolver`, `ScriptTables`, `ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`(조합 키 대응, 0.31) | [LLD-05A-tap-keyboard.md#2](LLD-05A-tap-keyboard.md#2-탭-자판-동작-표-판정-stroke-core) |
 | stroke-core | `kbd.stroke.layout` | `TapLayout`, `TapKeyDef`, `KeyAssign`, `TapLayouts`(쿼티·두벌식 데이터), `FunctionKey` | [LLD-05A-tap-keyboard.md#3](LLD-05A-tap-keyboard.md#3-자판-배치-데이터) |
 | gesture-engine | `kbd.gesture.classify` | `StrokeClassifier`, `StrokeState`, `StrokeResult`, `SwipeKeyKind` | [LLD-04-swipe.md#4](LLD-04-swipe.md#4-strokeclassifier-gesture-engine) |
 | gesture-engine | `kbd.gesture.progress` | `ProgressState`, `Candidate`, `Probe` | [LLD-04-swipe.md#5](LLD-04-swipe.md#5-progressstate-gesture-engine) |
@@ -261,7 +262,7 @@ object ThresholdDefaults { const val MIN_CROSS_DP = 8f; val VALUES: Thresholds }
 // kbd.app.ime
 enum class InputMode { SWIPE, QWERTY, DUBEOLSIK, GRAFFITI }    // 선언 순서 = 순환 순서(FR-CMN-03)
 // kbd.stroke.layout (stroke-core, 1.2절)
-enum class FunctionKey { BACKSPACE, SPACE, ENTER, TAB, MODE, ARROW_LEFT, ARROW_UP, ARROW_DOWN, ARROW_RIGHT, ESC, DELETE }   // SETTINGS(긋기 ⚙, 0.18)는 0.23(#205)에서 삭제. ESC·DELETE: 탭 편집 줄(0.22, 이슈 #198)
+enum class FunctionKey { BACKSPACE, SPACE, ENTER, TAB, MODE, ARROW_LEFT, ARROW_UP, ARROW_DOWN, ARROW_RIGHT, ESC, DELETE, CTRL, ALT }   // SETTINGS(긋기 ⚙, 0.18)는 0.23(#205)에서 삭제. ESC·DELETE: 탭 편집 줄(0.22, 이슈 #198). CTRL·ALT: 편집 줄의 조합 키(0.31, FSS#98)
 ```
 
 - `Jamo.ofCompat(c: Char): Jamo?` — 호환 자모 문자로 `Jamo`를 찾는다(`kbd.hangul.jamo`, 3.1). 탭 자판 출력의 `Char`를 앱이 바꿀 때 쓴다.

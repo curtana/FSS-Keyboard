@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.36** (2026-11-14)
+- 버전 **0.37** (2026-11-14)
+- 0.37(FSS#98, SRS 0.86 FR-TAP-17 ④, LLD-08 0.33): 연습 탭 자판의 Ctrl·Alt는 편집 줄의 다른 키처럼 보이되 동작이 없다(`tapSink`가 넘기지 않음 — 켜지지 않고 켜짐 표시도 없음), `PracticeEditor.sendChord`는 빈 구현(2.3). 시험 PR-35.
 - 0.36(FSS#86, SRS 0.84 FR-CMN-15·FR-SET-09, HLD 0.77 5A "띄운 자판"·7.3): 방향별 **띄우기**와 띄운 자판의 자리 비율 — `Settings.portraitFloat`·`landscapeFloat`(`FloatSetting(on, fx, fy)`), 키 여섯 개(`float_portrait`·`float_x_portrait`·`float_y_portrait`, 가로도 같음), `SettingsStore.setFloatPosition`(놓을 때 준 축만 씀, 6.1). 설정 화면 방향 상자의 "띄우기" 스위치(7절). 입력 연습 `BoardFrame`은 띄우기를 읽지 않는다(2.3, PR-34).
 - 0.35(FSS#85, SRS 0.83 FR-CMN-14 ⑫ 자, HLD 0.76 5A "입력 연습"): 입력 연습의 `BoardFrame`은 틀 전체 배경을 두지 않고 자판 사각형만 칠한다(`KeyboardPlate.rect`·`PlatePainter`, LLD-08 7.3). 남는 자리에는 연습 화면 배경이 보이고 그 터치는 지금처럼 틀이 소비한다(2.3).
 - 0.34(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑪·FR-TUT-02·FR-SET-09, HLD 0.75 5A): 입력 연습의 `BoardFrame`이 자판 사각형·여유 칸을 실제 키보드와 같게 놓는다(2.3). 설정 화면의 키 크기 슬라이더 위 끝 = 가용 폭 / 11 올림, 미리보기 전체 폭 = 11 × 키 크기(7절). 저장 형식·키 이름은 그대로다(6.1).
@@ -99,10 +100,10 @@ enum class Verdict { PENDING, RIGHT, WRONG }
 
 **`onAction(text, display, error, reversed, composing = "")`:** `composing`은 `text` 끝의 조합 중인 부분(0.28). 탭 자판 항목은 `PracticeItemJudge.text`, 그 밖은 `PracticeItemJudge.commit(item, text에서 composing을 뺀 확정 글자열, error)`. ✓ → `holding`(같은 자판, 맞힌 항목과 ✓를 그대로 보임), 화면이 `RIGHT_HOLD_MS` = 1000ms 뒤 `advance()` → 다음 항목(새 시도, ✓·입력 표시 지움) 또는 DONE(0.30, SWIPE 10.2, FSS#54). ✗ → 위 표대로(탭 자판 항목은 비우지 않음).
 
-**연습 편집기 `PracticeEditor : EditorPort`:** 입력창 대신 메모리 글자열. `commitText`는 조합 글자를 바꿔 넣고(InputConnection과 같음), `deleteBefore`는 끝 한 글자를 지운다. `text` = 확정 + 조합(`composing`), `display` = 조합 글자가 있으면 그것(`ㄱㆍ`처럼 그대로), 없으면 확정 글자의 끝 공백을 뺀 마지막 한 글자(0.28: 스페이스 뒤에도 그 글자).
+**연습 편집기 `PracticeEditor : EditorPort`:** 입력창 대신 메모리 글자열. `commitText`는 조합 글자를 바꿔 넣고(InputConnection과 같음), `deleteBefore`는 끝 한 글자를 지운다. `text` = 확정 + 조합(`composing`), `display` = 조합 글자가 있으면 그것(`ㄱㆍ`처럼 그대로), 없으면 확정 글자의 끝 공백을 뺀 마지막 한 글자(0.28: 스페이스 뒤에도 그 글자). `sendKey`·`sendChord`(0.37, 조합 키 입력, LLD-08 4절)는 아무것도 하지 않는다 — 키 입력을 받을 입력창이 없다(FR-TAP-17 ④).
 
 **한 시도 `PracticeInput(board, feedback, errorLog, settings) : SwipeHost`:** 실제 `InputDispatcher`·`ComposingController`·`ModeController(모드 하나)`와 모드의 조합기(긋기 `ComposePolicy.SWIPE`, 그래피티 `GRAFFITI`, 쿼티 없음)를 `PracticeEditor`에 잇는다. 기준값은 `ThresholdDefaults.VALUES`(3절). 오류 진동(`FeedbackPort.error`)을 지나며 `errored`를 켠다 — SWIPE 10.2의 ✗ 조건(무시된 획·천지인 요소, 버린 임시 획, 인식 실패)이 모두 이 진동이다.
-- `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫와 그래피티 패드의 스페이스**만 넘긴다(스페이스 = 글자 확정, 0.28, FSS#43). ↵·화살표·Esc·Del·Tab·모드 키·설정 획, 탭 자판의 스페이스, 패드의 ⌫는 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
+- `tapSink`(탭 자판·그래피티 패드에 줌): 글자·숫자·기호는 그대로, 기능 키는 **탭 자판의 ⌫와 그래피티 패드의 스페이스**만 넘긴다(스페이스 = 글자 확정, 0.28, FSS#43). ↵·화살표·Esc·Ctrl·Alt(0.37, FSS#98 — 디스패처에 가지 않으므로 켜지지 않고 `tapSink.chord`가 늘 빈 집합이라 켜짐 표시도 없다, FR-TAP-17 ④)·Del·Tab·모드 키·설정 획, 탭 자판의 스페이스, 패드의 ⌫는 보이되 연습에서는 아무 일도 하지 않는다(SWIPE 10.2 "편집 줄의 다른 키는 판정에 들어가지 않는다", LLD 결정 D-66).
 - `SwipeHost` 구현(긋기 자판에 줌): `onSwipeEvents`·`onSwipeText` → dispatcher. 긋기 자판의 기능 키는 **스페이스만** `dispatcher.onFunctionDown(SPACE)`로 넘기고(실제처럼 조합을 확정하고 " "를 넣으며 조립을 닫음 — 버린 임시 획은 오류 진동, 0.28) ⌫·↵·모드 키는 아무 일도 하지 않는다(SWIPE 10.2: 긋기 연습 자판에는 편집 키가 없음 — 키는 실제처럼 보이되 쓰이지 않음, D-66). `centerConsonant` = 조합기의 `lastConsonant()`(C 기준 판정), `centerText` = `dispatcher.centerText()`(0.26, 가운데 글자)라 실제와 같다.
 - `graffiti(templates, lang, flash, redraw)`: 실제 `GraffitiInputHandler`(인식기·`GraffitiState`·천지인 조립기)를 만들고 패드 언어를 항목의 `lang`으로 둔다(한영 전환 획은 연습하지 않음, SWIPE 10.1 ③).
 

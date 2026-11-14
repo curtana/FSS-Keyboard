@@ -108,7 +108,7 @@ if modes.current == GRAFFITI && before != GRAFFITI: dispatcher.graffiti?.enterMo
 - 같은 숫자류 입력창에서 키보드가 다시 떠도(`onStartInputView` 다시 호출) 이 순서를 그대로 탄다. 그래서 다시 영문 쿼티로 시작하고 돌아갈 모드는 그대로다(FR-CMN-04b).
 - 자동으로 바뀌는 모드(쿼티로 시작, 돌아가기)는 `previous`와 마지막 모드 저장을 바꾸지 않는다(5절, FR-CMN-04b).
 
-- 0.33(FSS#98): `clearChord()`는 `restarting`이어도 부른다(같은 입력창에서 키보드가 다시 뜸 = FR-TAP-17 ① (마)). 앱이 입력을 다시 시작시켜 켜 둔 조합 키가 뜻밖에 꺼지는 입력창이 있는지는 실기 확인이다(HLD R13 ⑦, DV-38 ⑩). 숫자류 입력창의 자동 전환(쿼티로 시작·돌아가기)도 이 한 번으로 꺼진다(FR-TAP-17 ① (다)). `onUpdateSelection`에서는 부르지 않는다(FR-TAP-17 ② — 글을 선택한 뒤 Ctrl + C).
+- 0.33(FSS#98): `clearChord()`는 `restarting`이어도 부른다(같은 입력창에서 키보드가 다시 뜸 = FR-TAP-17 ① (마)). 앱이 입력을 다시 시작시켜 켜 둔 조합 키가 뜻밖에 꺼지는 입력창이 있는지는 실기 확인이다(HLD R13 ⑦, DV-39 ⑩). 숫자류 입력창의 자동 전환(쿼티로 시작·돌아가기)도 이 한 번으로 꺼진다(FR-TAP-17 ① (다)). `onUpdateSelection`에서는 부르지 않는다(FR-TAP-17 ② — 글을 선택한 뒤 Ctrl + C).
 - 0.27: `applyEnabled`는 enter·leave 다음이다. 그래서 숫자류 입력창 안이면 `current`(= QWERTY, 늘 켬)는 그대로이고 돌아갈 모드만 고쳐지며, 문자 입력창으로 돌아온 뒤 돌아갈 모드가 꺼져 있었으면 그 다음 켜진 모드가 된다(사례 표 8행).
 
 ### 3.2 `applyEnabledModes(on)` (0.27, FSS#31)
@@ -186,7 +186,7 @@ class ComposingController(private val port: EditorPort) {
   예: Ctrl + Shift + A = Ctrl↓(Ctrl) · Shift↓(Ctrl + Shift) · A↓(Ctrl + Shift) · A↑(Ctrl + Shift) · Shift↑(Ctrl) · Ctrl↑(0). 입력은 조합 키 수 × 2 + 2개다.
 - `keyCodeOf(key)`: `ChordKey`의 이름과 같은 `KEYCODE_*`(`A`~`Z` → `KEYCODE_A`~`KEYCODE_Z`, `D0`~`D9` → `KEYCODE_0`~`KEYCODE_9` — 플랫폼에서 이어진 값이라 차이로 계산, 나머지는 하나씩). 시험 CP-06이 60개 모두를 플랫폼 상수와 맞춰 본다.
 - 플래그(`FLAG_SOFT_KEYBOARD | FLAG_KEEP_TOUCH_MODE`)·장치(`KeyCharacterMap.VIRTUAL_KEYBOARD`)·반복 수 0·scan code 0은 지금의 키 입력(방향키 등)과 같다 — `sendKey`·`deleteBefore`와 같은 `event(downTime, action, keyCode, meta)` 하나로 만든다. 누름 시각은 모든 입력이 같고(`downTime`), 뗌의 이벤트 시각은 보낼 때의 `uptimeMillis()`다(0.32의 `sendDownUp`과 같음).
-- 조합 키 누름 입력의 meta state에 **자기 비트를 넣는** 것은 플랫폼 입력 처리(조합 키가 눌린 뒤의 상태를 그 누름 이벤트에 실음)를 따른 것이다. 물리 자판의 실제 값과 같은지는 실기 확인이다(HLD R13 ⑥, DV-38).
+- 조합 키 누름 입력의 meta state에 **자기 비트를 넣는** 것은 플랫폼 입력 처리(조합 키가 눌린 뒤의 상태를 그 누름 이벤트에 실음)를 따른 것이다. 물리 자판의 실제 값과 같은지는 실기 확인이다(HLD R13 ⑥, DV-39 ④).
 - **편집 명령(`performContextMenuAction`)은 부르지 않는다**(FR-TAP-16 ⑤ — Ctrl + A·C·V·X·Z도 키 입력 그대로). `commitText`도 부르지 않는다(글자를 대신 넣지 않음, FR-TAP-16 ⑥). 앱이 키 입력을 처리했는지는 알 수 없고 알려고 하지 않는다.
 - 입력 연결이 없으면 아무것도 하지 않고, `sendKeyEvent`의 반환값은 쓰지 않는다(위와 같음).
 - **기본 구현이 빈 이유:** 키 입력을 받을 입력창이 없는 편집기(입력 연습 `PracticeEditor`, 시험의 가짜 포트)는 조합 키 입력을 받을 일이 없다. `PracticeEditor`는 빈 구현을 드러내 적는다(LLD-07 2.3, FR-TAP-17 ④).
@@ -347,7 +347,7 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 
 ### 6.3 조합 키 Ctrl·Alt (0.33, FSS#98)
 
-SRS FR-TAP-15~17, HLD 5A "조합 키 Ctrl·Alt". 안드로이드가 없어 JVM 단위 시험으로 본다(CD-01~CD-18, LLD-11 7.4a).
+SRS FR-TAP-15~17, HLD 5A "조합 키 Ctrl·Alt". 안드로이드가 없어 JVM 단위 시험으로 본다(CD-01~CD-18, LLD-11 7.4a). 서비스가 끄는 곳(아래 "끄기를 부르는 곳"의 `KeyboardService` 행)은 Robolectric CL-01~CL-05(같은 절)다.
 
 **상태** (둘 다 저장하지 않고, `snapshot()`에 넣지 않는다)
 
@@ -387,7 +387,7 @@ SRS FR-TAP-15~17, HLD 5A "조합 키 Ctrl·Alt". 안드로이드가 없어 JVM �
   | 손을 뗌·터치 취소 | `onFunctionUp` → 기억을 잊음. 다음 누름은 새로 꺼낸다 |
   | 누르고 있는 동안 `clearChord()`(입력창이 다시 시작 등) | 기억도 비워져 다음 반복은 조합 키 없이 그 키다(반복은 뷰가 멈출 때까지 이어진다 — 키보드가 내려가면 `cancelTouches`로 멈춘다) |
 
-  - 기억은 기능키 종류별 하나다. 같은 기능키를 두 손가락으로 겹쳐 누르는 경우(편집 줄에 같은 키가 둘 없으므로 한 키를 두 손가락으로)는 둘째 누름이 첫 누름의 반복처럼 같은 집합을 쓰고, 먼저 뗀 손가락이 기억을 지운다. 드문 경우라 따로 다루지 않는다(LLD 결정 D-72).
+  - 기억은 기능키 종류별 하나다. 같은 기능키를 두 손가락으로 겹쳐 누르는 경우(편집 줄에 같은 키가 둘 없으므로 한 키를 두 손가락으로)는 둘째 누름이 첫 누름의 반복처럼 같은 집합을 쓰고, 먼저 뗀 손가락이 기억을 지운다. 드문 경우라 따로 다루지 않는다(LLD 결정 D-71).
   - 기억은 탭 자판 밖의 호출자에게도 같은 규칙이다(긋기 자판·그래피티 보조 줄의 스페이스·⌫, 입력 연습): 그 모드들에서는 `chord`가 늘 비어 있어(모드 키가 끈다) 기억은 늘 빈 집합이고 0.32와 같은 길이다. 뗌 알림을 보내지 않는 호출자(입력 연습 싱크)에서도 그렇다.
 - **모드 키는 대상이 아니다(FR-TAP-16 ①, 17 ① (다)(라)):** `onModeKey()`·`onSettingsStroke()`는 맨 앞에서 `clearChord()`를 부른다. 아무것도 보내지 않는다.
 - **끄기를 부르는 곳(FR-TAP-17 ①)**

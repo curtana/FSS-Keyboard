@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 5A장(탭 자판)
 - 버전 **0.19** (2026-11-14)
-- 0.19(FSS#98 오너 지시 "제일위 라인 esc 키 옆에 Ctrl, Alt키를 넣어줘", SRS 0.86 FR-TAP-03·03c·04·13·15~18·조합 키 대응표·NFR-06, HLD 0.79 5A "조합 키 Ctrl·Alt"): **편집 줄 10키**(Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫, 각 36 — 0.17까지 8 × 45. 3.2), 기능키 `FunctionKey.CTRL`·`ALT`(반복 없음, 4·6절), 새 2.4 **조합 키 대응**(`ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`: 글자 94자 → (키, Shift), 키 id + 판정된 동작 → 같은 자리 쿼티 키의 결과, 기능키 → 키), `TapSink.onTapResult(key, out, gesture)`·`TapSink.chord`(4절), `MultiPointerQueue<R>`(판정된 동작을 결과와 함께 실음, 5절), `TapKeyboardView`의 켜짐 바탕·낱말 글자 크기 `WordLabelFit`·`chordChanged()`(4절), 접근성 노드의 켜고 끄는 항목(7절), 시퀀스 8.2. 조합 키 상태와 보내기는 LLD-08 4절·6.3. Ctrl·Alt가 꺼져 있으면 0.17과 모든 길이 같다(`TapKeyResolver`·`TapGestureClassifier`·배정표는 고치지 않았다).
+- 0.19(FSS#98 오너 지시 "제일위 라인 esc 키 옆에 Ctrl, Alt키를 넣어줘", SRS 0.86 FR-TAP-03·03c·04·13·15~18·조합 키 대응표·NFR-06, HLD 0.79 5A "조합 키 Ctrl·Alt"): **편집 줄 10키**(Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫, 각 36 — 0.18까지 8 × 45. 3.2), 기능키 `FunctionKey.CTRL`·`ALT`(반복 없음, 4·6절), 새 2.4 **조합 키 대응**(`ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`: 글자 94자 → (키, Shift), 키 id + 판정된 동작 → 같은 자리 쿼티 키의 결과, 기능키 → 키), `TapSink.onTapResult(key, out, gesture)`·`TapSink.chord`(4절), `MultiPointerQueue<R>`(판정된 동작을 결과와 함께 실음, 5절), `TapKeyboardView`의 켜짐 바탕·낱말 글자 크기 `WordLabelFit`·`chordChanged()`(4절), 접근성 노드의 켜고 끄는 항목(7절), 시퀀스 8.2. 조합 키 상태와 보내기는 LLD-08 4절·6.3. Ctrl·Alt가 꺼져 있으면 0.18과 모든 길이 같다(`TapKeyResolver`·`TapGestureClassifier`·배정표는 고치지 않았다).
 - 0.18(FSS#97 오너 지시 2026-11-14, SRS 0.85 FR-TAP-02c·두벌식 겹받침 배정표, HLD 0.78 5A): 두벌식 겹받침 여섯 개의 방향을 옮겼다 — ㄱ(r) ↓ ㄳ, ㄴ(s) ↑ ㄵ · ↓ ㄶ, ㅂ(q) ↓ ㅄ, ㅅ(t) ↓ ㄽ, ㅍ(v) ↑ ㄿ(0.17까지 ㄱ ← ㄳ, ㄴ ← ㄵ · → ㄶ, ㅂ → ㅄ, ㅅ ← ㄽ, ㅍ ← ㄿ). 비게 된 방향(ㄱ ←, ㄴ ← · →, ㅂ ← · →, ㅅ ←, ㅍ ←)은 기본 글자다. ㄹ(f)·ㅌ(x)·↑ 쌍자음·쿼티는 그대로. 바뀐 것은 `TapLayouts.COMPOUND_JAMO` 자료뿐이고 `TapKeyResolver`의 찾는 순서는 0.14 그대로다. 3.3에 두벌식 겹받침 배정표를 두었고, 2.2 표의 `DUBEOLSIK_LETTER` 행에 0.14부터 빠져 있던 겹받침 단계를 적었다(↑·↓ 문지르기는 기본 글자). 3.1 타입에 `compoundJamo`, 3.4에 겹받침 표시. 아래 0.14·0.15 줄의 방향은 그때의 것이다.
 - 0.17(FSS#84, SRS 0.82 FR-CMN-14 ⑧⑪, HLD 0.75 5A): `TapGeometry.build(layout, widthDp, rowHeightDp, sideDp)`, `TapKeyboardView.sideMarginPx` — 테두리의 왼쪽·오른쪽이 자판에서 여유 칸만큼 밖이라 끝 키(Esc·1·q·한/영, ⌫·0·p·↵·`/`)의 바깥쪽 변은 보통 변이다(3.1). 배정표는 그대로다(새 배정 없음 — 그 방향은 여전히 탭과 같은 결과).
 - 0.16(FSS#62 오너 요청): m 오른쪽 키의 탭과 ←를 맞바꿨다 — 탭 `=`, ← `-`(3.2·3.3). ↑ `_`, ↓ `+`는 그대로. 키 id `minus`는 그대로 둔다.
@@ -106,7 +106,7 @@ object ScriptTables { val SUPER: Map<Char, String>; val SUB: Map<Char, String> }
 - 아래첨자 없음 9자(b c d f g q w y z)는 SWIPE 6장과 같다.
 - q 윗첨자는 유니코드 14에 들어간 보조 평면 문자라 글꼴에 없을 수 있다(D-14, 실기기 확인 DV-12). 그래서 표의 값 타입이 `String`이다.
 
-### 2.4 조합 키 대응 ChordKeys (0.18, FSS#98)
+### 2.4 조합 키 대응 ChordKeys (0.19, FSS#98)
 
 Ctrl·Alt가 켜진 채 누른 키가 보내는 키(SRS 조합 키 대응표, FR-TAP-16)를 정하는 순수 함수다. 안드로이드가 없다 — 키는 PC 자판(미국 배열)의 키 이름이고, 안드로이드 키 코드로 바꾸는 것은 `AndroidEditorPort`가 한다(LLD-08 4절).
 
@@ -191,8 +191,8 @@ object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 - 두벌식은 같은 자리에 2줄 ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ, 3줄 ㅁㄴㅇㄹㅎㅗㅓㅏㅣ, 4줄 ㅋㅌㅊㅍㅠㅜㅡ. `shiftJamo`: ㅂ→ㅃ, ㅈ→ㅉ, ㄷ→ㄸ, ㄱ→ㄲ, ㅅ→ㅆ, ㅐ→ㅒ, ㅔ→ㅖ, 나머지 null(기본 자모).
 - 모드 키는 맨 아랫줄 왼쪽(SRS 3.3, 모든 모드 공통). 시험 TL-01(폭 합 = 360, 모든 줄), TL-02(NFR-06 크기), TL-03(모드 키 위치).
 - ⌫는 편집 줄 오른쪽 끝, ↵는 아랫글자 줄(z 줄) 오른쪽 끝이다(0.10, 이슈 #198). 키 id는 `esc`·`ctrl`·`alt`·`delete`·`minus`·`slash`, 키 라벨은 `Esc`·`Ctrl`·`Alt`·`Del`.
-- **편집 줄 10키(0.18, FSS#98):** Esc 바로 오른쪽에 Ctrl, 그 오른쪽에 Alt를 두고 열 키 모두 글자 키와 같은 폭 36이다(한 줄 10칸, 빈칸 없음. 0.17까지 8 × 45). 쿼티·두벌식이 같은 데이터다. 편집 줄 키의 x는 바로 아래 숫자 줄 키의 x와 같다. 한 줄 10칸이라 여유 칸(LLD-08 7.2), 줄인 자판, 띄운 자판(7.4)에서 따로 바뀌는 것이 없다(SRS FR-TAP-03c). 시험 TL-06.
-- **NFR-06 예외(0.18, FSS#98. 0.10의 45dp 예외를 바꿈):** 편집 줄 기능키 10개는 글자 키와 같은 폭(배치 단위 36, 360dp 화면 꽉 채움에서 여유 칸 때문에 약 32.7dp)으로 NFR-06의 기능키 48dp보다 좁다. 오너 지시로 Ctrl·Alt를 더한 결과이고 SRS NFR-06이 이 예외를 적는다(잠정, 오너 확인 전 — SRS TBD-34 ⑤). TL-02는 편집 줄 기능키에 36을 하한으로 쓴다.
+- **편집 줄 10키(0.19, FSS#98):** Esc 바로 오른쪽에 Ctrl, 그 오른쪽에 Alt를 두고 열 키 모두 글자 키와 같은 폭 36이다(한 줄 10칸, 빈칸 없음. 0.18까지 8 × 45). 쿼티·두벌식이 같은 데이터다. 편집 줄 키의 x는 바로 아래 숫자 줄 키의 x와 같다. 한 줄 10칸이라 여유 칸(LLD-08 7.2), 줄인 자판, 띄운 자판(7.4)에서 따로 바뀌는 것이 없다(SRS FR-TAP-03c). 시험 TL-06.
+- **NFR-06 예외(0.19, FSS#98. 0.10의 45dp 예외를 바꿈):** 편집 줄 기능키 10개는 글자 키와 같은 폭(배치 단위 36, 360dp 화면 꽉 채움에서 여유 칸 때문에 약 32.7dp)으로 NFR-06의 기능키 48dp보다 좁다. 오너 지시로 Ctrl·Alt를 더한 결과이고 SRS NFR-06이 이 예외를 적는다(잠정, 오너 확인 전 — SRS TBD-34 ⑤). TL-02는 편집 줄 기능키에 36을 하한으로 쓴다.
 - 빈칸은 들여쓰기 3개(3줄 양쪽, 4줄 왼쪽)뿐이다. 0.10에서 맨 아랫줄의 빈칸은 없앴다(`/` 키와 넓힌 스페이스가 채움).
 
 ### 3.3 기호 배정 (SRS 기호 배정표, FR-TAP-03a)
@@ -233,7 +233,7 @@ object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 
 ### 3.4 모서리 표시 (FR-TAP-03b)
 
-- `TapKeyResolver.edgeHints(key)`로 그린다(0.13, 오너 #198·#208: 그어서 나오는 모든 글자 중 탭과 다른 것 — 쿼티 ↑ 대문자, 두벌식 시프트 자모(ㅃ ㅉ ㄸ ㄲ ㅆ ㅒ ㅖ)·겹받침(0.14; 0.18 FSS#97부터 ㄴ ↑ ㄵ·ㅍ ↑ ㄿ은 위 변, ㄱ ↓ ㄳ·ㄴ ↓ ㄶ·ㅂ ↓ ㅄ·ㅅ ↓ ㄽ은 아래 변 — `edgeHints`가 `resolve(Exit(d))`의 결과를 그대로 쓰므로 배정 자료만 바뀌면 표시가 따라온다), 숫자 줄·기호 키·글자 키의 배정 기호. 기능 키는 없음. 모서리 자리는 쓰지 않음): ↑ → 위 변 가운데, ← → 왼쪽 변 가운데(세로 가운데), ↓ → 아래 변 가운데, → → 오른쪽 변 가운데. 글자 크기는 키 라벨의 40 %(`HINT_SCALE`), 변에서 2dp(`HINT_PAD_DP`) — 36dp 키(라벨 약 19dp)에서 ←·→ 기호(약 8dp)가 가운데 라벨과 겹치지 않는다. 0.12까지는 `up` 오른쪽 위, `left` 왼쪽 아래, `right` 오른쪽 아래. 0.12까지는 글자 키의 `up`(대문자·쌍자음)을 표시하지 않았다.
+- `TapKeyResolver.edgeHints(key)`로 그린다(0.13, 오너 #198·#208: 그어서 나오는 모든 글자 중 탭과 다른 것 — 쿼티 ↑ 대문자, 두벌식 시프트 자모(ㅃ ㅉ ㄸ ㄲ ㅆ ㅒ ㅖ)·겹받침(0.14; 0.19 FSS#97부터 ㄴ ↑ ㄵ·ㅍ ↑ ㄿ은 위 변, ㄱ ↓ ㄳ·ㄴ ↓ ㄶ·ㅂ ↓ ㅄ·ㅅ ↓ ㄽ은 아래 변 — `edgeHints`가 `resolve(Exit(d))`의 결과를 그대로 쓰므로 배정 자료만 바뀌면 표시가 따라온다), 숫자 줄·기호 키·글자 키의 배정 기호. 기능 키는 없음. 모서리 자리는 쓰지 않음): ↑ → 위 변 가운데, ← → 왼쪽 변 가운데(세로 가운데), ↓ → 아래 변 가운데, → → 오른쪽 변 가운데. 글자 크기는 키 라벨의 40 %(`HINT_SCALE`), 변에서 2dp(`HINT_PAD_DP`) — 36dp 키(라벨 약 19dp)에서 ←·→ 기호(약 8dp)가 가운데 라벨과 겹치지 않는다. 0.12까지는 `up` 오른쪽 위, `left` 왼쪽 아래, `right` 오른쪽 아래. 0.12까지는 글자 키의 `up`(대문자·쌍자음)을 표시하지 않았다.
 - 글자 크기는 키 글자의 40%(D-15, 레이아웃 세부).
 
 ### 3.5 숫자류 입력창
@@ -250,21 +250,21 @@ class TapKeyboardView(context: Context, private val sink: TapSink, private val g
 }
 interface TapSink {                              // InputDispatcher가 구현(LLD-08 6절)
     fun onTapOutput(key: TapKeyDef, out: TapOutput)
-    fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) = onTapOutput(key, out)   // 0.18: 뷰가 부르는 입구
-    val chord: Set<ChordModifier> get() = emptySet()                                               // 0.18: 켜진 조합 키(읽기만)
+    fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) = onTapOutput(key, out)   // 0.19: 뷰가 부르는 입구
+    val chord: Set<ChordModifier> get() = emptySet()                                               // 0.19: 켜진 조합 키(읽기만)
     fun onFunctionDown(key: FunctionKey); fun onFunctionUp(key: FunctionKey)
 }
 ```
-- **`onTapResult`(0.18, FSS#98):** 뷰는 글자·숫자·기호 키의 결과를 **판정된 동작과 함께** 이 함수로 넘긴다. 0.17까지의 `onTapOutput(key, out)`은 두벌식에서 자모만 넘겨, 조합 키가 켜졌을 때 필요한 "같은 자리 쿼티 키의 결과"(2.4)를 알 수 없었다(HLD 5A "키 대응"). 판정은 지금처럼 한 번이다. 기본 구현은 `onTapOutput`으로 넘기므로 조합 키를 다루지 않는 싱크(입력 연습 `PracticeInput.tapSink`, 시험의 가짜 싱크)는 고치지 않는다. `InputDispatcher`는 `onTapResult`를 구현하고 `onTapOutput(key, out)`은 `onTapResult(key, out, Tap)`이다(LLD-08 6.1).
-- **`chord`(0.18):** 켜진 조합 키 집합(Ctrl, Alt). 상태는 싱크(`InputDispatcher`)가 갖고 뷰는 그릴 때와 접근성 노드를 채울 때 읽기만 한다(HLD 5A "상태의 자리"). 기본값은 빈 집합이라 입력 연습 자판에는 켜짐 표시가 없다(FR-TAP-17 ④).
+- **`onTapResult`(0.19, FSS#98):** 뷰는 글자·숫자·기호 키의 결과를 **판정된 동작과 함께** 이 함수로 넘긴다. 0.18까지의 `onTapOutput(key, out)`은 두벌식에서 자모만 넘겨, 조합 키가 켜졌을 때 필요한 "같은 자리 쿼티 키의 결과"(2.4)를 알 수 없었다(HLD 5A "키 대응"). 판정은 지금처럼 한 번이다. 기본 구현은 `onTapOutput`으로 넘기므로 조합 키를 다루지 않는 싱크(입력 연습 `PracticeInput.tapSink`, 시험의 가짜 싱크)는 고치지 않는다. `InputDispatcher`는 `onTapResult`를 구현하고 `onTapOutput(key, out)`은 `onTapResult(key, out, Tap)`이다(LLD-08 6.1).
+- **`chord`(0.19):** 켜진 조합 키 집합(Ctrl, Alt). 상태는 싱크(`InputDispatcher`)가 갖고 뷰는 그릴 때와 접근성 노드를 채울 때 읽기만 한다(HLD 5A "상태의 자리"). 기본값은 빈 집합이라 입력 연습 자판에는 켜짐 표시가 없다(FR-TAP-17 ④).
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `setLayout` | `KeyGeom`(dp)·`KeyHitTester`를 다시 만든다 | FR-TAP-03 |
 | `hit(p)` | ① 점이 `BlankDef` 사각형 안이면 그 `nearestKeyId` 키(같은 줄의 a·l·z). ② 아니면 `KeyHitTester.hit(p)`. ①을 먼저 보므로 빈칸 위쪽에서 윗줄 키가 더 가까워도 같은 줄 키가 된다 | SRS 3.3 빈칸 |
 | `onMeasure` | 폭 = 부모, 높이 = `layout.rows × rowHeight` | 5A |
-| `onDraw` | 키 배경·글자·모서리 표시(3.4). 누른 키 강조. 0.18: 켜진 조합 키는 켜짐 바탕, Esc·Ctrl·Alt·Del은 낱말 글자 크기(아래 "조합 키 Ctrl·Alt") | FR-TAP-03b, 03c, 15 ④ |
-| `chordChanged()`(0.18) | `invalidate()` + Ctrl·Alt 두 키의 접근성 노드 `invalidateVirtualView`. 서비스가 `InputDispatcher.onChordChanged`에서 부른다(LLD-08 3절) | FR-TAP-15 ④, 18 |
+| `onDraw` | 키 배경·글자·모서리 표시(3.4). 누른 키 강조. 0.19: 켜진 조합 키는 켜짐 바탕, Esc·Ctrl·Alt·Del은 낱말 글자 크기(아래 "조합 키 Ctrl·Alt") | FR-TAP-03b, 03c, 15 ④ |
+| `chordChanged()`(0.19) | `invalidate()` + Ctrl·Alt 두 키의 접근성 노드 `invalidateVirtualView`. 서비스가 `InputDispatcher.onChordChanged`에서 부른다(LLD-08 3절) | FR-TAP-15 ④, 18 |
 | `onTouchEvent` | 아래 | FR-CMN-11 |
 
 #### `onTouchEvent(e)`
@@ -275,7 +275,7 @@ DOWN / POINTER_DOWN (index i, id):
   if key.function == MODE:                                  // 0.12(#205): 누를 때는 입력 없음, 뗄 때 판정
       fnPointers[id] = (key, TapGestureClassifier(key.geom, th.minCrossDp).begin(p))
   else if key.kind == FUNCTION:
-      guard.stroke("Tap.fn") { sink.onFunctionDown(key.function) }   // 누르는 즉시, 대기열 밖(FR-CMN-11, 11a ①). Ctrl·Alt도 이 길(0.18)
+      guard.stroke("Tap.fn") { sink.onFunctionDown(key.function) }   // 누르는 즉시, 대기열 밖(FR-CMN-11, 11a ①). Ctrl·Alt도 이 길(0.19)
       if key.function ∈ {BACKSPACE, ARROW_*, DELETE}: repeat.start(id, key.function)   // FR-CMN-07c, FR-TAP-10, DELETE 0.10(#198)
       fnPointers[id] = key
   else:
@@ -287,7 +287,7 @@ UP / POINTER_UP (id):
         s == true  → guard.stroke("Tap.fn") { sink.onSettingsStroke() }                      // 위로 나감 = 설정(#205)
         s == false → guard.stroke("Tap.fn") { sink.onFunctionDown(MODE) }; guard.stroke("Tap.fn") { sink.onFunctionUp(MODE) }   // 탭 = 모드 전환
   else if id ∈ fnPointers: repeat.stop(id); sink.onFunctionUp(fn); remove
-  else: r = guard.run("Tap.classify") { g = cls[id].finish(p); Result(key, TapKeyResolver.resolve(key, g), g) }   // 순수 계산, 상태 없음. 판정은 한 번(0.18: 동작 g를 결과에 실음)
+  else: r = guard.run("Tap.classify") { g = cls[id].finish(p); Result(key, TapKeyResolver.resolve(key, g), g) }   // 순수 계산, 상태 없음. 판정은 한 번(0.19: 동작 g를 결과에 실음)
         outs = if r == null then queue.onCancel(id) else queue.onUp(id, r)                 // 실패한 칸만 비우고 뒤 결과는 흘려보냄
         for r in outs: guard.stroke("Tap.output") { sink.onTapResult(r.key, r.out, r.gesture) }   // 출력 하나 = 보호 단위 하나(LLD-09 2절), 누른 순서대로
 CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 않은 모드 키 빼고) sink.onFunctionUp(fn); fnPointers.clear(); cls.clear()
@@ -298,11 +298,11 @@ CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 �
 - Esc·탭 키(⇥)·방향키·Del·⌫·스페이스·↵·모드 키 처리 내용은 `InputDispatcher`(LLD-08 6절)에 있다.
 - **모드 키 ↑ = 설정(0.12, 이슈 #205):** 모드 키만 누를 때가 아니라 뗄 때 처리한다(다른 기능키는 그대로 누를 때). 판정은 글자 키와 같은 변 넘음(`TapGestureClassifier`, `minCrossDp`)이고 `ModeKeyGesture.of(g)` = 처음 통과한 변이 위면(`Exit`·`ExitReturn`·`Rub` 모두, 되돌아옴·문지르기는 보지 않음 — SRS FR-CMN-13 "처음 통과한 변만") `OPEN_SETTINGS`, 그 밖(탭, 첫 변 ←·→)은 `MODE_KEY_TAP` = 모드 전환. 맨 아랫줄이라 아래 나감은 바깥 변(기록 없음 = 탭). 대기열 밖이라 잡고 있는 글자 키를 기다리지 않고, 글자 키도 모드 키를 기다리지 않는다. 떼기 전 `ACTION_CANCEL`이면 입력 없음(모드 전환도 설정도 아님). 접근성 클릭(7절)은 그대로 탭 = 모드 전환이고 설명 문구에 "위로 밀면 설정"을 붙였다(`a11y_key_mode`).
 
-#### 조합 키 Ctrl·Alt (0.18, FSS#98)
+#### 조합 키 Ctrl·Alt (0.19, FSS#98)
 
 - **누름:** Ctrl·Alt는 다른 기능키처럼 누를 때 `sink.onFunctionDown(CTRL / ALT)`, 뗄 때 `onFunctionUp`이다(대기열 밖, 진동·소리는 누를 때). 반복 대상(`TapTouchLogic.REPEATING`)이 아니다(FR-TAP-15 ①). 켜고 끄기·싣기·끄기는 모두 `InputDispatcher`가 한다(LLD-08 6.3) — 뷰와 `TapTouchLogic`에는 조합 키 상태가 없다.
-- **글자 키와의 순서:** 글자·숫자·기호 키는 결과가 대기열에서 나와 싱크에 닿을 때 조합 키가 실린다(손을 뗀 때가 아니다, FR-TAP-15 ②). 뷰는 0.17과 같은 순서로 `onTapResult`를 부를 뿐이다.
-- **켜짐 표시(FR-TAP-15 ④):** `onDraw`의 키 바탕은 ① 켜진 조합 키(`isChordOn(key)` = 그 키가 Ctrl·Alt이고 `sink.chord`에 있음) → `CHORD_ON_COLOR`(0xFF2E6FBF, 파랑) ② 누르고 있는 키 → `PRESSED_COLOR`(0xFF5A5A5A) ③ 기능키 → `FUNCTION_COLOR`(0xFF2A2A2A) ④ 그 밖 → `KEY_COLOR`의 차례로 고른다. ①이 ②보다 앞이라 눌러 켜는 순간부터(손가락 아래에서도) 켜짐 바탕이고, 눌러 끄면 손을 뗄 때까지 눌림 바탕이었다가 보통으로 돌아간다. 탭 자판에는 시프트 키가 없어 따를 표시가 없으므로 새로 정한 색이다(LLD 결정 D-70, 실기 확인 DV-38 ⑧).
+- **글자 키와의 순서:** 글자·숫자·기호 키는 결과가 대기열에서 나와 싱크에 닿을 때 조합 키가 실린다(손을 뗀 때가 아니다, FR-TAP-15 ②). 뷰는 0.18과 같은 순서로 `onTapResult`를 부를 뿐이다.
+- **켜짐 표시(FR-TAP-15 ④):** `onDraw`의 키 바탕은 ① 켜진 조합 키(`isChordOn(key)` = 그 키가 Ctrl·Alt이고 `sink.chord`에 있음) → `CHORD_ON_COLOR`(0xFF2E6FBF, 파랑) ② 누르고 있는 키 → `PRESSED_COLOR`(0xFF5A5A5A) ③ 기능키 → `FUNCTION_COLOR`(0xFF2A2A2A) ④ 그 밖 → `KEY_COLOR`의 차례로 고른다. ①이 ②보다 앞이라 눌러 켜는 순간부터(손가락 아래에서도) 켜짐 바탕이고, 눌러 끄면 손을 뗄 때까지 눌림 바탕이었다가 보통으로 돌아간다. 탭 자판에는 시프트 키가 없어 따를 표시가 없으므로 새로 정한 색이다(LLD 결정 D-70, 실기 확인 DV-39 ⑧).
 - **낱말 글자 크기(FR-TAP-03c):** Esc · Ctrl · Alt · Del 네 키(`WORD_KEYS`)의 글자는 `wordPaint` 하나로 그린다(네 낱말이 같은 크기). 크기는 `rebuildGeometry`(배치·폭·줄 높이·여유 칸이 바뀔 때) 끝의 `fitWordLabels()`가 정한다:
   ```
   안쪽 폭 = 네 키 가운데 가장 좁은 키의 폭(px) − 2 × (KEY_INSET_DP 2 + WORD_PAD_DP 2) × density
@@ -317,7 +317,7 @@ CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 �
 ## 5. MultiPointerQueue (app)
 
 ```kotlin
-class MultiPointerQueue<R : Any> {               // 0.18: R = 뗀 키 하나의 결과(TapTouchLogic의 (키, 출력, 판정된 동작))
+class MultiPointerQueue<R : Any> {               // 0.19: R = 뗀 키 하나의 결과(TapTouchLogic의 (키, 출력, 판정된 동작))
     fun onDown(pointerId: Int)
     fun onUp(pointerId: Int, result: R): List<R>
     fun onCancel(pointerId: Int): List<R>
@@ -325,7 +325,7 @@ class MultiPointerQueue<R : Any> {               // 0.18: R = 뗀 키 하나의 
     fun clear()
 }
 ```
-- 0.18(FSS#98): 결과의 형을 타입 인자로 했다. 뷰가 판정된 동작을 결과와 함께 싱크에 넘겨야 해서다(4절 `onTapResult`). 대기 규칙은 그대로다.
+- 0.19(FSS#98): 결과의 형을 타입 인자로 했다. 뷰가 판정된 동작을 결과와 함께 싱크에 넘겨야 해서다(4절 `onTapResult`). 대기 규칙은 그대로다.
 - 상태: 누른 순서대로의 칸 목록 `[(pointerId, result?)]`.
 - `onDown`: 끝에 빈 칸을 붙인다.
 - `onUp`: 그 포인터 칸에 결과를 채우고, **앞에서부터 결과가 찬 칸을 연속으로** 꺼내 돌려준다. 앞 칸이 아직 비어 있으면(앞 키가 눌려 있음) 아무것도 돌려주지 않는다.
@@ -350,7 +350,7 @@ class RepeatTimer(private val handler: Handler, private val schedule: RepeatSche
 - 그래피티 보조 줄 ⌫·긋기 자판 ⌫도 이 클래스를 쓴다. 각 뷰가 `fire`를 `{ k -> guard.stroke("Repeat") { sink.onFunctionDown(k) } }`로 넘긴다(반복 한 번 = 보호 단위 하나, LLD-09 2절).
 - 반복 한 번에는 키 입력 피드백(`feedback.key()`)을 내지 않는다. 피드백은 누를 때 한 번이다(FR-CMN-11a ②: 반복 중에는 내지 않음, HLD 8장 피드백, 오너 결정 #6 OD-3).
 - `ACTION_CANCEL`·뗌·창 숨김 때 멈춘다(`stop`, `stopAll`, FR-CMN-11a ③).
-- **조합 키(0.18, FSS#98):** Ctrl·Alt는 반복하지 않는다(누르고 있어도 한 번, FR-TAP-15 ①). 조합 키가 실린 방향키·Del·⌫의 반복은 지금처럼 `fire(key)` = `sink.onFunctionDown(key)`이고, 반복마다 같은 조합 키를 싣는 것은 `InputDispatcher`가 그 누름에 실린 집합을 기억해서 한다(LLD-08 6.3). 타이머는 바뀌지 않았다.
+- **조합 키(0.19, FSS#98):** Ctrl·Alt는 반복하지 않는다(누르고 있어도 한 번, FR-TAP-15 ①). 조합 키가 실린 방향키·Del·⌫의 반복은 지금처럼 `fire(key)` = `sink.onFunctionDown(key)`이고, 반복마다 같은 조합 키를 싣는 것은 `InputDispatcher`가 그 누름에 실린 집합을 기억해서 한다(LLD-08 6.3). 타이머는 바뀌지 않았다.
 - 근거: FR-CMN-07c, FR-TAP-10. 시험: RT-01~RT-05.
 
 ## 7. TapKeyAccessHelper (app, NFR-07)
@@ -362,12 +362,12 @@ class TapKeyAccessHelper(private val view: TapKeyboardView) : ExploreByTouchHelp
 |---|---|
 | `getVirtualViewAt(x, y)` | `hit(x, y)`의 키 번호(빈칸은 가까운 키) |
 | `getVisibleVirtualViews(list)` | 키 번호 전부 |
-| `onPopulateNodeForVirtualView(id, node)` | 경계 = 키 사각형(px), `contentDescription` = 키 글자(기능키는 이름 문자열 리소스), 동작 = `ACTION_CLICK`. 0.18: Ctrl·Alt 키는 `className = "android.widget.ToggleButton"`, `isCheckable = true`, `isChecked = view.isChordOn(key)` |
+| `onPopulateNodeForVirtualView(id, node)` | 경계 = 키 사각형(px), `contentDescription` = 키 글자(기능키는 이름 문자열 리소스), 동작 = `ACTION_CLICK`. 0.19: Ctrl·Alt 키는 `className = "android.widget.ToggleButton"`, `isCheckable = true`, `isChecked = view.isChordOn(key)` |
 | `onPerformActionForVirtualView(id, CLICK)` | 그 키의 `Tap` 결과를 `sink`로(`onTapResult(key, out, Tap)`. 기능키는 down+up) |
 
 - 쿼티·두벌식에만 붙인다(NFR-07). 읽어 주는 문구는 UI 문구라 문자열 리소스로 둔다.
-- **조합 키(0.18, FR-TAP-18):** Ctrl·Alt 노드는 켜고 끄는 항목이다. 이름은 `a11y_key_ctrl` = "Ctrl", `a11y_key_alt` = "Alt"(화면 읽기가 켜짐·꺼짐을 덧붙여 읽는다). 조합 키 집합이 바뀌면(`chordChanged()`) 두 노드를 `invalidateVirtualView`로 무효화해 바뀐 상태가 읽히게 한다 — 눌러 켜고 끔, 대상 키에 실려 꺼짐, 모드 키·입력창 변경 등으로 꺼짐 모두 `InputDispatcher.onChordChanged` 하나로 온다. 누르기 동작은 터치와 같이 down+up(켜고 끄기)이고, 켜진 채 다른 키를 누르기 동작으로 누르면 그 키의 탭 결과에 실린다(글자 키는 `Tap`, 기능키는 그 키).
-- 시험: CV-06·CV-07(LLD-11 7.5), 실기기 DV-10·DV-38 ⑨.
+- **조합 키(0.19, FR-TAP-18):** Ctrl·Alt 노드는 켜고 끄는 항목이다. 이름은 `a11y_key_ctrl` = "Ctrl", `a11y_key_alt` = "Alt"(화면 읽기가 켜짐·꺼짐을 덧붙여 읽는다). 조합 키 집합이 바뀌면(`chordChanged()`) 두 노드를 `invalidateVirtualView`로 무효화해 바뀐 상태가 읽히게 한다 — 눌러 켜고 끔, 대상 키에 실려 꺼짐, 모드 키·입력창 변경 등으로 꺼짐 모두 `InputDispatcher.onChordChanged` 하나로 온다. 누르기 동작은 터치와 같이 down+up(켜고 끄기)이고, 켜진 채 다른 키를 누르기 동작으로 누르면 그 키의 탭 결과에 실린다(글자 키는 `Tap`, 기능키는 그 키).
+- 시험: CV-06·CV-07(LLD-11 7.5), 실기기 DV-10·DV-39 ⑨.
 
 ## 8. 시퀀스
 
@@ -384,7 +384,7 @@ UP   → finish → Exit(UP) → TapKeyResolver.resolve → TapOutput(text="@")
           → ModeController.onInput()
 ```
 
-### 8.2 조합 키 (0.18, FSS#98 — 두벌식 "각" 조합 중 Ctrl을 켜고 ㅂ 키를 ↑)
+### 8.2 조합 키 (0.19, FSS#98 — 두벌식 "각" 조합 중 Ctrl을 켜고 ㅂ 키를 ↑)
 
 ```
 DOWN(Ctrl 키) → feedback.key() → sink.onFunctionDown(CTRL)
