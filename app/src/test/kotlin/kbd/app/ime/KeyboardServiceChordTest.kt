@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * LLD-11 §7.5 CS-01..CS-05: `KeyboardService` turns Ctrl and Alt off at its lifecycle points and not on a cursor
+ * LLD-11 §7.5 CL-01..CL-05: `KeyboardService` turns Ctrl and Alt off at its lifecycle points and not on a cursor
  * move (LLD-08 §3, SRS FR-TAP-17 ①②, FSS#98). The real service, created by Robolectric; no input view is needed.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -44,7 +44,7 @@ class KeyboardServiceChordTest {
     private fun textField() = EditorInfo().apply { inputType = InputType.TYPE_CLASS_TEXT }
 
     @Test
-    fun `CS-01 a new field, or the same one shown again, turns them off`() {
+    fun `CL-01 a new field, or the same one shown again, turns them off`() {
         turnOn()
         service.onStartInputView(textField(), false)
         assertOff()
@@ -57,7 +57,7 @@ class KeyboardServiceChordTest {
     }
 
     @Test
-    fun `CS-02 the keyboard going down and the end of input turn them off`() {
+    fun `CL-02 the keyboard going down and the end of input turn them off`() {
         turnOn()
         service.onFinishInputView(false)
         assertOff()
@@ -70,14 +70,14 @@ class KeyboardServiceChordTest {
     }
 
     @Test
-    fun `CS-03 a rotation turns them off`() {
+    fun `CL-03 a rotation turns them off`() {
         turnOn()
         service.onConfigurationChanged(Configuration(service.resources.configuration).apply { orientation = Configuration.ORIENTATION_LANDSCAPE })
         assertOff()
     }
 
     @Test
-    fun `CS-04 a cursor or selection change does not`() {
+    fun `CL-04 a cursor or selection change does not`() {
         service.onStartInputView(textField(), false)
         turnOn()
         service.onUpdateSelection(0, 0, 2, 5, -1, -1)   // the user selected text
@@ -87,7 +87,7 @@ class KeyboardServiceChordTest {
     }
 
     @Test
-    fun `CS-05 the mode key turns them off`() {
+    fun `CL-05 the mode key turns them off`() {
         service.onStartInputView(textField(), false)
         turnOn()
         service.dispatcher.onFunctionDown(FunctionKey.MODE)

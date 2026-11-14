@@ -14,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * LLD-11 §5.6 CK-01..CK-12: the SRS chord table (FR-TAP-16, LLD-05A §2.4). Key ids are QWERTY positions, the same
+ * LLD-11 §5.6 CM-01..CM-12: the SRS chord table (FR-TAP-16, LLD-05A §2.4). Key ids are QWERTY positions, the same
  * in the Dubeolsik layout: q = ㅂ, a = ㅁ, f = ㄹ, l = ㅣ.
  */
 class ChordKeysTest {
@@ -31,7 +31,7 @@ class ChordKeysTest {
     private val digitKeys = ChordKey.entries.subList(ChordKey.D0.ordinal, ChordKey.D9.ordinal + 1)
 
     @Test
-    fun `CK-01 the character table is the 94 printable ASCII characters`() {
+    fun `CM-01 the character table is the 94 printable ASCII characters`() {
         assertEquals(('!'..'~').toSet(), ChordKeys.CHARS.keys)
         assertEquals(26, letterKeys.size)
         assertEquals(10, digitKeys.size)
@@ -41,7 +41,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-02 small letters are the letter keys, capitals add Shift`() {
+    fun `CM-02 small letters are the letter keys, capitals add Shift`() {
         for (i in 0 until 26) {
             assertEquals(plain(letterKeys[i]), ChordKeys.ofChar('a' + i))
             assertEquals(shift(letterKeys[i]), ChordKeys.ofChar('A' + i))
@@ -50,7 +50,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-03 digits are the digit keys, their Shift symbols add Shift`() {
+    fun `CM-03 digits are the digit keys, their Shift symbols add Shift`() {
         ")!@#$%^&*(".forEachIndexed { i, s ->
             assertEquals(plain(digitKeys[i]), ChordKeys.ofChar('0' + i))
             assertEquals(shift(digitKeys[i]), ChordKeys.ofChar(s))
@@ -59,7 +59,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-04 the 22 other symbols are the US layout keys`() {
+    fun `CM-04 the 22 other symbols are the US layout keys`() {
         val expected = mapOf(
             '`' to plain(ChordKey.GRAVE), '~' to shift(ChordKey.GRAVE),
             '-' to plain(ChordKey.MINUS), '_' to shift(ChordKey.MINUS),
@@ -80,7 +80,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-05 letter keys - tap, unassigned directions, up = Shift, rubs`() {
+    fun `CM-05 letter keys - tap, unassigned directions, up = Shift, rubs`() {
         for (id in "abcdefghijklmnopqrstuvwxyz") {
             val k = ChordKey.valueOf(id.uppercase())
             assertEquals("$id tap", plain(k), ChordKeys.ofTap(id.toString(), tap))
@@ -98,7 +98,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-06 symbols assigned to letter keys`() {
+    fun `CM-06 symbols assigned to letter keys`() {
         assertEquals(plain(ChordKey.LEFT_BRACKET), ChordKeys.ofTap("i", exit(LEFT)))
         assertEquals(plain(ChordKey.RIGHT_BRACKET), ChordKeys.ofTap("i", exit(RIGHT)))
         assertEquals(shift(ChordKey.LEFT_BRACKET), ChordKeys.ofTap("o", exit(LEFT)))
@@ -114,7 +114,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-07 number row`() {
+    fun `CM-07 number row`() {
         "1234567890".forEach { n ->
             val k = ChordKey.valueOf("D$n")
             assertEquals("$n tap", plain(k), ChordKeys.ofTap(n.toString(), tap))
@@ -129,7 +129,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-08 symbol keys`() {
+    fun `CM-08 symbol keys`() {
         assertEquals(plain(ChordKey.EQUALS), ChordKeys.ofTap("minus", tap))
         assertEquals(shift(ChordKey.MINUS), ChordKeys.ofTap("minus", exit(UP)))
         assertEquals(plain(ChordKey.MINUS), ChordKeys.ofTap("minus", exit(LEFT)))
@@ -148,8 +148,8 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-09 a Dubeolsik key sends the English key of its place`() {
-        // The key id is all the function takes, so every Dubeolsik key is covered by its QWERTY twin (CK-05..CK-08).
+    fun `CM-09 a Dubeolsik key sends the English key of its place`() {
+        // The key id is all the function takes, so every Dubeolsik key is covered by its QWERTY twin (CM-05..CM-08).
         val q = TapLayouts.QWERTY.keys
         val d = TapLayouts.DUBEOLSIK.keys
         assertEquals(q.map { it.id }, d.map { it.id })
@@ -166,7 +166,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-10 every gesture on every character key of the QWERTY layout has a chord key`() {
+    fun `CM-10 every gesture on every character key of the QWERTY layout has a chord key`() {
         val gestures = listOf(tap) + Dir.entries.flatMap { listOf(exit(it), back(it), rub(it)) }
         val keys = TapLayouts.QWERTY.keys.filter { it.kind != TapKeyKind.FUNCTION }
         assertEquals(26 + 10 + 4, keys.size)
@@ -187,7 +187,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-11 function keys - one key each, no Shift, none for the mode key and the modifiers`() {
+    fun `CM-11 function keys - one key each, no Shift, none for the mode key and the modifiers`() {
         val expected = mapOf(
             FunctionKey.SPACE to ChordKey.SPACE, FunctionKey.ENTER to ChordKey.ENTER, FunctionKey.TAB to ChordKey.TAB,
             FunctionKey.ARROW_LEFT to ChordKey.DPAD_LEFT, FunctionKey.ARROW_UP to ChordKey.DPAD_UP,
@@ -203,7 +203,7 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CK-12 a function key id or an unknown id is a caller error`() {
+    fun `CM-12 a function key id or an unknown id is a caller error`() {
         for (id in listOf("esc", "ctrl", "space", "nope")) {
             val thrown = runCatching { ChordKeys.ofTap(id, tap) }.exceptionOrNull()
             assertTrue(id, thrown is IllegalArgumentException)
