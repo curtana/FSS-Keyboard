@@ -69,9 +69,9 @@ class SideMarginStrokeTest {
             val geo = TapGeometry.build(layout, w, ROW, side)
             val leftEnds = geo.geoms.filter { it.rect.left <= 0.5f }
             val rightEnds = geo.geoms.filter { it.rect.right >= w - 0.5f }
-            // Rows that begin or end with an indent blank have no end key there; the edit, number, top letter and
-            // function rows do.
-            assertTrue("${layout.name} at $w", leftEnds.size >= 4 && rightEnds.size >= 4)
+            // No blanks since FSS#105: Esc 1 q a z mode start the six rows, ⌫ 0 p ↵ . end them (↵ ends two rows).
+            assertEquals("${layout.name} at $w", listOf("esc", "1", "q", "a", "z", "mode"), leftEnds.map { it.id })
+            assertEquals("${layout.name} at $w", listOf("backspace", "0", "p", "enter", "period"), rightEnds.map { it.id })
             // q and p (ㅂ and ㅔ in Dubeolsik: the key ids are the QWERTY letters in both layouts).
             assertTrue("${layout.name} at $w", leftEnds.any { it.id == "q" } && rightEnds.any { it.id == "p" })
             val inner = geo.geoms.filter { it.rect.left > 0.5f && it.rect.right < w - 0.5f }

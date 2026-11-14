@@ -167,7 +167,7 @@ class KeyboardFloatViewTest {
     private fun keyY(id: String, v: KeyboardRootView = root): Float {
         val k = TapLayouts.QWERTY.keys.first { it.id == id }
         val m = modeView(v)
-        return m.top + (k.row + 0.5f) * m.height / TapLayouts.QWERTY.rows
+        return m.top + (k.row + k.rowSpan / 2f) * m.height / TapLayouts.QWERTY.rows
     }
 
     private val handleX: Float get() = root.plate.left + root.plate.width / 2f

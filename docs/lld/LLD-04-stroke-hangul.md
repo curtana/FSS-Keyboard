@@ -1,7 +1,8 @@
 # LLD-04 방향 긋기 판정과 한글 조합
 
 - 대응 HLD 절: 4장(4.2 변 통과 판정, 4.4 HangulComposer)
-- 버전 **0.36** (2026-11-14)
+- 버전 **0.37** (2026-11-15)
+- 0.37(FSS#105, SRS 0.89 FR-TAP-03d, HLD 0.82 5A): 2절 `KeyHitTester` 근거 문구만 고쳤다 — 탭 자판에 들여쓰기 빈칸이 없어져(LLD-05A 0.21 3.2) 탭 자판 안의 점은 모두 처리 1(사각형 포함)로 정해진다. 처리 2(가장 가까운 키)는 그대로 둔다(키 영역 밖 좌표·부동소수 경계용). 함수 동작은 바뀌지 않았다.
 - 0.36(FSS#95, SRS 0.86·HLD 0.79: 긋기 입력 모드 삭제): 파일 이름을 `LLD-04-swipe.md`에서 바꾸고, 탭 자판·모드 키·그래피티가 쓰는 **2절(키 찾기)·3절(변 통과 추적)·7절(조합기)만 남긴다. 절 번호는 그대로**라 다른 문서·코드의 "LLD-04 §2·§3·§7" 참조는 그대로 맞다. 4절(`StrokeClassifier`)·5절(`ProgressState`)·6절(`SwipeInputMapper`·`VowelStrokeAssembler`)·8절(긋기 자판 배치 데이터)·9절(긋기 자판 뷰·획 자국·가운데 글자)·10절(시퀀스)은 그 코드(`gesture-engine` 모듈, `kbd.app.swipe`, `kbd.hangul.stroke`)와 함께 지웠다(번호 재사용 없음). 7절: `ComposePolicy.SWIPE`와 `lastConsonant()`(쓰는 곳이 긋기 자판뿐)를 지웠다(정책은 두벌식·그래피티 둘, 두 정책의 표·동작은 그대로). `JamoEvent.DoubleConsonant`·`UndoLast`와 `EdgeCrossingTracker.copy()`·`nthCrossingOf`는 모듈의 공용 형식으로 남긴다. 0.35까지의 긋기 쪽 변경 이력은 git 이력에 있다.
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑧·FR-SWP-45, HLD 0.75 4.2·5A): `KeyGeom.build`에 `sideDp`(테두리의 왼쪽·오른쪽이 자판에서 여유 칸만큼 밖, 2절). 양 끝 열의 바깥쪽 획은 보통 변 통과다. `EdgeCrossingTracker`는 그대로.
 - 0.29(이슈 #242 오너 결정(두벌식 겹받침 한 번에), 조합기 7절): `HangulComposer`가 겹받침 자모 하나(`Consonant(ㄺ)` 등)를 받는다 — 초성·중성만 있는 글자면 그 받침으로 두 자음 단위(`Consonant(ㄹ)`, `Consonant(ㄱ)`)를 저장해 두 번 치기와 같다(갉 + ㅏ = 갈가, ⌫ = 갈 — 둘째 자음만, PM 채택 2026-11-02; 낱자 ㄺ ⌫ = 통째). 그 밖(조합 없음, 받침 있음, 초성만)은 지금 글자를 확정하고 겹받침 낱자(ㄺ)로 선다. 낱자 뒤 모음은 둘째 자음이 가져간다(ㄺ + ㅏ = ㄹ가).
@@ -33,7 +34,7 @@ class KeyHitTester(val keys: List<KeyGeom>, val windowW: Float, val windowH: Flo
   2. 없으면 점이 어느 키에도 속하지 않는 틈이다. 점과 각 키 사각형 사이 거리(사각형 밖 최단 거리)가 가장 작은 키를 고른다. 같으면 목록 앞 키.
   3. 단, 뷰가 "입력 없음 영역"으로 둔 곳(자판의 좌우 여유 칸에서 시작한 터치, LLD-08 7.2)은 이 함수를 부르기 전에 뷰가 걸러 낸다.
 - 오류: 키 목록이 비면 null.
-- 근거: HLD 5A("이웃 틈은 가까운 키로"), SRS 3.3(들여쓰기 빈칸은 가장 가까운 키). 시험: KH-01~KH-04.
+- 근거: HLD 5A("이웃 틈은 가까운 키로"), SRS 3.3. 0.37(FSS#105): 탭 자판은 빈칸이 없어 모든 줄이 키로 차 있으므로(두 줄 높이 ↵는 사각형 하나) 뷰 안의 점은 처리 1로 정해진다. 0.36까지의 "들여쓰기 빈칸은 가장 가까운 키"는 뷰가 빈칸 사각형을 먼저 보던 규칙이었고 LLD-05A 0.21에서 지웠다. 시험: KH-01~KH-04, BE-01.
 
 #### `KeyGeom.build(id, rect, windowW, windowH, sideDp = 0): KeyGeom` (companion)
 - `windowW`·`windowH` = 키 영역(모드 뷰)의 폭·높이. `sideDp`(0.35, FSS#84) = 테두리의 왼쪽·오른쪽이 키 영역보다 밖에 있는 거리, 곧 자판의 여유 칸 폭(LLD-08 7.2). 테두리의 왼쪽 = −`sideDp`, 오른쪽 = `windowW + sideDp`.

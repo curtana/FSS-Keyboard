@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 /**
- * LLD-11 §7.4a CD-01..CD-18: Ctrl and Alt in `InputDispatcher` (LLD-08 §6.3, SRS FR-TAP-15..17, FSS#98). The
+ * LLD-11 §7.4a CD-01..CD-19: Ctrl and Alt in `InputDispatcher` (LLD-08 §6.3, SRS FR-TAP-15..17, FSS#98). The
  * behaviour with both off is what `InputDispatcherTest` already pins; CD-17 adds the new entry point to it.
  */
 class InputDispatcherChordTest {
@@ -426,5 +426,30 @@ class InputDispatcherChordTest {
         val a = key(q, "a")
         d.onTapOutput(a, TapKeyResolver.resolve(a, TapGesture.Tap))
         assertEquals(listOf("chord(A,[CTRL])"), port.calls)
+    }
+
+    @Test
+    fun `CD-19 Ctrl on, then a press on either row of the two-row enter - one ENTER key event with Ctrl (FSS#105)`() {
+        val guard = EngineGuard(ErrorLog(tmp.newFile("err19.log")), d)
+        val noRepeat = object : kbd.app.view.TapKeyRepeat {
+            override fun start(pointerId: Int, key: FunctionKey) = Unit
+            override fun stop(pointerId: Int) = Unit
+            override fun stopAll() = Unit
+        }
+        val logic = kbd.app.view.TapTouchLogic(d, guard, feedback, noRepeat).also {
+            it.geometry = kbd.app.view.TapGeometry.build(q, 360f, 48f, 16f)
+            it.minCrossDp = 8f
+        }
+        for ((from, to) in listOf(4.8f to 3.2f, 3.2f to 4.8f)) {
+            port.calls.clear()
+            logic.down(0, kbd.stroke.geom.StrokePoint(54f, 24f, 0))            // Ctrl, edit row
+            logic.up(0, kbd.stroke.geom.StrokePoint(54f, 24f, 10))
+            assertEquals(setOf(CTRL), d.chord)
+            logic.down(0, kbd.stroke.geom.StrokePoint(342f, from * 48f, 20))   // ↵
+            logic.move(0, listOf(kbd.stroke.geom.StrokePoint(342f, to * 48f, 30)))
+            logic.up(0, kbd.stroke.geom.StrokePoint(342f, to * 48f, 40))
+            assertEquals(listOf("chord(ENTER,[CTRL])"), port.calls)
+            assertEquals(emptySet<ChordModifier>(), d.chord)
+        }
     }
 }

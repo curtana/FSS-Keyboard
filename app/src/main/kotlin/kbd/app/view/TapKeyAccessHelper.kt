@@ -8,8 +8,8 @@ import androidx.customview.widget.ExploreByTouchHelper
 
 /**
  * Screen reader access to the tap keyboard keys (LLD-05A §7, NFR-07; QWERTY and Dubeolsik only).
- * One virtual view per key, numbered by its index in the layout; a blank goes to its nearest key. Ctrl and Alt are
- * toggles (FSS#98).
+ * One virtual view per key, numbered by its index in the layout, bounds = the key rectangle (↵: one node over both
+ * of its rows, FSS#105). Ctrl and Alt are toggles (FSS#98).
  */
 class TapKeyAccessHelper(private val view: TapKeyboardView) : ExploreByTouchHelper(view) {
 
