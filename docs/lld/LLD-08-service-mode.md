@@ -118,7 +118,7 @@ if modes.current == before || !isInputViewShown: return      // 떠 있지 않�
 showModeView(modes.current, dispatcher.field)                   // 모드 키와 같은 길(뷰 교체)
 if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모드의 다음 켜진 모드는 그래피티가 될 수 없지만 같은 규칙을 둠)
 ```
-- `resetParsers()`는 기본 이유(`FIELD_CHANGED`)다: 사용자가 누른 키가 아니므로 버린 획에 진동하지 않는다(D-57과 같음).
+- `resetParsers()`는 기본 이유(`FIELD_CHANGED`)다: 입력창이 바뀐 것이라 그래피티 조립기·일회성 상태만 비운다(LLD-05 6절).
 - 자동 전환이라 `typed`·`previous`는 바꾸지 않는다(5절). 저장은 `applyEnabled`가 돌려준 모드만 한다(숫자류 입력창 안이면 고친 돌아갈 모드, 밖이면 새 모드).
 - `Settings.enabledModes` = {DUBEOLSIK, QWERTY} ∪ (`graffitiEnabled`면 GRAFFITI)(LLD-07 6.1).
 
