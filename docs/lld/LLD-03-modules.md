@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.32** (2026-11-14)
+- 버전 **0.33** (2026-11-15)
+- 0.33(FSS#105, SRS 0.89 FR-TAP-03d, HLD 0.82 5A): 3.3 바깥 변 문단에서 빈칸 문장을 고쳤다(탭 자판에 빈칸이 없음, 두 줄 높이 ↵의 변). `TapKeyDef.rowSpan`·`rect`와 `BlankDef` 삭제는 LLD-05A 0.21 3.1.
 - 0.32(FSS#98, SRS 0.87 FR-TAP-15~18, HLD 0.80 5A "조합 키 Ctrl·Alt"): `FunctionKey.CTRL`·`ALT`(탭 자판 편집 줄의 조합 키, LLD-05A 3.2), stroke-core `kbd.stroke.tap`에 `ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`(조합 키 대응, 안드로이드 없음, LLD-05A 2.4). 새 모듈·의존·라이브러리는 없다.
 - 0.31(FSS#95, SRS 0.86·HLD 0.79: 긋기 입력 모드 삭제): `gesture-engine` 모듈(`kbd.gesture`), core-hangul `kbd.hangul.stroke`, app `kbd.app.swipe`·`kbd.app.swipe.impl`을 지웠다(1절, 1.2). 2절은 "빌드"만 남기고 2.2(`SwipeModule`·`SwipeHost`·`SwipeEngineState`)를 지웠다 — 앱은 탭 자판 뷰와 그래피티 패드를 직접 만든다(LLD-08 3.1). 3.1 `MergeTables.NONE`은 그래피티만, 3.4 `Thresholds`는 `minCrossDp` 한 칸만(`longDp`·`guideDelayMs`·`posTolDp`·`keySizeWDp`·`keySizeHDp` 삭제), 3.5 `InputMode { DUBEOLSIK, QWERTY, GRAFFITI }`(순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티). 시험 MOD-02(긋기 경계)·MOD-04 삭제, MOD-03은 recognizer만 본다. 아래 0.30까지의 이력에 나오는 `Swipe…`·`gesture-engine`·`kbd.hangul.stroke`·LLD-04 4~6·8~10절·LLD-06은 이 판에서 없어진 것이다.
 - 0.30(FSS#84, SRS 0.82 FR-CMN-14 ⑧, HLD 0.75 3장·5A): 3.3 바깥 변 — 테두리의 왼쪽·오른쪽은 자판 사각형의 바깥 변(자판에서 여유 칸만큼 밖)이라 끝 키의 왼쪽·오른쪽 변은 바깥 변이 아니다(`KeyGeom.build`의 `sideDp`, LLD-04 2절).
@@ -176,7 +177,7 @@ data class KeyGeom(val id: String, val rect: RectDp, val outerEdges: Set<Edge>)
 ```
 
 - `Dir.axis`: LEFT·RIGHT = HORIZONTAL, UP·DOWN = VERTICAL. `Dir.opposite`, `Dir.unit`(UP = (0,−1) 등)을 확장 속성으로 둔다.
-- **바깥 변(`outerEdges`):** 키의 변이 창의 왼쪽(x = 0), 오른쪽(x = 창 폭), 아래쪽(y = 창 높이) 경계와 겹치면 바깥 변이다. 창의 **위쪽 경계는 바깥 변이 아니다**(탭 자판은 6줄이 창을 채우고 위는 앱 화면으로 이어진다, SRS 3.3 창 높이 규칙). 빈칸과 맞닿은 변은 바깥 변이 아니다(SRS 3.3 들여쓰기 빈칸 문단). 계산은 배치 데이터를 만들 때 한 번 한다(`KeyGeom` 생성 함수, LLD-04 2절).
+- **바깥 변(`outerEdges`):** 키의 변이 창의 왼쪽(x = 0), 오른쪽(x = 창 폭), 아래쪽(y = 창 높이) 경계와 겹치면 바깥 변이다. 창의 **위쪽 경계는 바깥 변이 아니다**(탭 자판은 6줄이 창을 채우고 위는 앱 화면으로 이어진다, SRS 3.3 창 높이 규칙). 0.33(FSS#105): 탭 자판에는 빈칸이 없어 각 줄의 끝 키(a·z 포함)가 테두리 쪽에 바로 닿는다(여유 칸이 있으면 그 변도 보통 변, 0.30). 두 줄 높이 ↵의 변은 사각형 하나의 네 변이고 두 줄의 경계는 변이 아니다(LLD-05A 3.1). 계산은 배치 데이터를 만들 때 한 번 한다(`KeyGeom` 생성 함수, LLD-04 2절).
   - **0.30(FSS#84):** 위 문장의 "창"은 입력기 테두리이고, 그 왼쪽·오른쪽 변은 자판(키 10칸, 모드 뷰)의 끝이 아니라 **자판 사각형의 바깥 변**이다 — 모드 뷰 좌표로 x = −m과 x = 폭 + m(m = 여유 칸 폭, SRS FR-CMN-14 ⑧, LLD-08 7.2). 그래서 실제 자판에서는 끝 키의 왼쪽·오른쪽 변이 바깥 변이 아니고(변 너머 최소 통과 거리에서 나감, 다른 변과 같음), 바깥 변은 맨 아랫줄의 아래 변뿐이다. 맨 윗줄의 위 변(`topAtWindow`, 0.25)은 그대로다. m = 0으로 만들면(순수 함수 시험) 0.29와 같다.
 
 ### 3.4 기준값 (`kbd.stroke.threshold`)

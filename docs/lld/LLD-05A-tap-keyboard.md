@@ -1,7 +1,8 @@
 # LLD-05A 탭 자판 (쿼티·두벌식)
 
 - 대응 HLD 절: 5A장(탭 자판)
-- 버전 **0.20** (2026-11-14)
+- 버전 **0.21** (2026-11-15)
+- 0.21(FSS#105 오너 요청·추가 지시, SRS 0.89 FR-TAP-03·03d·NFR-06·TBD-36, HLD 0.82 5A "두 줄 높이 키 — ↵"): **두 줄 높이 ↵와 빈칸 없는 글자 줄** — `TapKeyDef.rowSpan`(차지하는 줄 수, 기본 1)·`inRow(r)`·`rect(unit, rowHeight)`(키 사각형 식 하나, 3.1), 배치(3.2): 3줄 a~l 0부터 + ↵(x 324 · 폭 36 · 줄 3부터 두 줄, 키 목록에서 l 다음), 4줄 z~m 0부터 · `=` 252 · `/` 288(배정 그대로), 5줄 한/영 72 · 스페이스 216 · `,` 288 · `.` 324. **빈칸 형 `BlankDef`·`TapLayout.blanks`와 `hit`의 빈칸 단계를 지웠다**(D-73, 4절). 그리기·접근성·조합 키·연습 화면은 키 사각형 하나를 그대로 쓰므로 식만 바뀌었다(4·7절). 판정·배정표·`TapKeyResolver`·`TapGestureClassifier`는 고치지 않았다.
 - 0.20(FSS#98 오너 지시 "제일위 라인 esc 키 옆에 Ctrl, Alt키를 넣어줘", SRS 0.87 FR-TAP-03·03c·04·13·15~18·조합 키 대응표·NFR-06, HLD 0.80 5A "조합 키 Ctrl·Alt"): **편집 줄 10키**(Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫, 각 36 — 0.19까지 8 × 45. 3.2), 기능키 `FunctionKey.CTRL`·`ALT`(반복 없음, 4·6절), 새 2.4 **조합 키 대응**(`ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`: 글자 94자 → (키, Shift), 키 id + 판정된 동작 → 같은 자리 쿼티 키의 결과, 기능키 → 키), `TapSink.onTapResult(key, out, gesture)`·`TapSink.chord`(4절), `MultiPointerQueue<R>`(판정된 동작을 결과와 함께 실음, 5절), `TapKeyboardView`의 켜짐 바탕·낱말 글자 크기 `WordLabelFit`·`chordChanged()`(4절), 접근성 노드의 켜고 끄는 항목(7절), 시퀀스 8.2. 조합 키 상태와 보내기는 LLD-08 4절·6.3. Ctrl·Alt가 꺼져 있으면 0.19와 모든 길이 같다(`TapKeyResolver`·`TapGestureClassifier`·배정표는 고치지 않았다).
 - 0.19(FSS#95, 긋기 입력 모드 삭제): 긋기 자판 참조를 지웠다(2.3 윗첨자·아래첨자 표, 6절 반복 타이머). 변 통과 추적·키 찾기 명세는 `LLD-04-stroke-hangul.md` 2·3절(절 번호 그대로). 없는 아래첨자 목록의 근거는 SRS FR-TAP-01b, 문지르기·나갔다 돌아옴 정규화의 근거는 SRS 3.3 탭 자판 동작 표다. 탭 자판의 동작·배치·판정은 그대로다.
 - 0.18(FSS#97 오너 지시 2026-11-14, SRS 0.85 FR-TAP-02c·두벌식 겹받침 배정표, HLD 0.78 5A): 두벌식 겹받침 여섯 개의 방향을 옮겼다 — ㄱ(r) ↓ ㄳ, ㄴ(s) ↑ ㄵ · ↓ ㄶ, ㅂ(q) ↓ ㅄ, ㅅ(t) ↓ ㄽ, ㅍ(v) ↑ ㄿ(0.17까지 ㄱ ← ㄳ, ㄴ ← ㄵ · → ㄶ, ㅂ → ㅄ, ㅅ ← ㄽ, ㅍ ← ㄿ). 비게 된 방향(ㄱ ←, ㄴ ← · →, ㅂ ← · →, ㅅ ←, ㅍ ←)은 기본 글자다. ㄹ(f)·ㅌ(x)·↑ 쌍자음·쿼티는 그대로. 바뀐 것은 `TapLayouts.COMPOUND_JAMO` 자료뿐이고 `TapKeyResolver`의 찾는 순서는 0.14 그대로다. 3.3에 두벌식 겹받침 배정표를 두었고, 2.2 표의 `DUBEOLSIK_LETTER` 행에 0.14부터 빠져 있던 겹받침 단계를 적었다(↑·↓ 문지르기는 기본 글자). 3.1 타입에 `compoundJamo`, 3.4에 겹받침 표시. 아래 0.14·0.15 줄의 방향은 그때의 것이다.
@@ -162,21 +163,25 @@ object ChordKeys {
 enum class TapKeyKind { QWERTY_LETTER, DUBEOLSIK_LETTER, NUMBER_ROW, SYMBOL, FUNCTION }
 data class KeyAssign(val tap: String, val up: String? = null, val left: String? = null,
                      val right: String? = null, val down: String? = null)
-data class TapKeyDef(val id: String, val row: Int, val x: Float, val w: Float,    // x·w는 360dp 기준 dp
+data class TapKeyDef(val id: String, val row: Int, val x: Float, val w: Float,    // x·w는 360dp 기준 dp, row = 맨 위 줄
                      val kind: TapKeyKind, val label: String,
                      val assign: KeyAssign? = null,
                      val jamo: Char? = null, val shiftJamo: Char? = null,      // 두벌식 글자 키(호환 자모 문자)
                      val function: FunctionKey? = null,
-                     val compoundJamo: Map<Dir, Char> = emptyMap())            // 두벌식 글자 키: 방향별 겹받침(3.3)
-data class TapLayout(val name: String, val rows: Int, val keys: List<TapKeyDef>,
-                     val blanks: List<BlankDef>)                                  // 들여쓰기 빈칸
-data class BlankDef(val row: Int, val x: Float, val w: Float, val nearestKeyId: String)
+                     val compoundJamo: Map<Dir, Char> = emptyMap(),            // 두벌식 글자 키: 방향별 겹받침(3.3)
+                     val rowSpan: Int = 1) {                                   // 0.21: 차지하는 줄 수(↵ 2, 그 밖 1). 1 미만이면 require 실패
+    fun inRow(r: Int): Boolean = r >= row && r < row + rowSpan                 // 줄 r에 드는가
+    fun rect(unit: Float, rowHeight: Float): RectDp =                          // 키 사각형 — 모든 키·모든 곳의 식 하나
+        RectDp(x * unit, row * rowHeight, (x + w) * unit, (row + rowSpan) * rowHeight)
+}
+data class TapLayout(val name: String, val rows: Int, val keys: List<TapKeyDef>)   // 0.21: 빈칸 목록 없음(D-73)
 object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 ```
 
-- 화면 좌표: `x_px = x / 360 × 폭`, 줄 y = 창 위에서 `row × 줄 높이`(쿼티·두벌식은 6줄로 창 전체). 가로 화면에서는 폭만 늘고 줄 높이는 그대로(FR-CMN-12).
+- 화면 좌표: `x_px = x / 360 × 폭`, 키의 위 끝 = 창 위에서 `row × 줄 높이`, 아래 끝 = `(row + rowSpan) × 줄 높이`(쿼티·두벌식은 6줄로 창 전체). 가로 화면에서는 폭만 늘고 줄 높이는 그대로(FR-CMN-12).
+- **키 사각형 식 하나(0.21, FSS#105, HLD 5A "기하"):** 키 사각형은 `TapKeyDef.rect(unit, rowHeight)` 하나로만 만든다(`unit` = 뷰 폭 / 360). `TapGeometry`(4절), 시험 도우미(키 가운데 y = `(row + rowSpan / 2) × 줄 높이`)가 이 식을 쓴다. 0.20까지 아래 끝을 `row + 1`로 쓰던 곳(`TapGeometry`, 빈칸 사각형, 시험 도우미 5곳)을 모두 바꿨다 — 남으면 ↵가 한 줄로 줄어든다. 연습 화면·`KeyboardRootView`는 키 사각형을 따로 만들지 않고(`TapKeyboardView`를 그대로 씀) 줄 수 합(`layout.rows` = 6)만 쓰므로 바뀌지 않는다. 키 사각형 하나가 `KeyGeom` 하나라 두 줄 키의 줄 경계는 변이 아니다.
 - "불가" 방향은 데이터에 넣지 않는다. 그 방향은 바깥 변이라 기록이 생기지 않는다(LLD-03 3.3).
-- **여유 칸(0.17, FSS#84):** `TapGeometry.build(layout, widthDp, rowHeightDp, sideDp)`가 키마다 `KeyGeom.build(id, rect, widthDp, heightDp, sideDp)`를 부른다(LLD-04 2절). `sideDp` = 뷰의 `sideMarginPx / density`(부모가 재기 전에 알림, LLD-08 7.2). 그래서 왼쪽·오른쪽 끝 키의 바깥쪽 변은 바깥 변이 아니고, 그 방향 획은 변 너머 `minCrossDp`에서 `Exit`이다(안쪽 키와 같은 기준). 그 방향에 배정이 없는 키는 결과가 탭과 같다(`TapKeyResolver`, 그대로). `TapKeyboardView.rebuildGeometry`는 배치·폭·줄 높이·`sideDp`가 모두 같을 때만 다시 만들지 않는다. 들여쓰기 빈칸(░)의 "같은 줄 키로" 규칙(4절 `hit`)은 뷰가 받은 내려옴에만 쓰이고, 여유 칸은 뷰 밖이라 거기서 내려온 터치는 뷰에 오지 않는다(입력 없음).
+- **여유 칸(0.17, FSS#84):** `TapGeometry.build(layout, widthDp, rowHeightDp, sideDp)`가 키마다 `KeyGeom.build(id, rect, widthDp, heightDp, sideDp)`를 부른다(LLD-04 2절). `sideDp` = 뷰의 `sideMarginPx / density`(부모가 재기 전에 알림, LLD-08 7.2). 그래서 왼쪽·오른쪽 끝 키의 바깥쪽 변은 바깥 변이 아니고, 그 방향 획은 변 너머 `minCrossDp`에서 `Exit`이다(안쪽 키와 같은 기준). 그 방향에 배정이 없는 키는 결과가 탭과 같다(`TapKeyResolver`, 그대로). `TapKeyboardView.rebuildGeometry`는 배치·폭·줄 높이·`sideDp`가 모두 같을 때만 다시 만들지 않는다. 여유 칸은 뷰 밖이라 거기서 내려온 터치는 뷰에 오지 않는다(입력 없음). 0.21부터 들여쓰기 빈칸이 없어(FSS#105) a·z도 q·p처럼 여유 칸에 바로 닿고, 끝 키의 바깥쪽 획은 여유 칸 안의 보통 변 통과다.
 
 ### 3.2 쿼티 배치 (SRS 3.3 그림, FR-TAP-03)
 
@@ -185,16 +190,21 @@ object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 | 0 편집 줄 | Esc ESC(36) · Ctrl CTRL(36) · Alt ALT(36) · ⇥ TAB(36) · ← (36) · ↑ (36) · ↓ (36) · → (36) · Del DELETE(36) · ⌫ BACKSPACE(36) |
 | 1 숫자 줄 | 1 2 3 4 5 6 7 8 9 0 NUMBER_ROW(각 36) |
 | 2 | q w e r t y u i o p (각 36) |
-| 3 | 빈칸 18(→ a) · a s d f g h j k l (각 36) · 빈칸 18(→ l) |
-| 4 | 빈칸 18(→ z) · z x c v b n m (각 36) · `=` SYMBOL(36) · ↵ ENTER(54) |
-| 5 기능키 줄 | 한/영 MODE(72) · 스페이스(180) · `,` SYMBOL(36) · `.` SYMBOL(36) · `/` SYMBOL(36) |
+| 3 | a s d f g h j k l (각 36, x 0~288) · ↵ ENTER(36, x 324, **줄 3·4 두 줄**, `rowSpan` 2) |
+| 4 | z x c v b n m (각 36, x 0~216) · `=` SYMBOL(36, x 252) · `/` SYMBOL(36, x 288) · (↵가 x 324~360을 차지) |
+| 5 기능키 줄 | 한/영 MODE(72) · 스페이스(216) · `,` SYMBOL(36, x 288) · `.` SYMBOL(36, x 324) |
+
+- 키 목록 순서(접근성 노드 순서, 7절): 편집 줄 → 숫자 줄 → q~p → a~l → **↵** → z~m → `=` → `/` → 한/영 → 스페이스 → `,` → `.`(0.21: ↵는 맨 위 줄인 3줄의 끝, SRS FR-TAP-03d ⑦·TBD-36 ④). 0.20까지는 3줄 빈칸 18 + 9 × 36 + 빈칸 18, 4줄 빈칸 18 + 7 × 36 + `=` 36 + ↵ 54, 5줄 72 · 180 · 36 · 36 · `/` 36.
 
 - 두벌식은 같은 자리에 2줄 ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ, 3줄 ㅁㄴㅇㄹㅎㅗㅓㅏㅣ, 4줄 ㅋㅌㅊㅍㅠㅜㅡ. `shiftJamo`: ㅂ→ㅃ, ㅈ→ㅉ, ㄷ→ㄸ, ㄱ→ㄲ, ㅅ→ㅆ, ㅐ→ㅒ, ㅔ→ㅖ, 나머지 null(기본 자모).
 - 모드 키는 맨 아랫줄 왼쪽(SRS 3.3, 모든 모드 공통). 시험 TL-01(폭 합 = 360, 모든 줄), TL-02(NFR-06 크기), TL-03(모드 키 위치).
-- ⌫는 편집 줄 오른쪽 끝, ↵는 아랫글자 줄(z 줄) 오른쪽 끝이다(0.10, 이슈 #198). 키 id는 `esc`·`ctrl`·`alt`·`delete`·`minus`·`slash`, 키 라벨은 `Esc`·`Ctrl`·`Alt`·`Del`.
+- ⌫는 편집 줄 오른쪽 끝, ↵는 가운데 글자 줄·아랫글자 줄의 오른쪽 끝에 걸친 두 줄 높이 키다(0.10, 이슈 #198 — 그때는 아랫글자 줄 한 줄, 폭 54. 0.21 FSS#105로 두 줄 · 폭 36). 키 id는 `esc`·`ctrl`·`alt`·`delete`·`minus`·`slash`, 키 라벨은 `Esc`·`Ctrl`·`Alt`·`Del`.
 - **편집 줄 10키(0.20, FSS#98):** Esc 바로 오른쪽에 Ctrl, 그 오른쪽에 Alt를 두고 열 키 모두 글자 키와 같은 폭 36이다(한 줄 10칸, 빈칸 없음. 0.19까지 8 × 45). 쿼티·두벌식이 같은 데이터다. 편집 줄 키의 x는 바로 아래 숫자 줄 키의 x와 같다. 한 줄 10칸이라 여유 칸(LLD-08 7.2), 줄인 자판, 띄운 자판(7.4)에서 따로 바뀌는 것이 없다(SRS FR-TAP-03c). 시험 TL-06.
 - **NFR-06 예외(0.20, FSS#98. 0.10의 45dp 예외를 바꿈):** 편집 줄 기능키 10개는 글자 키와 같은 폭(배치 단위 36, 360dp 화면 꽉 채움에서 여유 칸 때문에 약 32.7dp)으로 NFR-06의 기능키 48dp보다 좁다. 오너 지시로 Ctrl·Alt를 더한 결과이고 SRS NFR-06이 이 예외를 적는다(잠정, 오너 확인 전 — SRS TBD-34 ⑤). TL-02는 편집 줄 기능키에 36을 하한으로 쓴다.
-- 빈칸은 들여쓰기 3개(3줄 양쪽, 4줄 왼쪽)뿐이다. 0.10에서 맨 아랫줄의 빈칸은 없앴다(`/` 키와 넓힌 스페이스가 채움).
+- **빈칸 없음(0.21, FSS#105, D-73):** 모든 줄이 0~360을 키로 틈·겹침 없이 채운다 — 줄 r에 드는 키(`inRow(r)`, ↵는 3·4줄 모두)의 (x, 폭)을 x 차례로 이으면 0에서 360까지 빈틈이 없다(시험 TL-01). `rowSpan` ≥ 1, `row + rowSpan` ≤ `rows`. 0.20까지의 들여쓰기 빈칸 3개(3줄 양쪽, 4줄 왼쪽, 누르면 같은 줄 가장 가까운 키)는 없어졌고 그 자리는 a·z(반 칸 왼쪽으로 옮겨 옴)와 ↵다. 0.10에서 맨 아랫줄의 빈칸은 이미 없앴다.
+- **두 줄 높이 ↵(0.21, FSS#105, SRS FR-TAP-03d):** ↵ 키 정의는 **하나**(`id` "enter", row 3, `rowSpan` 2, x 324, 폭 36)다. 같은 동작의 키 둘(3줄·4줄)로 나누지 않으므로 누름·그리기·눌림 표시·접근성 노드가 하나다(HLD 12장 결정). 두 줄 키는 ↵뿐이고 다른 키는 모두 `rowSpan` 1이다(시험 TL-07). 쿼티·두벌식이 같은 데이터다.
+- **`/` 키 자리(0.21):** `/`(`id` "slash", 배정 탭 `/` · ↑ `?`, 0.10 그대로)는 4줄 x 288(`=`와 ↵ 사이)로 옮겼다. 맨 아랫줄의 빈 36은 스페이스를 216으로 넓혀 채운다(PM 기본안, 잠정 — SRS TBD-36 ①). 오너가 다른 안을 고르면 이 표의 데이터만 바뀐다.
+- **NFR-06 예외(0.21, FSS#105):** ↵는 폭 36(꽉 채움에서 약 32.7dp) · 두 줄 높이로 기능키 폭 48 기준보다 좁다(SRS NFR-06 예외, 잠정 TBD-36 ②). TL-02는 ↵에 폭 36 하한과 `rowSpan` 2를 본다.
 
 ### 3.3 기호 배정 (SRS 기호 배정표, FR-TAP-03a)
 
@@ -262,7 +272,7 @@ interface TapSink {                              // InputDispatcher가 구현(LL
 | 함수 | 처리 | 근거 |
 |---|---|---|
 | `setLayout` | `KeyGeom`(dp)·`KeyHitTester`를 다시 만든다 | FR-TAP-03 |
-| `hit(p)` | ① 점이 `BlankDef` 사각형 안이면 그 `nearestKeyId` 키(같은 줄의 a·l·z). ② 아니면 `KeyHitTester.hit(p)`. ①을 먼저 보므로 빈칸 위쪽에서 윗줄 키가 더 가까워도 같은 줄 키가 된다 | SRS 3.3 빈칸 |
+| `hit(p)` | `KeyHitTester.hit(p)`(LLD-04 2절: 사각형 포함 → 가장 가까운 키). 0.21: 빈칸이 없어 뷰 안의 모든 점이 어느 키 사각형 안이다 — ↵ 사각형(왼쪽·위 변 포함, 오른쪽·아래 변 제외) 안은 어느 줄이든 ↵. 0.20까지의 ① 빈칸 단계(`BlankDef` → 같은 줄 키)는 지웠다(D-73) | SRS 3.3, FR-TAP-03d ② |
 | `onMeasure` | 폭 = 부모, 높이 = `layout.rows × rowHeight` | 5A |
 | `onDraw` | 키 배경·글자·모서리 표시(3.4). 누른 키 강조. 0.20: 켜진 조합 키는 켜짐 바탕, Esc·Ctrl·Alt·Del은 낱말 글자 크기(아래 "조합 키 Ctrl·Alt") | FR-TAP-03b, 03c, 15 ④ |
 | `chordChanged()`(0.20) | `invalidate()` + Ctrl·Alt 두 키의 접근성 노드 `invalidateVirtualView`. 서비스가 `InputDispatcher.onChordChanged`에서 부른다(LLD-08 3절) | FR-TAP-15 ④, 18 |
@@ -272,7 +282,7 @@ interface TapSink {                              // InputDispatcher가 구현(LL
 ```
 DOWN / POINTER_DOWN (index i, id):
   p = dp(e, i); key = hit(p)
-  feedback.key()                                            // 키 입력 진동·소리는 누를 때(FR-CMN-11a ②). 빈칸도 가까운 키라 같음
+  feedback.key()                                            // 키 입력 진동·소리는 누를 때(FR-CMN-11a ②)
   if key.function == MODE:                                  // 0.12(#205): 누를 때는 입력 없음, 뗄 때 판정
       fnPointers[id] = (key, TapGestureClassifier(key.geom, th.minCrossDp).begin(p))
   else if key.kind == FUNCTION:
@@ -297,6 +307,7 @@ CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 �
 - `ACTION_CANCEL`(진행 중인 모든 터치가 함께 취소됨): 아직 떼지 않은 모든 포인터는 결과 없이 대기열에서 빠진다. 이미 뗐지만 앞 키를 기다리던 결과는 취소된 칸을 빼고 누른 순서대로 낸다. 이미 누를 때 처리한 기능키 입력은 되돌리지 않고 반복만 멈춘다(`onFunctionUp`은 입력을 만들지 않는 뗌 알림이다). 근거: SRS FR-CMN-11a ③, HLD 5A 처리 시점(DCR-11 결정).
 - 결과는 처음 누른 키로만 정한다(SRS 동작 표 아래 문단). `,` 키를 →로 그어 `.` 위를 지나도 `"`, `=` 키를 ←로 그어 m 위를 지나도 `-`.
 - Esc·탭 키(⇥)·방향키·Del·⌫·스페이스·↵·모드 키 처리 내용은 `InputDispatcher`(LLD-08 6절)에 있다.
+- **두 줄 높이 ↵(0.21, FSS#105, SRS FR-TAP-03d ②~⑥, HLD 5A):** 코드 길은 0.20과 같고 키 사각형만 두 줄이다. ① 누름: ↵ 사각형 어디든 `onFunctionDown(ENTER)` 한 번(기능키 길, 누를 때). `REPEATING`에 없어 반복하지 않는다. 기능키 포인터의 이동은 보지 않으므로 ↵ 안에서 3줄 ↔ 4줄로 움직여도, ↵ 밖으로 나가도 아무 일 없고 뗄 때 `onFunctionUp(ENTER)`(입력 없는 알림)뿐이다. ② 이웃 획: p·l·`/`·`.`의 분류기는 자기 키 사각형만 보므로 ↵ 쪽으로 나간 획은 그 키의 그 방향 결과다 — p ↓ `|`, l → l, `/` → `/`, `.` ↑ `>`(처음 누른 키로만). `/`의 아랫변은 5줄 `,`의 윗변이라 테두리가 아니고 ↓는 보통 변 통과 `Exit(DOWN)` = `/`(↓ 배정 없음). ↵의 네 변은 여유 칸이 있으면 어느 것도 테두리 변이 아니다(`KeyGeom.build` 그대로). ③ 그리기(`onDraw`): 키마다 `geoms`의 사각형 하나에 바탕·글자를 그리므로 ↵는 두 줄 높이 사각형 하나(안쪽 여백 `KEY_INSET_DP`, 모서리, 기능 키 바탕, 눌림 바탕 모두 사각형 전체)이고 두 줄 사이에 선이 없다. 글자는 `keyRect.centerX()`·`centerY()` = 사각형 가운데(세로는 두 줄 경계). 글자 크기는 `rebuildGeometry`가 **줄 높이** × `LABEL_SCALE`(0.4)로 정하므로 ↵ 글자도 다른 키와 같다(키 높이에서 정하지 않음). 기능키라 변 가운데 표시(`drawHints`)가 없다. 줄 단위로 키를 걸러 그리는 곳은 없다. ④ 조합 키: ↵는 키가 하나라 Ctrl·Alt가 켜진 채 어느 줄을 눌러도 조합 키를 실은 `ENTER` 하나다(LLD-08 6.3 그대로). 시험 BE-01~BE-07, BV-01~BV-04, CD-19(LLD-11).
 - **모드 키 ↑ = 설정(0.12, 이슈 #205):** 모드 키만 누를 때가 아니라 뗄 때 처리한다(다른 기능키는 그대로 누를 때). 판정은 글자 키와 같은 변 넘음(`TapGestureClassifier`, `minCrossDp`)이고 `ModeKeyGesture.of(g)` = 처음 통과한 변이 위면(`Exit`·`ExitReturn`·`Rub` 모두, 되돌아옴·문지르기는 보지 않음 — SRS FR-CMN-13 "처음 통과한 변만") `OPEN_SETTINGS`, 그 밖(탭, 첫 변 ←·→)은 `MODE_KEY_TAP` = 모드 전환. 맨 아랫줄이라 아래 나감은 바깥 변(기록 없음 = 탭). 대기열 밖이라 잡고 있는 글자 키를 기다리지 않고, 글자 키도 모드 키를 기다리지 않는다. 떼기 전 `ACTION_CANCEL`이면 입력 없음(모드 전환도 설정도 아님). 접근성 클릭(7절)은 그대로 탭 = 모드 전환이고 설명 문구에 "위로 밀면 설정"을 붙였다(`a11y_key_mode`).
 
 #### 조합 키 Ctrl·Alt (0.20, FSS#98)
@@ -361,12 +372,13 @@ class TapKeyAccessHelper(private val view: TapKeyboardView) : ExploreByTouchHelp
 ```
 | 함수 | 처리 |
 |---|---|
-| `getVirtualViewAt(x, y)` | `hit(x, y)`의 키 번호(빈칸은 가까운 키) |
+| `getVirtualViewAt(x, y)` | `hit(x, y)`의 키 번호(0.21: ↵ 사각형의 두 줄 모두 ↵ 노드) |
 | `getVisibleVirtualViews(list)` | 키 번호 전부 |
 | `onPopulateNodeForVirtualView(id, node)` | 경계 = 키 사각형(px), `contentDescription` = 키 글자(기능키는 이름 문자열 리소스), 동작 = `ACTION_CLICK`. 0.20: Ctrl·Alt 키는 `className = "android.widget.ToggleButton"`, `isCheckable = true`, `isChecked = view.isChordOn(key)` |
 | `onPerformActionForVirtualView(id, CLICK)` | 그 키의 `Tap` 결과를 `sink`로(`onTapResult(key, out, Tap)`. 기능키는 down+up) |
 
 - 쿼티·두벌식에만 붙인다(NFR-07). 읽어 주는 문구는 UI 문구라 문자열 리소스로 둔다.
+- **두 줄 높이 ↵(0.21, FSS#105, SRS FR-TAP-03d ⑦):** 노드는 키마다 하나이고 경계는 키 사각형(`keyBoundsPx`)이므로 ↵는 노드 하나, 경계 = 두 줄 사각형이다. 이름은 그대로(`a11y_key_enter`). 노드 번호 = 키 목록 순서라 훑어 넘기는 순서에서 ↵는 l 다음, z 앞이다(3.2 키 목록 순서). 시험 BV-03.
 - **조합 키(0.20, FR-TAP-18):** Ctrl·Alt 노드는 켜고 끄는 항목이다. 이름은 `a11y_key_ctrl` = "Ctrl", `a11y_key_alt` = "Alt"(화면 읽기가 켜짐·꺼짐을 덧붙여 읽는다). 조합 키 집합이 바뀌면(`chordChanged()`) 두 노드를 `invalidateVirtualView`로 무효화해 바뀐 상태가 읽히게 한다 — 눌러 켜고 끔, 대상 키에 실려 꺼짐, 모드 키·입력창 변경 등으로 꺼짐 모두 `InputDispatcher.onChordChanged` 하나로 온다. 누르기 동작은 터치와 같이 down+up(켜고 끄기)이고, 켜진 채 다른 키를 누르기 동작으로 누르면 그 키의 탭 결과에 실린다(글자 키는 `Tap`, 기능키는 그 키).
 - 시험: CV-06·CV-07(LLD-11 7.5), 실기기 DV-10·DV-39 ⑨.
 
