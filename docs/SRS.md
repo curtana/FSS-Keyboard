@@ -69,7 +69,7 @@
 | 영문 쿼티 / 한글 두벌식 | 표준 탭 자판 + 편집 줄(탭, 방향키) + 숫자 줄. 페이지 전환·⇧ 키 없음. 글자·숫자 키 ↑ = 시프트 |
 | 그래피티 | 단일 획 필기 입력(영문 Graffiti 1 방식, 한글 단일 획 체계), 한글·영문·숫자 획 안내표 팁(불투명 덮개) |
 | 입력 연습(옛 튜터 모드) | 입력 방법을 주제별로 골라서 짧게 연습(FSS#17. 기준값은 재지 않음) |
-| 설정 | 표시·피드백, 입력 연습 열기 |
+| 설정 | 쓸 입력 모드, 피드백, 자판 크기·폭·정렬·띄우기, 입력 연습 열기 |
 
 ### 2.3 사용자
 오너 본인(우선). 키보드 사용에 익숙하고, 방향 긋기와 그래피티를 새로 배우는 사용자.
@@ -403,7 +403,7 @@ FR-DSP-01~10(방향 안내·획 안내, 현재 글자, 다음 글자, 획 자국
 
 | 구분 | 내용 |
 |---|---|
-| 사용자 화면 | 키보드 뷰(모드별), 안내 오버레이, 설정 화면, 입력 연습 화면 |
+| 사용자 화면 | 키보드 뷰(모드별), 설정 화면, 입력 연습 화면 |
 | 플랫폼 API | `InputMethodService`(생명주기, `onEvaluateFullscreenMode`), `InputConnection`(`commitText`, `setComposingText`, `finishComposingText`, `deleteSurroundingText`, `sendKeyEvent`, `performEditorAction`), `EditorInfo`(입력 종류의 클래스·변형, `imeOptions`) |
 | 입력 장치 | 터치스크린(손가락, 여러 손가락). 스타일러스 전용 기능은 범위 밖 |
 | 출력 장치 | 진동(햅틱), 소리(선택) |
@@ -497,7 +497,7 @@ FR-DSP-01~10(방향 안내·획 안내, 현재 글자, 다음 글자, 획 자국
 | ~~FR-TUT-13~~ | 삭제(FSS#17) | – |
 | FR-GRF-01~08 (01a, 05a~05d 포함) | UR-C1~C5, G4 | GRAFFITI 4.2, 6장(6.2 "이 앱에서 정한 세부") |
 | FR-GRF-09~09d | UR-C6 | GRAFFITI 6.6(이슈 #189) |
-| FR-SET-02~07 | UR-B21, UR-B18, G9 | GRAFFITI 4.4(FR-SET-07) |
+| FR-SET-03~07 (02 삭제) | UR-B21, G9 | GRAFFITI 4.4(FR-SET-07) |
 | FR-SET-08 | UR-A8 | FSS#31 |
 | FR-SET-09 | UR-A9, UR-A10, UR-A12 | FSS#25, FSS#84, FSS#86(띄우기 스위치) |
 | CON-2, NFR-05 | UR-A6 | – |
