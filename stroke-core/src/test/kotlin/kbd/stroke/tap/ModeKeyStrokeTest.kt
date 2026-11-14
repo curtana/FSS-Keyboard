@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * [ModeKeyGesture], shared by the tap, swipe and graffiti views (SRS FR-CMN-13, HLD 8.2, issue #205,
+ * [ModeKeyGesture], shared by the tap and graffiti views (SRS FR-CMN-13, HLD 8.2, issue #205,
  * LLD-11 MK-00): a first crossed edge up opens the settings, everything else is the tap's mode change.
  */
 class ModeKeyStrokeTest {

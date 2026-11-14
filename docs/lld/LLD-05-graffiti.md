@@ -1,7 +1,8 @@
 # LLD-05 그래피티
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
-- 버전 **0.35** (2026-11-13)
+- 버전 **0.36** (2026-11-14)
+- 0.36(FSS#95, 긋기 입력 모드 삭제): 긋기 참조만 지웠다 — `CheonjiinAssembler`를 가지는 곳은 그래피티뿐이다(4절). 조합기 명세는 `LLD-04-stroke-hangul.md` 7절(절 번호 그대로). 동작·표는 그대로. 아래 이력의 "긋기 천지인 키"·"SWIPE n.n"은 그때의 일이다(SWIPE 10.1 ③은 지금 SRS 부록 A.2).
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑧, HLD 0.75 5A): 패드·보조 줄·덮개는 자판 폭 W 그대로이고 여유 칸은 비운다(배치 코드 그대로). `GraffitiPadView.sideMarginPx`(`SideMarginView`) — 보조 줄 모드 키의 `KeyGeom`을 만들 때 테두리의 왼쪽·오른쪽을 여유 칸만큼 밖으로 준다(8절). 인식·영역 판정은 그대로다.
 - 0.34(FSS#80, SRS 0.81): 영문 오너 획 템플릿 156개를 `EN_LETTER`에 더했다(7절). 판정 코드와 안내표 칸은 그대로다.
 - 0.33(FSS#72, SWIPE 0.56 10.1 ③, LLD-07 0.32): `GraffitiGuidePanel.reveal`(10.2). 강조 없이 그 칸이 보이게 넘긴다. 키보드의 덮개는 쓰지 않는다.
@@ -18,7 +19,7 @@
 - 0.22(이슈 #205): 보조 줄 모드 키는 **뗄 때** 판정한다(8절 터치). 위로 나감(패드 쪽) = `sink.onSettingsStroke()`(조합 확정 뒤 설정 화면), 그 밖 = 모드 전환. 판정은 탭 자판과 같은 `TapGestureClassifier` + `ModeKeyGesture.of`(LLD-05A 4절, HLD 8.2), 문턱 `minCrossDp`는 서비스가 기준값에서 넣는다. 모드 키에서 시작한 손가락은 패드로 올라가도 패드 획이 아니다. 시험 MK-08(LLD-11 5.5).
 - 0.21(이슈 #179, SRS 0.44 FR-CMN-08 ①/② 분리·FR-GRF-07): `InputSink.restricted` → `hidesDisplay`(비밀번호 입력창만). 학습 금지 입력창에서도 인식 글자를 잠깐 보인다(6절 `onStroke`, 8.3 `flash`). 기록(오류 기록)은 그대로 끈다(LLD-08 3.1 `noRecord`).
 - 0.16(이슈 #160, HLD 0.32 3장·5장, SRS 0.36 FR-HGL-04c·FR-CMN-07b): `CheonjiinAssembler`·`CjElement`·`CjState`·`CjPush`·`CjPop`·`CjSnapshot`을 recognizer `kbd.graffiti.cheonjiin`에서 **core-hangul `kbd.hangul.cheonjiin`**으로 옮겼다(긋기 천지인 키와 함께 씀, 4절). 동작·표는 그대로. 조합기의 `ReplaceVowel`이 자기 단위로 쌓이므로(LLD-04 7.1) ⌫의 `ToVowel`은 `undoLast()`로 바꿨다(6절). 그 결과 조립기가 닫힌 뒤의 ⌫도 요소 하나씩이다(간 ⌫ = 가, ⌫ = 기).
-- 공통 타입은 [LLD-03-modules.md#3](LLD-03-modules.md#3-모듈-사이-공통-타입), 조합기는 [LLD-04-swipe.md#7](LLD-04-swipe.md#7-hangulcomposer-core-hangul)에 있다.
+- 공통 타입은 [LLD-03-modules.md#3](LLD-03-modules.md#3-모듈-사이-공통-타입), 조합기는 [LLD-04-stroke-hangul.md#7](LLD-04-stroke-hangul.md#7-hangulcomposer-core-hangul)에 있다.
 - 획 체계의 정본은 그래피티 규칙 문서(비공개, 저장소에 두지 않음, 이슈 #249) 0.15(이하 GRAFFITI) 4.2·6장(6.1 영문 글자·6.3 숫자·6.4 구두점·확장 기호 획 표, 6.2 "이 앱에서 정한 세부", 6.5 겹치는 모양 포함), 요구는 SRS 0.28 FR-GRF-01~08(05a~05d 포함), FR-HGL-04c~04e, FR-CMN-07b다. 영문·숫자·기호 획은 오너 결정 #79 OD-1·OD-2 A, 겹치는 모양은 오너 결정 #79 OD-3~OD-7 A대로다(0.7).
 - 숫자류 입력창(숫자·전화·날짜시간·비밀번호)에서는 그래피티가 아니라 영문 쿼티로 시작하므로(SRS FR-CMN-04, LLD-08 5절) 숫자 입력창 전용 패드는 없다.
 
@@ -170,7 +171,7 @@ data class Template(val id: String, val output: TemplateOutput, val corners: Int
 
 ## 4. CheonjiinAssembler
 
-**소속(0.16, 이슈 #160, HLD 3장):** core-hangul, 패키지 `kbd.hangul.cheonjiin`(0.15까지 recognizer `kbd.graffiti.cheonjiin`). 그래피티(`GraffitiInputHandler`, 6절)와 긋기 천지인 키(`SwipeInputMapper`, LLD-04 6절)가 각자 객체를 하나씩 가진다. recognizer는 `CjElement`(획 → 요소)만 쓴다. gesture-engine·recognizer는 core-hangul의 `kbd.hangul.cheonjiin`을 참조할 수 있다(MOD-03은 `kbd.hangul.compose`만 막음).
+**소속(0.16, 이슈 #160, HLD 3장):** core-hangul, 패키지 `kbd.hangul.cheonjiin`(0.15까지 recognizer `kbd.graffiti.cheonjiin`). 그래피티(`GraffitiInputHandler`, 6절)가 객체를 하나 가진다. recognizer는 `CjElement`(획 → 요소)만 쓴다. recognizer는 core-hangul의 `kbd.hangul.cheonjiin`을 참조할 수 있다(MOD-03은 `kbd.hangul.compose`만 막음).
 
 ### 4.1 타입과 전이 표 (GRAFFITI 4.2)
 
@@ -360,7 +361,7 @@ if g != "" && !dropped && !sink.hidesDisplay: flash(g)   // FR-GRF-07, FR-CMN-08
    Handled(res)            → show(res)
    NothingComposing        → out.deleteBefore()                              // 확정 글자 한 글자
 ```
-- 조합기 단위 목록에는 조립기가 성립시킨 `Vowel` 하나와 그 뒤 요소마다 `ReplaceVowel`이 쌓인다(0.16, LLD-04 7.1). 그래서 `ToVowel`은 마지막 `ReplaceVowel` 하나를, 모음이 성립하지 않게 되면(`ToPending`·`ToNone`) `Vowel` 하나(와 도깨비불)를 `undoLast()` 한 번으로 되돌린다. 조립기가 닫힌 뒤(받침)에는 `Empty`라 조합기 ⌫로 가고, 그때도 요소 하나씩 지운다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, SRS FR-SWP-64 "그래피티와 같음"). 닫힌 모음은 다시 열지 않는다(BS-17).
+- 조합기 단위 목록에는 조립기가 성립시킨 `Vowel` 하나와 그 뒤 요소마다 `ReplaceVowel`이 쌓인다(0.16, LLD-04 7.1). 그래서 `ToVowel`은 마지막 `ReplaceVowel` 하나를, 모음이 성립하지 않게 되면(`ToPending`·`ToNone`) `Vowel` 하나(와 도깨비불)를 `undoLast()` 한 번으로 되돌린다. 조립기가 닫힌 뒤(받침)에는 `Empty`라 조합기 ⌫로 가고, 그때도 요소 하나씩 지운다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, SRS FR-CMN-07b). 닫힌 모음은 다시 열지 않는다(BS-17).
 - 도깨비불이 일어난 뒤의 되돌림은 확정 경계를 넘지 않는다: 각 + 탭 + ㅣ(= 가거) ⌫ = 가ㄱㆍ(앞 가는 확정됨, FR-CMN-07 확정 경계와 두벌식 "가가 ⌫ = 가ㄱ" 사례와 같은 규칙). 시험 GH-24.
 - 반복: 보조 줄 ⌫를 누르고 있으면 `RepeatTimer`(LLD-05A 6절)가 이 함수를 되풀이한다(FR-CMN-07c).
 

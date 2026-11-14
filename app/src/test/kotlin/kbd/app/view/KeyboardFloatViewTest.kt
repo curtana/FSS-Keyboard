@@ -502,7 +502,7 @@ class KeyboardFloatViewTest {
     // --- what does not change ---
 
     @Test
-    fun `FL-12 the handle is not a key - a tap, a short press or a swipe on it gives no input and no feedback`() {
+    fun `FL-12 the handle is not a key - a tap, a short press or a stroke on it gives no input and no feedback`() {
         float()
         val start = root.plate
         touch.tap(0, handleX, handleY)
@@ -511,7 +511,7 @@ class KeyboardFloatViewTest {
         idle(longPressMs - 1)
         touch.up(0)   // up before the long press time
         idle(longPressMs)
-        // A swipe along the handle: 8 dp or more before the long press time drops it, however long it then stays.
+        // A stroke along the handle: 8 dp or more before the long press time drops it, however long it then stays.
         touch.down(0, handleX, handleY)
         touch.move(0, handleX + px(FloatingKeyboard.GRAB_SLOP_DP), handleY)
         touch.move(0, handleX, handleY)

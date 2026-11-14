@@ -1,8 +1,10 @@
 # 상세 설계 (LLD)
 
-- 문서: LLD, 버전 **0.51** (2026-11-14)
-- 상태: 초안. 함수 단위 상세 설계. 현재 설계 판(REQUIREMENTS 0.17·SRS 0.58·HLD 0.53·SWIPE 0.43·GRAFFITI 0.16)에 맞춤. 0.51은 FSS#98(탭 자판 편집 줄의 Esc 오른쪽에 Ctrl·Alt 조합 키: 편집 줄 10키·키 폭 = 글자 키, 한 번 누르면 켜져 다음 대상 키 하나에 실리고 꺼짐, 같은 자리 쿼티 키의 조합 키 입력, SRS 0.86 FR-TAP-03c·15~18·HLD 0.79)을 넣은 판이다(LLD-03 0.31·LLD-05A 0.19·LLD-07 0.37·LLD-08 0.33·LLD-09 0.20·LLD-11 0.58, D-69~D-71). 0.50은 FSS#97(두벌식 겹받침 여섯 개의 방향을 옮김: ㄱ ↓ ㄳ, ㄴ ↑ ㄵ · ↓ ㄶ, ㅂ ↓ ㅄ, ㅅ ↓ ㄽ, ㅍ ↑ ㄿ, SRS 0.85·HLD 0.78)을 넣은 판이다(LLD-05A 0.18·LLD-11 0.57). 0.49는 FSS#86(띄운 자판: 방향별 띄우기, 손잡이 띠를 길게 눌러 옮기기, 이동 영역 안의 자판 판, 비율 fx·fy 저장, 앱을 밀지 않는 인셋, SRS 0.84 FR-CMN-15·HLD 0.77)을 넣은 판이다(LLD-08 0.32 7.4·LLD-07 0.36·LLD-11 0.56). 0.48은 FSS#85(자판 옆 남는 자리를 투명하게: 자판 판 `KeyboardPlate.rect`, 루트는 자판 판만 칠함, 터치 영역 = 자판 판, SRS 0.83·HLD 0.76)를 넣은 판이다(LLD-08 0.31·LLD-07 0.35·LLD-11 0.55). 0.47은 FSS#84(자판 좌우 여유 칸: 자판 사각형 11칸, 테두리의 왼쪽·오른쪽 = 자판 사각형 바깥 변, SRS 0.82·HLD 0.75·SWIPE 0.58)를 넣은 판이다(LLD-08 0.30·LLD-03 0.30·LLD-04 0.35·LLD-05 0.35·LLD-05A 0.17·LLD-07 0.34·LLD-11 0.54). 0.46은 FSS#80(영문 오너 획 템플릿, SRS 0.81·HLD 0.74)을 넣은 판이다(LLD-05 0.34·LLD-11 0.53). 0.45는 FSS#75(긋기 기호 재배치, SRS 0.80·SWIPE 0.57)를 넣은 판이다(LLD-04 0.34·LLD-07 0.33·LLD-11 0.52). 0.44는 FSS#72(그래피티 연습을 자음·쌍자음과 알파벳 전체로, 주제 다섯)를 넣은 판이다(LLD-07 0.32·LLD-05 0.33·LLD-11 0.51). 0.43은 FSS#70(Q 인식 변형 `en_q2`, 안내표 칸 그대로)을 넣은 판이다(LLD-05 0.32·LLD-11 0.50). 0.42는 FSS#68(한 획 쌍자음 삭제 뒤 남은 표현 정리, 안내표 157칸, SRS 0.78·HLD 0.71, 동작 그대로)을 넣은 판이다(LLD-05 0.31·LLD-11 0.49). 0.41은 FSS#62(탭 자판 m 오른쪽 키의 탭과 ← 맞바꿈, 탭 `=` ← `-`, SRS 0.77·HLD 0.70)를 넣은 판이다(LLD-05A 0.16·LLD-11 0.47). 0.40은 FSS#57(긋기 획 자국 설정 — 끄면 획 선만 안 그림, 기본 켬, SRS 0.76 FR-DSP-09·FR-SET-02·HLD 0.69·SWIPE 0.55)을 넣은 판이다(LLD-04 0.33·LLD-07 0.31·LLD-11 0.46). 0.39는 FSS#48(그래피티 패드 인식 영역 경계 사각형, SRS 0.75 FR-GRF-01a·HLD 0.68)을 넣은 판이다(LLD-05 0.28 8.1·LLD-11 0.43). 0.38은 FSS#44(설정 화면의 키 크기·정렬을 "세로 화면"·"가로 화면" 상자로 나누고 지금 화면 방향 상자에 "지금 화면" 표시, SRS 0.74·HLD 0.67)를 넣은 판이다(LLD-07 0.29·LLD-11 0.42). 0.37은 FSS#43(입력 연습의 긋기·그래피티 항목을 확정된 글자로 판정, 끝 동작 = 스페이스, SRS 0.73·HLD 0.66·SWIPE 0.53)을 넣은 판이다(LLD-07 0.28·LLD-11 0.41, D-65·D-66 바뀜). 0.36은 FSS#25(자판 폭과 왼손·중앙·오른손모드, 폭은 키 한 칸 크기로, SRS 0.71 FR-CMN-14·FR-SET-09·HLD 0.64 5A)를 넣은 판이다(LLD-07 0.27·LLD-08 0.29 7.2·LLD-11 0.40). 0.21은 이슈 #179(길이 판정 폐지, 자음 기준 C·필순·후보로 모음 판정, TBD-22·24)·이슈 #180 후속(가운데 자음, 조합 중 설정 키 = 한 글자 완성)·FR-CMN-08 ①/② 분리를 넣은 판이다(6.21). 0.22는 이슈 #198(탭 자판: 기호 키 삭제·`,` ←→·`/` 키, 편집 줄 Esc·Del·⌫ 45dp, `-` 넷째 줄, ↵ 넷째 줄 끝)을 넣은 판이다(6.22, LLD-05A 0.10). 같은 6.22에 이슈 #198 추가 지시(i ← `[` → `]`, o ← `{` → `}`)를 넣었다(LLD-05A 0.11, LLD-11 0.23). 0.34는 FSS#17(튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48)을 넣은 판이다(LLD-03·06·07·08·11, D-65~D-68). 0.35는 FSS#36(가운데 자리에 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에)·FSS#37(C를 반 키 높이 아래로)을 넣은 판이다(SRS 0.72·HLD 0.65·SWIPE 0.52·REQUIREMENTS 0.24, 6.30, LLD-03 0.29·04 0.32·06 0.24·07 0.26·08 0.28·11 0.39). 0.33은 설계질의 표의 저장소 이슈 링크를 "이슈 #N" 글로 바꾼 판이다(이슈 #249, 공개 준비). 0.32은 이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)를 넣은 판이다(LLD-03·04·06·07·08·11). 이 판부터 문서의 "personal / public" 구분은 기록이고, 코드·빌드는 하나다. 0.31은 이슈 #242 오너 결정(두벌식 겹받침 한 번에)을 넣은 판이다(LLD-03 0.26·LLD-04 0.29·LLD-05A 0.14·LLD-11 0.33). 0.30은 이슈 #237(맨 윗줄 숫자 키 ↑: 창 위 끝에 붙은 점 = 위 변 통과)과 이슈 #208 오너 지시(4 ← ; ↔ 기호2 ← ", 배정 기호를 네 변 가운데에)를 넣은 판이다(LLD-03 0.25·LLD-04 0.27·LLD-05A 0.13·LLD-11 0.31). 0.29는 이슈 #217 오너 결정(C 기준 두 구역 — 가운데 점이 C 오른쪽 아래 모서리의 45° 선 아래 왼쪽 / 오른쪽 위, 첫 획 두 후보, 버리는 획 없음, SWIPE 0.43)을 넣은 판이다(6.29, LLD-04 0.26·LLD-11 0.30). 0.28은 이슈 #217 오너 결정(모음 획이 C에 겹쳐도 버리지 않음, C 역할을 획의 가운데로, SWIPE 0.42)을 넣은 판이다(6.28, LLD-04 0.25·LLD-11 0.29). 0.27은 이슈 #217 오너 결정(`minCrossDp` 8dp 고정, 튜터가 재지 않음, 저장 값 무시)을 넣은 판이다(6.27, LLD-03 0.24·LLD-07 0.22·LLD-11 0.28). 0.26은 이슈 #213(가운데 자음 자리 C를 가로 가운데로, SWIPE 0.40)을 넣은 판이다(6.26). 0.25는 이슈 #189(그래피티 획 안내표: 칸 목록 `GuideCatalog`·불투명 덮개·빈 띠 버튼, SRS 0.45 FR-GRF-09~09d·HLD 0.41·GRAFFITI 0.16 6.6)를 넣은 판이다(6.25). 0.24는 이슈 #208(긋기 기호 키 단계 삭제·기호 키 셋, SRS 0.53·SWIPE 0.38)을 넣은 판이다(6.24). 0.23은 이슈 #205(모드 키 ↑ = 설정, 네 모드 공통, 긋기 ⚙ 키·한 글자 완성 삭제, SRS 0.52·HLD 0.47·SWIPE 0.37)를 넣은 판이다(6.23). 0.20은 이슈 #179(ㅓ/ㅢ 높이 3등분, 길이는 혼자 있는 첫 획에만)와 이슈 #180(가운데 음절)을 넣은 판이다(6.20). 0.19는 이슈 #173(자음은 탭, 모음은 손글씨 필순 획 + 획 사이 위치 관계, 종성은 다시 탭; 양 끝 열 이동·설정 키; 획 자국; 튜터 1-2 세 분포·calibration, 3-1 결과 판정, 3-2 삭제; 기준값 형식 5)을 넣은 판이다(6.19). 0.18은 이슈 #168(긋기 = 그 키의 자음 + 한 획 모음, 탭 = 자음, 쌍자음 전용 키, 기준 키·쌍자음 시간 창 삭제, 자판 7×6, 기준값 형식 4, 튜터 2과 삭제·연습 자음 19개 돌림·화면 과 번호)을 넣은 판이다(6.18). 0.17은 이슈 #165(튜터 5과 연습 자판 ⌫, 틀린 입력 뒤 입력 확인)를 넣은 판이다(6.17). 0.16은 이슈 #160(긋기 자판 천지인 키, `CheonjiinAssembler` core-hangul로 이동, `ReplaceVowel` 자기 단위, 튜터 3-4)을 넣은 판이다(6.16). 0.15는 이슈 #154(튜터 항목 판정: ✓·✗, 쓰는 법 안내, 같은 항목 다시, 측정 단계는 동작 종류로 판정)와 이슈 #156(모든 모음은 한 획, 긋기 병합 표·나눠 쓰기·튜터 3-3 삭제)을 넣은 판이다(6.15). 0.14는 이슈 #150(자음(탭)·모음(긋기) 분리, 기준 키, 짧은 두 번 탭만 쌍자음, 긋기 ⌫ 자모 단위, 튜터 4과 삭제·2-1 양쪽 측정, 기준값 형식 3)을 넣은 판이다(6.14). 0.3은 설계 0.16 판(DCR-01~21 결정, 숫자류 입력창 = 영문 쿼티, 튜터 첫 실행 한 번, 설계질의 #6 답·오너 결정)에 맞춘 판이다. 0.4는 SWIPE 0.12(설계질의 #55)와 구현 중 찾은 LLD 빈틈 G1~G13(이슈 #13, 6.3)을, 0.5는 T27·T30에서 찾은 빈틈(이슈 #75·#83, 6.4)을, 0.6은 T25 후속(이슈 #73)과 PR #91 동작(이슈 #92)을 본문에 넣은 판이다(6.5). 0.7은 설계 0.20 판(SRS 0.17~0.20, 오너 결정 #74 A·#93 OD-1~3 A·#79 OD-1~7 A)의 그래피티 원본 획 표·기호표의 직선·탭 획과 PR #104 동작(이슈 #105)을 넣은 판이다(6.6). 0.8은 설계 0.21 판(SRS 0.21, 오너 결정 #108 A)의 그래피티 영역 비율 선택지와 낡은 문구를 맞춘 판이다(6.7). 0.9는 설계 0.22 판(SRS 0.22 FR-TUT-09, 이슈 #124)의 튜터 "입력: …" 줄을 넣은 판이다(6.8). 0.10은 이슈 #127(SRS 0.27·HLD 0.23·SWIPE 0.19)의 머물기 삭제·끊는 간격·받침 우선·들어오는 기준 간격(R5 B안)·누르고 있기·다시 나누기·튜터 과·타수를 넣은 판이다(6.9). 0.11은 이슈 #135(SRS 0.29 FR-TUT-11·FR-DSP-08·FR-SET-02, HLD 0.25 6장·7.1, SWIPE 0.20 9.3·10장)의 현재 글자 설정과 튜터 연습 자판의 안내를 넣은 판이다(LLD-06 2·4절, LLD-07 2.3·6.1·7절, LLD-11 9.1). 같은 0.11에 이슈 #136(SRS 0.28 FR-GRF-05d, HLD 0.24 5장, GRAFFITI 0.15 4.2)의 그래피티 패드 상태 표시를 넣었다(LLD-05 6절·8.1, LLD-11 6.5, 6.10). 0.13은 이슈 #143(PM 결정, FR-TUT-09)의 튜터 입력 표시(1~4과 큰 한 글자, 5과 줄, 화면 세로 스크롤)와 이슈 #144(1-1 자음 14개 한 번씩)·이슈 #142 튜터 부분(누르고 있기 항목 없앰)을 넣은 판이다(LLD-07 2.2·2.3, LLD-11, 6.12, 6.13).
-- 근거(읽기 전용): [REQUIREMENTS.md](../REQUIREMENTS.md) 0.11, [SRS.md](../SRS.md) 0.43, [HLD.md](../HLD.md) 0.39, [SWIPE_INPUT_DESIGN.md](../SWIPE_INPUT_DESIGN.md) 0.34(설계 PR #181, #182), 그래피티 규칙 문서(비공개, 이슈 #249) 0.15, 분석 `_workspace/analysis/split_consonant_vowel.md`(이슈 #150), 오너 결정(이슈 #3 코멘트, PR #4, 이슈 #6, #74, #93, #79, #108, #124, #127, #135(설계 PR #138), #136 PM 결정(설계 PR #137)), 설계 답(설계질의 #55, #57, #79 Q3), 작업지시서(이슈 #60 v1), LLD 빈틈 이슈 #75·#83(T27 PR #78, T30 PR #84의 임시 처리), #73(T25 PR #77), #92(PR #91), #105(PR #104), 분석 `_workspace/analysis/graffiti1_strokes.md`(Graffiti 1 획 조사)
+- 문서: LLD, 버전 **0.52** (2026-11-14)
+- 0.52(FSS#98, SRS 0.87·HLD 0.80·REQUIREMENTS 0.34: 탭 자판 편집 줄의 Esc 오른쪽에 Ctrl·Alt 조합 키: 편집 줄 10키·키 폭 = 글자 키, 한 번 누르면 켜져 다음 대상 키 하나에 실리고 꺼짐, 같은 자리 쿼티 키의 조합 키 입력, FR-TAP-03c·15~18): LLD-03 0.32·LLD-05A 0.20·LLD-07 0.38·LLD-08 0.34·LLD-09 0.21·LLD-11 0.59, D-70~D-72.
+- 0.51(FSS#95, SRS 0.86·HLD 0.79·REQUIREMENTS 0.33: **긋기 입력 모드 삭제, 모드 키 순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티**): 근거 판은 SRS 0.86·HLD 0.79이고 긋기 입력 규칙 문서(`SWIPE_INPUT_DESIGN.md`)는 없어졌다 — 그 문서의 남는 규칙은 SRS 1.3(변 통과 용어·기준값)·3.3(탭 자판 동작 표)·3.4(방향 긋기 판정 공통)·FR-HGL-04e·부록 A(입력 연습)로 옮겨졌다. 바뀐 파일: LLD-03 0.31, LLD-04 0.36(`LLD-04-stroke-hangul.md`), LLD-05 0.36, LLD-05A 0.19, LLD-06 0.25(삭제 표시), LLD-07 0.37, LLD-08 0.33, LLD-09 0.20, LLD-11 0.58. 이 문서는 1.1 목차, 3·4절 추적표, 5절 D-69(옮겨 오기: 남은 옛 설정 키는 읽지도 지우지도 않음), 6.31을 고쳤다. 6절의 결정 기록과 변경 이력에 나오는 긋기 쪽 항목(`Swipe…`, `gesture-engine`, FR-SWP-10~65, FR-DSP, SWIPE n.n, LLD-04 4~6·8~10절, LLD-06)은 그때의 기록이고 지금은 없다.
+- 상태: 초안. 함수 단위 상세 설계. 현재 설계 판(REQUIREMENTS 0.34·SRS 0.87·HLD 0.80·그래피티 규칙 문서 0.17)에 맞춤. 0.52는 FSS#98(탭 자판 편집 줄의 Ctrl·Alt 조합 키)을 넣은 판이다(위 줄). 0.50은 FSS#97(두벌식 겹받침 여섯 개의 방향을 옮김: ㄱ ↓ ㄳ, ㄴ ↑ ㄵ · ↓ ㄶ, ㅂ ↓ ㅄ, ㅅ ↓ ㄽ, ㅍ ↑ ㄿ, SRS 0.85·HLD 0.78)을 넣은 판이다(LLD-05A 0.18·LLD-11 0.57). 0.49는 FSS#86(띄운 자판: 방향별 띄우기, 손잡이 띠를 길게 눌러 옮기기, 이동 영역 안의 자판 판, 비율 fx·fy 저장, 앱을 밀지 않는 인셋, SRS 0.84 FR-CMN-15·HLD 0.77)을 넣은 판이다(LLD-08 0.32 7.4·LLD-07 0.36·LLD-11 0.56). 0.48은 FSS#85(자판 옆 남는 자리를 투명하게: 자판 판 `KeyboardPlate.rect`, 루트는 자판 판만 칠함, 터치 영역 = 자판 판, SRS 0.83·HLD 0.76)를 넣은 판이다(LLD-08 0.31·LLD-07 0.35·LLD-11 0.55). 0.47은 FSS#84(자판 좌우 여유 칸: 자판 사각형 11칸, 테두리의 왼쪽·오른쪽 = 자판 사각형 바깥 변, SRS 0.82·HLD 0.75·SWIPE 0.58)를 넣은 판이다(LLD-08 0.30·LLD-03 0.30·LLD-04 0.35·LLD-05 0.35·LLD-05A 0.17·LLD-07 0.34·LLD-11 0.54). 0.46은 FSS#80(영문 오너 획 템플릿, SRS 0.81·HLD 0.74)을 넣은 판이다(LLD-05 0.34·LLD-11 0.53). 0.45는 FSS#75(긋기 기호 재배치, SRS 0.80·SWIPE 0.57)를 넣은 판이다(LLD-04 0.34·LLD-07 0.33·LLD-11 0.52). 0.44는 FSS#72(그래피티 연습을 자음·쌍자음과 알파벳 전체로, 주제 다섯)를 넣은 판이다(LLD-07 0.32·LLD-05 0.33·LLD-11 0.51). 0.43은 FSS#70(Q 인식 변형 `en_q2`, 안내표 칸 그대로)을 넣은 판이다(LLD-05 0.32·LLD-11 0.50). 0.42는 FSS#68(한 획 쌍자음 삭제 뒤 남은 표현 정리, 안내표 157칸, SRS 0.78·HLD 0.71, 동작 그대로)을 넣은 판이다(LLD-05 0.31·LLD-11 0.49). 0.41은 FSS#62(탭 자판 m 오른쪽 키의 탭과 ← 맞바꿈, 탭 `=` ← `-`, SRS 0.77·HLD 0.70)를 넣은 판이다(LLD-05A 0.16·LLD-11 0.47). 0.40은 FSS#57(긋기 획 자국 설정 — 끄면 획 선만 안 그림, 기본 켬, SRS 0.76 FR-DSP-09·FR-SET-02·HLD 0.69·SWIPE 0.55)을 넣은 판이다(LLD-04 0.33·LLD-07 0.31·LLD-11 0.46). 0.39는 FSS#48(그래피티 패드 인식 영역 경계 사각형, SRS 0.75 FR-GRF-01a·HLD 0.68)을 넣은 판이다(LLD-05 0.28 8.1·LLD-11 0.43). 0.38은 FSS#44(설정 화면의 키 크기·정렬을 "세로 화면"·"가로 화면" 상자로 나누고 지금 화면 방향 상자에 "지금 화면" 표시, SRS 0.74·HLD 0.67)를 넣은 판이다(LLD-07 0.29·LLD-11 0.42). 0.37은 FSS#43(입력 연습의 긋기·그래피티 항목을 확정된 글자로 판정, 끝 동작 = 스페이스, SRS 0.73·HLD 0.66·SWIPE 0.53)을 넣은 판이다(LLD-07 0.28·LLD-11 0.41, D-65·D-66 바뀜). 0.36은 FSS#25(자판 폭과 왼손·중앙·오른손모드, 폭은 키 한 칸 크기로, SRS 0.71 FR-CMN-14·FR-SET-09·HLD 0.64 5A)를 넣은 판이다(LLD-07 0.27·LLD-08 0.29 7.2·LLD-11 0.40). 0.21은 이슈 #179(길이 판정 폐지, 자음 기준 C·필순·후보로 모음 판정, TBD-22·24)·이슈 #180 후속(가운데 자음, 조합 중 설정 키 = 한 글자 완성)·FR-CMN-08 ①/② 분리를 넣은 판이다(6.21). 0.22는 이슈 #198(탭 자판: 기호 키 삭제·`,` ←→·`/` 키, 편집 줄 Esc·Del·⌫ 45dp, `-` 넷째 줄, ↵ 넷째 줄 끝)을 넣은 판이다(6.22, LLD-05A 0.10). 같은 6.22에 이슈 #198 추가 지시(i ← `[` → `]`, o ← `{` → `}`)를 넣었다(LLD-05A 0.11, LLD-11 0.23). 0.34는 FSS#17(튜터 → 입력 연습, SRS 0.68·HLD 0.61·SWIPE 0.48)을 넣은 판이다(LLD-03·06·07·08·11, D-65~D-68). 0.35는 FSS#36(가운데 자리에 지금 조합 중인 한 글자, 후보 표시 없음, 아직 모음이 아닌 점은 자리에)·FSS#37(C를 반 키 높이 아래로)을 넣은 판이다(SRS 0.72·HLD 0.65·SWIPE 0.52·REQUIREMENTS 0.24, 6.30, LLD-03 0.29·04 0.32·06 0.24·07 0.26·08 0.28·11 0.39). 0.33은 설계질의 표의 저장소 이슈 링크를 "이슈 #N" 글로 바꾼 판이다(이슈 #249, 공개 준비). 0.32은 이슈 #251 오너 결정: 공개판·개인판을 하나로(빌드 하나, 긋기 엔진은 모든 빌드)를 넣은 판이다(LLD-03·04·06·07·08·11). 이 판부터 문서의 "personal / public" 구분은 기록이고, 코드·빌드는 하나다. 0.31은 이슈 #242 오너 결정(두벌식 겹받침 한 번에)을 넣은 판이다(LLD-03 0.26·LLD-04 0.29·LLD-05A 0.14·LLD-11 0.33). 0.30은 이슈 #237(맨 윗줄 숫자 키 ↑: 창 위 끝에 붙은 점 = 위 변 통과)과 이슈 #208 오너 지시(4 ← ; ↔ 기호2 ← ", 배정 기호를 네 변 가운데에)를 넣은 판이다(LLD-03 0.25·LLD-04 0.27·LLD-05A 0.13·LLD-11 0.31). 0.29는 이슈 #217 오너 결정(C 기준 두 구역 — 가운데 점이 C 오른쪽 아래 모서리의 45° 선 아래 왼쪽 / 오른쪽 위, 첫 획 두 후보, 버리는 획 없음, SWIPE 0.43)을 넣은 판이다(6.29, LLD-04 0.26·LLD-11 0.30). 0.28은 이슈 #217 오너 결정(모음 획이 C에 겹쳐도 버리지 않음, C 역할을 획의 가운데로, SWIPE 0.42)을 넣은 판이다(6.28, LLD-04 0.25·LLD-11 0.29). 0.27은 이슈 #217 오너 결정(`minCrossDp` 8dp 고정, 튜터가 재지 않음, 저장 값 무시)을 넣은 판이다(6.27, LLD-03 0.24·LLD-07 0.22·LLD-11 0.28). 0.26은 이슈 #213(가운데 자음 자리 C를 가로 가운데로, SWIPE 0.40)을 넣은 판이다(6.26). 0.25는 이슈 #189(그래피티 획 안내표: 칸 목록 `GuideCatalog`·불투명 덮개·빈 띠 버튼, SRS 0.45 FR-GRF-09~09d·HLD 0.41·GRAFFITI 0.16 6.6)를 넣은 판이다(6.25). 0.24는 이슈 #208(긋기 기호 키 단계 삭제·기호 키 셋, SRS 0.53·SWIPE 0.38)을 넣은 판이다(6.24). 0.23은 이슈 #205(모드 키 ↑ = 설정, 네 모드 공통, 긋기 ⚙ 키·한 글자 완성 삭제, SRS 0.52·HLD 0.47·SWIPE 0.37)를 넣은 판이다(6.23). 0.20은 이슈 #179(ㅓ/ㅢ 높이 3등분, 길이는 혼자 있는 첫 획에만)와 이슈 #180(가운데 음절)을 넣은 판이다(6.20). 0.19는 이슈 #173(자음은 탭, 모음은 손글씨 필순 획 + 획 사이 위치 관계, 종성은 다시 탭; 양 끝 열 이동·설정 키; 획 자국; 튜터 1-2 세 분포·calibration, 3-1 결과 판정, 3-2 삭제; 기준값 형식 5)을 넣은 판이다(6.19). 0.18은 이슈 #168(긋기 = 그 키의 자음 + 한 획 모음, 탭 = 자음, 쌍자음 전용 키, 기준 키·쌍자음 시간 창 삭제, 자판 7×6, 기준값 형식 4, 튜터 2과 삭제·연습 자음 19개 돌림·화면 과 번호)을 넣은 판이다(6.18). 0.17은 이슈 #165(튜터 5과 연습 자판 ⌫, 틀린 입력 뒤 입력 확인)를 넣은 판이다(6.17). 0.16은 이슈 #160(긋기 자판 천지인 키, `CheonjiinAssembler` core-hangul로 이동, `ReplaceVowel` 자기 단위, 튜터 3-4)을 넣은 판이다(6.16). 0.15는 이슈 #154(튜터 항목 판정: ✓·✗, 쓰는 법 안내, 같은 항목 다시, 측정 단계는 동작 종류로 판정)와 이슈 #156(모든 모음은 한 획, 긋기 병합 표·나눠 쓰기·튜터 3-3 삭제)을 넣은 판이다(6.15). 0.14는 이슈 #150(자음(탭)·모음(긋기) 분리, 기준 키, 짧은 두 번 탭만 쌍자음, 긋기 ⌫ 자모 단위, 튜터 4과 삭제·2-1 양쪽 측정, 기준값 형식 3)을 넣은 판이다(6.14). 0.3은 설계 0.16 판(DCR-01~21 결정, 숫자류 입력창 = 영문 쿼티, 튜터 첫 실행 한 번, 설계질의 #6 답·오너 결정)에 맞춘 판이다. 0.4는 SWIPE 0.12(설계질의 #55)와 구현 중 찾은 LLD 빈틈 G1~G13(이슈 #13, 6.3)을, 0.5는 T27·T30에서 찾은 빈틈(이슈 #75·#83, 6.4)을, 0.6은 T25 후속(이슈 #73)과 PR #91 동작(이슈 #92)을 본문에 넣은 판이다(6.5). 0.7은 설계 0.20 판(SRS 0.17~0.20, 오너 결정 #74 A·#93 OD-1~3 A·#79 OD-1~7 A)의 그래피티 원본 획 표·기호표의 직선·탭 획과 PR #104 동작(이슈 #105)을 넣은 판이다(6.6). 0.8은 설계 0.21 판(SRS 0.21, 오너 결정 #108 A)의 그래피티 영역 비율 선택지와 낡은 문구를 맞춘 판이다(6.7). 0.9는 설계 0.22 판(SRS 0.22 FR-TUT-09, 이슈 #124)의 튜터 "입력: …" 줄을 넣은 판이다(6.8). 0.10은 이슈 #127(SRS 0.27·HLD 0.23·SWIPE 0.19)의 머물기 삭제·끊는 간격·받침 우선·들어오는 기준 간격(R5 B안)·누르고 있기·다시 나누기·튜터 과·타수를 넣은 판이다(6.9). 0.11은 이슈 #135(SRS 0.29 FR-TUT-11·FR-DSP-08·FR-SET-02, HLD 0.25 6장·7.1, SWIPE 0.20 9.3·10장)의 현재 글자 설정과 튜터 연습 자판의 안내를 넣은 판이다(LLD-06 2·4절, LLD-07 2.3·6.1·7절, LLD-11 9.1). 같은 0.11에 이슈 #136(SRS 0.28 FR-GRF-05d, HLD 0.24 5장, GRAFFITI 0.15 4.2)의 그래피티 패드 상태 표시를 넣었다(LLD-05 6절·8.1, LLD-11 6.5, 6.10). 0.13은 이슈 #143(PM 결정, FR-TUT-09)의 튜터 입력 표시(1~4과 큰 한 글자, 5과 줄, 화면 세로 스크롤)와 이슈 #144(1-1 자음 14개 한 번씩)·이슈 #142 튜터 부분(누르고 있기 항목 없앰)을 넣은 판이다(LLD-07 2.2·2.3, LLD-11, 6.12, 6.13).
+- 근거(읽기 전용): [REQUIREMENTS.md](../REQUIREMENTS.md) 0.11, [SRS.md](../SRS.md) 0.43, [HLD.md](../HLD.md) 0.39, 긋기 입력 규칙 문서 0.34(설계 PR #181, #182. 0.51에서 삭제됨, FSS#95), 그래피티 규칙 문서(비공개, 이슈 #249) 0.15, 분석 `_workspace/analysis/split_consonant_vowel.md`(이슈 #150), 오너 결정(이슈 #3 코멘트, PR #4, 이슈 #6, #74, #93, #79, #108, #124, #127, #135(설계 PR #138), #136 PM 결정(설계 PR #137)), 설계 답(설계질의 #55, #57, #79 Q3), 작업지시서(이슈 #60 v1), LLD 빈틈 이슈 #75·#83(T27 PR #78, T30 PR #84의 임시 처리), #73(T25 PR #77), #92(PR #91), #105(PR #104), 분석 `_workspace/analysis/graffiti1_strokes.md`(Graffiti 1 획 조사)
 - 구현 작업지시서는 [`docs/tasks/`](../tasks/README.md)에 있다(LLD 0.3 기준, 이슈 #12). 0.4는 지시서가 정한 임시 처리(G2~G11)를 그대로 본문에 확정했으므로 지시서 개정은 없다. G12·G13은 이미 머지된 T18 코드의 버그라 이 판과 같은 PR에서 코드를 고쳤다. 0.5는 머지된 T27·T30 코드의 임시 처리를 확정한 판이고, 코드가 아직 따라오지 않은 곳은 6.4 끝 "코드 후속"에 적었다. `docs/tasks/` 파일은 이 판에서 고치지 않았으므로 코드 후속은 해당 작업(T31 #85 등)의 작업지시서에 따로 넣어야 한다. 0.6도 `docs/tasks/`는 고치지 않았고, 코드 후속은 이슈 #96에 있다(6.5). 0.7의 코드 후속은 새 작업지시서 [T38](../tasks/T38-graffiti1-templates.md)(이슈 #103)이다(6.6). 0.8은 코드 후속이 없다(코드가 이미 0.8 본문과 같음, 6.7). 0.9는 구현과 같은 PR(이슈 #124)이라 지시서를 따로 두지 않았다(6.8). 0.10도 구현과 같은 PR(이슈 #127)이라 지시서를 따로 두지 않았다(6.9). 0.11(이슈 #135·#136)도 구현과 같은 PR이다(PR #139, #140). 0.13(이슈 #143, #144)도 구현과 같은 PR이다. 0.14(이슈 #150)도 구현과 같은 PR이다(지시서 없음, 6.14). 0.15(이슈 #154, #156)도 구현과 같은 PR이다(지시서 없음, 6.15). 0.16(이슈 #160)도 구현과 같은 PR이다(지시서 없음, T22·T12의 파일 위치만 고침, 6.16). 0.17(이슈 #165)도 구현과 같은 PR이다(6.17). 0.18(이슈 #168)도 구현과 같은 PR이다(지시서 없음, 6.18). 0.19(이슈 #173)도 구현과 같은 PR이다(지시서 없음, 6.19). 0.20(이슈 #179, #180)도 구현과 같은 PR이다(지시서 없음, 6.20). 0.21(이슈 #179, #180 후속)도 구현과 같은 PR이다(PR #183, 지시서 없음, 6.21).
 
 ## 1. 목차
@@ -12,21 +14,21 @@
 | 파일 | HLD 절 | 내용 |
 |---|---|---|
 | [README.md](README.md) | 전체, 13장 | 목차, 표기 규칙, 추적표, LLD에서 정한 세부, 설계 변경 요청(결정 기록)·설계 질의 |
-| [LLD-03-modules.md](LLD-03-modules.md) | 1~3장, 3.1 | Gradle 모듈·패키지·의존 방향, 빌드 변형·`SwipeModule`, 공통 타입(자모·이벤트·기하·기준값·모드), 필요 라이브러리 |
-| [LLD-04-swipe.md](LLD-04-swipe.md) | 4장(4.1~4.4) | `KeyHitTester`, `EdgeCrossingTracker`, `StrokeClassifier`, `ProgressState`, `SwipeInputMapper`, `HangulComposer`, 긋기 자판·둘레 숫자·기호 배치표, `SwipeKeyboardView`·`TouchTracker`, 시퀀스(긋기 한 획, 블록 정정) |
+| [LLD-03-modules.md](LLD-03-modules.md) | 1~3장 | Gradle 모듈·패키지·의존 방향, 빌드, 공통 타입(자모·이벤트·기하·기준값·모드), 필요 라이브러리 |
+| [LLD-04-stroke-hangul.md](LLD-04-stroke-hangul.md) | 4장(4.2, 4.4) | `KeyHitTester`(2절), `EdgeCrossingTracker`(3절), `HangulComposer`(7절). 0.51(FSS#95): 긋기 입력 처리 부분(4~6·8~10절)은 삭제, 절 번호는 그대로, 파일 이름은 `LLD-04-swipe.md`에서 바뀜 |
 | [LLD-05-graffiti.md](LLD-05-graffiti.md) | 5장 | `Recognizer`, `CheonjiinAssembler`, `GraffitiState`, `GraffitiInputHandler`, 템플릿 JSON, `GraffitiPadView`·`InkCollector`, 시퀀스(한 획, ⌫), 획 안내표(`GuideCatalog`·`GraffitiGuidePanel`, 0.25) |
 | [LLD-05A-tap-keyboard.md](LLD-05A-tap-keyboard.md) | 5A장 | 탭 자판 동작 표 판정, 윗첨자·아래첨자 표, 배치 데이터(쿼티·두벌식)·기호 배정·모서리 표시, `TapKeyboardView`, `MultiPointerQueue`, `RepeatTimer`, 접근성, 시퀀스(키 입력) |
-| [LLD-06-guide.md](LLD-06-guide.md) | 6장 | `GuideTimerLogic`, `GuideOverlay` |
+| [LLD-06-guide.md](LLD-06-guide.md) | 6장(삭제) | 삭제 표시와 남은 표시의 명세 위치(0.51, FSS#95: 안내 팝업 삭제) |
 | [LLD-07-tutor-store.md](LLD-07-tutor-store.md) | 7장 | 입력 연습(주제·항목 `PracticeTopics`, 실제 자판 뷰를 잇는 `PracticeInput`, 판정 `PracticeItemJudge`, 화면 `PracticeActivity`·`PracticeFlow`, 첫 실행 `PracticeLaunchPolicy`), 고정 기준값, `SettingsStore`, `ErrorLog`, `SettingsActivity` (0.34: 튜터·기준값 저장 삭제) |
 | [LLD-08-service-mode.md](LLD-08-service-mode.md) | 8장, 8.1, 5A(창 높이·처리 시점) | `FieldInfo`(숫자류 입력창 판별), `KeyboardService`, `ComposingController`·`EditorPort`, `ModeController`(숫자류 입력창 진입·이탈), `InputDispatcher`, `KeyboardRootView`(획 안내표 버튼·덮개, 0.25; 자판 폭과 정렬, 0.36), `Feedback`, 시퀀스(모드 키, 입력창 시작, 숫자류 입력창 이탈, 커서 이동) |
 | [LLD-09-errors.md](LLD-09-errors.md) | 9장 | `EngineGuard`, 상태 되돌리기, 기준값 파일 손상 |
 | [LLD-11-tests.md](LLD-11-tests.md) | 11장 | 시험 데이터 형식, 함수별 시험 ID와 기대값, SRS 사례 표 ↔ 시험 ID, 실기기 시험 |
 
-- HLD 10장(위험) R1~R5의 대응: R1 → LLD-11 DV-09, R2 → LLD-08 7절·DV-05, R3 → LLD-06 3절·DV-04, R4 → LLD-08 4.1·DV-06, R5 → LLD-04 6.2·LLD-07 2.2·DV-23. HLD 12장(설계 결정)은 각 파일이 따른다. HLD 13장은 이 문서 3·4절이 대신한다.
+- HLD 10장(위험) R1~R5의 대응: R1 → LLD-11 DV-09, R2 → LLD-08 7절·DV-05, R4 → LLD-08 4.1·DV-06. R3(안내 팝업)·R5(긋기 판정)는 긋기 입력 모드와 함께 대상이 없어졌다(0.51, FSS#95). HLD 12장(설계 결정)은 각 파일이 따른다. HLD 13장은 이 문서 3·4절이 대신한다.
 
 ### 1.2 읽는 순서
 
-LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱이 엔진을 묶는 방법) → LLD-06·07·09 → LLD-11.
+LLD-03(공통 타입) → LLD-04(변 통과 판정·조합기) → LLD-05A·05 → LLD-08(앱이 엔진을 묶는 방법) → LLD-07·09 → LLD-11.
 
 ### 1.3 "미정"·설계 변경 요청·설계 질의를 다루는 규칙
 
@@ -39,7 +41,7 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 - 언어: Kotlin. 코드 블록은 시그니처와 의사 코드까지 쓴다(전체 구현은 쓰지 않는다).
 - 단위: 엔진 좌표·거리 dp, 시각 ms(`MotionEvent.getEventTime()` 기준). 앱이 px를 dp로 바꿔 넘긴다.
 - 방향 표기: ↑ UP, ↓ DOWN, ← LEFT, → RIGHT. 화면 y는 아래로 증가한다.
-- 경계: "이상"·"이하"·"안"은 `≥`·`≤`, "초과"는 `>`(SRS 1.3, HLD 4.3).
+- 경계: "이상"·"이하"·"안"은 `≥`·`≤`, "초과"는 `>`(SRS 1.3).
 - 참조: 다른 파일의 정의는 `파일명#절`로 가리키고 같은 정의를 다시 쓰지 않는다.
 - ID: 요구사항은 SRS ID(`FR-…`, `NFR-…`), 시험은 LLD-11의 ID(`HC-01` 등), 정한 세부는 `D-nn`, 설계 변경 요청(결정 기록)은 `DCR-nn`, 설계 질의는 이슈 번호(`#n`).
 
@@ -54,7 +56,7 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 - 사전 조건 / 사후 조건
 - 처리: 번호 붙인 의사 코드(판정 순서·경계값 포함)
 - 오류: 예외·잘못된 입력 처리
-- 근거: SRS·HLD·SWIPE·GRAFFITI ID/절
+- 근거: SRS·HLD·GRAFFITI ID/절
 - 시험: LLD-11 시험 ID
 ```
 
@@ -63,34 +65,35 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | SRS | LLD 파일#절 · 함수 | 시험 |
 |---|---|---|
 | FR-CMN-01 | LLD-08 3절 `KeyboardService`, LLD-07 7절 | DV-16 |
-| FR-CMN-02 | LLD-03 3.5 `InputMode`, LLD-08 3.1 `showModeView` | MOD-01, DV-07 |
-| FR-CMN-03, 03c | LLD-08 5절 `ModeController.onModeKey` | MC-01~MC-10 |
+| FR-CMN-02 | LLD-03 3.5 `InputMode`(셋, 0.51), LLD-08 3.1 `showModeView` | MOD-01, MC-00, DV-07 |
+| FR-CMN-03, 03c | LLD-03 3.5 `InputMode` 선언 순서(한글 두벌식 → 영문 쿼티 → 그래피티, 0.51), LLD-08 5절 `ModeController.onModeKey` | MC-00~MC-10, ID-08, DV-38 |
 | FR-CMN-03a | LLD-08 6.2 "입력" 분류, `InputDispatcher.markInput`, LLD-05 6절 typed 열 | ID-03, ID-04, ID-09~ID-11, ID-21, ID-22, GH-34 |
 | ~~FR-CMN-03b~~ | SRS 0.65에서 삭제(이슈 #251) | ~~MC-11, MC-13~~ |
 | FR-CMN-03d | LLD-08 6.1 `onModeKey`·`finishAll`·`resetParsers` | ID-08, GH-12 |
 | FR-CMN-03e | LLD-08 5절 `onFieldChanged`, 3.1 | MC-10, MC-12, ID-12 |
-| FR-CMN-03f | LLD-08 5절 `applyEnabled`·`nextEnabled`·`fixedStart`, 3.1, 3.2 `applyEnabledModes`, LLD-07 2.3(주제 목록 표시) | OM-01~OM-09, PR-14, DV-20 |
+| FR-CMN-03f | LLD-08 5절 `applyEnabled`·`nextEnabled`·`fixedStart`, 3.1, 3.2 `applyEnabledModes`, LLD-07 2.3(주제 목록 표시) | OM-01~OM-07, PR-14, DV-20 |
 | FR-CMN-04 | LLD-08 2절 `FieldInfo.numericLike`, 3.1, 5절 `enterNumericField`, LLD-05A 3.5 | FI-01~FI-07, FI-11, FI-12, NF-01, NF-04, DV-20 |
 | FR-CMN-04a | (SRS에서 삭제: 숫자 키패드 없음) | – |
 | FR-CMN-04b | LLD-08 5절 `returnMode`·`enterNumericField`·`leaveNumericField`, 6.1 `onModeKey`(저장 제외), 3.1(같은 칸 재표시) | NF-01~NF-09, ID-11, ID-23, FI-06 |
 | FR-CMN-05 | LLD-08 4절 `ComposingController.show` | CC-01~CC-05 |
 | FR-CMN-06 | LLD-08 4절 `finishAfterUserMove`, 4.1 `onUpdateSelection`, 6.1 `onCursorMoved` | CC-09~CC-19, CC-22, ID-13, DV-06 |
 | FR-CMN-07 | LLD-04 7.3 `HangulComposer.backspace`, LLD-05 6절 `backspace`, LLD-08 6.1 `backspace`, 4절 `deleteBefore`(선택 영역) | BS-01~BS-25 |
-| FR-CMN-07a | LLD-04 6.2 `SwipeInputMapper.onBackspace`, 7.3, LLD-08 6.1 `backspace` | BS-02, SM-23, SM-40~SM-44, ID-06 |
-| FR-CMN-07b | LLD-05 4.2 `pop`, 6절 `backspace`, LLD-04 6.2 `popElement`·7.1 `ReplaceVowel` 단위, LLD-08 6.1 `backspace`(긋기, 0.16) | BS-06~BS-19, BS-23, BS-24, CJ-31~CJ-41, HC-24, CJ-56, CJ-57, ID-31 |
+| FR-CMN-07a | LLD-04 7.3 `HangulComposer.backspace`, LLD-08 6.1 `backspace` | BS-02, BS-20, BS-21, RT-03 |
+| FR-CMN-07b | LLD-05 4.2 `pop`, 6절 `backspace`, LLD-04 7.1 `ReplaceVowel` 단위 | BS-06~BS-19, BS-23, BS-24, CJ-31~CJ-41, HC-24 |
 | FR-CMN-07c | LLD-05A 6절 `RepeatTimer` | RT-01~RT-03, GH-23 |
-| FR-CMN-08 (0.21 ①/②) | LLD-08 2절 `FieldInfo.hidesDisplay`(①, 표시)·`noRecord`(①②, 기록), LLD-06 2절 `bigCurrentOn`, LLD-05 6절 `onStroke`(인식 글자 표시), LLD-04 9.5 가운데 자음, LLD-07 6.2 `ErrorLog.enabled` | FI-01~FI-06, FI-12, GT-07, GT-10, GH-35, CS-02, SW-16, EL-02, ID-20, DV-14 |
+| FR-CMN-08 (0.21 ①/②) | LLD-08 2절 `FieldInfo.hidesDisplay`(①, 표시)·`noRecord`(①②, 기록), LLD-05 6절 `onStroke`(인식 글자 표시), LLD-07 6.2 `ErrorLog.enabled` | FI-01~FI-06, FI-12, GH-35, EL-02, ID-20, DV-14 |
 | FR-CMN-09 | LLD-08 4절 `enter` | CC-07, ID-16, DV-17 |
-| FR-CMN-10 | LLD-08 5절 생성, 6.1 `onModeKey`(숫자류 입력창 안 저장 제외), LLD-07 6.1 `last_mode` | MC-11~MC-13, NF-07, NF-08, SS-02 |
-| FR-CMN-11 | LLD-05A 4절·5절 `MultiPointerQueue`, LLD-04 9.3, LLD-05 8.2 | MQ-01~MQ-06, DV-13 |
-| FR-CMN-11a | ① LLD-05A 4절, LLD-04 9.3, LLD-05 8.3(기능키 누를 때) ② LLD-08 8절 `Feedback.key` 부르는 곳 ③ LLD-05A 4절 CANCEL·5절 `onCancelAll`, LLD-04 9.3, LLD-05 8.3 | MQ-07, MQ-08, FB-01~FB-03, SW-02~SW-04, RT-05, ID-24, DV-21 |
+| FR-CMN-10 | LLD-08 5절 생성(저장 없으면 한글 두벌식, 0.51), 6.1 `onModeKey`(숫자류 입력창 안 저장 제외), LLD-07 6.1 `last_mode` | MC-00, MC-12, NF-07, NF-08, SS-02 |
+| FR-CMN-10a (0.51, FSS#95 옮겨 오기) | LLD-07 6.1 `SettingsStore.decode`(모르는 `last_mode` 이름 = 없음, 옛 키는 읽지도 지우지도 않음, D-69), 2.2(해 본 표시), LLD-08 5절 생성 | SS-15, MC-40~MC-42, PR-36, SS-03, DV-38 |
+| FR-CMN-11 | LLD-05A 4절·5절 `MultiPointerQueue`, LLD-05 8.2 | MQ-01~MQ-06, DV-13 |
+| FR-CMN-11a | ① LLD-05A 4절, LLD-05 8.3(기능키 누를 때) ② LLD-08 8절 `Feedback.key` 부르는 곳 ③ LLD-05A 4절 CANCEL·5절 `onCancelAll`, LLD-05 8.3 | MQ-07, MQ-08, FB-01~FB-03, RT-05, ID-24, DV-21 |
 | FR-CMN-12 | LLD-08 3절 `onEvaluateFullscreenMode`·`onConfigurationChanged`, 7절(시스템 막대 여백), LLD-03 3.4 | TS-08, DV-07, DV-08 |
-| FR-CMN-14 (0.36, FSS#25; 0.47, FSS#84 여유 칸; 0.48, FSS#85 ⑫ 자판 판) | LLD-08 7.2 `KeyboardWidth.place`(`KeyboardSpan` 사각형·여유 칸)·`KeyboardRootView` `onMeasure`·`onLayout`·`SideMarginView`·`OffKeyboardPointers`, LLD-08 7.3 `KeyboardPlate.rect`·`KeyboardRootView.plate`·`PlatePainter`·`KeyboardInsets.compute`(⑫), LLD-04 2절 `KeyGeom.build`의 `sideDp`, LLD-07 2.3 `BoardFrame` | KW-01~KW-05, KW-07, KW-09, KW-10, SM-01~SM-05, KH-07, EC-16, KR-01~KR-06, KR-08~KR-11, SW-20, MK-09, PR-31, PR-32, DV-30, DV-35, KP-01~KP-07, PL-01~PL-08, KI-01~KI-04, PR-33, DV-36(⑫) |
+| FR-CMN-14 (0.36, FSS#25; 0.47, FSS#84 여유 칸; 0.48, FSS#85 ⑫ 자판 판) | LLD-08 7.2 `KeyboardWidth.place`(`KeyboardSpan` 사각형·여유 칸)·`KeyboardRootView` `onMeasure`·`onLayout`·`SideMarginView`·`OffKeyboardPointers`, LLD-08 7.3 `KeyboardPlate.rect`·`KeyboardRootView.plate`·`PlatePainter`·`KeyboardInsets.compute`(⑫), LLD-04 2절 `KeyGeom.build`의 `sideDp`, LLD-07 2.3 `BoardFrame` | KW-01~KW-05, KW-07, KW-09, KW-10, SM-01~SM-03, SM-05, KH-07, EC-16, KR-01~KR-06, KR-08~KR-11, MK-09, PR-31, PR-32, DV-30, DV-35, KP-01~KP-07, PL-01~PL-08, KI-01~KI-04, PR-33, DV-36(⑫) |
 | FR-CMN-15 (0.49, FSS#86 띄운 자판) | LLD-08 7.4 `FloatingKeyboard.place`·`drag`·`ratios`, `PlateMover`, `KeyboardRootView`의 `portraitFloat`·`landscapeFloat`·`MoveHandle`·`movePlate`·`onMeasure`·`onLayout`·이동 영역의 위, `KeyboardInsets.compute`(⑫), LLD-08 3절 `saveFloatPosition`·설정 흐름, 8절 `Feedback.grab`, LLD-07 6.1 `FloatSetting`·`setFloatPosition`, 2.3 `BoardFrame`(⑭) | FK-01~FK-08, PM-01~PM-12, FL-01~FL-20, KI-05, KI-06, FB-05, SS-12~SS-14, PR-34, DV-37 |
 | FR-HGL-01~03 | LLD-04 7.2 `step`, 7.3 `apply` | HC-06~HC-20 |
-| FR-HGL-04, 04a, 04b | LLD-03 3.1 `MergeTables`(0.15: 긋기 = `NONE`), LLD-04 7.1 `ComposePolicy` | HC-01, HC-02, HC-05, HC-12~HC-14, HC-21, HC-22 |
+| FR-HGL-04, 04a | LLD-03 3.1 `MergeTables`, LLD-04 7.1 `ComposePolicy`(두벌식·그래피티) | HC-01, HC-02, HC-05, HC-12~HC-14, HC-21, HC-22 |
 | FR-HGL-04c | LLD-05 4절 `CheonjiinAssembler`(이어질 수 없는 요소 무시 포함), 6절 `onStroke`(무시 요소 flash 없음), LLD-04 7.2 `ReplaceVowel` | CJ-01~CJ-24, CJ-26, CJ-41, HC-24, GH-27~GH-29, GH-36 |
-| FR-HGL-04d | LLD-04 7절, LLD-05 6절 | HC-12~HC-14, HC-21, HC-22, SM-14, SM-14b, GH-01~GH-07, GH-26~GH-29 |
+| FR-HGL-04d | LLD-04 7절, LLD-05 6절 | HC-12~HC-14, HC-21, HC-22, GH-01~GH-07, GH-26~GH-29 |
 | FR-HGL-04e | LLD-05 4.2 `push`·`pendingGlyph`, 6절 `handle`·`finishAll`(모든 확정에서 버림), LLD-08 4절 `finishComposing` | CJ-25, CJ-28, GH-02, GH-03, GH-06~GH-12, GH-20, GH-26, GH-30, GH-32, CC-15, CC-16, CC-21, CC-22 |
 | FR-HGL-05 | LLD-03 3.1 `DOUBLE_OF`·`JONG_CAPABLE` | HC-18~HC-20, HC-28 |
 | FR-HGL-06 | LLD-03 1절(core-hangul JVM 모듈) | HC 전체 |
@@ -99,49 +102,34 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | FR-TAP-02, 02a | LLD-05A 2.2, 3.2(두벌식 `shiftJamo`) | TK-02, TK-05, TA-05~TA-08 |
 | FR-TAP-02b | LLD-05A 2.1 `TapGestureClassifier` | TG-01~TG-10 |
 | FR-TAP-02c (0.50, FSS#97로 여섯 개의 방향이 바뀜) | LLD-05A 2.2 `TapKeyResolver`, 3.3 두벌식 겹받침 배정표(`TapLayouts.COMPOUND_JAMO`), 3.4 `edgeHints`. 조합은 LLD-04 7절(FR-HGL-02a) | TA-12, TA-20, TA-21, TK-05, TK-08, TK-11, TK-14, TK-17, TK-20, TK-23, ID-40, HC-60, HC-61, DV-38 |
-| FR-TAP-03 (0.51, FSS#98로 편집 줄 10키) | LLD-05A 3.2 | TL-01~TL-03, TL-06 |
+| FR-TAP-03 (0.52, FSS#98로 편집 줄 10키) | LLD-05A 3.2 | TL-01~TL-03, TL-06 |
 | FR-TAP-03a | LLD-05A 3.3 | TA-01~TA-13, TL-05 |
 | FR-TAP-03b | LLD-05A 3.4 | (I 검사) |
-| FR-TAP-03c (0.51) | LLD-05A 4절 "조합 키 Ctrl·Alt"(낱말 글자 크기 `WordLabelFit`) | CV-04, CV-05, DV-39 ⑧ |
-| FR-TAP-04 | LLD-08 4절 `tab`, 6.1(0.51: 조합 키가 켜졌을 때만 탭 키 입력, 6.3) | CC-08, ID-02, CD-06 |
+| FR-TAP-03c (0.52) | LLD-05A 4절 "조합 키 Ctrl·Alt"(낱말 글자 크기 `WordLabelFit`) | CV-04, CV-05, DV-39 ⑧ |
+| FR-TAP-04 | LLD-08 4절 `tab`, 6.1(0.52: 조합 키가 켜졌을 때만 탭 키 입력, 6.3) | CC-08, ID-02, CD-06 |
 | FR-TAP-10 | LLD-08 4절 `arrow`, LLD-05A 6절 | ID-03, RT-04 |
 | FR-TAP-11 | LLD-05A 3.3, 3.5(숫자류 입력창도 숫자 줄) | TL-04, ID-11 |
 | FR-TAP-11a | LLD-08 6.1 `onTapOutput` | ID-01 |
 | FR-TAP-12 | (차기 버전) | – |
-| FR-TAP-15 (0.51) | LLD-05A 3.2(자리), 4절 "조합 키 Ctrl·Alt"(누름·켜짐 표시), 6절(반복 없음), LLD-08 6.3(켜고 끄기·한 번만 적용·반복의 기억) | TL-06, CV-01, CV-03, CV-08, CD-01~CD-03, CD-08, CD-09, CD-15, DV-39 ⑧ |
-| FR-TAP-16 (0.51) | LLD-05A 2.4 `ChordKeys`, LLD-08 4절 `sendChord`·`chordKey`, 6.1·6.3 | CM-01~CM-12, CD-04~CD-07, CD-16, CD-17, CP-01~CP-06, DV-39 ①~⑦ |
-| FR-TAP-17 (0.51) | LLD-08 3절·3.1·3.2(서비스의 끄기), 6.3 "끄기를 부르는 곳", LLD-07 2.3(입력 연습) | CD-10~CD-14, CD-18, CL-01~CL-05, CV-09, PR-35, DV-39 ⑩ |
-| FR-TAP-18 (0.51) | LLD-05A 7절 | CV-06, CV-07, DV-10, DV-39 ⑨ |
+| FR-TAP-15 (0.52) | LLD-05A 3.2(자리), 4절 "조합 키 Ctrl·Alt"(누름·켜짐 표시), 6절(반복 없음), LLD-08 6.3(켜고 끄기·한 번만 적용·반복의 기억) | TL-06, CV-01, CV-03, CV-08, CD-01~CD-03, CD-08, CD-09, CD-15, DV-39 ⑧ |
+| FR-TAP-16 (0.52) | LLD-05A 2.4 `ChordKeys`, LLD-08 4절 `sendChord`·`chordKey`, 6.1·6.3 | CM-01~CM-12, CD-04~CD-07, CD-16, CD-17, CP-01~CP-06, DV-39 ①~⑦ |
+| FR-TAP-17 (0.52) | LLD-08 3절·3.1·3.2(서비스의 끄기), 6.3 "끄기를 부르는 곳", LLD-07 2.3(입력 연습) | CD-10~CD-14, CD-18, CL-01~CL-05, CV-09, PR-35, DV-39 ⑩ |
+| FR-TAP-18 (0.52) | LLD-05A 7절 | CV-06, CV-07, DV-10, DV-39 ⑨ |
 | 탭 자판 동작 표(8행 × 3열) | LLD-05A 2.2(7·8행 = 정규화) | TK-01~TK-24, ID-14 |
-| FR-SWP-01, 02 | LLD-04 9.3, 3.2 | EC-01, SC-02 |
+| FR-SWP-01, 02 | LLD-04 3.2(처음 누른 키로만, 누른 점은 안), LLD-05A 4절 | EC-01, MK-03 |
 | FR-SWP-03 | LLD-04 3.2 | EC-02~EC-05 |
-| FR-SWP-04 | LLD-04 3.2 대각선 | EC-07, EC-08, SC-37 |
-| FR-SWP-05 | LLD-04 4.3 1단계 | SC-01 |
-| FR-SWP-10~17, 19 | LLD-04 4.3 `classifyConsonant`(판정 순서, 0.21 길이 단계 없음), 6.3 `VowelStrokeAssembler`(다음 후보 표 상태 기계, C 역할·앞 획 구역, 0.21), 6.1·9.3 매퍼 `consonant` | SC-01~SC-09, VS-01~VS-14, SM-01~SM-23, SW-17 |
-| FR-SWP-18 | (0.19 해당 없음: 꺾기 규칙이 없어짐) | – |
-| FR-SWP-20, 21 (22~28 삭제, 이슈 #150) | LLD-04 7.1·7.2 `ComposePolicy.SWIPE`(0.15: 병합 없음, 모음 긋기 연속 = 새 글자, 한 획 복모음 = 이벤트 하나) | HC-21, HC-22, SM-14, SM-14b, SM-15, SM-16, SM-40b, SM-42, BS-20 |
-| FR-SWP-30, 34 (31~33 삭제) | LLD-04 6.2 `accept`(탭 → `Consonant`, 긋기 → `Consonant` + `Vowel`, 쌍자음 키 = 일반 자음 키, 0.18), 8.1 쌍자음 줄 | SM-01~SM-20 |
-| FR-SWP-36 (37~39 삭제, 0.18) | LLD-04 6.2 `accept`(탭 = 자음 하나, 앞 동작과 합치지 않음), 9.3(안내 `guided = true`) | SM-16, SM-19, SW-05, SW-08b |
-| FR-CMN-07a(긋기 ⌫) | LLD-04 6.2 `popElement`·7.3 `backspace`(자모 하나씩), LLD-08 6.1 `backspace`(0.18: `onBackspace` 없음) | SM-40~SM-42, ID-06 |
-| FR-SWP-35(삭제, 0.12 이슈 #142 오너 결정) | LLD-04 4.6 "누른 시간"(누르고 있기 없음), LLD-06 2절(타이머 ② 없음) | SC-47~SC-50, BH-05, GT-04, SW-07, PG-02, DV-03 |
-| FR-SWP-40 | LLD-04 8.1(영문 키 없음) | SL-01 |
-| FR-SWP-42 | LLD-04 4.4, 8.2 | NK-01~NK-15 |
-| FR-SWP-43 | LLD-04 4.5, 8.3 | SK-01~SK-06 |
-| FR-SWP-44 | LLD-05A 2.2(탭 자판 ↑), LLD-04 4.4(둘레 숫자 ↑) | TK-04~TK-06, NK-01~NK-10 |
-| FR-SWP-45 | LLD-04 2절 `KeyGeom.build`, 3.2(0.47: 왼쪽·오른쪽 테두리는 자판 사각형 바깥 변, 끝 키 바깥쪽은 보통 변 통과) | KH-05, KH-06, EC-09~EC-11, NK-15, KH-07, EC-16, SM-02~SM-05 |
-| FR-SWP-50, 51 | LLD-04 8.1, 9.3(빈 칸) | SL-01, SL-02, SW-01 |
-| FR-SWP-60~65 (0.16, 이슈 #160) | LLD-04 4.7 `classifyCheonjiin`, 6절 매퍼의 조립기(기준 키 예외·조립 닫기·`popElement`·`pendingGlyph`), 7.1 `ReplaceVowel` 단위, 8.1 천지인 키, 9.3 `guided`; LLD-05 4절(core-hangul 소속); LLD-06 4절; LLD-08 6.1 | SL-01, CK-01~CK-04, CJ-50~CJ-59, SW-10, SW-11, ID-30~ID-33 |
-| FR-DSP-01~08 | LLD-04 5절·9.3(그 키의 음절, 모든 자음 키, 0.18), LLD-06 | PS-01~PS-18, GT-01~GT-10, SW-05, SW-08, PG-04, PG-05, PG-07, DV-01~DV-04 |
-| FR-DSP-09 | LLD-04 9.4(획 자국) | SW-08b, SW-08c, SW-12, SW-13, KR-07, TU-61 |
-| FR-DSP-10 (0.21, 이슈 #180 후속, 0.35 FSS#36·#37) | LLD-04 9.5 `CenterConsonantPainter`·`CenterText`, `SwipeHost.centerText`, LLD-08 6.1 `InputDispatcher.centerText`, LLD-04 6.3 `pendingDots`, 8.1 `SwipeLayout.consonantBox`, LLD-07 2.3 `PracticeInput.centerText` | VS-15, CS-01~CS-04, SW-14~SW-17·SW-14b, CT-01~CT-06, SL-08, TU-62, DV-29 |
+| FR-SWP-04 | LLD-04 3.2 대각선 | EC-07, EC-08 |
+| FR-SWP-05 | LLD-05A 2.1 `TapGestureClassifier.finish`(기록 없음 = 탭) | TG-01 |
+| FR-SWP-44 | LLD-05A 2.2(탭 자판 ↑ = 시프트) | TK-04~TK-06 |
+| FR-SWP-45 | LLD-04 2절 `KeyGeom.build`, 3.2(0.47: 왼쪽·오른쪽 테두리는 자판 사각형 바깥 변, 끝 키 바깥쪽은 보통 변 통과) | KH-05, EC-09~EC-11, KH-07, EC-16, SM-02, SM-03, SM-05 |
 | FR-TUT-01 | LLD-07 2.5 `PracticeLaunchPolicy`(처음 한 번 주제 목록만) | PR-09, SS-05, DV-11 |
-| FR-TUT-02 (04·07·08 삭제) | LLD-07 2.2·2.3 | PR-01, PR-06~PR-08, PR-10~PR-12, PR-20, PR-24~PR-27, DV-24 |
+| FR-TUT-02 (04·07·08 삭제) | LLD-07 2.2·2.3 | PR-01, PR-06~PR-08, PR-20, PR-24~PR-27, DV-24 |
 | FR-TUT-05 | LLD-07 3절(고정값), 7절(안내 없음) | DV-11 |
 | FR-TUT-06 | LLD-07 7절 | DV-11 |
 | FR-TUT-09 | LLD-07 2.3 `PracticeEditor.display`·`PracticeFlow.echo` | PR-04, PR-06 |
 | ~~FR-TUT-10~~ | SRS 0.68에서 삭제(FSS#17) | – |
-| FR-TUT-11 | LLD-07 2.3 연습 자판(실제 `SwipeKeyboardView`, 늘 펼친 `GraffitiGuidePanel`, 0.44 `reveal`), LLD-05 10.2 | SW-08, GT-10, PR-07, PR-28, PR-29, DV-24 |
-| FR-TUT-12 | LLD-07 2.4 `PracticeItemJudge`, 2.3 `PracticeFlow` 표시·`BoardFrame` | PR-02~PR-08, PR-10~PR-13, PR-20, PR-21, PR-24, PR-26, PR-28, PR-29 |
+| FR-TUT-11 | LLD-07 2.3 연습 자판(늘 펼친 `GraffitiGuidePanel`, 0.44 `reveal`), LLD-05 10.2 | PR-07, PR-28, PR-29, DV-24 |
+| FR-TUT-12 | LLD-07 2.4 `PracticeItemJudge`, 2.3 `PracticeFlow` 표시·`BoardFrame` | PR-02~PR-08, PR-20, PR-21, PR-24, PR-26, PR-28, PR-29 |
 | FR-GRF-01 | LLD-05 8.1(보조 줄 모드 키 72dp) | DV-07, DV-22 |
 | FR-GRF-02, 03, 03a | LLD-05 3절, 5.2, 7절(원본 획 표·미확인 처리) | GR-01~GR-24, GR-30, GS-16~GS-21, GH-18, GR-EVAL |
 | FR-GRF-04 | LLD-05 3.3, 6절 | GR-11, GH-13 |
@@ -154,25 +142,25 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | FR-GRF-09, 09a | LLD-08 7.1(버튼·덮개·터치 막기·닫는 때), LLD-05 10.2(✕·스크롤), LLD-08 3절(`onWindowHidden`·`onFinishInputView`) | GD-01~GD-09, DV-28 |
 | FR-GRF-09b, 09c | LLD-05 10.1 `GuideCatalog`(칸 목록·`shape`), 10.2 그리기 | GC-01~GC-09, GD-10, GD-11 |
 | FR-GRF-09d | LLD-05 10.2(`hidesDisplay`를 보지 않음, 저장 없음) | GD-01~GD-10(비밀번호 칸) |
-| FR-SET-02, 04, 05 | LLD-07 6.1, 7절 | SS-01, GT-10, DV-11 |
+| FR-SET-04, 05 (FR-SET-02는 SRS 0.86에서 삭제) | LLD-07 6.1, 7절 | SS-01, DV-11 |
 | FR-SET-03 | LLD-07 6.1(진동 켬·소리 끔), LLD-08 8절(누를 때) | SS-01, FB-04, DV-21 |
 | FR-SET-06 | LLD-07 6.1 `RowHeight`(40~64dp), LLD-08 7절 | SS-04, DV-11 |
-| FR-SET-08 | LLD-07 6.1 `graffiti_enabled`·`swipe_enabled`, 7절 "입력 모드" | SS-08, OM-07, DV-11 |
+| FR-SET-08 | LLD-07 6.1 `graffiti_enabled`, 7절 "입력 모드"(한글 · 영문 · 그래피티 순서, 0.51) | SS-08, OM-05, DV-11 |
 | FR-SET-09 (0.36, FSS#25) | LLD-07 6.1 `WidthSetting`(`key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`), 7절 설정 화면(0.38 방향별 상자 `KeyboardSizeBoxes`), LLD-08 7.2 `fullKeyDp`(0.47: / 11)·`FULL` | SS-10, SS-11, KW-06~KW-08, OB-01~OB-05, DV-30; 0.49 띄우기 스위치(LLD-07 7절, FSS#86): OB-06, OB-07, SS-12 |
-| NFR-01 | LLD-06 3절 | DV-02 |
-| NFR-02 | LLD-04 4.6 | PF-01, DV-15 |
+| NFR-01 | LLD-05 8절(패드의 잉크 선) | DV-02 |
+| NFR-02 | LLD-04 3.3 `EdgeCrossingTracker.add`, LLD-05 3절 | DV-15 |
 | NFR-03 | LLD-09 | EG-01~EG-06, CC-20~CC-22, ID-19, EL-04 |
 | NFR-04 | LLD-03 3.3(시각 주입), LLD-05 3.2 | GR-17, SC 전체 |
 | NFR-05 | LLD-07 6.2, LLD-09 | EL-01~EL-05, ID-20 |
-| NFR-06 | LLD-05A 3.2(0.51: 편집 줄 10키 = 글자 키 폭 예외), LLD-04 8.1(기본 줄 높이 48dp 기준, TBD-16) | TL-02, DV-39 ⑧ |
+| NFR-06 | LLD-05A 3.2(기본 줄 높이 48dp 기준, TBD-16. 0.52: 편집 줄 10키 = 글자 키 폭 예외) | TL-02, DV-39 ⑧ |
 | NFR-07 | LLD-05A 7절 | DV-10 |
 | NFR-08 | LLD-03 1절 | MOD-03 |
 | NFR-09 | LLD-11 1절 | (I) |
 | NFR-10 | LLD-03 1절(minSdk 26) | DV-19 |
-| ~~NFR-11~~ | SRS 0.65에서 삭제(이슈 #251). 모듈 경계 시험은 남음: LLD-03 2절 | MOD-01, MOD-02, MOD-04 |
+| ~~NFR-11~~ | SRS 0.65에서 삭제(이슈 #251). 모듈 경계 시험은 남음: LLD-03 1.1·2절 | MOD-01, MOD-03 |
 | NFR-12 | LLD-05 3절, LLD-11 6.1 | GR-EVAL |
 
-- SRS 사례 표 ↔ 시험 ID 대응(백스페이스 사례, 모드 키 예시, 숫자류 입력창 사례, 탭 자판 동작 표, 기호 배정표, FR-HGL-04d)과 SWIPE 5.1·5.2 대응은 [LLD-11-tests.md](LLD-11-tests.md) 머리말과 각 절에 있다.
+- SRS 사례 표 ↔ 시험 ID 대응(백스페이스 사례, 모드 키 예시, 숫자류 입력창 사례, 꺼진 모드 사례, 옮겨 오기 사례, 탭 자판 동작 표, 기호 배정표, FR-HGL-04d)은 [LLD-11-tests.md](LLD-11-tests.md) 머리말과 각 절에 있다.
 
 ## 4. 추적표 — HLD → LLD
 
@@ -183,13 +171,13 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | 1 설계 원칙 | LLD-03 전체, README 1.3 |
 | 2 시스템 구조(의존 방향: 병합 표 데이터 포함) | LLD-03 1절 |
 | 3 모듈(3.1 빌드 변형은 HLD 0.59에서 삭제) | LLD-03 1·2절 |
-| 4.1 한 획의 흐름(ACTION_CANCEL, 기능키·빈 칸) | LLD-04 9·10절 |
-| 4.2 StrokeClassifier | LLD-04 3·4·5절 |
-| 4.3 SwipeInputMapper | LLD-04 6절 |
+| 4.1 입력 뷰 공통 규칙(ACTION_CANCEL) | LLD-05A 4절, LLD-05 8.3 |
+| 4.2 변 통과 판정(stroke-core) | LLD-04 2·3절, LLD-05A 2절 |
+| 4.3 (삭제, FSS#95) | – |
 | 4.4 HangulComposer | LLD-04 7절 |
 | 5 그래피티 | LLD-05 |
-| 5A 탭 자판 | LLD-05A, LLD-08 7절(창 높이), 8절(처리 시점의 피드백). 0.51 "조합 키 Ctrl·Alt": LLD-05A 2.4·4절·7절, LLD-08 4절 `sendChord`·6.3 |
-| 6 안내 표시 | LLD-06 |
+| 5A 탭 자판 | LLD-05A, LLD-08 7절(창 높이), 8절(처리 시점의 피드백). 0.52 "조합 키 Ctrl·Alt": LLD-05A 2.4·4절·7절, LLD-08 4절 `sendChord`·6.3 |
+| 6 안내 표시(삭제, FSS#95) | LLD-06(삭제 표시) |
 | 7.1 입력 연습 | LLD-07 2절(판정 `PracticeItemJudge` 2.4) |
 | 7.2 기준값 | LLD-03 3.4, LLD-07 3절 |
 | 7.3 저장 데이터 | LLD-07 4·6절 |
@@ -212,30 +200,24 @@ LLD-03(공통 타입) → LLD-04(엔진 중심) → LLD-05A·05 → LLD-08(앱�
 | `ComposingController` | LLD-08 4절 |
 | `onUpdateSelection` 조건 | LLD-08 4.1 |
 | `HangulComposer`(백스페이스 정책·입력 단위 목록·모드 정책) | LLD-04 7절 |
-| `SwipeInputMapper`(탭·긋기 → 자모, 천지인 조립, 초기화) | LLD-04 6절 |
 | `CheonjiinAssembler`(⌫ 순서) | LLD-05 4절, 6절 |
 | ⌫ 반복 | LLD-05A 6절 |
 | `onStartInputView` 비밀번호 판별 | LLD-08 2절·3.1 |
-| `GuideOverlay` | LLD-06 3절 |
 | `ErrorLog` | LLD-07 6.2 |
-| `TouchTracker` | LLD-04 9.1 |
 | `InkCollector` | LLD-05 8.2 |
 | `onEvaluateFullscreenMode`, `onConfigurationChanged` | LLD-08 3절 |
 | `core-hangul` 모드 정책 | LLD-04 7.1 |
 | `stroke-core`(탭 자판 동작 표) | LLD-05A 2절 |
 | `stroke-core`(변 통과·키 기하) | LLD-04 2·3절 |
-| `StrokeClassifier`, 결과 해석 표(둘레 숫자·기호) | LLD-04 4절, 8.2·8.3 |
-| `SwipeKeyboardView`, 자판 배치 데이터 | LLD-04 8·9절 |
-| `ProgressState` | LLD-04 5절 |
 | `PracticeActivity`, `PracticeItemJudge` | LLD-07 2절 |
 | `Recognizer`, `GraffitiState` | LLD-05 3절, 5절 |
 | `SettingsActivity`, `SettingsStore` | LLD-07 7절, 6.1 |
 | `Feedback`(누를 때, 인식 실패 오류 진동) | LLD-08 8절 |
-| `ACTION_CANCEL` 처리 | LLD-05A 4절, LLD-04 9.3, LLD-05 8.3 |
+| `ACTION_CANCEL` 처리 | LLD-05A 4절, LLD-05 8.3 |
 | `ExploreByTouchHelper` | LLD-05A 7절 |
-| 빌드, `SwipeModule` | LLD-03 2절 |
+| 빌드 | LLD-03 2절 |
 
-LLD가 더한 내부 구성 요소(HLD 구성 요소를 나눈 것): `KeyHitTester`, `EdgeCrossingTracker`, `TapGestureClassifier`, `TapKeyResolver`, `ScriptTables`, `InputDispatcher`, `EditorPort`, `FieldInfo`, `KeyboardRootView`, `MultiPointerQueue`, `RepeatTimer`, `GuideTimerLogic`, `GraffitiInputHandler`, `TemplateMatcher`, `TutorSession`, `TutorLaunchPolicy`, `ThresholdCodec`, `RowHeight`, `EngineGuard`, `SwipeEngineState`, `SwipeTouchLogic`(0.5).
+LLD가 더한 내부 구성 요소(HLD 구성 요소를 나눈 것): `KeyHitTester`, `EdgeCrossingTracker`, `TapGestureClassifier`, `TapKeyResolver`, `ScriptTables`, `InputDispatcher`, `EditorPort`, `FieldInfo`, `KeyboardRootView`, `MultiPointerQueue`, `RepeatTimer`, `GraffitiInputHandler`, `TemplateMatcher`, `PracticeFlow`, `PracticeLaunchPolicy`, `RowHeight`, `EngineGuard`.
 
 ## 5. LLD에서 정한 세부
 
@@ -310,10 +292,13 @@ LLD가 더한 내부 구성 요소(HLD 구성 요소를 나눈 것): `KeyHitTest
 | D-66 | (0.34; 0.37 FSS#43 바뀜) 연습 자판에서 탭 자판의 ⌫와 **긋기 자판·그래피티 패드의 스페이스**(글자 확정, 끝 동작) 말고는 기능 키(↵·화살표·Esc·Del·Tab·모드 키·탭 자판의 스페이스·긋기 자판과 패드의 ⌫ 등)가 보이되 아무 일도 하지 않는다 | LLD-07 2.3 | 실제 뷰를 그대로 쓰면서 SWIPE 10.2 "긋기 연습 자판·패드에는 편집 키가 없다", "편집 줄의 다른 키는 판정에 들어가지 않는다"를 지킴 |
 | D-67 | (0.34) 그래피티 연습의 안내표는 화면 크기와 상관없이 그 항목의 구획만(한글 / 영문 / 숫자) 보인다, 높이 200dp | LLD-07 2.3 | SWIPE 10.1 ③ "화면이 작으면 필요한 구획만" — 안내표는 길어 어느 화면에서도 스크롤하므로 늘 줄임 |
 | D-68 | (0.34) 옛 기준값 파일 `thresholds.json`은 읽지도 지우지도 않는다 | LLD-07 4절 | HLD 7.2 "남은 파일을 지울지는 LLD" — 쓰는 곳이 없고 앱 삭제 때 지워짐 |
-| D-69 | (0.51, FSS#98) 조합 키 입력의 키는 `EditorKey`를 넓히지 않고 안드로이드 없는 새 형 `ChordKey`(PC 자판 키 이름, stroke-core)로 두고, 안드로이드 키 코드로는 `AndroidEditorPort`만 바꾼다 | LLD-05A 2.4, LLD-08 4절 | 조합 키 대응 함수가 stroke-core에 있어 app의 `EditorKey`를 볼 수 없고, 대응을 JVM 시험(CM)으로 다 볼 수 있다 |
-| D-70 | (0.51, FSS#98) 켜진 조합 키의 바탕 = `CHORD_ON_COLOR` 0xFF2E6FBF(파랑). 바탕은 켜짐 → 눌림 → 기능키 → 보통의 차례로 고른다 | LLD-05A 4절 | SRS FR-TAP-15 ④가 색을 LLD에 맡김. 탭 자판에는 시프트 키가 없어 따를 표시가 없다. 눌러 켜는 순간부터 켜짐이 보이게 켜짐을 눌림보다 앞에 둠. 실기 DV-39 ⑧ |
-| D-71 | (0.51, FSS#98) 누르고 있는 기능키의 조합 키 기억은 기능키 종류별 하나 — 한 키를 두 손가락으로 겹쳐 누르면 둘째 누름은 첫 누름의 반복처럼 같은 집합을 쓰고, 먼저 뗀 손가락이 기억을 지운다 | LLD-08 6.3 | 편집 줄에 같은 키가 둘 없어 드문 경우. 포인터별 기억은 뷰의 반복 호출(`onFunctionDown(key)`)에 포인터가 없어 경계를 바꿔야 한다 |
+| D-69 | (0.51, FSS#95) 옛 버전이 남긴 긋기 전용 설정 키(`swipe_enabled`·`show_stroke_trail`·`show_direction_guide`·`show_next_char`·`show_current_char`)와 `practice_done`의 `swipe`는 읽지도 지우지도 않는다. 저장된 `last_mode`가 지금 없는 이름이면 없음으로 읽는다 | LLD-07 6.1, 2.2 | HLD 7.3 "남은 값을 지울지는 LLD" — 쓰는 곳이 없어 동작에 영향이 없고, 지우려면 옛 키 이름과 한 번 지우는 코드를 계속 들고 있어야 한다(D-68과 같은 처리) |
+| D-70 | (0.52, FSS#98) 조합 키 입력의 키는 `EditorKey`를 넓히지 않고 안드로이드 없는 새 형 `ChordKey`(PC 자판 키 이름, stroke-core)로 두고, 안드로이드 키 코드로는 `AndroidEditorPort`만 바꾼다 | LLD-05A 2.4, LLD-08 4절 | 조합 키 대응 함수가 stroke-core에 있어 app의 `EditorKey`를 볼 수 없고, 대응을 JVM 시험(CM)으로 다 볼 수 있다 |
+| D-71 | (0.52, FSS#98) 켜진 조합 키의 바탕 = `CHORD_ON_COLOR` 0xFF2E6FBF(파랑). 바탕은 켜짐 → 눌림 → 기능키 → 보통의 차례로 고른다 | LLD-05A 4절 | SRS FR-TAP-15 ④가 색을 LLD에 맡김. 탭 자판에는 시프트 키가 없어 따를 표시가 없다. 눌러 켜는 순간부터 켜짐이 보이게 켜짐을 눌림보다 앞에 둠. 실기 DV-39 ⑧ |
+| D-72 | (0.52, FSS#98) 누르고 있는 기능키의 조합 키 기억은 기능키 종류별 하나 — 한 키를 두 손가락으로 겹쳐 누르면 둘째 누름은 첫 누름의 반복처럼 같은 집합을 쓰고, 먼저 뗀 손가락이 기억을 지운다 | LLD-08 6.3 | 편집 줄에 같은 키가 둘 없어 드문 경우. 포인터별 기억은 뷰의 반복 호출(`onFunctionDown(key)`)에 포인터가 없어 경계를 바꿔야 한다 |
 | D-54 | 긋기 자판·연습 자판은 키 폭의 0.8보다 넓은 가운데 라벨을 줄여 그림(천지인 키 "ㆍ ㅡ ㅣ") | LLD-04 8.1·9절, LLD-07 2.3 | 에뮬레이터에서 라벨이 키 밖으로 잘림을 확인(이슈 #160) |
+
+- **0.51(FSS#95):** 긋기 입력 모드·안내 팝업·옛 튜터만 다루던 결정(D-07, D-08, D-15의 안내 현재 글자, D-17, D-25의 긋기 자판 배치 데이터, D-30, D-37, D-54, D-57, D-58, D-62~D-64, D-65·D-66의 긋기 항목 부분 등)은 대상이 없어졌다. 그런 행의 "위치" 칸에 적힌 LLD-04 4~6·8~10절, LLD-06, SWIPE n.n은 그때의 자리이고 지금은 없다. 번호는 다시 쓰지 않는다.
 
 ## 6. 설계 변경 요청과 설계 질의
 
@@ -758,6 +743,22 @@ T27(PR #78)·T30(PR #84) 구현 중 찾은 LLD 0.4의 빈틈이다. 두 PR이 �
 - **그래피티 동작 변화:** `ReplaceVowel`이 자기 단위가 되어 그래피티도 조립기가 닫힌 뒤의 ⌫가 요소 하나씩이다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, 0.15까지는 가 ⌫ = ㄱ). SRS FR-SWP-64·SWIPE 5.4가 "그래피티와 같다"로 적은 것과 HLD 4.3 "그 요소는 조합기 입력 단위 목록에서 하나씩"을 따른 것이다. 조립기가 열려 있을 때의 결과(BS-06~BS-19, CJ 사례)는 그대로다.
 - 설계와 다른 처리 없음. 코드는 같은 PR에 있다.
 
+### 6.31 긋기 입력 모드 삭제, 모드 순서(0.51) — FSS#95
+
+오너 결정(2026-11-14, FSS#95): 긋기 입력 모드를 없애고 모드 키 순환을 한글 두벌식 → 영문 쿼티 → 그래피티로 한다. 근거 판 SRS 0.86·HLD 0.79·REQUIREMENTS 0.33.
+
+| 근거 | 0.51 처리 | 반영 위치 |
+|---|---|---|
+| SRS FR-CMN-02·03 ②·10, HLD 8.1 | `InputMode { DUBEOLSIK, QWERTY, GRAFFITI }`(선언 순서 = 순환 순서), 저장 없으면 한글 두벌식. `ModeController` 코드는 그대로 | LLD-03 3.5, LLD-08 5절 |
+| SRS 3.4·3.5, HLD 2·3·4·6장 | `gesture-engine` 모듈, `kbd.app.swipe`, `kbd.hangul.stroke`, 안내 팝업·획 자국·가운데 글자, `SwipeModule` 경계 삭제. 다른 곳으로 옮긴 코드는 없다(남는 `KeyHitTester`·`EdgeCrossingTracker`·`ModeKeyGesture`·`ScriptTables`는 처음부터 `stroke-core`, 조합기·천지인 조립기는 `core-hangul`) | LLD-03 1·2절, LLD-04(2·3·7절만), LLD-06 |
+| HLD 4.4 | `ComposePolicy.SWIPE`·`HangulComposer.lastConsonant()` 삭제. 두벌식·그래피티 정책과 `JamoEvent` 형식은 그대로 | LLD-04 7절 |
+| HLD 7.2 | `Thresholds`는 `minCrossDp` 한 칸 | LLD-03 3.4 |
+| SRS FR-CMN-10a, HLD 7.3 | 옮겨 오기: 모르는 `last_mode` 이름 = 없음, 남은 옛 키는 읽지도 지우지도 않음(D-69) | LLD-07 6.1 |
+| SRS FR-SET-02 삭제·FR-SET-08 | 설정값 다섯(`swipeEnabled`·`showStrokeTrail`·세 안내)과 화면 항목 삭제, 입력 모드 묶음은 한글 · 영문 · 그래피티 | LLD-07 6.1·7절 |
+| SRS 부록 A | 입력 연습 주제 넷·54항목(긋기 주제와 ②의 긋기 자판 항목 삭제), `PracticeBoard.SWIPE`·`PracticeFlow.hint` 삭제 | LLD-07 2절 |
+| HLD 8장 | `KeyboardService`·`InputDispatcher`의 긋기 분기, `ComposingController.show`의 `replacesLast` 삭제 | LLD-08 3·4·6절 |
+| HLD 11장 | 긋기 시험 삭제, 순서·옮겨 오기 시험 | LLD-11 0.58(머리말에 목록) |
+
 ## 변경 이력
 
 | 버전 | 날짜 | 내용 |
@@ -788,3 +789,6 @@ T27(PR #78)·T30(PR #84) 구현 중 찾은 LLD 0.4의 빈틈이다. 두 PR이 �
 | 0.24 | 2026-11-02 | 긋기 기호 키 단계 삭제·기호 키 셋(기호3·기호·기호2)·숫자 2·6 재배치(이슈 #208, 오너 확정), 6.24: 근거 판 SRS 0.53·HLD 0.48·SWIPE 0.38. ↓ 배정, TBD-28 A. LLD-04 0.23, LLD-11 0.25 |
 | 0.25 | 2026-11-02 | 그래피티 획 안내표(이슈 #189, 오너 결정 OD-2·정정·보충), 6.25: 근거 판 SRS 0.45·HLD 0.41·GRAFFITI 0.16. `GuideCatalog`(recognizer)·`GraffitiGuideLayout`·`GraffitiGuidePanel`(app), `KeyboardRootView` 버튼·덮개. LLD-05 0.23, LLD-08 0.24, LLD-11 0.26 |
 | 0.26 | 2026-11-02 | 가운데 자음 자리 C를 가로 가운데로(이슈 #213, 오너 결정), 6.26: 근거 판 SRS 0.55·HLD 0.50·SWIPE 0.40. LLD-04 0.24, LLD-11 0.27 |
+| 0.27~0.49 | – | (이 표에 적지 않았다. 각 판의 내용은 머리말과 6.27~6.30, 각 파일의 머리말에 있다) |
+| 0.51 | 2026-11-14 | 긋기 입력 모드 삭제, 모드 키 순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티(FSS#95), 6.31: 근거 판 SRS 0.86·HLD 0.79. LLD-03 0.31, LLD-04 0.36(`LLD-04-stroke-hangul.md`), LLD-05 0.36, LLD-05A 0.19, LLD-06 0.25, LLD-07 0.37, LLD-08 0.33, LLD-09 0.20, LLD-11 0.58. D-69 |
+| 0.52 | 2026-11-14 | 탭 자판 편집 줄의 Ctrl·Alt 조합 키(FSS#98): 근거 판 SRS 0.87·HLD 0.80·REQUIREMENTS 0.34. LLD-03 0.32, LLD-05A 0.20(2.4 `ChordKeys`, 3.2 편집 줄 10키, 4·5·7절), LLD-07 0.38, LLD-08 0.34(4절 `sendChord`, 6.3), LLD-09 0.21, LLD-11 0.59(CM·CD·CL·CP·CV, TL-06, PR-35, DV-39), 3·4절 추적표, 5절 D-70~D-72 |

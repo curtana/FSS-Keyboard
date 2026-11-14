@@ -2,12 +2,12 @@ package kbd.hangul.event
 
 import kbd.hangul.jamo.Jamo
 
-/** Input to the composer (LLD-03 §3.2; HLD 4.3 output list plus `ReplaceVowel` from HLD 4.4·5). */
+/** Input to the composer (LLD-03 §3.2, HLD 4.4·5). */
 sealed interface JamoEvent {
     /** `c.kind == CONSONANT`; a double consonant may also come this way. */
     data class Consonant(val c: Jamo) : JamoEvent
 
-    /** Same as `Consonant(DOUBLE_OF[base])`; the swipe double tap (HLD 4.3). */
+    /** Same as `Consonant(DOUBLE_OF[base])`; no view sends it (LLD-04 §7.2). */
     data class DoubleConsonant(val base: Jamo) : JamoEvent
 
     data class Vowel(val v: Jamo) : JamoEvent
@@ -16,8 +16,7 @@ sealed interface JamoEvent {
     data class ReplaceVowel(val v: Jamo) : JamoEvent
 
     /**
-     * Undo the last input unit of the composing syllable (never across a commit). The swipe double
-     * consonant sends it before `DoubleConsonant` to turn the tap just typed into ㄲ (HLD 4.3).
+     * Undo the last input unit of the composing syllable (never across a commit, HLD 4.4).
      */
     data object UndoLast : JamoEvent
 }

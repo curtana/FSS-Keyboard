@@ -18,7 +18,7 @@ android {
         versionName = "0.1.0-alpha.3"
     }
 
-    // One edition (owner, issue #251): the swipe engine is in every build; no product flavors.
+    // One edition (owner, issue #251): no product flavors.
 
     // Release signing (FSS#28): the key and passwords come only from the Gradle properties below, normally in the
     // user's ~/.gradle/gradle.properties — never from this repository. Without all four the release build is left
@@ -69,7 +69,6 @@ dependencies {
     implementation(project(":core-hangul"))
     implementation(project(":stroke-core"))
     implementation(project(":recognizer"))
-    implementation(project(":gesture-engine"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.customview)

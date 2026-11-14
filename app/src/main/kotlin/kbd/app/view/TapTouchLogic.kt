@@ -90,7 +90,7 @@ class TapTouchLogic(
     /** Built by the view on layout; null before the first layout (touches are then ignored). */
     var geometry: TapGeometry? = null
 
-    /** Same threshold as the swipe keyboard (FR-TAP-02b). */
+    /** The minimum crossing distance (FR-TAP-02b). */
     var minCrossDp: Float = 0f
 
     private class Stroke(val index: Int, val key: TapKeyDef, val classifier: TapGestureClassifier)

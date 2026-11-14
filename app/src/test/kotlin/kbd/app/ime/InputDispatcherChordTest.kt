@@ -61,7 +61,7 @@ class InputDispatcherChordTest {
     private val cc = ComposingController(port)
     private val saved = mutableListOf<InputMode>()
     private val shown = mutableListOf<InputMode>()
-    private val modes = ModeController(listOf(InputMode.QWERTY, InputMode.DUBEOLSIK), InputMode.QWERTY)
+    private val modes = ModeController(listOf(InputMode.DUBEOLSIK, InputMode.QWERTY), InputMode.QWERTY)   // the tap modes in cycle order (FSS#95)
     private var changes = 0
     private var settingsOpened = 0
     private val d = InputDispatcher(modes, cc, feedback) { saved += it }.also {

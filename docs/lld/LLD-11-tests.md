@@ -1,8 +1,9 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.58** (2026-11-14)
-- 0.58(FSS#98, SRS 0.86 FR-TAP-03·03c·15~18·NFR-06, HLD 0.79 5A, LLD-05A 0.19, LLD-08 0.33, LLD-07 0.37): 탭 자판 편집 줄의 Ctrl·Alt 조합 키 — TL-02(편집 줄 기능키 하한 45 → 36), TL-06(편집 줄 10키), 새 5.6 CM-01~CM-12(`ChordKeysTest`, JVM), 새 7.4a CD-01~CD-18(`InputDispatcherChordTest`, JVM)·CL-01~CL-05(`KeyboardServiceChordTest`, Robolectric), 7.5에 CP-01~CP-06(`AndroidEditorPortChordTest`, Robolectric)·CV-01~CV-09(`TapKeyboardChordViewTest`, Robolectric), 7.6에 PR-35, 8절 DV-39(**실기 미확인**), 9절 표. MK-00b의 `FunctionKey` 목록에 `CTRL`·`ALT`. MQ-01~MQ-04는 `MultiPointerQueue<R>`(결과 형이 타입 인자, LLD-05A 5절)로 고쳤을 뿐 입력·기대는 그대로다. Ctrl·Alt가 꺼져 있을 때의 기존 시험 기대값은 바뀌지 않았다(편집 줄 배치를 보는 `TapLayoutsTest`의 id·라벨·x 목록만 10키로).
+- 버전 **0.59** (2026-11-14)
+- 0.59(FSS#98, SRS 0.87 FR-TAP-03·03c·15~18·NFR-06, HLD 0.80 5A, LLD-05A 0.20, LLD-08 0.34, LLD-07 0.38): 탭 자판 편집 줄의 Ctrl·Alt 조합 키 — TL-02(편집 줄 기능키 하한 45 → 36), TL-06(편집 줄 10키), 새 5.6 CM-01~CM-12(`ChordKeysTest`, JVM), 새 7.4a CD-01~CD-18(`InputDispatcherChordTest`, JVM)·CL-01~CL-05(`KeyboardServiceChordTest`, Robolectric), 7.5에 CP-01~CP-06(`AndroidEditorPortChordTest`, Robolectric)·CV-01~CV-09(`TapKeyboardChordViewTest`, Robolectric), 7.6에 PR-35, 8절 DV-39(**실기 미확인**), 9절 표. MK-00b의 `FunctionKey` 목록에 `CTRL`·`ALT`. MQ-01~MQ-04는 `MultiPointerQueue<R>`(결과 형이 타입 인자, LLD-05A 5절)로 고쳤을 뿐 입력·기대는 그대로다. Ctrl·Alt가 꺼져 있을 때의 기존 시험 기대값은 바뀌지 않았다(편집 줄 배치를 보는 `TapLayoutsTest`의 id·라벨·x 목록만 10키로).
+- 0.58(FSS#95, SRS 0.86·HLD 0.79 11장, LLD-03 0.31·LLD-04 0.36·LLD-07 0.37·LLD-08 0.33: **긋기 입력 모드 삭제, 모드 키 순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티**): ① 지운 시험 — 4절 전부(`gesture-engine`의 SC·NK·CJ·PS·SM·SL·성능과 긋기 자판 뷰 SW-01~SW-17), 2.3(VS), 9.1(SW-08·SW-08c), HC-24c·HC-52, KH-06, CC-23, ID-05·06·25·26·30~34, CT-01~06, GT-01~10, CS-01~04, MOD-02·04, PR-10~13·16·30, TH-10, KR-07, SM-04, SW-20, MK-06·07, 실기기 DV-01·03·04·23·26·27·29·34. ② 순서 때문에 기대값이 바뀐 시험 — 7.2 MC-01~MC-10, 7.2a NF-02·06·08·09, 7.2b(OM-01~OM-07로 다시 적음), ID-08·ID-23. ③ 긋기 가짜(`SwipeEngineState`)·긋기 주제로 서 있던 시험을 두벌식·그래피티·탭 자판으로 바꿔 세움(보는 동작과 기대값은 그대로) — ID-12·13·19·20·27, EG-05, PR-03·06·08·22·23·31·33·34, HC-21·22·26·50·51·53·BS-20·21(정책 이름만 그래피티 정책으로: 두 정책은 같은 값이었다). ④ 새 시험 — 7.2c 옮겨 오기(SS-15, MC-40~MC-42, PR-36), MC-00(순서), `InputDispatcherGraffitiTest` NF-02. ⑤ PR-01(주제 넷·54항목), PR-14, SS-01·07·08, MOD-03(recognizer만). 아래 0.57까지의 이력에 나오는 긋기 시험 ID는 이 판에서 없어졌다.
 - 0.57(FSS#97, SRS 0.85 FR-TAP-02c, LLD-05A 0.18): 두벌식 겹받침 여섯 개의 방향이 바뀜(ㄱ ↓ ㄳ, ㄴ ↑ ㄵ · ↓ ㄶ, ㅂ ↓ ㅄ, ㅅ ↓ ㄽ, ㅍ ↑ ㄿ) — 기대값 바뀜: TK-08(r ↓ = ㄳ), TK-11·TK-20(r ← = ㄱ, 겹받침 사례는 f ← ㄺ → ㄻ), TK-23(r ↓ ㄳ, r ← ㄱ, s ↑ ㄵ, f ← ㄺ), TA-12(ㅂ: ← ㅂ → ㅂ ↓ ㅄ, ㄴ: ↑ ㄵ ← ㄴ → ㄴ ↓ ㄶ), TA-20(ㅂ 힌트 ↑ ㅃ ↓ ㅄ, ㄴ 힌트 ↑ ㄵ ↓ ㄶ), TA-21(일곱 키의 다섯 동작 전부, 옛 방향 = 기본 자모, 힌트는 새 변에만). 사례 더함: TK-05(s ↑ = ㄵ), TK-14(s·f·v ↑ 문지르기 = 기본 자모), TK-17(r·s·f·q·t ↓ 문지르기 = 기본 자모). 8절에 DV-38. HC-60·HC-61·ID-40(ㄹ ←)은 그대로다.
 - 0.56(FSS#86, LLD-08 0.32 7.4, LLD-07 0.36): 띄운 자판 — 새 7.8에 FK-01~FK-08(`FloatingKeyboardTest`, JVM), PM-01~PM-12(`PlateMoverTest`, JVM), FL-01~FL-20(`KeyboardFloatViewTest`, Robolectric), KI-05·KI-06(`KeyboardInsetsTest`). 7.5에 SS-12~SS-14, 4장 표에 FB-05, 7.6에 PR-34, 7.7에 OB-06·OB-07, 8절에 DV-37(실기 미확인 항목), 9절 표. 기존 시험의 기대값은 바꾸지 않았다(띄우기 끔은 0.55의 길 그대로 — FL-01이 그것을 고정한다).
 - 0.55(FSS#85, LLD-08 0.31 7.3, LLD-07 0.35): 자판 판과 투명한 자리 — 7.5에 KP-01~KP-07(`KeyboardPlateTest`, JVM), 7.6에 PR-33, 7.7에 PL-01~PL-08(`KeyboardPlateViewTest`)·KI-01~KI-04(`KeyboardInsetsTest`, Robolectric), 8절에 DV-36(실기 미확인 항목), 9절 표. 기존 시험의 기대값은 바꾸지 않았다(KR-02~KR-04·KR-09의 "남는 자리 터치 소비"는 터치가 창에 온 경우의 길로 그대로 맞다).
@@ -63,38 +64,38 @@
 
 ## 1. 시험 데이터 형식
 
-### 1.1 궤적 JSON (`gesture-engine`, `stroke-core`)
+### 1.1 궤적 JSON (`stroke-core`)
 
-위치: `gesture-engine/src/test/resources/trajectories/<시험ID>.json`, `stroke-core/src/test/resources/trajectories/<시험ID>.json`.
+위치: `stroke-core/src/test/resources/trajectories/<시험ID>.json`.
 
 ```json
 {
   "version": 1,
-  "id": "SC-15",
+  "id": "EC-07",
   "key": { "kind": "CONSONANT", "label": "ㄱ", "rect": [0, 0, 51, 48], "outer": [] },
   "thresholds": "default",
   "start": [25.5, 24], "t0": 0,
-  "legs": [["R", 45], ["D", 60]],
+  "legs": [["V", 45, -45]],
   "stepDp": 2, "msPerDp": 2,
-  "expect": { "outcome": "VOWEL", "value": "ㅐ" }
+  "expect": { "crossings": [["TOP", "OUT"]] }
 }
 ```
 
 | 칸 | 뜻 |
 |---|---|
-| `key.kind` | `CONSONANT` / `NUMBER` / `SYMBOL` / `TAP_LETTER` 등. `label`은 자음·숫자 |
+| `key.kind` | 키 종류 이름(판정에 쓰지 않는다. 지금 있는 EC 파일은 `CONSONANT`·`label` ㄱ으로 적혀 있다) |
 | `key.rect` | 키 사각형 dp `[left, top, right, bottom]` |
 | `key.outer` | 바깥 변 목록(`"LEFT"` 등) |
 | `thresholds` | `"default"`(LLD-03 3.4) 또는 칸을 덮어쓴 객체 |
 | `legs` | 이동 다리 열. `["R"|"L"|"U"|"D", 거리]` 또는 `["V", dx, dy]`(임의 벡터). 점은 `stepDp` 간격, 시각은 `msPerDp`로 만든다 |
 | `points` | `legs` 대신 원시 점 `[[x, y, t], …]`(실측 궤적) |
-| `expect.outcome` | `TAP` / `VOWEL` / `TEXT` (+ `value`), 또는 `crossings`(EC 시험: `[["RIGHT","OUT"], …]`) |
+| `expect.crossings` | 변 통과 기록(EC 시험: `[["RIGHT","OUT"], …]`) |
 
-- 아래 표의 궤적은 이 형식의 `legs` 줄임표기다. 기본 시험 키는 ㄱ, 사각형 (0,0)-(51,48), 바깥 변 없음, 시작점 = 중심(25.5, 24), 기준값 기본(m 14, 길게 51, ㅣ 추가 48, 되돌아오기 48, 꺾기 60°). 중심에서 좌우 변까지 25.5, 위아래 변까지 24dp다.
+- 아래 표의 궤적은 이 형식의 `legs` 줄임표기다. 기본 시험 키는 사각형 (0,0)-(51,48), 바깥 변 없음, 시작점 = 중심(25.5, 24), 기준값은 파일의 `thresholds`(기본 `minCrossDp` 8). 중심에서 좌우 변까지 25.5, 위아래 변까지 24dp다.
 
-### 1.2 동작 열 (SwipeInputMapper·조합기)
+### 1.2 ~~동작 열 (SwipeInputMapper·조합기)~~ — 삭제 (0.58, FSS#95)
 
-0.14: 시험 코드 안의 `SwipeTypist`(gesture-engine 시험 소스)로 쓴다. 동작 하나 = `StrokeResult` 하나를 `SwipeInputMapper.accept`에 넣고(긋기 뷰와 같은 순서, LLD-04 9.3) 결과 `MapResult.Jamo`의 이벤트를 `HangulComposer(SWIPE).applyAll`에 넣는다. `Ignored`는 센다(오류 진동 수). `Text`면 조합을 확정하고 글자를 붙인다. ⌫는 `composer.backspace()` 뒤 `mapper.onBackspace(composer.lastConsonant())`, 스페이스는 확정 + " " + `reset()`. 동작 사이 간격(앞 동작 뗌 → 누름)은 따로 적지 않으면 **300ms(보통 속도, 기본 쌍자음 시간 창 250보다 김)**, "빠르게" = 80ms. 탭은 60ms 뒤 뗌, 긋기는 40ms 뒤 첫 통과·100ms 뒤 뗌. 기대값은 확정 + 조합 문자열.
+긋기 매퍼에 동작을 넣던 시험 도구(`SwipeTypist`)는 `gesture-engine`과 함께 없앴다. 조합기 시험(2절)은 `JamoEvent`를 직접 넣는다.
 
 ### 1.3 그래피티 획
 
@@ -109,7 +110,7 @@
 | HC-02 | 〃 | ㅏ+ㅣ, ㅓ+ㅣ, ㅘ+ㅣ | null | FR-HGL-04a "이 밖의 조합은 병합하지 않는다" |
 | HC-03 | (0.15 삭제: `MergeTables.SWIPE` 없음, 이슈 #156) | – | – | – |
 | HC-04 | (0.15 삭제) | – | – | – |
-| HC-05 | `MergeTables.NONE`(그래피티·긋기) | 아무 쌍 | null | FR-HGL-04, FR-HGL-04b(0.15) |
+| HC-05 | `MergeTables.NONE`(그래피티) | 아무 쌍 | null | FR-HGL-04 |
 | HC-06 | `apply` (두벌식) | ㄱ ㅏ | 가 | FR-HGL-01 |
 | HC-07 | 〃 | ㄱ ㅏ ㄱ | 각 | FR-HGL-01 |
 | HC-08 | 〃 | ㄷ ㅏ ㄹ ㄱ | 닭 | FR-HGL-02 |
@@ -125,32 +126,30 @@
 | HC-18 | 〃 | 다 + ㄸ | 다ㄸ (ㄸ는 받침 아님) | FR-HGL-05 |
 | HC-19 | 〃 | 가 + ㄲ, 이어서 ㅏ | 갂 → 가까 | FR-HGL-05 |
 | HC-20 | 〃 | 해 + ㅆ | 했 | FR-HGL-05 |
-| HC-21 | `apply` (긋기 정책) | 가 + Vowel(ㅣ) / 가 + Vowel(ㅏ) / 고 + Vowel(ㅜ) / 두벌식 가 + ㅣ | 가ㅣ / 가ㅏ / 고ㅜ / 가ㅣ | FR-SWP-21, FR-HGL-04b, HLD 4.4 (0.15) |
-| HC-22 | 〃 | 고 + ㅏ (두벌식은 과) / 그 + ㅣ / ㄱ + 한 획 ㅘ, + ㅣ / ㄱ + 한 획 ㅘ / 각 + ㅣ / 갈 + ㄱ + ㅣ | 고ㅏ / 그ㅣ / 과ㅣ / 과 / 가기 / 갈기(받침·겹받침 뒤는 도깨비불) | FR-SWP-21, TBD-18 = B, FR-HGL-04d "긋기 고 + ㅏ = 고ㅏ" (0.15) |
+| HC-21 | `apply` (병합 없는 정책 = 그래피티 정책, 0.58) | 가 + Vowel(ㅣ) / 가 + Vowel(ㅏ) / 고 + Vowel(ㅜ) / 두벌식 가 + ㅣ | 가ㅣ / 가ㅏ / 고ㅜ / 가ㅣ | FR-HGL-04, HLD 4.4 |
+| HC-22 | 〃 | 고 + ㅏ (두벌식은 과) / 그 + ㅣ / ㄱ + Vowel ㅘ, + ㅣ / ㄱ + Vowel ㅘ / 각 + ㅣ / 갈 + ㄱ + ㅣ | 고ㅏ / 그ㅣ / 과ㅣ / 과 / 가기 / 갈기(받침·겹받침 뒤는 도깨비불) | FR-HGL-04, HLD 4.4 |
 | HC-23 | (0.14 삭제: `MergeVowel` 없음) | – | – | – |
-| HC-24 | `apply` (그래피티 정책) | ㄱ, Vowel ㅣ, ReplaceVowel ㅏ, ReplaceVowel ㅑ, 이어서 ㄴ, ⌫×4 | 기 → 가 → 갸, 단위 4개(`ReplaceVowel`도 단위, 0.16) / 갼 ⌫ = 갸 → 가 → 기 → ㄱ | FR-HGL-04c, FR-SWP-64 |
-| HC-24c | `apply` (긋기 정책) | 각 + Vowel ㅣ, ReplaceVowel ㅏ, ⌫⌫ | 가기 → 가가 → 가기 → 가ㄱ(도깨비불 뒤 새 글자 안에서) | FR-SWP-64 (0.16) |
+| HC-24 | `apply` (그래피티 정책) | ㄱ, Vowel ㅣ, ReplaceVowel ㅏ, ReplaceVowel ㅑ, 이어서 ㄴ, ⌫×4 | 기 → 가 → 갸, 단위 4개(`ReplaceVowel`도 단위, 0.16) / 갼 ⌫ = 갸 → 가 → 기 → ㄱ | FR-HGL-04c, FR-HGL-04e |
 | HC-25 | 〃 | 각 + ReplaceVowel ㅓ | 각(무시), 기록 1건 | D-09 |
-| HC-26 | `applyAll` | 고 + [Consonant ㄱ, Vowel ㅜ] | 확정 "고", 조합 "구" (중간 "곡"은 결과에 없음) | FR-SWP-34 |
+| HC-26 | `applyAll` | 고 + [Consonant ㄱ, Vowel ㅜ] | 확정 "고", 조합 "구" (중간 "곡"은 결과에 없음) | HLD 4.4 |
 | HC-27 | `render` | ㅎ ㅣ ㅎ | 힣 (U+D7A3) | 유니코드 공식 |
-| HC-28 | `apply` | DoubleConsonant(ㄱ) | ㄲ | HLD 4.3 |
+| HC-28 | `apply` | DoubleConsonant(ㄱ) | ㄲ | LLD-04 7.2 |
 | HC-29 | `finish` | 각 | "각" 반환, `isComposing() == false` | HLD 4.4 |
-| HC-30 | `hasJong` | 가 / 각 / 닭 | false / true / true | HLD 4.3 |
+| HC-30 | `hasJong` | 가 / 각 / 닭 | false / true / true | LLD-04 7.3 |
 | HC-31 | `snapshot`/`restore` | 닭에서 스냅숏, ㅏ 넣고 복원 | 닭 | HLD 9장 |
-| HC-41 | `undoLast` | 각 | 가 | HLD 4.3 |
-| HC-42 | 〃 | 밖 + Consonant ㄱ(새 글자 ㄱ) 뒤 UndoLast | 확정 "밖", 조합 "" | HLD 4.3 |
+| HC-41 | `undoLast` | 각 | 가 | HLD 4.4 |
+| HC-42 | 〃 | 밖 + Consonant ㄱ(새 글자 ㄱ) 뒤 UndoLast | 확정 "밖", 조합 "" | HLD 4.4 |
 | HC-43 | 〃 | 빈 상태 | 변화 없음 | 7.3 |
 | HC-44 | 〃 | 가 + ㄲ + ㅏ(= 가까) 뒤 UndoLast | 확정 "가", 조합 "ㄲ" | FR-CMN-07 확정 경계 |
-| HC-50 | `UndoLast` + `DoubleConsonant`(긋기 쌍자음, 0.14) | 박 → [UndoLast, DoubleConsonant ㄱ] → ㅏ / 닭 → 같음 / 압 → [UndoLast, DoubleConsonant ㅂ] → ㅏ | 밖 → 바까 / 확정 "달", 조합 "ㄲ" / 확정 "아", 조합 "ㅃ" → 빠 | HLD 4.3, FR-SWP-30 |
-| HC-51 | 〃 | 곡 → [UndoLast, DoubleConsonant ㄱ] → ㅣ | 곢 → 확정 "고", 조합 "끼"(쌍받침 전체가 도깨비불) | SWIPE 5.3 고끼 |
+| HC-50 | `UndoLast` + `DoubleConsonant`(0.14) | 박 → [UndoLast, DoubleConsonant ㄱ] → ㅏ / 닭 → 같음 / 압 → [UndoLast, DoubleConsonant ㅂ] → ㅏ | 밖 → 바까 / 확정 "달", 조합 "ㄲ" / 확정 "아", 조합 "ㅃ" → 빠 | HLD 4.4, LLD-04 7.2 |
+| HC-51 | 〃 | 곡 → [UndoLast, DoubleConsonant ㄱ] → ㅣ | 곢 → 확정 "고", 조합 "끼"(쌍받침 전체가 도깨비불) | FR-HGL-05, HLD 4.4 |
 | HC-60 | 겹받침 자모 한 번(0.32, 이슈 #242) | 가 + ㄳ … ㅄ 11개 / + ㅏ / 갉 ⌫ | 두 번 치기와 같음 / 같음(갈가 …) / 갈 | 이슈 #242 |
 | HC-61 | 겹받침 낱자(0.32) | ㄺ / ㄺ + ㅏ / 각 + ㄺ / ㄱ + ㄳ / ㄺ + ㄱ / ㄺ ⌫ | ㄺ / ㄹ가 / 각ㄺ / ㄱㄳ / ㄺㄱ / 빔 | 이슈 #242 |
-| HC-52 | `lastConsonant`(0.14) | 빈 / 닭 / ⌫ 달 / ⌫ 다 / 밖(바 + ㄲ) / ㅏ만 | null / ㄱ / ㄹ / ㄷ / ㄲ / null | FR-SWP-39 |
 | HC-53 | `undoLast`·`snapshot`·`restore` | 빈 상태 UndoLast / 각 스냅숏 → finish → restore → UndoLast | 변화 없음 / 각 → 가, 보고 0건 | 7.3, LLD-09 |
 
 ### 2.1 백스페이스 사례 (SRS 3.1 표 24행, FR-CMN-07)
 
-조합기 시험(두벌식·긋기)은 `HangulComposer.backspace`, 그래피티 행은 `GraffitiInputHandler.backspace`(LLD-05 6절), "모두" 행은 `InputDispatcher.backspace`(LLD-08 6절)로 돌린다.
+조합기 시험(두벌식·병합 없는 정책)은 `HangulComposer.backspace`, 그래피티 행은 `GraffitiInputHandler.backspace`(LLD-05 6절), "모두" 행은 `InputDispatcher.backspace`(LLD-08 6절)로 돌린다.
 
 | ID | 모드 | 상태(입력) | ⌫ 뒤 기대 | SRS 행 |
 |---|---|---|---|---|
@@ -175,47 +174,28 @@
 | BS-19 | 그래피티 | 가 + 시프트 획 | 가, `shiftPending == false` | 19 |
 | BS-23 | 그래피티 | 조합 없음, 앞 글자 "한" + 숫자 영역 탭(구두점 시프트 대기) | 한(편집기 호출 없음), `punctPending == false` | 20 (DCR-05) |
 | BS-24 | 그래피티 | 기 + ㅣ(무시됨) ⌫ | ㄱ (ㅣ 하나만 되돌림, 조립기 Empty) | 21 (DCR-04) |
-| BS-20 | 긋기 | 개(ㄱ + 한 획 ㅐ) ⌫⌫ / 과(ㄱ + 한 획 ㅘ) ⌫ / 가ㅣ ⌫, ⌫ / 닭 ⌫⌫⌫ | ㄱ → "" / ㄱ(마지막 자음 ㄱ) / ""(앞 가는 확정) → 조합 없음 / 달 → 다 → ㄷ (자모 하나씩, 0.15) | 22 |
-| BS-21 | 긋기 | 가가 (둘째 가 조합 중) | 가ㄱ(앞 가를 다시 열지 않음, 0.14) | 23 |
-| BS-22 | 모두(두벌식·긋기·그래피티·쿼티) | 조합 없음, 앞 글자 "한" | `EditorPort.deleteBefore` 1회 | 24 |
+| BS-20 | 병합 없는 정책(그래피티 정책, 0.58) | 개(ㄱ + Vowel ㅐ) ⌫⌫ / 과(ㄱ + Vowel ㅘ) ⌫ / 가ㅣ ⌫, ⌫ / 닭 ⌫⌫⌫ | ㄱ → "" / ㄱ / ""(앞 가는 확정) → 조합 없음 / 달 → 다 → ㄷ (자모 하나씩) | FR-CMN-07 |
+| BS-21 | 〃 | 가가 (둘째 가 조합 중) | 가ㄱ(앞 가를 다시 열지 않음, 0.14) | FR-CMN-07 확정 경계 |
+| BS-22 | 모두(두벌식·쿼티·그래피티) | 조합 없음, 앞 글자 "한" | `EditorPort.deleteBefore` 1회 | 24 |
 | BS-25 | 모두 | 조합 없음, 선택 영역(3~5) 있음 | `EditorPort.deleteBefore` 1회(편집기 기본 동작으로 선택 부분 삭제) | FR-CMN-07 (DCR-13) |
 
 - BS ID는 0.1 번호를 지키려고 SRS 행 순서와 다르게 매겼다(BS-23·24가 SRS 20·21행).
 
-### 2.3 VowelStrokeAssembler (SWIPE 0.35 3.3~3.6, 0.21)
+### 2.3 ~~VowelStrokeAssembler~~ — 삭제 (0.58, FSS#95)
 
-좌표는 화면 dp, t = 20. 획에 길이 표시가 없다(이슈 #179). C가 있는 사례의 C = (139, 76)–(221, 172)(SWIPE 0.52 3.6.5 (가), FSS#37. 0.38까지 (139, 52)–(221, 148), 0.25까지 (64, 52)–(144, 148), 이슈 #213). 시험 코드 `VowelStrokeAssemblerTest`의 표준 모양: 낱모음(ㅣ = x 100의 y 40→160, ㅏ의 점 = (100,100)→(125,100) 등)과 C 옆(ㅣ = x 237의 y 80→174 등, SWIPE 9.5 공간 점검. 0.38까지 y 56→150, 0.25까지 x 160). 0.20까지의 VS-11(D-58 짧은 선의 가운데)과 VS-13(완성 모음 하나 1만 쌍)은 길이 비례 여유 삭제·상태 기계로 뜻이 없어져 바꿨다.
-
-| ID | 입력 | 기대 | 근거 |
-|---|---|---|---|
-| VS-01 | 21모음을 필순·표준 자리로, 낱모음과 C 옆 각각 | 그 모음, 임시 글자 없음 | SWIPE 3.3, 3.6.3 |
-| VS-02 | SWIPE 3.6.5 (나) 낱모음 58행 전부(떨어진 획, 길이만 바꾼 짝, ㅏ / ㅗ 상대 크기·같음 = ㅏ, 가로지름·ㄴ 모양·시작점 점, 점 위쪽 절반 = 무시, ㅓ/ㅢ 3등분·가로지름·0.5, ㅢ 뒤 ③ = ㅔ, ㅕ ㅛ ㅠ ㅟ ㅝ ㅚ ㅘ ㅙ ㅐ, 겹친 ㅣ·왼쪽 ㅣ·ㅡ 왼쪽 바깥 = 무시, 닫기 넷) | 표의 결과(받음 / 마지막 획 무시 / 닫을 때 남는 모음과 진동) | SWIPE 3.6.5 (나) (0.21) |
-| VS-14 | SWIPE 0.52 3.6.5 (가) C 36행 전부(0.39: 0.43 사례의 y + 24)(두 구역, 첫 획 두 후보 — 둘째 획이 한 해석에만 맞으면 다시 정함(가·고), 둘 다 맞으면 첫 획 구역(ㅏ / ㅗ), C를 꿰뚫는 세로선 = 점(구), 겨, 뚜 꼴 ㅡ, 버리는 획 없음, 한 획 닫기) | 표의 결과 | SWIPE 3.6.5 (가) (0.30), D-63 |
-| VS-03 | C 세로 점, ㅡ, ㅣ, 가로 점, ㅣ / 낱모음 ↓ 다음 그 아래 → / 낱모음 → 다음 끝 ↓ / C 가로 점, ㅣ | Pending, Started(ㅗ), Changed(ㅚ), Changed(ㅘ), Changed(ㅙ) / Started(ㅣ), Changed(ㅗ) / Started(ㅡ), Changed(ㅓ) / Pending, Started(ㅓ) | SWIPE 3.4 |
-| VS-04 | C 세로 점 / C 가로 점 / C 세로 점 둘 / C 가로 점 둘 / ㅜ + 가로 점 / 낱모음 세로 둘·가로 둘(⌫, 닫기, 미리보기) | ㆍ / ㆍ / ‥, 모음 없음 / ‥, 모음 없음 / ㅜ + ㆍ / "‥"만(조합기 모음 ㅣ / ㅡ, `pendingReplacesVowel`), ⌫ = ㅣ, 닫기 = 진동, 미리보기 "‥" (0.21 2회차) | SWIPE 3.4, D-64 |
-| VS-05 | ㅣ + 겹친 ㅣ, ㅡ + 같은 높이 ㅡ, ㅗ + 세로 점, ㅐ + 점, ㅡ + 왼쪽 바깥 세로 / C: 세로 점 + C 옆 ㅣ(ㅛ ② 아님), 가로 점 + C 아래 세로, ㅗ + C 아래 세로(ㅚ ③ 아님), ㅡ + 가로 | 무시(상태 그대로) | SWIPE 3.3, 3.6.3 |
-| VS-06 | C ㅘ ⌫ × 5 / 낱모음 ㅗ ⌫ / ㅜ + ㆍ ⌫ | ㅚ, ㅗ, ㆍ(undo 셋), 조합기 그대로, Empty, C 비움 / ㅣ / ㅜ(undo 없음) | SWIPE 3.5 |
-| VS-07 | C 가로 점 닫기 / ㅜ + 점 닫기 / ㅏ 닫기 / C ㅣ 닫은 뒤 새 획 | true / true / false / 새 낱모음, C 없음 | SWIPE 3.3 조립 끝 |
-| VS-08 | C 두 구역 경계(0.30, 0.39 좌표): 세로 P (221,172) d 0 = ㅣ / d 0.2 = 점, P (200,151) d 0 / 0.2, 가로 P (200,151) d 0 = 가로 점 / d 0.2 = ㅡ, 어느 첫 획도 버리지 않음 / 낱모음: ㅏ 점 R 110 / 109, y 165 / 166, ㅜ / ㅓ x 129 / 130, T 90 / 89, x 30 / 29 | ㅣ / 무시, ㅣ / ㆍ, ㆍ, ㅣ / 무시, ㆍ / 무시, ㆍ, ㅡ / ㅏ / 무시, ㅏ / 무시, ㅜ / ㅓ, ㅜ / ㅓ, ㅓ / 무시 | 3.6.3 경계 1dp |
-| VS-09 | ㅣ 뒤 미리보기, C 가로 점 미리보기, 낱모음 같은 획, C 위 세로 | "ㅏ", 겹친 ㅣ = null, 획은 그대로 / "ㆍ" / "ㅡ" / null | 9.1 |
-| VS-10 | C 세로 점 스냅숏 → 닫기 → 복구 → 밑줄 | C 그대로, Started(ㅗ) | LLD-09 |
-| VS-15 | C 옆 `pendingDots`(0.39): C 아래 세로 점 / 세로 점 둘 / C 오른쪽 가로 점 / 가로 점 둘 / ㅡ + 밑 가로(‥, ㅡ 숨김) / ㅜ + 가로 점 / ㅣ / 고 / 획 없음 | [UNDER] / [UNDER, UNDER] / [RIGHT] / [RIGHT, RIGHT] / [RIGHT, RIGHT] / [RIGHT] / [] / [] / [] | SWIPE 9.5 점 자리, FSS#36 오너 보충·확인 |
-| VS-11 | 둘째·셋째 획 길이 15 / 25 / 60 / 150(ㅜ, ㅑ, C ㅚ), C 옆 짧은 ㅣ, C 아래 긴 점 | 결과 같음, ㅣ, ㆍ | 이슈 #179 길이 폐지 (0.21) |
-| VS-12 | ㅣ(T 40, B 160): y 119 / 120 / 200 / 10, 아래 1/3에서 가로 60 / 59(ㅣ × 0.5 = 60), ㅢ로 보인 뒤 옆 ㅣ, C 가로 점 + 낮은 ㅣ, C ㅡ + ㅣ | ㅓ / ㅢ / ㅢ / ㅓ, ㅢ / ㅓ, Changed(ㅔ), ㅓ, ㅢ | 3.6.3 3등분·TBD-22 |
-| VS-13 | C ㅣ 뒤 C 없이 가로 / 낱모음 ㅣ 뒤 C로 미리보기 | Changed(ㅏ)(C 고정) / "ㅏ"(나중 C 무시) | LLD-04 6.3 상태 = 획 열 + C |
+모음 획 조립기(`kbd.hangul.stroke`)와 그 시험 VS-01~은 긋기 입력 모드와 함께 없앴다.
 
 ## 3. stroke-core
 
 | ID | 함수 | 입력 | 기대 | 근거 |
 |---|---|---|---|---|
-| KH-01 | `KeyHitTester.hit` | 키 안 점 | 그 키 | HLD 4.1 |
+| KH-01 | `KeyHitTester.hit` | 키 안 점 | 그 키 | HLD 5A |
 | KH-02 | 〃 | 두 키 경계(오른쪽 변) | 오른쪽 키 | 2절 |
 | KH-03 | `TapKeyboardView.hit`(빈칸 먼저, LLD-05A 4절) | 쿼티 3줄 왼쪽 빈칸 (5, 3줄 맨 위 y + 1)·(5, 3줄 가운데 y) / 오른쪽 빈칸 (355, 3줄 맨 위 y + 1) / 4줄 왼쪽 빈칸 (5, 4줄 맨 위 y + 1) | a·a / l / z (윗줄 키가 더 가까워도 같은 줄 키) | SRS 3.3 |
 | KH-03b | `TapGeometry.indexAt` (0.22, 0.23 폭, 이슈 #198) | (359, 5줄 맨 위 y + 1) / (290, 5줄 가운데 y) / (325·253·250, 5줄 가운데 y) / (355, 5줄 맨 위 y − 1) / (280, 4줄 맨 위 y + 1) / 편집 줄 (1, 1)·(300, 1)·(359, 1) | `/` / `.` / `/`·`,`·스페이스 / ↵ / `-` / Esc·Del·⌫ | SRS 3.3, 이슈 #198 |
 | KH-04 | 〃 | 키 목록 빔 | null | 2절 |
 | KH-05 | `KeyGeom.build` | 쿼티 배치 | 바깥 변: Esc·1·q·한/영 LEFT, ⌫·0·p·↵·`/` RIGHT(0.22), 5줄 전부 BOTTOM, a의 LEFT·l의 RIGHT는 아님, 편집 줄 TOP 아님 | LLD-03 3.3 |
-| KH-07 | 〃(`sideDp` 8, 0.54) | 창 153 × 96의 왼쪽 끝·오른쪽 끝·아랫줄 키 / 사각형이 −7.5~160.5 / −7.4~160.4 | 바깥 변 없음(맨 윗줄 `topAtWindow`는 그대로)·없음·BOTTOM만 / LEFT·RIGHT / 없음. `sideDp` 0이면 KH-01~KH-06과 같음 | LLD-04 2절, FR-CMN-14 ⑧ (FSS#84) |
-| KH-06 | 〃 | 긋기 배치 | 1·8·0 LEFT, 7·9·⌫·↵ RIGHT, 맨 아랫줄 BOTTOM, 자음 키 없음, ㅋ LEFT 아님, 줄 4 열 0 빈 칸 LEFT(0.24) | FR-SWP-51 |
+| KH-07 | 〃(`sideDp` 8, 0.54) | 창 153 × 96의 왼쪽 끝·오른쪽 끝·아랫줄 키 / 사각형이 −7.5~160.5 / −7.4~160.4 | 바깥 변 없음(맨 윗줄 `topAtWindow`는 그대로)·없음·BOTTOM만 / LEFT·RIGHT / 없음. `sideDp` 0이면 KH-01~KH-05와 같음 | LLD-04 2절, FR-CMN-14 ⑧ (FSS#84) |
 | EC-01 | `EdgeCrossingTracker.add` | R10 L10 | 기록 없음 | FR-SWP-02 |
 | EC-02 | 〃 | R45 | [RIGHT OUT] | FR-SWP-03 |
 | EC-03 | 〃 | R33.4 (변 너머 7.9) | 없음 | FR-SWP-03 (0.28) |
@@ -235,154 +215,9 @@
 
 탭 자판 판정은 5절.
 
-## 4. gesture-engine
+## 4. ~~gesture-engine~~ — 삭제 (0.58, FSS#95)
 
-### 4.1 StrokeClassifier — 한글 자음 키 (SWIPE 3.1·3.2·3.6 판정 순서, 0.19)
-
-누른 점 (125, 124), 키 (100,100)~(151,148), 중간에 키 밖으로 흔든 점 하나(중간 경로는 보지 않음). minCrossDp 14, longDp 51.
-
-| ID | 뗀 점 변위 | 기대 | 근거 |
-|---|---|---|---|
-| SC-01 | 0 / 흔들고 제자리 / (7.9, 7.9) | Tap | ① (0.28) |
-| SC-02 | (7.9, 0) / (8, 0) / (0, 7.9) / (0, 8) | Tap / 가로 점 / Tap / 세로 점 | ① 경계 |
-| SC-03 | (30, 29) / (29, 30) / (30, 30) | 가로 / 세로 / 가로(대각선 = 가로) | ② |
-| SC-04 | (−30, 0) / (0, −30) / (−30, 29) / (29, −30) / (−14, 0) | Reverse | ③ |
-| SC-05 | (51, 0) / (50.9, 0) / (0, 51) / (0, 50.9) / (10, 120) | 모두 축·끝점만 있는 같은 꼴의 획(길이 표시 없음), 세로(키와 무관) | 0.21: 길이 단계 없음(이슈 #179) |
-| SC-06 | ㄲ 키에서 (0, 80) | 세로 긴 획, keyId ㄲ | 시작 키 무관 |
-| SC-07 | 진행: 누름 → 5dp → 20dp → 60dp → 위로 | 현재 ㄱ(beforeExit, 후보 ↓→ 점·긴 획) → ㆍ → ㅣ(미리보기) → "" | 9.2 |
-| SC-08 | 900ms 누르고 뗌 | Tap, ㄱ | 이슈 #142 |
-| SC-09 | 누른·뗀 시각 | downTime·upTime | HLD 4.1 |
-| TS-08 | 51·70dp 키에서 (50.9, 0)·(51, 0) | 점·긴 획, 키 폭과 무관 | FR-CMN-12 |
-
-- 0.18까지의 SC-03~SC-50(변 통과 모음 규칙)과 궤적 JSON은 지웠다.
-
-### 4.2 둘레 숫자 키·기호 키 (SWIPE 7·8장)
-
-시험 키는 그 키의 실제 배치 위치(바깥 변 포함)로 만든다.
-
-| ID | 키 | 궤적 | 기대 | 근거 |
-|---|---|---|---|---|
-| NK-01 | 1 | 탭 / U / R / D / L | 1 / ! / ` / · / 1(왼쪽 바깥 변, 기록 없음) | SWIPE 7장 1행, FR-SWP-45 |
-| NK-02 | 2 | 탭 / U / L / R / D | 2 / @ / [ / ] / ※ | 7장 2행 (0.25) |
-| NK-03 | 3 | 〃 | 3 / # / { / } / ± | 3행 |
-| NK-04 | 4 | 〃 | 4 / $ / ; / : / € | 4행(0.31: ← ; 오너 #208) |
-| NK-05 | 5 | 〃 | 5 / % / - / + / × | 5행(0.52: ← `-` FSS#75) |
-| NK-06 | 6 | 〃 | 6 / ^ / 6(배정 없음 = 탭, 진동 없음) / ~ / ÷ | 6행 (0.25) |
-| NK-07 | 7 | 탭 / U / L / D / R | 7 / & / \ / ≠ / 7(오른쪽 바깥) | 7행 |
-| NK-08 | 8 | 탭 / U / R / D / L | 8 / * / \| / ∞ / 8(왼쪽 바깥) | 8행 |
-| NK-09 | 9 | 탭 / U / L / D / R | 9 / ( / ₩ / ≈ / 9 | 9행 |
-| NK-10 | 0 | 탭 / U / R / D / L | 0 / ) / … / ° / 0 | 10행 |
-| NK-11 | 3 | U 문지르기(U42 D42 U42) | ³ | 7장 공통 |
-| NK-12 | 3 | D 문지르기 | ₃ | 7장 공통 |
-| NK-13 | 3 | R 문지르기 / L 문지르기 / U 나갔다 돌아옴 / D 나갔다 돌아옴 | } / { / # / ± (그 방향 나감과 같음) | FR-SWP-42, SWIPE 7장 (DCR-02) |
-| NK-14 | 5 | U85(길게) | % (숫자 키는 길이를 보지 않음) | 4.4 |
-| NK-15 | 2 | U 나갔다 돌아옴 / L 문지르기 / 1 키 L 문지르기(왼쪽 바깥 변) | @ / [ / 1 (쓸 수 없는 방향은 기록이 없어 탭) | SWIPE 7장 예시, FR-SWP-45 (DCR-02) |
-| SK-01 | 기호 | 탭 | . | SWIPE 8장 |
-| SK-02 | 기호 | L / L 나갔다 돌아옴 / L 문지르기 | < / < / < (단계 없음, 0.25. 0.52: FSS#75) | FR-SWP-43, 이슈 #208 |
-| SK-03 | 기호 | R / R 돌아옴 / R 문지르기 | > / > / > | 〃 |
-| SK-04 | 기호 | U / U 돌아옴 / U 문지르기 | ' / ' / ' | 〃 |
-| SK-05 | 기호 | D / D 돌아옴 / D 문지르기 | _ / _ / _ (↓ 배정, 0.25) | 〃, SWIPE 0.38 8장 "↓ 허용" |
-| SK-06 | 기호2 | 탭 / L / U / D / R(화면 끝) / L 돌아옴 / U 문지르기 / D 돌아옴 | , / ♥ / " / ★ / , / ♥ / " / ★ | FR-SWP-43, FR-SWP-45(0.52: FSS#75) |
-| SK-07 | 기호 | R 80dp(기호2 키 위까지) | > (처음 누른 키) | FR-SWP-01 |
-| SK-08 | 기호3 | 탭 / R / U / L(화면 끝) / D(모드 키 쪽, 배정 없음) / R 돌아옴 / U 문지르기 / D 돌아옴 | / / = / ? / / / / / = / ? / / | FR-SWP-43, FR-SWP-45 (0.25) |
-
-### 4.2a 천지인 키 (SWIPE 5.4, FR-SWP-61·65, 0.16)
-
-| ID | 획 | 기대 | 근거 |
-|---|---|---|---|
-| CK-01 | 탭 / U / D / R / L | Element ㆍ / ㅣ / ㅣ / ㅡ / ㆍ(왼쪽 변은 창 끝, 통과로 세지 않음) | FR-SWP-61 |
-| CK-02 | U 120 / U 돌아옴 / D 돌아옴 / U 문지르기 / R 돌아옴 / U 뒤 R 꺾기 / R 뒤 U 80 / U 30(최소 통과 거리 못 미침) | ㅣ / ㅣ / ㅣ / ㅣ / ㅡ / ㅣ / ㅡ / ㆍ | FR-SWP-61 "처음 통과한 변만" |
-| CK-03 | `textOf(Element)` | "ㆍ" "ㅣ" "ㅡ" | SWIPE 9.2 |
-| CK-04 | `ProgressState.of`: 누름 / U 나간 뒤 | current ㆍ, 후보 ↑ㅣ ↓ㅣ →ㅡ(← 없음) / current ㅣ, 후보 없음 | FR-SWP-65, SWIPE 9.1 |
-
-### 4.3 ProgressState (SWIPE 9장)
-
-0.19: 자음 키는 획 안내다. PS-01 = 누름만일 때 후보 ↓·→의 점·긴 획 넷(라벨은 미리보기, 위·왼쪽 없음, 거리 = (minCross + longDp)/2·longDp + 1), PS-02 = 미리보기가 null이면 후보 없음. 0.18의 자음 키 행(PS-01~PS-12, PS-15)은 지웠고 PS-13·14·16·18은 숫자·기호 키, PS-17은 숫자 키 RUB 방향이다.
-
-| ID | 상태(궤적) | 기대 `current` / 후보(방향 → 글자) | 근거 |
-|---|---|---|---|
-| PS-01 | 실제 조립기 미리보기(낱모음), ㄱ 키 누름 | 후보 "DOWN ㅣ", "RIGHT ㅡ" 하나씩(점 탐침 거리), 위·왼쪽 없음 | SWIPE 9.1 거리로 나누지 않음 (0.21 2회차) |
-| PS-01b | 실제 조립기 + C(`consonantBox`), 레이아웃 ㄱ 키 누름 | 같은 (방향, 글자) 중복 없음, ↓·→ 하나씩(0.30: ㄱ 키의 ↓는 모두 오른쪽 위 = ㅣ) | 검수 PR #183 2회차 중요 1 |
-| PS-02 | 미리보기가 늘 null(무시될 획) | 후보 없음 | SWIPE 9.1 |
-| PS-03 | L45 | ㅓ / ↑ ㅔ, ↓ ㅔ, → ㅕ, ← ㅡ | 9.2 3행 |
-| PS-04 | L45 R45 L45 | ㅕ / ↑ ㅖ, ↓ ㅖ | 9.2 4행 |
-| PS-05 | U42 | ㅗ / → ㅘ, ↓ ㅚ(먼 쪽), ↓ ㅛ(가까운 쪽), ↑ ㅣ | 9.2 5행 |
-| PS-06 | U42 R30 | ㅘ / ↑ ㅙ, ↓ ㅙ (ㅚ 없음) | 9.2 6행, R3 |
-| PS-07 | D42 | ㅜ / ← ㅝ, ↑ ㅟ(먼 쪽), ↑ ㅠ(가까운 쪽), ↓ ㅣ | 9.2 7행 |
-| PS-08 | D42 L30 | ㅝ / ↑ ㅞ, ↓ ㅞ | 9.2 8행 |
-| PS-09 | R85 | ㅡ / ↑ ㅢ, ↓ ㅢ | 9.2 9행 |
-| PS-10 | (누름만) | ㄱ / RING: ↑ ㅗ ↓ ㅜ ← ㅓ → ㅏ, OUTER: ↑ ㅣ ↓ ㅣ ← ㅡ → ㅡ | 9.1, FR-DSP-01, 02 |
-| PS-11 | R45 | 후보에 ㅏ+ㅡ 같은 없는 조합이 없음(PS-01 집합과 정확히 같음) | FR-DSP-05 |
-| PS-12 | U80 (ㅣ) | 후보 없음 | FR-DSP-05 |
-| PS-13 | 숫자 키 5 누름만 | RING ↑ % ← - → + ↓ ×, ↑ ⁵, ↓ ₅ | 9.1 "숫자 키는 배치표 글자" |
-| PS-14 | 기호 / 기호2 / 기호3 키 누름만 / 기호 키 U42 | RING만 ← < → > ↑ ' ↓ _ / ← ♥ ↑ " ↓ ★(→ 없음) / → = ↑ ?(←·↓ 없음) / 후보 없음(단계 없음) | 9.1·9.2, FR-SWP-43 (0.25) |
-| PS-15 | 앞 글자 "고"(ㄱ탭, ㄱ↑)에서 ㄱ 키 R45 진행 중 | `current` = ㅏ(병합 결과 "과"가 아님). 뗀 뒤 편집기는 과(SM-14) | FR-DSP-03, SWIPE 9.2 (DCR-16) |
-| PS-16 | 숫자 키 3 U42 진행 중 / R42 진행 중 | `current` #, 후보 = RUB ³ 하나 / `current` }, 후보 없음(→ 문지르기 = } 로 같음) | 5.2 "같으면 내지 않음", FR-SWP-42 (DCR-02) |
-| PS-17 | R45 / R45 L45(손가락이 키 안으로 돌아옴, `current` ㅏ) | RUB 후보 ㅑ: ← (되돌아오는 쪽), 거리 = 손가락에서 오른쪽 변까지 / **→**(다시 나가는 쪽, e1 쪽), 거리 = 손가락에서 오른쪽 변까지 | SWIPE 9.2 "ㅡ 동작 방향", LLD-04 5.2 (이슈 #73) |
-| PS-18 | 자음 키 / 숫자 키 5 / 기호 키 누름만(손가락 = 누른 점) | `offsetDp`(손가락에서): RING = 변까지 + m, OUTER = 변까지 + longDp / RING = 변까지 + m, RUB ↑·↓ = 변까지 + longDp / RING(네 방향) = 변까지 + m(0.25: STAGE2·STAGE3 삭제) | SWIPE 9.1 "같은 자리", LLD-04 5.2, D-37 |
-
-### 4.4 SwipeInputMapper + 조합기 (SWIPE 3·5장, 0.19)
-
-입력은 `SwipeTypist`: `tap(키)`, `vowel("ㅏ")`(표준 획들, 2.3과 같은 모양), `stroke(획)`, `reverse()`, `cj(요소)`, `text`, `space`, `backspace`. 기대는 확정 + 조합 + 임시 글자, `errors` = 오류 진동 수.
-
-| ID | 동작 | 기대 | 근거 |
-|---|---|---|---|
-| SM-01 | ㄱ + ㅏ / ㅓ / ㅗ / ㅜ | 가 / 거 / 고 / 구 | SWIPE 5.3 |
-| SM-02 | 가 + ㄱ탭 | 각 | 받침 |
-| SM-03 | 각 + ㅣ | 가기 | 도깨비불 |
-| SM-04 | 고 + ㄱ탭 ㄱ탭 ㅣ / 고 + ㄲ탭 ㅣ | 곡기 / 고끼 | 누른 키로 갈림 |
-| SM-06 | ㄲ + ㅏ | 까 | |
-| SM-07 | 밖 / 박가 / 바까 / 박까 | 표 그대로 | 5.3 |
-| SM-11 | ㅇ ㅏ ㅃ ㅏ | 아빠 | ㅃ 받침 불가 |
-| SM-12 | 안녕 | 안녕 | |
-| SM-13 | 했다 | 했다 | 받침 ㅆ |
-| SM-14 | 닭 | 닭 | 겹받침 |
-| SM-15 | 과 / 괴 / 의 / 돼지 / 꽤 | 표 그대로 | 복모음 이어 붙임 |
-| SM-16 | ㄱㄱ / ㅋㅋ / 곡ㄱ | 두 번 탭 = 자음 둘 | 5.1 |
-| SM-17 | ㄱ + 21모음 | 그 음절 | 3.3 |
-| SM-18 | ㅠ, 스페이스, ㅠ | "ㅠ ㅠ" | 낱모음 |
-| SM-19 | 가의 두 획을 ㅎ·ㅃ 키에서 | 가 | 시작 키 무관 |
-| SM-20 | accept 이벤트 | [Consonant], [Consonant ㄲ], [Vowel ㅣ], [ReplaceVowel ㅏ], Reverse = Ignored, Text | HLD 4.3 |
-| SM-21 | 기 + 위로 / 겹친 ㅣ / 점 | 기, 오류 1 / 오류 2 / 가 | 3.2, 3.6 |
-| SM-22 | ㄱ + C 옆 가로 점 + ㄴ탭 / ㅜ + 점 + ㄴ탭 / 가 + ㄴ탭 / ㄱ + C 옆 가로 점 + 스페이스 (0.21: 시험 도구 `SwipeTypist`는 조합 중 자음이 있으면 C를 줌) | ㄱㄴ 오류 1 / 군 오류 1 / 오류 0 / "ㄱ " 오류 1 | 3.3 조립 끝 |
-| SM-23 | 같은 두 획(세로 (175,174)→(175,224), 가로 (145,229)→(185,229), 0.39): ㄱ탭 뒤(C) / 조합 없이 / ㄱ탭 뒤 C를 꿰뚫는 세로 x 170 y 80→174 / 조합 없이 같은 세로 | 고 / ㅏ / ㄱㆍ(아래 왼쪽 = 점, 버리지 않음) / ㅣ | TBD-24, SWIPE 3.6.5 (가) (0.21) |
-| SM-24 | 낱모음 세로 획, 옆 세로 획 / ⌫ / 다시 옆 세로 / 밑줄 / 가로 둘 + 스페이스 | "ㅣ", "‥" / "ㅣ" / "‥" / "ㅛ" / "‥" → "ㅡ " 오류 1 | SWIPE 0.36 3.4, D-64 (0.21 2회차) |
-| SM-40 | 가(열림) ⌫ ⌫ / 고 ⌫ ⌫ | 기, ㄱ / ㄱㆍ, ㄱ | 3.5 열림 |
-| SM-41 | 간 ⌫×3 / 곡 ⌫×2 / 과 + 스페이스 ⌫ / 간 ⌫ + ㅣ | 가, 기, ㄱ / 고, ㄱ / 과 / 가ㅣ | 3.5 닫힘 |
-| SM-42 | 닭 ⌫×3 | 달, 다, 디 | 3.5 |
-| SM-45 | 점 하나 스냅숏 → reset → restore | ㆍ | LLD-09 |
-| CJ-50 | ㄱ + 천지인 ㅣㆍ / ㆍㅡㅣㆍ / ㄲ + ㅣㆍ | 가 / 과 / 까 | 5.4 |
-| CJ-52 | 기(획) + 천지인 ㅡ / 기(천지인) + ㅣ 획 / 점 + 천지인 ㅣ | 기ㅡ / 기ㅣ / 기, 오류 1 | 섞지 않음 |
-| CJ-56 | 가(천지인) ⌫ ⌫ | 기, ㄱ | FR-SWP-64 |
-| CJ-60 | 천지인 ㆍ, ㅣ, ㆍ | [] + ㆍ, [Vowel ㅓ], Ignored | |
-
-### 4.5 배치·성능
-
-| ID | 대상 | 기대 | 근거 |
-|---|---|---|---|
-| SL-01 | `SwipeLayout` | 7열 × 6줄, 자음 19개 네 방향 이웃, 빈 칸 하나(줄 5 열 5~6), 천지인 키 (0, 3), ⚙ 키 없음(0.24), 기호3 키 (0, 4)·기호2 키 (6, 4)(0.25), 왼쪽 열 1·8·0·ㆍ·`/`(기호3)·한/영, 오른쪽 열 7·9·⌫·↵·`,`(기호2)·빈 칸 | FR-SWP-50, 51, 60 (0.19), 이슈 #205 (0.24), #208 (0.25) |
-| SL-09 | `SymbolKeyTable`, `SwipeLayout` | 세 표·자리·라벨 | 기호3 = 탭 `/` → `=` ↑ `?`, 기호 = 탭 `.` ← `<` → `>` ↑ `'` ↓ `_`, 기호2 = 탭 `,` ← `♥` ↑ `"` ↓ `★`, (0, 4)·(5, 4)·(6, 4), 라벨 = 탭 기호, 바깥 변 쪽 배정 없음 | FR-SWP-43, 43a, 이슈 #208 (0.25) |
-| SL-10 | `NumberKeyTable`, `SymbolKeyTable` | 배치의 모든 한 동작 출력 | PC 특수 문자 32개 모두 한 번씩(겹침 없음), 그 밖에 ♥ ★ 한 번씩 | SWIPE 8장, SRS TBD-28 확정 (0.52, FSS#75) |
-| SL-02 | `SwipeLayout` | 한/영 = 줄 5 열 0~1(0.18) | SRS 3.3 모드 키 |
-| SL-08 | `SwipeLayout.consonantBox`(0.21, 0.27, 0.39) | 360 × 48: L = 180 − 40.8 = 139.2, R = 220.8, T 76(= 48 + 4 + 24), B 172, 가로 중심 = 가운데 열 중심 / 720 × 48: T 76, 높이 96, 너비 81.6, 가로 중심 360 / 줄 40: T 64(= 40 + 4 + 20, 반 키 높이도 줄 높이를 따름), 높이 80, 가로 중심 180 / 네 모서리가 자음 키 위 | SWIPE 9.5 자리와 크기, FR-SET-06 |
-| SW-01 | `SwipeKeyboardView`: 빈 칸(줄 5 열 5) 누름 → R45 → 뗌 | 입력·피드백 없음 | FR-SWP-50 |
-| SW-02 | 〃: ⌫ 누름(아직 안 뗌) | DOWN에서 `feedback.key` 1회 뒤 `onFunctionKey(BACKSPACE)` 1회, UP 전 | FR-CMN-11a ①② (DCR-11) |
-| SW-03 | 〃: 천지인 탭(ㆍ 대기) 뒤 ㄱ 키 R45 진행 중 `ACTION_CANCEL` | `onSwipeEvents` 1회(ㆍ)뿐, 안내 닫힘(`guide.onUp`), 긋기 매퍼 그대로(ㆍ 대기) | FR-CMN-11a ③, HLD 4.1 (DCR-11) |
-| SW-04 | 〃: ⌫ 누른 채 반복 1회 뒤 `ACTION_CANCEL` | 처리된 ⌫ 2회는 그대로, 이후 반복 없음, `feedback.key` 1회(반복에는 없음) | FR-CMN-11a ②③ |
-| SW-05 | `SwipeTouchLogic`(JVM, 가짜 `StrokeGuide`·`SwipeHost`): ㄱ 탭 / ㄱ 탭(움직이지 않음) | 탭마다 `guide.onDown(ㄱ, 키 사각형, 누른 점)` 1회 뒤 `guide.onProgress(ps, 누른 점)` 1회, `ps.current` = ㄱ, 뗄 때 `onUp`, 이벤트 [Consonant ㄱ] ×2(두 번 탭 = 자음 둘, 0.18) | FR-DSP-01, LLD-04 9.3 |
-| SW-06 | (0.14 삭제: 누를 때 다시 판정 없음) | – | – |
-| SW-07 | 〃: ㄱ 900ms 누르고 뗌 | 안내 ㄱ, [Consonant ㄱ] | 이슈 #142 |
-| SW-08b | `SwipeTouchLogic`: 기(획) 뒤 ⌫(매퍼 pop + 기능키) | 자국 0개(매퍼에 맞춤) | SWIPE 9.4 (0.19) |
-| SW-12 | 〃: ㄱ탭, ㄹ 키에서 ↓, 그 오른쪽에 →(낱모음: 가짜 host에 가운데 자음 없음), ㄴ탭 | [Vowel ㅣ], [ReplaceVowel ㅏ], 안내 현재 ㅣ, 자국 1 → 2 → 0, 오류 0 | SWIPE 3·9.4 (0.19) |
-| SW-13 | 〃: 위로 긋기 | 이벤트 없음, 오류 1, 자국 0 | SWIPE 3.2, 9.4 |
-| SW-10 | `SwipeTouchLogic`(0.16): 천지인 키 누름·↑·뗌 / 천지인 탭 / 탭 / 탭 | 안내 down(천지인), [Vowel ㅣ], `feedback.key` 1 / [ReplaceVowel ㅏ] / ㅑ / 이벤트 없음 + `feedback.error()` 1 | FR-SWP-61~63, 65 |
-| SW-11 | 〃: ㄱ탭, 천지인 탭, ↓ 길게 | [] + ㆍ / [Vowel ㅣ], 임시 글자 없음 | SWIPE 5.4 |
-| SW-14 | `SwipeKeyboardView`(가짜 `SwipeHost.centerConsonant`, 0.21): null / ㄲ | 가운데 글자 없음 / "ㄲ"(흰색 40%) 1개, 모든 키 라벨 뒤, x = C 가운데(`consonantBox(357, 48)`) | SWIPE 9.5, FR-DSP-10 (0.21) |
-| SW-14b | 〃(가짜 `centerText`, 0.39): "ㄱ" + 아래 점 둘 / "ㄱ" + 오른쪽 점 둘 / "고" | 큰 "ㄱ" 1개, 점 2개(같은 색)가 같은 높이(나란히)·글자 기준선 아래·C 안 / 점 2개가 같은 x(세로)·글자 가운데 오른쪽·C 안 / 점 없음(후보 없음) | SWIPE 9.5 점 자리, FSS#36 |
-| SW-15 | 〃: ㄱ에서 ㄱ 키 ↓ 70dp(C 옆 ㅣ) 긋는 중 / 뗌 / ㄴ 키 누름 / 뗌(이벤트 뒤 ㄴ) | "ㄱ", 획 자국 경로보다 먼저 그림 / [Vowel ㅣ], "ㄱ" 그대로 / "ㄱ" / "ㄴ" | SWIPE 9.5 층·바뀌는 때 (0.21) |
-| SW-16 | 〃: ㄱ, 안내 설정 셋 다 끔 / 비밀번호 입력창 / 학습 금지 입력창 | 그림 / 없음 / 그림 | FR-CMN-08 ①②, FR-DSP-08 (0.21) |
-| SW-17 | 〃: ㄱ 조합 중 ㅉ 키(C 위, x ≈ 127.5 < C.R − t/2)에서 ↓ 70dp / 조합 없이 같은 획 | 이벤트 없음 + 오류 진동 / [Vowel ㅣ] | TBD-24, LLD-04 9.3 (0.21) |
-| PF-01 | `StrokeClassifier.update` + `ProgressState.of` | 개발 PC JVM, 예열 뒤 1만 회 평균 ≤ 0.1ms | NFR-02 대리 기준 |
+`gesture-engine` 모듈과 그 시험(SC·NK·CJ·PS·SM·SL·성능, 긋기 자판 뷰의 SW-01~SW-17)은 긋기 입력 모드와 함께 없앴다. 절 번호는 남긴다. 좌우 여유 칸의 SM-01~SM-05(`SideMarginStrokeTest`)는 7.7절이고 이 절의 옛 SM(긋기 매퍼)과 다른 시험이다.
 
 ## 5. 탭 자판 (stroke-core·app)
 
@@ -458,19 +293,19 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 | ID | 대상 | 기대 | 근거 |
 |---|---|---|---|
 | ST-01 | `ScriptTables.SUPER` 영문 26자 | 2.3 표와 전부 같음 | FR-TAP-01a |
-| ST-02 | `ScriptTables.SUB` 영문 | 17자 2.3 표와 같음, b c d f g q w y z 9자는 없음 → 일반 글자 + 오류 진동 | FR-TAP-01b, SWIPE 6장 |
-| ST-03 | 숫자 0~9 윗첨자·아래첨자 | 2.3 표의 코드 포인트 | SWIPE 7장 |
+| ST-02 | `ScriptTables.SUB` 영문 | 17자 2.3 표와 같음, b c d f g q w y z 9자는 없음 → 일반 글자 + 오류 진동 | FR-TAP-01b |
+| ST-03 | 숫자 0~9 윗첨자·아래첨자 | 2.3 표의 코드 포인트 | FR-TAP-01a, LLD-05A 2.3 |
 
 ### 5.4 배치·대기열·반복
 
 | ID | 대상 | 입력 | 기대 | 근거 |
 |---|---|---|---|---|
 | TL-01 | `TapLayouts.QWERTY`, `DUBEOLSIK` | 줄마다 폭 합 | 360(빈칸 포함), 6줄 | FR-TAP-03 |
-| TL-02 | 〃 | 키 크기 | 글자·숫자·기호 키 폭 ≥ 36, 기능키 ≥ 48(편집 줄 기능키는 ≥ 36 — 0.58 NFR-06 예외, 0.22~0.57은 45), 줄 높이 48 | NFR-06, 이슈 #198, FSS#98 |
+| TL-02 | 〃 | 키 크기 | 글자·숫자·기호 키 폭 ≥ 36, 기능키 ≥ 48(편집 줄 기능키는 ≥ 36 — 0.59 NFR-06 예외, 0.22~0.58은 45), 줄 높이 48 | NFR-06, 이슈 #198, FSS#98 |
 | TL-03 | 〃 | 모드 키 | 줄 5 왼쪽 첫 키 | SRS 3.3 |
 | TL-04 | 〃 + `TapKeyResolver` | 모든 키 × 모든 동작의 출력 모음 | 숫자 10개 + PC 특수 문자 32개를 모두 포함 | FR-TAP-11 |
 | TL-05 | 〃 (0.22) | 모든 키의 `KeyAssign` 기호 모음 | PC 특수 문자 32개가 각각 정확히 한 번(겹침·빠짐 없음) | FR-TAP-03a, 이슈 #198 |
-| TL-06 | 〃 (0.58) | 편집 줄(줄 0), 쿼티·두벌식 | 기능키 Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫ 차례, x = 0, 36, …, 324, 폭 각 36(합 360), 줄 0에 빈칸 없음, 열 키의 (x, 폭) = 바로 아래 숫자 줄 열 키의 (x, 폭) | FR-TAP-03, 15, FR-CMN-14 ⑦, FSS#98 |
+| TL-06 | 〃 (0.59) | 편집 줄(줄 0), 쿼티·두벌식 | 기능키 Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫ 차례, x = 0, 36, …, 324, 폭 각 36(합 360), 줄 0에 빈칸 없음, 열 키의 (x, 폭) = 바로 아래 숫자 줄 열 키의 (x, 폭) | FR-TAP-03, 15, FR-CMN-14 ⑦, FSS#98 |
 | MQ-01 | `MultiPointerQueue` | A 누름, B 누름, B 뗌, A 뗌 | B 뗄 때 출력 없음, A 뗄 때 [A, B] | FR-CMN-11 |
 | MQ-02 | 〃 | A 누름, A 뗌, B 누름, B 뗌 | [A], [B] | FR-CMN-11 |
 | MQ-03 | 〃 | A 누름, B 누름, C 누름, C 뗌, A 뗌, B 뗌 | –, [A], [B, C] | FR-CMN-11 |
@@ -492,7 +327,7 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 
 ### 5.5 모드 키 ↑ = 설정 (이슈 #205, 0.24)
 
-모드 키는 네 모드 모두 뗄 때 판정한다(LLD-05A 4절, LLD-04 9.3, LLD-05 8절). 위로 나감 = `onSettingsStroke()`, 그 밖 = `onFunctionDown(MODE)` → `onFunctionUp(MODE)`.
+모드 키는 모든 모드에서 뗄 때 판정한다(LLD-05A 4절, LLD-05 8절). 위로 나감 = `onSettingsStroke()`, 그 밖 = `onFunctionDown(MODE)` → `onFunctionUp(MODE)`.
 
 | ID | 대상 | 입력 | 기대 | 근거 |
 |---|---|---|---|---|
@@ -502,12 +337,9 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 | MK-03 | 〃 | 오른쪽으로 나감 / 위로 문지르기(나감·들어옴·나감) / 오른쪽으로 나간 뒤 위로 꺾음 | `down:MODE`, `up:MODE` / `settings`(첫 변만 봄) / `down:MODE`, `up:MODE` | FR-CMN-13 |
 | MK-04 | 〃 | 모드 키 누르고 위로 민 채 `ACTION_CANCEL`, 늦은 뗌 | 입력 없음, 눌림 없음 | FR-CMN-11a ③ |
 | MK-05 | 〃 | 글자 키 q 누름, 모드 키 탭, q 뗌 | `down:MODE`, `up:MODE`, 그 뒤 q(대기열 밖) | FR-CMN-11 |
-| MK-06 | `SwipeTouchLogic` | 모드 키 위로 50dp / 오른쪽으로 80dp(스페이스 위) | `settings`(진동·소리 1회, 안내 없음) / `down:MODE`, `up:MODE`(처음 누른 키로 판정) | 이슈 #205, FR-SWP-01 |
-| MK-07 | 〃 | 모드 키 위로 민 채 `cancel()` | 입력 없음, 포인터 풀림 | FR-CMN-11a ③ |
 | MK-08 | `GraffitiPadView`(Robolectric 합성 터치) | 보조 줄 모드 키 탭 / 패드로 위로 66dp / 위로 민 채 `ACTION_CANCEL` | 누를 때 입력 없음, 뗄 때 `down:MODE`, `up:MODE` / `settings`, 패드 상태 그대로(패드 획 아님) / 입력 없음 | 이슈 #205, LLD-05 8절 |
-| (바뀜) | `SwipeTouchLogic` "space and enter act on press…" | 스페이스·엔터 탭, 모드 키 누름·뗌 | 스페이스·엔터는 누를 때, 모드 키는 누를 때 입력 없고 뗄 때 `down:MODE`, `up:MODE`; 반복 중지 2회 | 이슈 #205 |
 
-### 5.6 조합 키 대응 `ChordKeys` (0.58, FSS#98, LLD-05A 2.4)
+### 5.6 조합 키 대응 `ChordKeys` (0.59, FSS#98, LLD-05A 2.4)
 
 JVM(`stroke-core`, `ChordKeysTest`). 기대값은 SRS 조합 키 대응표와 FR-TAP-16 ②③이다. 표에서 `plain(k)` = `ChordStroke(k, shift = false)`, `shift(k)` = `ChordStroke(k, shift = true)`, "돌아옴" = `ExitReturn`.
 
@@ -677,7 +509,7 @@ GS-34·GS-39~GS-45는 **획 수준**이다: 제품 템플릿(`templates.json`)�
 
 입력은 토큰 열, 기대는 편집기 표시(확정 + 조합 + 임시 글자). 백스페이스 사례는 2.1의 BS-06~BS-19, BS-23, BS-24.
 
-FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03, 가거 GH-04, 궈 GH-05, ㄱㄴ GH-06, "ㄱ " GH-07, ㄱ3 GH-26, 기 GH-27, 그 GH-28, 개 GH-29. 두벌식·긋기 사례: 왜 HC-12, 뒈 HC-13, 가ㅣ HC-14, 긋기 가 + ㅣ = 가ㅣ HC-21·SM-14b, 고 + ㅏ = 고ㅏ HC-22·SM-14(0.15).
+FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03, 가거 GH-04, 궈 GH-05, ㄱㄴ GH-06, "ㄱ " GH-07, ㄱ3 GH-26, 기 GH-27, 그 GH-28, 개 GH-29. 두벌식 사례: 왜 HC-12, 뒈 HC-13, 가ㅣ HC-14. 병합 없는 정책(그래피티 정책)의 가 + ㅣ = 가ㅣ HC-21, 고 + ㅏ = 고ㅏ HC-22.
 
 | ID | 토큰 열(KO, 문자 영역) | 기대 표시 | 근거 |
 |---|---|---|---|
@@ -784,60 +616,73 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 
 ### 7.2 ModeController (SRS 모드 키 예시 표 10행, FR-CMN-03c)
 
-MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 다음 행의 시작). 시작: 모든 모드, 저장된 모드 없음.
+0.58(FSS#95): 순서가 한글 두벌식 → 영문 쿼티 → 그래피티로 바뀌어 기대값을 SRS 3.1의 새 사례 표로 다시 적었다. MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 다음 행의 시작). 시작: 모든 모드(`ALL` = DUBEOLSIK, QWERTY, GRAFFITI), 저장된 모드 없음(= 한글 두벌식).
 
 | ID | 상황(행) | 조작 | 기대 current / previous |
 |---|---|---|---|
-| MC-01 | 1 긋기, 입력 안 함 | 모드 키 | QWERTY / null |
-| MC-02 | 2 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / null |
-| MC-03 | 3 한글, 입력함 | `onInput`, 모드 키 | GRAFFITI / DUBEOLSIK |
-| MC-04 | 4 그래피티, 입력 안 함 | 모드 키 | SWIPE / DUBEOLSIK |
-| MC-05 | 5 긋기, 입력함 | `onInput`, 모드 키 | DUBEOLSIK / SWIPE |
-| MC-06 | 6 한글, 입력함 | `onInput`, 모드 키 | SWIPE / DUBEOLSIK |
-| MC-07 | 7 긋기, 입력 안 함 | 모드 키 | QWERTY / DUBEOLSIK |
-| MC-08 | 8 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / DUBEOLSIK |
-| MC-09 | 9 한글, 입력함, 이전 = 지금 | `onInput`, 모드 키 | GRAFFITI / DUBEOLSIK |
-| MC-10 | 10 (따로) current DUBEOLSIK, previous SWIPE, typed | `onFieldChanged`, 모드 키 | GRAFFITI / SWIPE |
-| ~~MC-11~~ | public 빌드(available 3개), 저장 없음 | 생성 | QWERTY. 순환 QWERTY → DUBEOLSIK → GRAFFITI → QWERTY | (0.35 삭제, 이슈 #251: FR-CMN-03b 삭제)
+| MC-00 | (순서) `InputMode.entries`, 저장 없음 | 생성, 모드 키 네 번 | 선언 순서 DUBEOLSIK·QWERTY·GRAFFITI, 시작 DUBEOLSIK, QWERTY → GRAFFITI → DUBEOLSIK → QWERTY (FR-CMN-03 ②, 10) |
+| MC-01 | 1 한글, 입력 안 함 | 모드 키 | QWERTY / null |
+| MC-02 | 2 영문, 입력 안 함 | 모드 키 | GRAFFITI / null |
+| MC-03 | 3 그래피티, 입력 안 함 | 모드 키 | DUBEOLSIK(순서의 끝 → 처음) / null |
+| MC-04 | 4 한글, 입력함 | `onInput`, 모드 키 | QWERTY(이전 모드 없음 → 다음 순서) / DUBEOLSIK |
+| MC-05 | 5 영문, 입력함 | `onInput`, 모드 키 | DUBEOLSIK(이전 모드) / QWERTY |
+| MC-06 | 6 한글, 입력함 | `onInput`, 모드 키 | QWERTY(이전 모드) / DUBEOLSIK |
+| MC-07 | 7 영문, 입력 안 함 | 모드 키 | GRAFFITI / DUBEOLSIK |
+| MC-08 | 8 그래피티, 입력 안 함 | 모드 키 | DUBEOLSIK / DUBEOLSIK |
+| MC-09 | 9 한글, 입력함, 이전 = 지금 | `onInput`, 모드 키 | QWERTY / DUBEOLSIK |
+| MC-10 | 10 (따로) current QWERTY, previous DUBEOLSIK, typed | `onFieldChanged`, 모드 키 | GRAFFITI / DUBEOLSIK |
+| ~~MC-11~~ | (0.35 삭제, 이슈 #251: FR-CMN-03b 삭제) | – | – |
 | MC-12 | 저장된 모드 GRAFFITI | 생성 | GRAFFITI, previous null, typed false (FR-CMN-03e·10) |
-| ~~MC-13~~ | public, 저장된 모드 SWIPE | 생성 | QWERTY (FR-CMN-03b) | (0.35 삭제, 이슈 #251: FR-CMN-03b 삭제)
+| ~~MC-13~~ | (0.35 삭제, 이슈 #251: FR-CMN-03b 삭제) | – | – |
 | MC-14 | (삭제: 숫자 자판 없음. 숫자류 입력창의 typed는 NF-06, ID-11) | – | – |
 
 ### 7.2a 숫자류 입력창 (SRS 숫자류 입력창 사례 표 7행, FR-CMN-04·04b, HLD 8.1)
 
-`ModeController`에 `onFieldChanged()` 뒤 `enterNumericField()`(숫자류 입력창) 또는 `leaveNumericField()`(그 밖)를 3.1 순서대로 부른다. NF-01~NF-03은 이어서 실행한다. 시작: personal, current GRAFFITI, previous null, typed false. "저장"은 `InputDispatcher`의 `saveMode` 호출 기록이다.
+`ModeController`에 `onFieldChanged()` 뒤 `enterNumericField()`(숫자류 입력창) 또는 `leaveNumericField()`(그 밖)를 3.1 순서대로 부른다. 시작: current GRAFFITI, previous null, typed false. "저장"은 `InputDispatcher`의 `saveMode` 호출 기록이다.
 
 | ID | 사례 표 행 | 조작 | 기대 current / returnMode / previous / 저장 |
 |---|---|---|---|
 | NF-01 | 1 그래피티 → 숫자 입력창 | 숫자 입력창 시작 | QWERTY / GRAFFITI / null / 없음 |
-| NF-02 | 2 입력 없이 모드 키 | 모드 키 | DUBEOLSIK(순서상 다음) / GRAFFITI / null / **없음**(숫자류 입력창 안) |
-| NF-03 | 3 문자 입력창으로 | 문자 입력창 시작 | GRAFFITI / null / null / 없음. `GraffitiInputHandler.enterMode()`(→ `GraffitiState.enterMode()`) 1회 |
+| NF-02 | 2 입력 없이 모드 키 | 모드 키 | GRAFFITI(순서상 다음, 0.58) / GRAFFITI / null / **없음**(숫자류 입력창 안). `InputDispatcherGraffitiTest`의 NF-02: 이 모드 키가 그래피티로 새로 들어가는 것이라 `enterMode()` 1회(한글·캡스록 끔), 이어 문자 입력창으로 옮기면 GRAFFITI 그대로이고 `enterMode()`를 다시 부르지 않음 |
+| NF-03 | 3 문자 입력창으로(NF-01에서 바로) | 문자 입력창 시작 | GRAFFITI / null / null / 없음. 서비스가 `GraffitiInputHandler.enterMode()`(→ `GraffitiState.enterMode()`) 1회 |
 | NF-04 | 4 그래피티 → 비밀번호 → 전화 | 문자 비밀번호 입력창 시작, 이어서 전화 입력창 시작 | QWERTY / GRAFFITI, 이어서 QWERTY / GRAFFITI(유지) |
 | NF-05 | 5 영문 쿼티 → 숫자 → 문자 | current QWERTY에서 숫자 입력창 시작, 이어서 문자 입력창 시작 | QWERTY / QWERTY, 이어서 QWERTY / null |
-| NF-06 | 6 숫자 입력 뒤 모드 키, 이전 모드 = 긋기 | 시작 current GRAFFITI·previous SWIPE. 숫자 입력창 시작, 숫자 줄 3 탭(`markInput`), 모드 키 | SWIPE / GRAFFITI / **QWERTY** / 없음 (typed는 숫자 입력으로 참이 됨, FR-CMN-03a) |
+| NF-06 | 6 숫자 입력 뒤 모드 키, 이전 모드 = 한글 두벌식 | 시작 current GRAFFITI·previous DUBEOLSIK. 숫자 입력창 시작, 숫자 줄 3 탭(`markInput`), 모드 키 | DUBEOLSIK(이전 모드. 순서상 다음인 그래피티가 아님) / GRAFFITI / **QWERTY** / 없음 (typed는 숫자 입력으로 참이 됨, FR-CMN-03a) |
 | NF-07 | 7 프로세스 재시작 | NF-01 뒤 저장된 마지막 모드(= GRAFFITI, NF-01에서 바뀌지 않음)로 `ModeController` 새로 생성, 같은 숫자 입력창 시작 | QWERTY / GRAFFITI / null / 없음 |
-| NF-08 | (저장 규칙) | 숫자류 입력창 밖 모드 키 / 안 모드 키 / `enterNumericField`·`leaveNumericField` | 저장 1회 / 0회 / 0회 (previous도 자동 전환으로 안 바뀜) | 
-| NF-09 | (같은 칸 재표시, FR-CMN-04b) | NF-02 상태(DUBEOLSIK, ret GRAFFITI)에서 같은 숫자 입력창으로 `onStartInputView` 다시 | QWERTY / GRAFFITI / null / 없음 |
+| NF-08 | (저장 규칙) | 숫자류 입력창 밖 모드 키(그래피티 → DUBEOLSIK) / 안 모드 키 / `enterNumericField`·`leaveNumericField` | 저장 1회(DUBEOLSIK) / 0회 / 0회 (previous도 자동 전환으로 안 바뀜) |
+| NF-09 | (같은 칸 재표시, FR-CMN-04b) | NF-02 상태(GRAFFITI, ret GRAFFITI)에서 같은 숫자 입력창으로 `onStartInputView` 다시 | QWERTY / GRAFFITI / null / 없음 |
 
 - 사례 표의 "보이는 자판"은 `current`로 본다(`showModeView`, LLD-08 3.1). 실기기 확인은 DV-20.
 
-### 7.2b 꺼진 모드 (SRS 꺼진 모드 사례 표 8행, FR-CMN-03f·FR-SET-08, HLD 8.1, 0.38)
+### 7.2b 꺼진 모드 (SRS 꺼진 모드 사례 표 6행, FR-CMN-03f·FR-SET-08, HLD 8.1, 0.38; 0.58: 끌 수 있는 모드는 그래피티뿐)
 
-`ModeController(ALL, 저장된 모드, 켜진 모드)`. "설정 바뀜"은 `applyEnabled(켜진 모드)`(LLD-08 3.2, 돌려준 값 = 저장), "입력창 시작"은 7.2a 순서 뒤 `applyEnabled`(LLD-08 3.1). 그래피티 꺼짐 = {SWIPE, QWERTY, DUBEOLSIK}, 둘 다 꺼짐 = {QWERTY, DUBEOLSIK}.
+`ModeController(ALL, 저장된 모드, 켜진 모드)`. "설정 바뀜"은 `applyEnabled(켜진 모드)`(LLD-08 3.2, 돌려준 값 = 저장), "입력창 시작"은 7.2a 순서 뒤 `applyEnabled`(LLD-08 3.1). 그래피티 꺼짐 = {DUBEOLSIK, QWERTY}. 0.58까지의 OM-01~OM-09(8행 + 정규화)를 새 표의 6행 + 정규화로 다시 적었다(긋기를 끄는 행 둘이 없어짐).
 
 | ID | 사례 표 행 | 조작 | 기대 current / returnMode / previous / 저장 |
 |---|---|---|---|
-| OM-01 | 1 그래피티 꺼짐, 한글, 입력 안 함 | 모드 키 | SWIPE / – / null |
-| OM-02 | 2 둘 다 꺼짐, 영문, 입력 안 함 | 모드 키 | DUBEOLSIK / – / null |
-| OM-03 | 3 둘 다 꺼짐, 한글, 입력 안 함 | 모드 키, 다시 모드 키 | QWERTY / – / null, 이어서 DUBEOLSIK(영문 ↔ 한글만, ⑤) |
-| OM-04 | 4 넷 다 켜짐, 한글, previous GRAFFITI → 그래피티를 끔 | 설정 바뀜, `onInput`, 모드 키 | 설정 뒤 previous null. 모드 키 뒤 SWIPE / null / DUBEOLSIK |
-| OM-05 | 5 그래피티로 쓰다(previous DUBEOLSIK, typed) 그래피티를 끔 | 설정 바뀜 | SWIPE / null / DUBEOLSIK / SWIPE 1회. typed 그대로(참) |
-| OM-06 | 6 긋기로 쓰다 둘 다 끔 | 설정 바뀜(previous DUBEOLSIK / previous GRAFFITI 두 번) | QWERTY / null / DUBEOLSIK / QWERTY 1회, 이어서 QWERTY / null / **null** / QWERTY 1회 |
-| OM-07 | 7 긋기 꺼짐, 저장된 마지막 모드 SWIPE로 프로세스 시작 | 생성 | QWERTY / null / null, typed false, `fixedStart` = QWERTY. 켜져 있으면 `fixedStart` null, 저장된 모드 없이 둘 다 꺼짐이면 QWERTY·`fixedStart` null |
-| OM-08 | 8 그래피티 → 숫자 입력창(돌아갈 모드 GRAFFITI) → 그래피티를 끔 → 문자 입력창 | (가) 숫자 입력창 안에서 설정 바뀜, 문자 입력창 시작 (나) 설정이 문자 입력창 시작 때 처음 반영 | (가) 설정 뒤 QWERTY / SWIPE / null / SWIPE 1회, 문자 입력창 뒤 SWIPE / null / null / 더 없음 (나) SWIPE / null / null / SWIPE 1회 |
-| OM-09 | (정규화) | `applyEnabled(빈 집합)`, `applyEnabled(넷)`, `nextEnabled(GRAFFITI)`, `ModeController(listOf(SWIPE), SWIPE, 둘 다 꺼짐)` | 켜진 모드 {QWERTY, DUBEOLSIK}, 저장 없음 / 넷, 저장 없음 / SWIPE(처음으로 돎) / SWIPE(연습 자판의 한 모드) |
+| OM-01 | 1 그래피티 꺼짐, 영문, 입력 안 함 | 모드 키 | DUBEOLSIK(그래피티 건너뜀) / – / null |
+| OM-02 | 2 그래피티 꺼짐, 한글, 입력 안 함 | 모드 키, 다시 모드 키 | QWERTY / – / null, 이어서 DUBEOLSIK(한글 ↔ 영문만, ⑤) |
+| OM-03 | 3 셋 다 켜짐, 한글, previous GRAFFITI → 그래피티를 끔 | 설정 바뀜, `onInput`, 모드 키 | 설정 뒤 previous null. 모드 키 뒤 QWERTY / null / DUBEOLSIK |
+| OM-04 | 4 그래피티로 쓰다(previous QWERTY, typed) 그래피티를 끔 | 설정 바뀜 | DUBEOLSIK / null / QWERTY / DUBEOLSIK 1회. typed 그대로(참) |
+| OM-05 | 5 그래피티 꺼짐, 저장된 마지막 모드 GRAFFITI로 프로세스 시작 | 생성 | DUBEOLSIK / null / null, typed false, `fixedStart` = DUBEOLSIK. 켜져 있으면 `fixedStart` null, 저장된 모드 없이 그래피티 꺼짐이면 DUBEOLSIK·`fixedStart` null |
+| OM-06 | 6 그래피티 → 숫자 입력창(돌아갈 모드 GRAFFITI) → 그래피티를 끔 → 문자 입력창 | (가) 숫자 입력창 안에서 설정 바뀜, 문자 입력창 시작 (나) 설정이 문자 입력창 시작 때 처음 반영 | (가) 설정 뒤 QWERTY / DUBEOLSIK / null / DUBEOLSIK 1회, 문자 입력창 뒤 DUBEOLSIK / null / null / 더 없음 (나) DUBEOLSIK / null / null / DUBEOLSIK 1회 |
+| OM-07 | (정규화) | `applyEnabled(빈 집합)`, `applyEnabled(셋)`, `nextEnabled(GRAFFITI)`, `ModeController(listOf(GRAFFITI), GRAFFITI, 그래피티 꺼짐)` | 켜진 모드 {DUBEOLSIK, QWERTY}, 저장 없음 / 셋, 저장 없음 / DUBEOLSIK(처음으로 돎) / GRAFFITI(연습 자판의 한 모드) |
 
-- 키보드가 떠 있을 때의 즉시 뷰 교체(LLD-08 3.2)는 안드로이드 생명주기라 실기기에서 본다(DV-20과 함께: 그래피티로 쓰다 모드 키 ↑로 설정을 열어 그래피티를 끄고 돌아오면 긋기 자판).
+- 키보드가 떠 있을 때의 즉시 뷰 교체(LLD-08 3.2)는 안드로이드 생명주기라 실기기에서 본다(DV-20과 함께: 그래피티로 쓰다 모드 키 ↑로 설정을 열어 그래피티를 끄고 돌아오면 한글 두벌식 자판).
+
+### 7.2c 옮겨 오기 (SRS 옮겨 오기 사례 표 4행, FR-CMN-10a, HLD 7.3·8.1·11장, LLD-07 6.1 D-69, 0.58, FSS#95)
+
+저장소에 옛 버전(SRS 0.85까지)의 값을 직접 써 넣는다: `last_mode` = `"SWIPE"`(또는 `"GRAFFITI"`), `swipe_enabled`·`show_stroke_trail`·`show_direction_guide`·`show_next_char`·`show_current_char` = false, `practice_done` = {swipe, upper}, `haptic` = false, `row_height_dp` = 56. SS-15는 `SettingsStoreTest`(실제 DataStore 파일), MC-40~MC-42는 `ModeControllerTest`(저장소가 없음으로 읽은 뒤의 상태 기계), PR-36은 `PracticeFlowTest`다.
+
+| ID | 사례 표 행 | 조작 | 기대 |
+|---|---|---|---|
+| SS-15 (읽기) | 1·2·4 마지막 모드 = 긋기 입력 | 읽기, 읽은 값으로 `ModeController(InputMode.entries, lastMode, enabledModes)` 생성 / `enterNumericField` / 그래피티도 끈 설정으로 생성해 모드 키 두 번 | 예외 없음, `lastMode` null, `enabledModes` 셋, haptic false·row 56(다른 값은 저장된 대로), `practiceDone` {swipe, upper}(그대로 둠). current DUBEOLSIK·`fixedStart` null / QWERTY, 돌아갈 모드 DUBEOLSIK / DUBEOLSIK → QWERTY → DUBEOLSIK |
+| SS-15 (쓰기) | (남은 키) | `update(sound = true)`, `markPracticeDone(symbol)`, `setLastMode(QWERTY)` 뒤 다시 읽기, 저장소의 원래 키를 직접 읽기 | 예외 없음, lastMode QWERTY·sound true·haptic false·`practiceDone` {swipe, upper, symbol}. 옛 다섯 키는 false 그대로 남음(읽지도 지우지도 않음, D-69) |
+| SS-15 (그대로) | 3 마지막 모드 = 그래피티, 긋기 설정값 남음 | 읽기, `ModeController` 생성 | `lastMode` GRAFFITI, `graffitiEnabled` true, current GRAFFITI |
+| MC-40 | 1 문자 입력창 | `ModeController(ALL, null)`, 문자 입력창 시작, `applyEnabled(셋)` | DUBEOLSIK / null / null, `fixedStart` null, 저장 없음 |
+| MC-41 | 2 숫자 입력창 | 숫자 입력창 시작, 이어서 문자 입력창 시작 | QWERTY / DUBEOLSIK / null, 이어서 DUBEOLSIK / null / null, 저장 없음 |
+| MC-42 | 4 그래피티 끔 | `ModeController(ALL, null, 그래피티 꺼짐)`, 모드 키 세 번 | 시작 DUBEOLSIK, `fixedStart` null, QWERTY → DUBEOLSIK → QWERTY |
+| PR-36 | (해 본 표시, FR-CMN-10a ③) | `practiceDone` = {swipe, graffiti, upper} | `PracticeTopics.ALL` 가운데 ✓는 upper뿐, id가 swipe·graffiti인 주제 없음 |
 
 ### 7.3 ComposingController (가짜 `EditorPort`)
 
@@ -845,7 +690,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 |---|---|---|---|
 | CC-01 | `show(("", "가"))` | setComposingText("가") | FR-CMN-05 |
 | CC-02 | `show(("가", "까"))` | commitText("가"), setComposingText("까"), 한 배치 | HLD 4.4 |
-| CC-03 | 조합 "가" 뒤 `show(("", ""))` | setComposingText("") | 긋기 ⌫ |
+| CC-03 | 조합 "가" 뒤 `show(("", ""))` | setComposingText("") | ⌫로 조합이 빔 |
 | CC-04 | `show(("", "ㄱ"), "ㆍ")` | setComposingText("ㄱㆍ") | FR-HGL-04e |
 | CC-05 | `show(("", ""), "ㆍ")` | setComposingText("ㆍ") | HLD 5장 |
 | CC-06 | 조합 중 `finishComposing` / 조합 없음 | finishComposingText 1회 / 0회 | FR-CMN-06 |
@@ -856,10 +701,9 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | CC-11 | 조합 "가"(5~6) 중 갱신(2,2,5,6) | USER_MOVED | FR-CMN-06 |
 | CC-12 | 조합 중 선택(3,5,…) | USER_MOVED | FR-CMN-06 |
 | CC-13 | 조합 중 갱신 cand −1 | USER_MOVED | LLD-09 4절 |
-| CC-14 | 조합 없음, 커서 다른 곳 | OTHER_MOVED | FR-SWP-33 |
+| CC-14 | 조합 없음, 커서 다른 곳 | OTHER_MOVED | FR-CMN-06 |
 | CC-15 | 조합 "ㄱ" + 임시 "ㆍ" 표시 중 `finishComposing` | setComposingText("ㄱ") 뒤 finishComposingText — 편집기에 ㆍ 없음 | FR-HGL-04e, GH-10~GH-12 |
 | CC-16 | 조합 "가ㆍ"(5~7) 중 사용자 커서 9(조합 뒤) / 2(앞), `finishAfterUserMove` | setComposingText("가"), finishComposingText, setSelection(8, 8) / setSelection(2, 2) | FR-CMN-06, GH-20 |
-| CC-23 | `show(r("ㅣ"), "‥", replacesLast = true)` → `finishComposing` / 커서 9로 이동 / 글자 없음 | setComposingText("‥") → setComposingText("ㅣ"), finish / setComposingText("ㅣ"), finish, setSelection(9, 9)(길이 같아 보정 없음) / "ㅣ" | SWIPE 0.36 3.4, D-64 (0.21 2회차) |
 | CC-17 | 시작 sel 5, "가" 조합(갱신 6,6,5,6), `finishComposing`(모드 키 확정), "나" 조합, 갱신(7,7,6,7) | 마지막 갱신이 OWN(확정 때 composeStart 초기화 → 새 조합은 6에서 시작) | FR-CMN-06 |
 | CC-18 | 시작 sel 5, `arrow(LEFT)` / `deleteBefore()`(커서 모름), "가" 조합, 갱신(5,5,4,5), "각" 조합, 갱신(5,5,4,5), (방향키 쪽) ("각","ㅅ") 표시, 갱신(6,6,5,6) / (⌫ 쪽) 갱신(1,1,4,5) | 모두 OWN(다시 맞춤 때 composeStart = candS) / 마지막은 USER_MOVED(다시 맞춘 뒤에도 실제 이동은 잡음) | FR-CMN-06, G12 |
 | CC-19 | "가ㆍ" 조합(5~7, 구간 끝을 앎) 중 갱신 cand −1로 사용자 커서 2 / 9, `finishAfterUserMove(…, −1, −1)`. 방향키 뒤(구간 끝 모름) "가ㆍ" 중 사용자 커서 9 | setSelection(2, 2) / setSelection(8, 8)(아는 끝 7 기준) / setSelection(9, 9)(옮기지 않음) | FR-CMN-06, G13 |
@@ -878,42 +722,27 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | ID-36 | 두벌식 "각" 중 Del, 다시 Del (0.22) | finish, sendKey(FORWARD_DEL)(deleteBefore 아님) / sendKey(FORWARD_DEL)만 | 이슈 #198 |
 | ID-37 | `TapTouchLogic` Esc·Del (0.22) | 탭 → sink에 onFunctionDown(ESC)·(DELETE). Del 누름 + 반복 2번 → DELETE 3번, 진동·소리 1번, 뗌 → 반복 멈춤. Esc 누름 → 반복 없음 | 이슈 #198 |
 | ID-04 | 두벌식 "각" 중 스페이스 | finish, commitText(" "), typed | FR-CMN-03a |
-| ID-05 | 긋기 "고" 중 둘레 숫자 1 | finish, commitText("1"), 천지인 조립기 비움(매퍼가 함, 0.18) | FR-SWP-42, D-30 |
-| ID-06 | 긋기 "고" 중 ⌫ ×3 | 조합 ㄱ / 조합 "" / `deleteBefore`. 조립기(`popElement`)에 먼저 물음, `reset()`은 부르지 않음(0.18: `onBackspace` 없음) | FR-CMN-07, 07a |
 | ID-07 | 쿼티 a | commitText("a"), typed | FR-TAP-01 |
-| ID-08 | 모드 키 | finish, resetParsers, `ModeController.onModeKey`, 마지막 모드 저장 | FR-CMN-03d |
+| ID-08 | 모드 키(두벌식 "각" 중, 입력함, 이전 모드 없음) | finish, `ModeController.onModeKey` = QWERTY(순서상 다음, 0.58), 이전 모드 = DUBEOLSIK, 마지막 모드 저장·보이는 뷰 QWERTY | FR-CMN-03 ②, 03d |
 | ID-09 | 그래피티 한영 전환 획 | typed 그대로 | FR-CMN-03a |
 | ID-10 | 그래피티 시프트·캡스록·확장 시프트 획 | typed 그대로 | FR-CMN-03a |
 | ID-11 | 숫자류 입력창(쿼티)에서 숫자 줄 3 탭 | commitText("3"), typed 참(숫자류 입력창에서도 입력 구분은 같음) | FR-CMN-03a, 04b |
-| ID-12 | `onStartInputView` 흐름 | finish, resetParsers, typed false | FR-CMN-03e |
-| ID-13 | `onCursorMoved` | 조합기 finish, 긋기 매퍼·조립기 비움 | FR-CMN-06 |
+| ID-12 | `onStartInputView` 흐름(두벌식 "고" 중) | finish, typed false, 조합 끝 | FR-CMN-03e |
+| ID-13 | `onCursorMoved`(그래피티 "ㄱ" 중) | 조합기 finish, 그래피티 조립기 비움, 확정 "ㄱ" | FR-CMN-06 |
 | ID-14 | 쿼티 a ↑ 나갔다 돌아옴 / i ← 문지르기(`TapKeyboardView` → `onTapOutput`) | commitText("A") / commitText("[") (입력 없는 결과가 없음) | SRS 탭 자판 동작 표 7·8행 (DCR-02) |
 | ID-15 | 쿼티 b ↓ 문지르기 | commitText("b"), 오류 진동 | FR-TAP-01b |
 | ID-16 | 엔터(동작 있음 / 여러 줄 / 동작 없는 한 줄) | finish, performEditorAction / commitText("\n") / sendKey(ENTER), typed | FR-CMN-09 (DCR-13) |
 | ID-17 | 조합 없음 ⌫ | deleteBefore | FR-CMN-07 |
 | ID-18 | 그래피티로 모드 전환 | `GraffitiInputHandler.enterMode()`(→ `GraffitiState.enterMode()`) | FR-GRF-05a |
-| ID-19 | 엔진 예외(가짜 `SwipeEngineState.popElement`가 ⌫ 중 던짐, 0.18) | 편집기 호출 없음(편집기 쓰기가 마지막), 조합기 상태 이전 그대로("고"), 기록 1건 | NFR-03 |
+| ID-19 | 엔진 보호(두벌식 "고" 중 ⌫, 가짜 `EditorPort.beginBatch`가 던짐 — 조합기에서 ㅗ를 뺀 뒤, 0.58) | 편집기 호출 없음, 조합기 상태 이전 그대로("고"), 기록 1건 | NFR-03 |
 | ID-20 | 비밀번호 입력창에서 엔진 예외 | 기록 0건 | NFR-05 |
 | ID-21 | 그래피티 'J' 확정 획 / 천지인 요소 획(탭 하나, ㆍ 표시) | typed 그대로 / typed 참 | FR-CMN-03a (DCR-17) |
 | ID-22 | 그래피티 인식 실패 | `feedback.error()` 1회, typed 그대로, 편집기 호출 없음 | FR-GRF-08 (DCR-07) |
-| ID-23 | 숫자류 입력창 안 모드 키 | `saveMode` 0회, `ModeController.onModeKey` 1회 | FR-CMN-04b, 10 |
+| ID-23 | 숫자류 입력창 안 모드 키(시작 두벌식) | QWERTY → GRAFFITI(순서상 다음, 0.58), 돌아갈 모드 DUBEOLSIK 그대로, `saveMode` 0회, 보이는 뷰 GRAFFITI | FR-CMN-04b, 10 |
 | ID-24 | `onFunctionUp(BACKSPACE)` | 편집기 호출 없음, typed 그대로 | FR-CMN-11a |
-| ID-25 | 고 조합 중 TAB(가짜 `SwipeEngineState`) | `reset()` 1회 | FR-SWP-37 (PM 결정 PR #132) |
-| ID-26 | 실제 매퍼: 기, 천지인 ㆍ, TAB / 점, TAB | 확정 기·탭, ㆍ 버림(진동 없음) / 오류 1 | SWIPE 3.3, D-57 |
-| ID-27 | 가짜 `SwipeEngineState`: 고 조합 중 `onSettingsStroke()`(버린 획 있음) / 이어서 한 번 더 | "finish"만(공백 없음, 설정 화면을 열 때 이미 확정), 조합 끝, reset 1회, 오류 1, 설정 화면 1회, 입력 아님, 모드 그대로 / 설정 화면 2회, 더 확정할 것 없음. `FunctionKey`에 SETTINGS 없음 | 이슈 #205 (0.24, 0.21의 ⚙ 한 글자 완성 시험 대체) |
-| ID-30 | 실제 매퍼 + `InputDispatcher` + `ComposingController`(personal, 0.16): ㄱ, 천지인 ㆍ / ㆍ / ㅣ / ㄴ탭, ㆍ / ㄱ탭 | 조합 표시 "ㄱㆍ" / "ㄱ‥" / "겨" / "견ㆍ" / 견ㄱ(임시 ㆍ 버림) | FR-SWP-64, FR-HGL-04e |
-| ID-31 | 〃: 가(ㄱ ㅣㆍ) ⌫, ㆍ, ㄴ탭, ⌫⌫⌫, 거 ⌫⌫ | 기, 가, 간 → 가 → 기 → ㄱ, ㄱㆍ → ㄱ, `deleteBefore` 0 | FR-SWP-64, FR-CMN-07b |
-| ID-32 | 〃: 갸 + ㆍ(무시) / 스페이스 / ㆍ 뒤 엔터 | 오류 진동 1 / 확정 "갸", " " / 임시 ㆍ 확정되지 않음 | FR-SWP-62, 64 |
-| ID-33 | 〃: 가(ㄱ→) + ㆍㅣ, 이어서 ㄱ→ | 가ㅓ / 가ㅓ가(긋기는 새 음절, 0.18) | FR-SWP-62 |
-| CT-01 | 실제 매퍼 + `InputDispatcher.centerText()`(0.39, `SwipeCenterSyllableTest`, C = consonantBox(360, 48)): ㄱ탭 / ㅣ (237,80)→(237,174) / 점 (237,124)→(262,124) / ㄱ탭 / 같은 ㅣ / 같은 점 | "ㄱ" / "기" / "가" / "각" / 확정 "가", "기" / "가", 오류 0 (오너 확인 ㄱ → 가 → 각 → 가, 후보 없음) | SWIPE 9.5, FR-DSP-10, FSS#36 |
-| CT-02 | 〃: ㄱ + C 아래 세로 점, 밑줄 / 세로 점 둘, 밑줄 / C 오른쪽 가로 점, ㅣ / 가로 점 둘, ㅣ | "ㄱ"·[UNDER] → "고" / "ㄱ"·[UNDER, UNDER] → "교" / "ㄱ"·[RIGHT] → "거" / "ㄱ"·[RIGHT, RIGHT] → "겨", 오류 0 | SWIPE 9.5 점 자리, FSS#36 오너 확인 |
-| CT-03 | 〃: ㄱ + ㅡ / 밑 가로 / ㅣ — ㅣ + 밑줄 — 각 + ㅡ / 밑 가로 — ㅜ + 가로 점 | "그" / "ㄱ"·[RIGHT, RIGHT](숨긴 ㅡ를 뺌) / "겨" — "고" — "그" / "ㄱ"·[RIGHT, RIGHT](앞 가는 확정) — "구"·[RIGHT] | SWIPE 9.5 "둘째 획이 정하면 바뀜", 3.4 |
-| CT-04 | 〃: 기 + 둘째 ㅣ(무시) / ㄱ + 세로 점 둘 ⌫ ⌫ ⌫ / 간 ⌫ ⌫ | "기" 그대로, 오류 1 / "ㄱ"·[UNDER] → "ㄱ" → null / "가" → "기"(닫힌 모음의 단계 하나) | SWIPE 3.5, 9.5 |
-| CT-05 | 〃: 낱모음 ㅣ / 아무것도 없음 / ㄱ + 천지인 ㆍ, ㅣ | null / null / "ㄱㆍ"(글자, 점 없음) → "거" | SWIPE 9.5 낱모음·천지인 |
-| CT-06 | 〃: ㄱ + 세로 점 + 스페이스 | null, 오류 1(못 된 점 버림) | SWIPE 9.5 지우는 때, 3.3 |
-| ID-34 | 실제 매퍼 + `InputDispatcher`: 나, ㅇ탭, 위로, ㅏ, 천지인 ↑↑, 가 / 점 + ㄴ탭 | "나아ㅣ가", 오류 2 / "나아ㅣ간", 오류 3 | SWIPE 3.2·3.3, 5.4 |
+| ID-27 | 두벌식 "고" 조합 중 `onSettingsStroke()` / 이어서 한 번 더 | "finish"만(공백 없음, 설정 화면을 열 때 이미 확정), 조합 끝, 오류 0, 설정 화면 1회, 입력 아님, 모드 그대로 / 설정 화면 2회, 더 확정할 것 없음. `FunctionKey`에 SETTINGS 없음 | 이슈 #205, FR-CMN-13 |
 
-### 7.4a 조합 키 Ctrl·Alt (0.58, FSS#98, LLD-08 6.3)
+### 7.4a 조합 키 Ctrl·Alt (0.59, FSS#98, LLD-08 6.3)
 
 `InputDispatcherChordTest`(JVM): 실제 `InputDispatcher`·`ComposingController`·`ModeController`(쿼티·두벌식), 호출을 적는 가짜 `EditorPort`(`sendChord`는 `chord(키,[조합 키])`로 적음). `press(f)` = `onFunctionDown(f)` + `onFunctionUp(f)`, `down`·`up`은 그 하나, `hit(키, 동작)` = 그 동작의 `TapKeyResolver` 결과로 `onTapResult`, `changes` = `onChordChanged` 호출 수. 조합 중 호출(`begin`·`end`)은 기대에서 뺐다.
 
@@ -935,7 +764,7 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | CD-14 | 두벌식 Ctrl, `onCursorMovedNoComposing()` / Ctrl, `onStart(0, 0)`, `onCursorMoved(3, 3, −1, −1)` → ㅊ | {CTRL} 그대로 / {CTRL} 그대로, `chord(C,[CTRL])` | FR-TAP-17 ② |
 | CD-15 | Ctrl, Alt, Alt, a, a, ←, Ctrl, ← 누름·반복·뗌 | `changes` 6(켬·켬·끔·실림, 꺼진 동안은 없음, 누름이 꺼냄, 반복·뗌은 없음) | LLD-08 6.3 `setChord` |
 | CD-16 | `EngineGuard.stroke`: 두벌식 "가" 중 Ctrl + ㅊ에서 `sendChord`가 던짐 → 던지지 않게 하고 ㅊ / `snapshot()`, Alt, `restore` | 꺼진 채 / 둘째 ㅊ에 `chord` 없음 / {ALT} 그대로(스냅숏에 조합 키 없음) | HLD 9장, LLD-09 2절 |
-| CD-17 | 조합 키 꺼짐: `onTapResult`로 a ↑, b ↓ 문지르기, 두벌식 ㄱ, `onTapOutput`(두 인자)으로 ㅏ, ⇥, ⌫ | `commit(A)`, `commit(b)`(오류 진동 1), `compose(ㄱ)`, `compose(가)`, `finish`, `commit(\t)`, `del`. `changes` 0 | FR-TAP-16 ② 끝, 0.57까지와 같음 |
+| CD-17 | 조합 키 꺼짐: `onTapResult`로 a ↑, b ↓ 문지르기, 두벌식 ㄱ, `onTapOutput`(두 인자)으로 ㅏ, ⇥, ⌫ | `commit(A)`, `commit(b)`(오류 진동 1), `compose(ㄱ)`, `compose(가)`, `finish`, `commit(\t)`, `del`. `changes` 0 | FR-TAP-16 ② 끝, 0.58까지와 같음 |
 | CD-18 | 비밀번호 입력창, Ctrl, `onTapOutput(a, 탭 결과)` | `chord(A,[CTRL])`(동작 없이 온 결과 = 탭) | FR-TAP-17 ③, 18 |
 
 `KeyboardServiceChordTest`(Robolectric, 실제 `KeyboardService`): 매번 Ctrl·Alt를 켜고(`turnOn`) 부른다. "꺼짐" = `chord` 빈 집합.
@@ -952,23 +781,13 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 
 | ID | 대상 | 입력 | 기대 | 근거 |
 |---|---|---|---|---|
-| GT-01 | `GuideTimerLogic` | 누름, 100ms에 뗌(이동 없음) | 표시 한 번도 없음 | FR-DSP-07 |
-| GT-02 | 〃 | 누름, 120ms 타이머 | SHOWING(방향 안내) | FR-DSP-01 |
-| GT-03 | 〃 | 누름, 50ms에 슬롭 이상 이동 | 즉시 SHOWING | FR-DSP-01 |
-| GT-04 | 〃 | 누름 | 타이머 요청은 SHOW_DELAY 하나(`TimerKind`도 하나), 350·900ms에 변화 없음 | 0.12, 이슈 #142 오너 결정 |
-| GT-05 | – | (삭제, 0.12: 누르고 있기 타이머 없음) | – | – |
-| GT-06 | 〃 | 방향 안내 끔 설정 | showDirection false | FR-DSP-08 |
-| GT-07 | 〃 | 비밀번호 입력창 | showCurrent false | FR-CMN-08 |
-| GT-08 | 〃 | 다음 글자 끔 | showNext false | FR-DSP-08 |
-| GT-09 | – | (삭제, 0.12: 누르고 있기 타이머 없음, GT-04로 합침) | – | – |
-| GT-10 | `GuideFlags.of` | 기본 설정 + 보통 입력창 / 입력창 없음(튜터) / 세 설정 끔 / 비밀번호 입력창 / 학습 금지 입력창 | 모두 켬 / 모두 켬 / 모두 끔 / `bigCurrentOn` false(설정과 상관없이) / 모두 켬(0.21: 학습 금지 칸은 표시 그대로), 다음 글자는 늘 그대로 | FR-DSP-08, FR-CMN-08 ①② (0.21), FR-TUT-11 (0.11) |
-| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합, 세 안내 true, 획 자국 true(0.46)) | 6.1, FR-SET-03 (DCR-14) |
+| SS-01 | `SettingsStore` | 빈 저장소 | 6.1 표 기본값(haptic true, sound false, row 48, practiceListShown false, practiceDone 빈 집합) | 6.1, FR-SET-03 (DCR-14) |
 | SS-02 | 〃 | `lastMode` 저장 뒤 다시 읽기 | 같은 값 | FR-CMN-10 |
-| SS-03 | 〃 | 저장된 `last_mode`가 모르는 이름 | `lastMode` = 없음(null) | LLD-07 4절 (0.35: public `lastMode = SWIPE` 사례는 FR-CMN-03b와 함께 삭제, 이슈 #251) |
+| SS-03 | 〃 | 저장된 `last_mode`가 모르는 이름("HANDWRITING") | `lastMode` = 없음(null) | LLD-07 6.1, FR-CMN-10 |
 | SS-04 | 〃 | 저장된 `row_height_dp` 30 / 70 / 44 / 40 / 64 | 40 / 64 / 44 / 40 / 64 (40~47도 그대로 허용) | FR-SET-06, TBD-16 (DCR-14), D-33 |
 | SS-05 | 〃 | `setPracticeListShown(true)` 뒤 다시 읽기 | true | FR-TUT-01 (0.36) |
-| SS-07 | 〃 | `markPracticeDone`(swipe, upper, swipe) 뒤 다시 읽기 | {swipe, upper} | SWIPE 10.0 ✓ (0.36) |
-| SS-08 | 〃 | 빈 저장소 / `graffitiEnabled = false` 뒤 다시 읽기 / 이어서 `swipeEnabled = false` | 둘 다 true·`enabledModes` 넷 / 그래피티 뺀 셋 / {QWERTY, DUBEOLSIK} | FR-SET-08 (0.38) |
+| SS-07 | 〃 | `markPracticeDone`(symbol, upper, symbol) 뒤 다시 읽기 | {symbol, upper} | SRS 부록 A.1 ✓ (0.36) |
+| SS-08 | 〃 | 빈 저장소 / `graffitiEnabled = false` 뒤 다시 읽기 | true·`enabledModes` 셋 / {DUBEOLSIK, QWERTY} | FR-SET-08 (0.38, 0.58) |
 | SS-10 | 〃 | 빈 저장소 / 세로 (40, 왼손)·가로 (`FULL`, 오른손) 저장 뒤 / 가로 keyDp null로 update 뒤 | 둘 다 (null, 중앙) / 같은 값 / 가로 (null, 오른손), `key_landscape_dp` 키 없음 | FR-CMN-14 ③, FR-SET-09 (0.40) |
 | SS-11 | 〃 | 저장된 `key_portrait_dp` 10 / 400 / 36.4 / 36.6, `align_landscape` "UP" | 32 / 160 / 36 / 37, 중앙 | FR-SET-09, D-33 (0.40) |
 | SS-12 | `SettingsStore`(0.56) | 빈 저장소 / 가로 (켬, 0.25, 0.75) update 뒤 다시 엶 / 세로 (켬, 없음, 0.5) / 가로 끔·fx 없음 | 두 방향 `FloatSetting(false, null, null)` / 가로만 그 값, 세로 그대로 / 두 방향 각자 / 가로 (false, null, 0.75), `float_x_landscape` 키 없음 | FR-CMN-15 ①⑤, LLD-07 6.1 (FSS#86) |
@@ -1000,23 +819,17 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | EG-02 | 〃 | 정상 | 블록 결과, restore 0회 | – |
 | EG-03 | `EngineGuard.run` | 예외 | null, 기록 | NFR-03 |
 | EG-04 | 〃 | `Error` | 잡지 않음 | D-31 |
-| EG-05 | 〃 | 긋기 "고" 상태(0.18: 매퍼 상태 = 천지인 조립기)에서 `stroke { InputDispatcher.onFunctionDown(SPACE) }`, 가짜 `EditorPort.finishComposingText`가 예외(`finishAll` 안의 편집기 쓰기, 0.5) | null, 조합기 "고"·`ComposingController.composingShown` "고"·긋기 매퍼 상태 그대로(초기화 0회), 기록 1건. 편집기 쓰기 도중 예외도 되돌림만 함(D-32) | HLD 9장, D-32 |
+| EG-05 | 〃 | 두벌식 "고" 상태에서 `stroke { InputDispatcher.onFunctionDown(SPACE) }`, 가짜 `EditorPort.finishComposingText`가 예외(`finishAll` 안의 편집기 쓰기, 0.5) / 스냅숏 뒤 `composer.finish()` 뒤 `restore` | null, 조합기 "고"·`ComposingController.composingShown` "고", 기록 1건. 편집기 쓰기 도중 예외도 되돌림만 함(D-32) / 조합기 "고" | HLD 9장, D-32 |
 | EG-06 | 〃 | 그래피티 "ㄱㆍ"(GH-02 상태: 조합기 ㄱ, 조립기 Pending ㆍ)에서 `stroke { graffiti.handle(Consonant(ㄴ)) }`, 가짜 `EditorPort.setComposingText`가 예외(`asm.clear()`·`composer.apply(ㄴ)` 뒤 `show` 안의 편집기 쓰기) | null, 조립기 Pending ㆍ(`pendingGlyph()` = "ㆍ")·`GraffitiState` 값·조합기 "ㄱ"이 동작 전과 같음, 기록 1건(`InputDispatcher.snapshot()`의 `graffiti?.snapshot()`, LLD-08 6.1·LLD-05 6절, 0.5) | HLD 9장, 이슈 #75 |
-| CS-01 | `CenterConsonantPainter.textFor`(0.21, 0.39: `CenterText`를 받음) | ㄱ·아래 점 / ㄲ / null / 입력창 없음 ㄴ | 그대로 / "ㄲ" / null / "ㄴ" | SWIPE 9.5, FR-DSP-10 (0.21, FSS#36) |
-| CS-02 | 〃 | 비밀번호 입력창 / 학습 금지 입력창 | null / "각"(그림) | FR-CMN-08 ①② (0.21) |
-| CS-03 | `CenterConsonantPainter.sizeFor` | C 81.6 × 96, 글자 폭 0.8 / 1.2 / 0 | 96 / 68 / 96 | SWIPE 9.5 "자리와 크기" (0.21) |
-| CS-04 | `CenterConsonantPainter.textBox`·`dotCenters`(0.39) | C (139.2, 76)–(220.8, 172): 점 없음 / 아래 점 둘 / 오른쪽 점 하나 / 아래 점 하나 / 아래 둘 / 오른쪽 둘 | C 전체 / 위 0.7(y 76–143.2) / 왼쪽 0.7(x 139.2–196.32) / (180, 157.6) / 같은 y, 간격 24.48, 가운데 180 / 같은 x 208.56, 간격 28.8, 가운데 124 | LLD-04 9.5 점 (FSS#36) |
 | MOD-01 | 빌드 | `./gradlew assembleDebug` | 성공 | 이슈 #251 (0.35) |
-| MOD-02 | 소스 검사(시험 코드가 파일을 읽음) | `app/src/main`(`kbd/app/swipe/impl` 제외) | `import kbd.gesture` 없음 | LLD-03 2절(모듈 경계), 0.35 |
-| MOD-03 | 〃 | `gesture-engine`, `recognizer` | `kbd.hangul.compose` import 없음 | LLD-03 1.1 |
-| MOD-04 | `SwipeModuleProvider.get()` | – | `SwipeEngineModule` 싱글턴 | LLD-03 2절, 0.35 (0.36: `tutorSteps()` 없음) |
-| CP-01 | `AndroidEditorPort.sendChord`(Robolectric, 입력 연결을 적는 가짜) | `C`, {CTRL} | `sendKeyEvent` 4개: CTRL_LEFT ↓(meta Ctrl), C ↓·↑(Ctrl), CTRL_LEFT ↑(0) | FR-TAP-16 ④, LLD-08 4절 (0.58) |
+| MOD-03 | 소스 검사(시험 코드가 파일을 읽음) | `recognizer` | `kbd.hangul.compose` import 없음(검사 함수가 금지 import를 찾는지도 봄) | LLD-03 1.1 |
+| CP-01 | `AndroidEditorPort.sendChord`(Robolectric, 입력 연결을 적는 가짜) | `C`, {CTRL} | `sendKeyEvent` 4개: CTRL_LEFT ↓(meta Ctrl), C ↓·↑(Ctrl), CTRL_LEFT ↑(0) | FR-TAP-16 ④, LLD-08 4절 (0.59) |
 | CP-02 | 〃 | `TAB`, {ALT} | ALT_LEFT ↓(Alt), TAB ↓·↑(Alt), ALT_LEFT ↑(0) | 〃 |
 | CP-03 | 〃 | `LEFT_BRACKET`, {SHIFT, ALT, CTRL}(집합의 순서와 상관없이) / `A`, {CTRL, SHIFT} | 8개: CTRL ↓(Ctrl), ALT ↓(Ctrl + Alt), SHIFT ↓(셋), `[` ↓·↑(셋), SHIFT ↑(Ctrl + Alt), ALT ↑(Ctrl), CTRL ↑(0) / 6개, 같은 규칙 | 〃 |
 | CP-04 | 〃 | Ctrl + A·C·V·X·Z·스페이스·↵·⇥ | 입력 연결 호출은 `sendKeyEvent`만(편집 명령·`commitText`·입력창 동작 없음), 32개 모두 `FLAG_SOFT_KEYBOARD \| FLAG_KEEP_TOUCH_MODE`, `VIRTUAL_KEYBOARD`, 반복 수 0, 이벤트 시각 ≥ 누름 시각 | FR-TAP-16 ⑤⑥ |
 | CP-05 | 〃 | 입력 연결 없음 | 아무 호출 없음 | HLD 9장 |
-| CP-06 | `keyCodeOf`·조합 키 표 | `ChordKey` 60개, `ChordModifier` 3개 | 이름과 같은 `KEYCODE_*`(`D0`~`D9` = `KEYCODE_0`~`9`), Ctrl·Alt·Shift = `*_LEFT` 키 코드와 `META_*_ON \| META_*_LEFT_ON` | LLD-08 4절 |
-| CV-01 | `TapKeyboardView`(Robolectric 합성 터치, 기록하는 싱크) | Ctrl 누름 → 반복 시간 × 3 → 뗌 / Alt 탭 | `key()` 1, `down:CTRL`, 반복 없음, `up:CTRL` / `down:ALT`, `up:ALT`, {CTRL, ALT}. `REPEATING`에 Ctrl·Alt 없음 | FR-TAP-15 ①, FR-CMN-11a (0.58) |
+| CP-06 | `keyCodeOf`·조합 키 표 | `ChordKey` 57개 전부, `ChordModifier` 3개 | 이름과 같은 `KEYCODE_*`(`D0`~`D9` = `KEYCODE_0`~`9`), Ctrl·Alt·Shift = `*_LEFT` 키 코드와 `META_*_ON \| META_*_LEFT_ON` | LLD-08 4절 |
+| CV-01 | `TapKeyboardView`(Robolectric 합성 터치, 기록하는 싱크) | Ctrl 누름 → 반복 시간 × 3 → 뗌 / Alt 탭 | `key()` 1, `down:CTRL`, 반복 없음, `up:CTRL` / `down:ALT`, `up:ALT`, {CTRL, ALT}. `REPEATING`에 Ctrl·Alt 없음 | FR-TAP-15 ①, FR-CMN-11a (0.59) |
 | CV-02 | 〃 | c 탭 / a ↑ 나감 누른 채 i ← 나감 뗌(a를 기다림), a 뗌 | `onTapResult` c·`Tap`, a·`A`·`Exit(UP)`, i·`[`·`Exit(LEFT)` 차례. `onTapOutput` 호출 없음 | LLD-05A 4절, FR-CMN-11 |
 | CV-03 | 〃 (기록용 `Canvas`) | 꺼짐 / Ctrl 누름 + Esc 누름 / 둘 뗌 / 싱크가 {ALT}로 바꾸고 `chordChanged()` | Ctrl·Alt 바탕 = Esc 바탕 / Ctrl은 기능키 바탕·눌림 바탕과 다름 / Ctrl 켜짐 바탕 그대로, Esc 보통, `isChordOn` Ctrl만 / Ctrl 보통, Alt 켜짐 바탕 | FR-TAP-15 ④ |
 | CV-04 | 〃 (실제 글꼴 측정, 폭 360·327.3·320·800dp × 줄 48dp, 320 × 40dp) | Esc·Ctrl·Alt·Del 글자 크기 | 넷이 한 크기 = `wordTextSizePx` ≤ 다른 글자 크기, ⇥·q는 다른 글자 크기 그대로, 네 낱말 폭 ≤ 키 폭 − 2 × 4dp. 800dp는 다른 글자와 같은 크기, 360dp 이하는 더 작음 | FR-TAP-03c |
@@ -1026,42 +839,35 @@ MC-01~MC-09는 표의 1~9행을 **이어서** 실행한다(앞 행의 결과가 
 | CV-08 | 두벌식 뷰 | 키 id 목록, Alt 탭 | 쿼티와 같은 id, `down:ALT`·`up:ALT`, 켜짐 바탕, 노드 켜짐 | FR-TAP-15 |
 | CV-09 | 조합 키를 다루지 않는 싱크(기본 `chord`) | Ctrl 탭 | `chord` 빈 집합, 켜짐 바탕·노드 켜짐 없음 | FR-TAP-17 ④ |
 
-### 7.6 입력 연습 (LLD-07 2절, SWIPE 10장, FSS#17, 0.36)
+### 7.6 입력 연습 (LLD-07 2절, SRS 부록 A, FSS#17, 0.36)
 
 | ID | 대상 | 입력 | 기대 | 근거 |
 |---|---|---|---|---|
-| PR-01 | `PracticeTopics` | 주제·항목 | upper·symbol·graffiti_ko·graffiti_en·swipe, 3·6·21·27·6 = 63항목, 항목 글자·연습 자판이 SWIPE 10.1 표대로, 쓰는 법은 `<목표> = `로 시작 | SWIPE 10.1 |
-| PR-02 | `PracticeItemJudge.text`(OK) | "" / O / Ok / OK / OKK | 대기 / 대기 / ✗ / ✓ / ✗ | SWIPE 10.2, 오너 결정 A |
-| PR-03 | `PracticeItemJudge.commit`(0.41) | 가: ("", ㄱ·기·가) / "가 " / "기 " / 진동 / 고: 기·ㄱㆍ 조합 / 고: "기" 확정 + 가 / 가: "가" + ㄸ / " " / 가가: 가·각 조합, "가" + 가, "가가 ", "각" + ㄱ | 대기 / ✓ / ✗ / ✗ / 대기 / ✗ / ✓ / 대기 / 대기, 대기, ✓, ✗ | SWIPE 10.2, FSS#43 |
+| PR-01 | `PracticeTopics` | 주제·항목 | upper·symbol·graffiti_ko·graffiti_en, 3·3·21·27 = 54항목, 어림 시간 약 30초·약 25초·약 2분 20초·약 2분, ①·②는 모두 탭 자판, 쓰는 법은 `<목표> = `로 시작 | SRS 부록 A.2 (0.58) |
+| PR-02 | `PracticeItemJudge.text`(OK) | "" / O / Ok / OK / OKK | 대기 / 대기 / ✗ / ✓ / ✗ | SRS 부록 A.3, 오너 결정 A |
+| PR-03 | `PracticeItemJudge.commit`(0.41) | 가: ("", ㄱ·기·가) / "가 " / "기 " / 진동 / 고: 기·ㄱㆍ 조합 / 고: "기" 확정 + 가 / 가: "가" + ㄸ / " " / 가가: 가·각 조합, "가" + 가, "가가 ", "각" + ㄱ | 대기 / ✓ / ✗ / ✗ / 대기 / ✗ / ✓ / 대기 / 대기, 대기, ✓, ✗ | SRS 부록 A.3, FSS#43 |
 | PR-04 | 탭 자판(`PracticeInput` + `TapKeyResolver`) + `PracticeFlow` | a ↑ / h ↑, o 탭, ⌫, 스페이스, i 탭 | A ✓ / ✗와 쓰는 법(비우지 않음), 누름 뒤에도 ✗, ⌫로 ✗ 사라짐(시도 그대로), 스페이스는 글자 안 바꿈, ✓ | FR-TUT-09, 12, 오너 결정 A |
-| PR-05 | 탭 자판 | 1 ↑ / / ↑ / i ← | ! / ? / [ | SWIPE 10.1 ② |
-| PR-06 | `PracticeFlow`(긋기 가) | ㄴ / 누름 / ㄱ, (기, 진동, 위로) / 누름, ㄱ 기 가 | ✗(확정 ㄴ), 입력 표시 ㄴ, 새 시도 / ✓·✗·표시 지움, 쓰는 법 남음 / 덧붙임 / ✓, 쓰는 법·덧붙임 지움, 다음 항목 | SWIPE 10.2 |
-| PR-07 | `PracticeFlow`(그래피티 ㄱ) | ㄴ + 스페이스 / ㄱ + 스페이스 | 강조 칸 ㄱ, 쓰는 법 / 강조 지움, 다음 항목 ㄴ | SWIPE 10.1 ③ |
-| PR-08 | `PracticeFlow` | 목록 → upper 열기 → 시작 → A Hi OK / 그만 → swipe 시작 → 그만 | 끝 화면, `markDone(upper)` 한 번 / 목록, 표시 더 없음 | SWIPE 10.0 |
+| PR-05 | 탭 자판 | 1 ↑ / / ↑ / i ← | ! / ? / [ | SRS 부록 A.2 ② |
+| PR-06 | `PracticeFlow`(그래피티 가·고 두 항목 주제) | ㄴ / 누름 / ㄱ, (기, 진동) / 누름, ㄱ 기 가, "가 " | ✗(확정 ㄴ), 입력 표시 ㄴ, 새 시도 / ✓·✗·표시 지움, 쓰는 법 남음 / ✗ / 조합 중은 판정 없음, 스페이스에 ✓, 쓰는 법 지움, 다음 항목 | SRS 부록 A.3 |
+| PR-07 | `PracticeFlow`(그래피티 ㄱ) | ㄴ + 스페이스 / ㄱ + 스페이스 | 강조 칸 ㄱ, 쓰는 법 / 강조 지움, 다음 항목 ㄴ | SRS 부록 A.2 ③ |
+| PR-08 | `PracticeFlow` | 목록 → upper 열기 → 시작 → A Hi OK / 그만 → graffiti_ko 시작 → 그만 | 끝 화면, `markDone(upper)` 한 번 / 목록, 표시 더 없음 | SRS 부록 A.1 |
 | PR-09 | `PracticeLaunchPolicy` | 처음 / `practiceListShown` true | 표시 저장 1, 목록 열기 1 / 아무것도 안 함 | FR-TUT-01, D-34 |
-| PR-10 | 긋기 항목(실제 매퍼·분류기·조합기, 350 × 6 × 50dp, t 20) | ④ 가·고·아·과·의를 필순대로, 끝에 스페이스 | 동작마다 편집기 글자열 = `steps`, 가는 동안 판정 대기(0.41), 스페이스 뒤 ✓(기호는 바로 ✓) | SWIPE 10.1 ④, D-65 |
-| PR-11 | 〃 | 천지인 가: ㄱ 탭, 천지인 키 ↑, 천지인 키 탭 | ㄱ, 기, 가 → ✓ | 〃 |
-| PR-12 | 〃 | ② 긋기: 2 ↑, 9 ↑, / ↑ | @ / ( / ? → ✓ (쓰는 법 `( = 9 키에서 위로`, 0.52) | SWIPE 10.1 ② |
-| PR-31 | 연습 화면(`PracticeScreen` + `BoardFactory`, Robolectric·Compose, 711dp·키 42dp·오른쪽 정렬, 0.54) | 긋기 주제 시작 / 여유 칸(자판 왼쪽 바로 밖·사각형 왼쪽 끝·자판 오른쪽 바로 밖·틀 오른쪽 끝)에서 눌러 자판으로 끌고 뗌 | 자판 폭 420·자판 오른쪽 끝 = 틀 폭 − 21·왼쪽 = 틀 폭 − 462 + 21, 연습 자판 `sideMarginPx` 21·기하 `sideDp` 21 / 소비, 입력 표시·판정·시도 번호 그대로(연습 동작 아님) | FR-CMN-14 ⑥⑪, FR-TUT-02, LLD-07 2.3 (FSS#84) |
+| PR-31 | 연습 화면(`PracticeScreen` + `BoardFactory`, Robolectric·Compose, 711dp·키 42dp·오른쪽 정렬, 0.54; 0.58: 탭 자판 주제로) | 영문 대문자 주제 시작 / 여유 칸(자판 왼쪽 바로 밖·사각형 왼쪽 끝·자판 오른쪽 바로 밖·틀 오른쪽 끝)에서 눌러 자판으로 끌고 뗌 | 자판 폭 420·자판 오른쪽 끝 = 틀 폭 − 21·왼쪽 = 틀 폭 − 462 + 21, 연습 자판 `sideMarginPx` 21·기하 `sideDp` 21 / 소비, 입력 표시·판정·시도 번호 그대로(연습 동작 아님) | FR-CMN-14 ⑥⑪, FR-TUT-02, LLD-07 2.3 (FSS#84) |
 | PR-32 | 〃(그래피티 영문 주제, 0.54) | a 항목 | 묶음 안의 패드 `sideMarginPx` 21, 패드 폭 420 | LLD-07 2.3 `applySideMargin` |
-| PR-33 | 연습 화면(PR-31과 같은 구성, 0.55) | 긋기 주제 시작 / 틀을 기록용 `Canvas`에 그림 / 남는 자리(x 0·가운데·사각형 바로 왼쪽)에서 눌러 자판으로 끌고 뗌 | 틀 `plate` = (틀 폭 − 462, 0, 틀 폭, 틀 높이), 틀 배경 없음·`willNotDraw` 거짓 / 처음 그려진 사각형 = `plate`·키보드 배경색 / 소비, 입력 표시·판정·시도 번호 그대로 | FR-CMN-14 ⑫ 자, LLD-07 2.3 (FSS#85) |
-| PR-34 | 연습 화면(PR-31과 같은 구성, 세로·가로 띄우기 켬, 0.56) | 긋기 주제 시작 | 틀의 `plate` = PR-33과 같음(오른쪽 끝 462 × 틀 높이, 위 0), 틀 높이 = 6줄, 자식은 연습 자판 하나뿐, 손잡이 띠(`HANDLE_NAME`) 뷰 없음 | FR-CMN-15 ⑭, LLD-07 2.3 (FSS#86) |
-| PR-35 | `PracticeInput.tapSink`(0.58, FSS#98) | Ctrl·Alt 누름·뗌 → c 탭 → a ↑ / 연습 편집기에 Ctrl + C | `tapSink.chord`·`dispatcher.chord` 빈 집합, 편집기 "cA" / 그대로 "cA" | FR-TAP-17 ④, LLD-07 2.3 |
-| PR-30 | 실제 긋기 엔진 + `InputDispatcher` + 편집기 | `.`·`,`·5 키의 탭과 네 방향(SWIPE 7·8장 표의 모든 칸, 테두리 쪽 `,` → = 탭) | 칸마다 표의 글자가 그대로 확정됨(♥ ★ 포함, 대소문자·이체 선택자 변화 없음, 조합 없음) | FR-SWP-42·43, FSS#75 (0.52) |
-| PR-13 | 〃 | 가에 ㄴ 탭 → ㅣ → 점 → 스페이스 / ㄱ 탭 뒤 ㅣ를 위로 | 대기, 대기(나 조합), ✗(나 확정) / 오류 진동, ✗ | SWIPE 10.2 (0.41) |
-| PR-14 | `PracticeTopic.offInKeyboard` | 기본 설정 / 그래피티·긋기 끔 / 긋기만 끔 | 표시 없음 / graffiti·swipe / swipe(기호 주제는 긋기 항목이 있어도 표시 없음) | FR-CMN-03f ⑦, SWIPE 10.0 (0.38) |
-| PR-16 | 긋기 항목(실제 엔진, 350 × 6 × 50dp) | 고에 ㄱ 탭, ㅣ, 점, 스페이스 / 고 필순 + 스페이스 / 가가: ㄱ ㅣ 점 ㄱ ㅣ 점 + 스페이스 | 기 대기·가운데 글자 "기", 가, ✗(가 확정) / ✓ / ㄱ 기 가 각 가기 가가 모두 대기, ✓ | SWIPE 10.2, FSS#43 (0.41) |
-| PR-20 | 그래피티 항목(실제 템플릿·`GraffitiInputHandler`) | 가: ko_g, ↓, 탭 / 고: ko_g, 탭, → / a: en_a / 1: 숫자 영역 ↓ | ㄱ 기 가 / ㄱ ㄱㆍ 고 / a / 1, 모두 ✓(0.41: 가·고는 가는 동안 대기, 보조 줄 스페이스 뒤 ✓. a·1은 바로 ✓) | SWIPE 10.1 ③, D-65 |
-| PR-21 | 〃 | 템플릿에 없는 지그재그(a 차례) | ✗ | FR-GRF-08, SWIPE 10.2 |
-| PR-22 | `PracticeFlow`(긋기 가·고, 0.45) | 가 + 스페이스 → 누름·ㄱ → `advance()` → 두 번째 `advance()` → 가 + 스페이스 → 고 + 스페이스 → [그만] | ✓·`holding`·목표 가 그대로, 입력 무시(같은 시도) / 목표 고·✓ 지움·새 시도 / 그대로 / ✗(고의 쓰는 법) / `holding` / `holding` 끔, LIST | SWIPE 10.2, FSS#54 |
-| PR-23 | 연습 화면(`PracticeScreen` + `BoardFactory`, Robolectric·Compose, 711dp·키 42dp·오른쪽 정렬, 0.45) | 긋기 주제 시작 → ㄱ 탭, 태블릿의 ㅣ·점 좌표, 스페이스 → ㄱ 탭 → 1초 | 쓸 것: 가, ✓ 보임 / 입력 무시(항목 그대로) / 쓸 것: 고, ✓ 없음(고치기 전: 판정은 고로 넘어갔는데 화면은 쓸 것: 가) | SWIPE 10.2, FSS#54 |
-| PR-24 | 그래피티 항목 전체(실제 템플릿·`GraffitiInputHandler`, 0.51) | 자음 14·a~z: 안내표 그 칸의 모든 그림(①·②) / 쌍자음 5: ↑ + 자음 칸의 모든 그림 / 한글은 끝에 스페이스 | `steps` 그대로, 모두 ✓ | FR-TUT-02, SWIPE 10.1 ③, FSS#72 |
+| PR-33 | 연습 화면(PR-31과 같은 구성, 0.55) | 영문 대문자 주제 시작 / 틀을 기록용 `Canvas`에 그림 / 남는 자리(x 0·가운데·사각형 바로 왼쪽)에서 눌러 자판으로 끌고 뗌 | 틀 `plate` = (틀 폭 − 462, 0, 틀 폭, 틀 높이), 틀 배경 없음·`willNotDraw` 거짓 / 처음 그려진 사각형 = `plate`·키보드 배경색 / 소비, 입력 표시·판정·시도 번호 그대로 | FR-CMN-14 ⑫ 자, LLD-07 2.3 (FSS#85) |
+| PR-34 | 연습 화면(PR-31과 같은 구성, 세로·가로 띄우기 켬, 0.56) | 영문 대문자 주제 시작 | 틀의 `plate` = PR-33과 같음(오른쪽 끝 462 × 틀 높이, 위 0), 틀 높이 = 6줄, 자식은 연습 자판 하나뿐, 손잡이 띠(`HANDLE_NAME`) 뷰 없음 | FR-CMN-15 ⑭, LLD-07 2.3 (FSS#86) |
+| PR-35 | `PracticeInput.tapSink`(0.59, FSS#98) | Ctrl·Alt 누름·뗌 → c 탭 → a ↑ / 연습 편집기에 Ctrl + C | `tapSink.chord`·`dispatcher.chord` 빈 집합, 편집기 "cA" / 그대로 "cA" | FR-TAP-17 ④, LLD-07 2.3 |
+| PR-14 | `PracticeTopic.offInKeyboard` | 기본 설정 / 그래피티 끔 | 표시 없음 / graffiti_ko·graffiti_en | FR-CMN-03f ⑦, SRS 부록 A.1 (0.38, 0.58) |
+| PR-20 | 그래피티 항목(실제 템플릿·`GraffitiInputHandler`) | 가: ko_g, ↓, 탭 / 고: ko_g, 탭, → / a: en_a / 1: 숫자 영역 ↓ | ㄱ 기 가 / ㄱ ㄱㆍ 고 / a / 1, 모두 ✓(0.41: 가·고는 가는 동안 대기, 보조 줄 스페이스 뒤 ✓. a·1은 바로 ✓) | SRS 부록 A.2 ③, D-65 |
+| PR-21 | 〃 | 템플릿에 없는 지그재그(a 차례) | ✗ | FR-GRF-08, SRS 부록 A.3 |
+| PR-22 | `PracticeFlow`(그래피티 가·고 두 항목 주제, 0.45) | 가 + 스페이스 → 누름·ㄱ → `advance()` → 두 번째 `advance()` → 가 + 스페이스 → 고 + 스페이스 → [그만] | ✓·`holding`·목표 가 그대로, 입력 무시(같은 시도) / 목표 고·✓ 지움·새 시도 / 그대로 / ✗(고의 쓰는 법) / `holding` / `holding` 끔, LIST | SRS 부록 A.3, FSS#54 |
+| PR-23 | 연습 화면(`PracticeScreen` + `BoardFactory`, Robolectric·Compose, 711dp·키 42dp·오른쪽 정렬, 0.45; 0.58: 탭 자판 주제로) | 영문 대문자 주제 시작 → a 키에서 위로 → b 탭 → 1초 | 쓸 것: A, ✓ 보임 / 입력 무시(항목·입력 표시 그대로) / 쓸 것: Hi, ✓ 없음(고치기 전: 판정은 다음 항목으로 넘어갔는데 화면은 앞 목표) | SRS 부록 A.3, FSS#54 |
+| PR-24 | 그래피티 항목 전체(실제 템플릿·`GraffitiInputHandler`, 0.51) | 자음 14·a~z: 안내표 그 칸의 모든 그림(①·②) / 쌍자음 5: ↑ + 자음 칸의 모든 그림 / 한글은 끝에 스페이스 | `steps` 그대로, 모두 ✓ | FR-TUT-02, SRS 부록 A.2 ③, FSS#72 |
 | PR-25 | `PracticeTopics`, `GuideCatalog`(0.51) | 두 그래피티 주제 | 목표 차례가 자음 14·쌍자음 5·가·고 / a~z·1, 모든 항목의 `guideCells`가 그 구획에 있는 칸 이름(없어진 쌍자음 칸을 가리키지 않음) | FR-GRF-09b, FSS#72 |
-| PR-26 | 그래피티 항목(0.51) | ㄱ에 ㄴ + 스페이스 / ㄲ에 시프트 없이 ㄱ + 스페이스 / a에 ↑ + a | 쓰는 중 대기, 스페이스에 ✗ / ✗ / ↑ 뒤 대기, `A`로 ✗ | SWIPE 10.1, 10.2, FSS#72 |
-| PR-27 | `PracticeFlow`(`graffiti_en`, 0.51) | 20항목 뒤 [그만] → 다시 열기 → 끝까지 | 표시 없음, 다시 a부터 / 끝 화면, `graffiti_en` 표시 | SWIPE 10.1, FSS#72 |
-| PR-28 | 연습 화면(`PracticeScreen` + 실제 템플릿·패드, Robolectric·Compose, 0.51) | ㄸ 항목에서 터치로 시프트 없이 ko_d + 패드 스페이스, 이어서 ↑, ko_d, 패드 스페이스 | 안내표가 ㄷ 칸으로 넘어가 있음, 쓸 것: ㄸ (시프트 + ㄷ) / ✗, 새 시도의 안내표가 ㄷ·ㄲ 칸 강조, ㄷ 칸 자리 / ↑ 뒤 판정·표시 없음 / ㄸ 표시, 대기 / ✓ | SWIPE 10.1 ③, FSS#72 |
-| PR-29 | 〃 | q 항목에서 터치로 en_a, en_q | 처음부터 Q 칸이 보이고 강조 없음 / ✗, 쓰는 법, 새 시도의 안내표가 Q 강조 / 바로 ✓ | SWIPE 10.1 ③, 10.2, FSS#72 |
-| TH-10 | `ThresholdDefaults.posTolFor`, `SwipeInputMapper.setKeyWidth` | 51 / 처음 / 50 / 101.6 | 20.4 / 20 / 20 / 40.64, `minCrossDp`는 8 그대로 | HLD 7.2, PM 결정 B |
+| PR-26 | 그래피티 항목(0.51) | ㄱ에 ㄴ + 스페이스 / ㄲ에 시프트 없이 ㄱ + 스페이스 / a에 ↑ + a | 쓰는 중 대기, 스페이스에 ✗ / ✗ / ↑ 뒤 대기, `A`로 ✗ | SRS 부록 A.2, A.3, FSS#72 |
+| PR-27 | `PracticeFlow`(`graffiti_en`, 0.51) | 20항목 뒤 [그만] → 다시 열기 → 끝까지 | 표시 없음, 다시 a부터 / 끝 화면, `graffiti_en` 표시 | SRS 부록 A.2, FSS#72 |
+| PR-28 | 연습 화면(`PracticeScreen` + 실제 템플릿·패드, Robolectric·Compose, 0.51) | ㄸ 항목에서 터치로 시프트 없이 ko_d + 패드 스페이스, 이어서 ↑, ko_d, 패드 스페이스 | 안내표가 ㄷ 칸으로 넘어가 있음, 쓸 것: ㄸ (시프트 + ㄷ) / ✗, 새 시도의 안내표가 ㄷ·ㄲ 칸 강조, ㄷ 칸 자리 / ↑ 뒤 판정·표시 없음 / ㄸ 표시, 대기 / ✓ | SRS 부록 A.2 ③, FSS#72 |
+| PR-29 | 〃 | q 항목에서 터치로 en_a, en_q | 처음부터 Q 칸이 보이고 강조 없음 / ✗, 쓰는 법, 새 시도의 안내표가 Q 강조 / 바로 ✓ | SRS 부록 A.2 ③, 10.2, FSS#72 |
 
 ### 7.7 자판 폭과 정렬 `KeyboardRootView` (0.40, FSS#25, LLD-08 7.2)
 
@@ -1075,7 +881,6 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KR-04 | 키 40 중앙, 여백(x 50)에 손가락을 둔 채 둘째 손가락이 키(x 400) 탭 | 피드백 1, 입력 1(여백 손가락이 자판을 막지 않음) | FR-CMN-14 ⑤ |
 | KR-05 | 키 40 왼손, `enableGuide` | 안내표 버튼 오른쪽 끝 = 420(자판 오른쪽 끝, 여유 칸 아님), 왼쪽 = 420 − 줄 높이, 덮개 left 20·폭 400 | FR-CMN-14 ⑥, FR-GRF-09 (0.54) |
 | KR-06 | 가로 화면(구성 `w800dp-h400dp-land`), 가로 기본 / 가로 `FULL`·세로 키 40 왼손 | 사각형 폭 400(짧은 변)·left 200, 여유 칸 18, 모드 뷰 폭 364·left 218 / 사각형 폭 800(꽉 채움, 세로 값은 안 씀) | FR-CMN-12, FR-CMN-14 ③ (0.54) |
-| KR-07 | `redrawModeView()` | 모드 뷰 `invalidate` 1회(서비스가 획 자국 설정이 바뀌면 부름) | FR-DSP-09 (0.46, FSS#57) |
 | KR-08 | 세로 기본(꽉 채움), 가용 360 / 411 / 800 (0.54) | 자판 사각형 left 0·폭 = 가용 폭, 여유 칸 = `round(폭px / 22)`, 모드 뷰 왼쪽 = 여유 칸, 루트 폭 − 모드 뷰 오른쪽 = 여유 칸(양쪽 같음), 여유 칸 × 2 = 그려진 키 한 칸(모드 뷰 폭 / 10)에서 1px 안, 모드 뷰 `sideMarginPx` = 여유 칸, 그 키 기하의 `sideDp` = 여유 칸 / 밀도 | FR-CMN-14 ③④⑪, DoD |
 | KR-09 | 꽉 채움 360: x 0·여유 칸 − 1·오른쪽 여유 칸 첫 px·마지막 px에서 눌러 자판 가운데로 끌고 뗌 / 키 40 중앙 800: 여유 칸 x 180·199·600·619 탭 / 키(x 400)를 누른 채 둘째 손가락이 여유 칸(x 190)에 닿아 자판으로 끌고 뗌 (0.54) | 모두 소비(true) / 피드백·입력 없음(가까운 끝 키로 치지 않음) / 피드백 1·입력 1(첫 손가락 키만) | FR-CMN-14 ⑤⑪, DoD |
 | KR-10 | 꽉 채움 360: q(왼쪽 끝 키)를 눌러 왼쪽 여유 칸의 x 2px까지 끌고 뗌 / p를 눌러 오른쪽 여유 칸 끝까지 (0.54) | 피드백 1·`q` / 피드백 1·`p`(획은 처음 누른 키가 끝까지 받음. 그 방향 배정이 없어 탭과 같은 글자) | FR-CMN-14 ⑤⑧⑪, FR-TAP-01a |
@@ -1093,12 +898,10 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KI-03 | 꽉 채움(기본 / `FULL`) | `TOUCHABLE_INSETS_VISIBLE`, 영역 빔(0.30의 보고 그대로) | 꽉 채움 회귀 없음 |
 | KI-04 | 왼손 → 오른손 → `FULL` → 왼손(각각 `relayout()` 뒤 창 순회) / 창에 붙었으나 아직 놓이지 않은 루트 | 영역이 옮겨감(폭 같음, 오른손은 루트 오른쪽 끝) → `VISIBLE`·영역 빔(앞 영역이 남지 않음) → 처음 영역과 같음 / `VISIBLE`·영역 빔 | 낡은 영역이 남지 않음, HLD R11 ⑤ |
 | MK-09 | `GraffitiPadView`(Robolectric, 0.54) 보조 줄 모드 키, `sideMarginPx` 16dp: x 10에서 눌러 왼쪽 x −4까지 간 뒤 위로 / x −9까지 간 뒤 위로 / `sideMarginPx` 0에서 x −4까지 간 뒤 위로 | 설정 열기(왼쪽 변 너머 4dp는 나감이 아니라 처음 나감이 ↑) / 모드 전환(←가 처음 나감) / 모드 전환(여유 칸이 없으면 패드 왼쪽 끝 = 테두리, 닿으면 나감) | FR-CMN-14 ⑧, LLD-05 8절 (FSS#84) |
-| SM-01 | `KeyboardWidth.place`(밀도 1, `SideMarginStrokeTest`, JVM, 0.54) | 세로 기본 가용 360 / 키 40 중앙 가용 800 | (자판 폭, 여유 칸) = (328, 16) / (400, 20) — SM-02~SM-05의 두 자판 | FR-CMN-14 ④ |
+| SM-01 | `KeyboardWidth.place`(밀도 1, `SideMarginStrokeTest`, JVM, 0.54) | 세로 기본 가용 360 / 키 40 중앙 가용 800 | (자판 폭, 여유 칸) = (328, 16) / (400, 20) — SM-02·SM-03·SM-05의 두 자판 | FR-CMN-14 ④ |
 | SM-02 | `TapGeometry.build(배치, W, 48, m)` 쿼티·두벌식 × 두 자판 | 모든 키 | LEFT·RIGHT 바깥 변 없음, BOTTOM은 맨 아랫줄만. `m` 없이 만들면 끝 키에 LEFT·RIGHT가 있음(0.53까지의 기하) | FR-CMN-14 ⑧, LLD-05A 3.1 |
 | SM-03 | 〃 + `TapGestureClassifier`(8dp) | 왼쪽 끝 키 전부(Esc·1·q·한/영 등, q 포함)와 안쪽 키 전부: 키 가운데 → 왼쪽 변 / 변 − 7.9 / 변 − 8. 오른쪽 끝 키 전부(p 포함)와 안쪽 키 전부: 오른쪽 변 / + 7.9 / + 8 | Tap / Tap / `Exit(LEFT)`, Tap / Tap / `Exit(RIGHT)` — 끝 키와 안쪽 키가 같은 기준. 여유 칸 폭 ≥ 8dp | FR-CMN-14 ⑧, FR-SWP-03, DoD |
-| SM-04 | `SwipeGeometry.build(W, 48, m)` × 두 자판 + `EdgeCrossingTracker`(8dp) | 왼쪽 끝 열 1·8·0·천지인·기호3·모드 키와 안쪽 4·ㄱ: 왼쪽 변 / − 7.9 / − 8. 오른쪽 끝 열 7·9·⌫·↵·기호2와 안쪽 4·ㄱ: 오른쪽 변 / + 7.9 / + 8 | 모든 키 LEFT·RIGHT 바깥 변 없음. 없음 / 없음 / LEFT OUT, 없음 / 없음 / RIGHT OUT. 1의 왼쪽 = 0, 7의 오른쪽 = W, C의 가로 중심 = W / 2 | FR-CMN-14 ⑧⑨, FR-SWP-03·45, DoD |
 | SM-05 | 쿼티 맨 아랫줄 키(꽉 채움 자판) | 아래 변 12dp 위에서 눌러 아래 테두리(y = 높이)까지 | BOTTOM 나감 1(아래 테두리 규칙은 그대로) | FR-SWP-45 |
-| SW-20 | `SwipeKeyboardView`(Robolectric, 0.54) | `sideMarginPx` = 16dp / 1 키를 눌러 왼쪽으로 뷰 밖 12dp까지 끌고 뗌 | 키 기하 `sideDp` 0 → 16 / `text:1` 한 번(그 방향 배정 없음 = 탭과 같은 글자) | LLD-04 9.2, FR-CMN-14 ⑧ |
 | OB-03 | `KeyboardSizeBoxes`(기본 설정, 구성 `w411dp-h891dp-port`, 0.54) | – | 세로 상자 "꽉 채움 · 키 약 37 dp · 411 dp", 가로 상자 "키 37 dp · 전체 407 dp" | FR-SET-09, LLD-07 7절 (FSS#84) |
 | OB-04 | 〃, 세로 키 34 | – | 두 상자 "키 34 dp · 전체 374 dp"(11 × 키 크기) | FR-SET-09 |
 | OB-05 | 〃, 세로 키 41(여유 칸 전에 꽉 찼던 값) | – | 세로 상자 "꽉 채움 · 키 약 37 dp · 411 dp" | FR-CMN-14 ④ 저장된 키 크기 |
@@ -1121,7 +924,7 @@ Robolectric, 밀도는 기본 설정(1), 가용 폭 800dp, 자식 = 쿼티 `TapK
 | KR-01, KR-05, KR-06 | 모드 뷰·덮개가 줄인 자판 전체(left 0·200·400, 폭 400 / 800), 버튼 오른쪽 끝 400 | 모드 뷰·덮개는 사각형 안 자판 자리(left 20·200·380, 폭 400 / 800 − 2m), 버튼 오른쪽 끝 420 | FR-CMN-14 ④⑥, HLD 5A "놓기" |
 | GD-01, GD-05 | 덮개 폭 = 루트 폭 360 | 덮개 폭 = 자판 폭 328, left 16 | FR-CMN-14 ⑥ "덮개가 열려도 여유 칸은 덮지 않는다" |
 
-KR-02~KR-04는 이름만 "여백" → "남는 자리"로 바꿨고(좌표·기대값 그대로: x 50·100·700은 0.54에서도 남는 자리다), 여유 칸 터치는 KR-09가 따로 본다. `stroke-core`·`gesture-engine`의 KH-05·KH-06·EC-13~EC-15·SL·NK 시험은 `sideDp` 0(창 = 키 영역)으로 만든 기하의 시험이라 그대로다.
+KR-02~KR-04는 이름만 "여백" → "남는 자리"로 바꿨고(좌표·기대값 그대로: x 50·100·700은 0.54에서도 남는 자리다), 여유 칸 터치는 KR-09가 따로 본다. `stroke-core`의 KH-05·EC-13~EC-15 시험은 `sideDp` 0(창 = 키 영역)으로 만든 기하의 시험이라 그대로다.
 
 ### 7.8 띄운 자판 (0.56, FSS#86, LLD-08 7.4)
 
@@ -1176,45 +979,38 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 
 | ID | 항목 | 확인 방법 | 근거 |
 |---|---|---|---|
-| DV-01 | 표시 지연·짧은 탭 | 120ms 넘게 누름 → 방향 안내, 빠른 탭 → 없음 | FR-DSP-01, 07 |
-| DV-02 | 안내 갱신 한 프레임 | 시스템 추적(Perfetto)으로 터치 → 그리기 지연 | NFR-01 |
-| DV-03 | 오래 누름(0.12, 이슈 #142 오너 결정) | ㄱ 키를 오래 누르고 있어도 현재 글자 ㄱ, 그대로 떼면 ㄱ. 키 안에서 작게 움직이다 ㅑ로 문지르면 갸(꺄 아님) | FR-SWP-30 |
-| DV-04 | 맨 윗줄 키 팝업 | 1~7·ㅂ~ㅅ 키 안내가 창 위로 보임 | R3, AS-3 |
-| DV-05 | 창 밖 이동 이벤트 | 탭 자판 편집 줄 ↑, 긋기 세로 길게 | R2, AS-2 |
+| DV-02 | 표시 갱신 한 프레임(그래피티 패드의 잉크 선) | 시스템 추적(Perfetto)으로 터치 → 그리기 지연 | NFR-01 |
+| DV-05 | 창 밖 이동 이벤트 | 탭 자판 편집 줄·숫자 줄 ↑를 창 밖까지 | R2, AS-2 |
 | DV-06 | `onUpdateSelection` | 메신저·브라우저·메모 앱에서 빠르게 조합 | R4, FR-CMN-06 |
 | DV-07 | 창 높이·바닥 정렬·빈 띠·시스템 막대 여백 | 모드 바꿔도 높이·모드 키 위치 같음, 빈 띠 터치가 앱으로 안 샘. 제스처·3버튼 내비게이션 모두: 6줄 키 영역 아래 여백이 키보드 배경색으로 화면 끝까지 이어짐, 모드 키·스페이스가 시스템 버튼에 가리지 않음, 여백 터치 = 입력 없음·앱으로 안 샘(0.7) | SRS 3.3, HLD 5A, #93 OD-1·2·3 A |
 | DV-08 | 가로 화면 | 같은 배치, 줄 높이 같음, 전체 화면 모드 아님. 3버튼 내비게이션 막대가 옆이면 그 폭만큼 옆 여백(배경색)이 생기고 자판은 남은 폭에 같은 배치(0.7) | FR-CMN-12, #93 OD-3 A |
-| DV-09 | 화면 끝 뒤로 가기 제스처 | 1·7·8·9·0 키 안쪽 밀기 관찰 | R1, TBD-7 |
+| DV-09 | 화면 끝 뒤로 가기 제스처 | 탭 자판 끝 키(1·q·0·p) 안쪽 밀기 관찰 | R1, TBD-7 |
 | DV-10 | TalkBack | 쿼티·두벌식 키 읽기·입력 | NFR-07 |
-| DV-11 | 설정·입력 연습(0.36) | 설치 뒤 처음 앱을 열면 입력 연습의 주제 목록만 한 번 뜸([닫기] 한 번으로 나감, 다시 열어도 안 뜸). 설정 "입력 연습"으로 열림. 기준값 초기화·내보내기·가져오기 메뉴 없음 | FR-TUT-01, 06, FR-SET-04 |
+| DV-11 | 설정·입력 연습(0.36) | 설치 뒤 처음 앱을 열면 입력 연습의 주제 목록만 한 번 뜸([닫기] 한 번으로 나감, 다시 열어도 안 뜸). 설정 "입력 연습"으로 열림. 기준값 초기화·내보내기·가져오기 메뉴 없음. 입력 모드 묶음이 한글(두벌식) · 영문(쿼티) · 그래피티 순서의 셋이고 "안내 표시" 묶음이 없음(0.58) | FR-TUT-01, 06, FR-SET-04, FR-SET-08 |
 | DV-12 | q 윗첨자 글꼴 | 𐞥 표시 여부 | D-14 |
 | DV-13 | 여러 손가락 | 겹쳐 친 글자 순서, ⌫ 누른 채 입력 | FR-CMN-11 |
-| DV-14 | 비밀번호 입력창 | 현재 글자 크게 안 보임, 그래피티 인식 글자 표시 안 됨(그래피티로 바꿔 확인), 오류 기록 안 됨 | FR-CMN-08, FR-GRF-07 |
+| DV-14 | 비밀번호 입력창 | 그래피티 인식 글자 표시 안 됨(그래피티로 바꿔 확인), 오류 기록 안 됨 | FR-CMN-08, FR-GRF-07 |
 | DV-15 | 판정 시간 | 오너 기기에서 이동 이벤트당 ≤ 1ms | NFR-02 |
 | DV-16 | 입력기 등록 | 시스템 설정에서 켜기 | FR-CMN-01 |
 | DV-17 | 엔터 동작 | 검색창·여러 줄 입력창·동작 없는 한 줄 입력창(`KEYCODE_ENTER`), 선택 영역에서 ⌫ | FR-CMN-09, 07 |
 | DV-18 | 그래피티 인식 글자 표시 | 획을 끝낸 직후 잠깐 보임 | FR-GRF-07 |
-| DV-19 | 최소 지원 버전 | API 26 에뮬레이터에서 설치·네 모드 입력 | NFR-10 |
+| DV-19 | 최소 지원 버전 | API 26 에뮬레이터에서 설치·세 모드 입력 | NFR-10 |
 | DV-20 | 숫자류 입력창 | 숫자·전화·날짜·문자 비밀번호·숫자 비밀번호 칸에서 영문 쿼티(6줄)로 시작, 모드 키로 바꿈, 문자 칸으로 돌아가면 들어가기 전 모드, 학습 금지 플래그만 있는 칸은 일반 칸 | FR-CMN-04, 04b (사례 표) |
 | DV-21 | 처리 시점·취소 | 키를 누르는 순간 진동(뗄 때 아님), 기본 진동 켬·소리 끔, 획 도중 알림창 내리기 등으로 `ACTION_CANCEL` → 입력 없음 | FR-CMN-11a, FR-SET-03 |
 | DV-22 | 그래피티 인식 실패·보조 줄 | 낙서 획 → 입력 없음 + 오류 진동, 보조 줄 모드 키가 탭 자판 모드 키와 같은 위치·폭 | FR-GRF-08, FR-GRF-01 |
-| DV-23 | 쌍자음 키·긋기 = 자음 + 모음(0.18, 이슈 #168) | 곡기·고끼·밖가·박까·닭·돼지·꽤를 실제 손으로(속도와 상관없이 같은 결과), 쌍자음 줄 키의 오타 빈도 관찰 | SWIPE 5장 |
-| DV-24 | 입력 연습(0.36, FSS#17) | 주제 다섯을 차례로(그래피티 한글·영문은 끝까지, 안내표가 목표 칸을 보이는지, 쌍자음은 시프트 획 뒤 자음 + 스페이스): 설명 → [시작] → 항목마다 ✓·✗, ✗ 때 쓰는 법(그래피티는 안내표 칸 강조), 탭 자판 항목은 ⌫로 고치면 ✗가 사라짐, 긋기 자판에 안내·가운데 자음, 끝 화면 → 주제 목록에 ✓, [그만]은 언제든. 태블릿·가로 화면에서 긋기 모음이 실제 키 폭대로 판정됨 | FR-TUT-02, 09, 11, 12, HLD 7.2 |
-| DV-26 | 맨 윗줄 위 긋기(HLD 10장 R2, 0.18) | 숫자 2에서 위로 창 밖까지 긋기 = @, ㄲ 키에서 ㅙ(위·오른쪽·위로 창 밖까지) = 꽤. 에뮬레이터(Medium_Phone_API_36) 2026-10-31 확인: 둘 다 맞음(`_workspace/reports/168/`), 투명 여백 줄 필요 없음 | SWIPE 2.1, 11장 |
-| DV-27 | 손글씨 모음(0.19, 이슈 #173) | 가·각·곡기·고끼·과·의·돼지 입력, ㅘ 그리는 중 획 자국 캡처(`_workspace/reports/173/`) | SWIPE 3·9.4 |
+| DV-24 | 입력 연습(0.36, FSS#17) | 주제 넷을 차례로(그래피티 한글·영문은 끝까지, 안내표가 목표 칸을 보이는지, 쌍자음은 시프트 획 뒤 자음 + 스페이스): 설명 → [시작] → 항목마다 ✓·✗, ✗ 때 쓰는 법(그래피티는 안내표 칸 강조), 탭 자판 항목은 ⌫로 고치면 ✗가 사라짐, 끝 화면 → 주제 목록에 ✓, [그만]은 언제든. 긋기 주제가 목록에 없고, 옛 버전에서 긋기 주제를 끝낸 기기도 목록이 그대로 뜸 | FR-TUT-02, 09, 11, 12, FR-CMN-10a ③ |
 | DV-25 | 그래피티 패드 상태 표시(0.11) | 그래피티로 바꾸면 문자 영역 왼쪽 위에 점과 흐린 "한", 구석 탭 → "A"로 바로 바뀜, 시프트·캡스록·구두점·확장 시프트 대기 때 오른쪽 위에 ⇧·⇪·•·↘(글꼴에 기호가 있는지 포함), 비밀번호 칸에서도 보임 | FR-GRF-05d |
 | DV-28 | 그래피티 획 안내표(0.26, 이슈 #189) | 빈 띠 오른쪽 끝 "?"를 누르면 패드 + 보조 줄 위에 불투명 덮개, 창·앱 화면 높이 그대로(세로·가로), 위아래로 끌어 끝까지 넘김, 획 그림(시작점 ●·끝 화살표·임시 점선)이 읽히는지, 덮개 위 탭·모드 키 자리 탭에 입력·진동 없음, ✕(뗄 때)·버튼으로 닫힘, 패드에 획을 쓰는 중 다른 손가락으로 버튼 → 그 획 입력 없음, 키보드 내림·회전 뒤 닫힌 채, 입력창만 옮기면 열린 채, 비밀번호 칸에서도 보임 | FR-GRF-09~09d |
-| DV-29 | 가운데 글자(0.39, FSS#36·FSS#37) | 세로 화면: ㄱ 탭 → 흐린 "ㄱ"이 ㄸ 열 가운데, 쌍자음 줄 위 끝에서 반 키 높이 + 4dp 아래. ㅣ를 긋는 동안 그대로, 떼면 "기"(후보 표시 없음). 이어 ㆍ → "가", ㄱ 탭 → "각", ㅏ → "가". C 아래 세로 점 하나·둘 → ㄱ 아래 점(··) → 밑줄 = 고·교, 오른쪽 가로 점 하나·둘 → ㄱ 오른쪽 점(:) → ㅣ = 거·겨. 낱모음은 그리지 않음. 줄 높이 40·64dp에서 C 자리가 따라감, ㅐ·ㅙ의 마지막 ㅣ 오른쪽 여유(SWIPE 9.5 공간 점검) | SWIPE 9.5, FR-DSP-10 |
-| DV-30 | 자판 폭과 정렬(0.40, FSS#25) | 태블릿(SM-T725N)·휴대폰, 세로·가로: 기본값(세로 꽉 채움, 가로 세로와 같은 키 크기 가운데), 설정에서 키 크기 슬라이더·전체 폭 미리보기(0.54: 자판 사각형 폭 = 11 × 키)·하한(키 32dp: 자판 320dp, 자판 사각형 352dp)·꽉 채움·왼손·중앙·오른손모드, 여백 탭·여백에 손 얹고 치기 입력 없음, 줄인 자판 끝 키의 바깥쪽 획(0.54: 여유 칸 안에서 변 너머 8dp, DV-35), 가운데 글자 자리가 자판 가운데, 화면 돌리면 그 방향 값, 입력 연습 자판도 같은 폭, 그래피티 안내표 버튼이 자판 오른쪽 끝 | SRS FR-CMN-14, FR-SET-09 |
-| DV-31 | 연습 판정 시점(0.41, FSS#43) | 긋기 주제 "고"에 ㄱ 탭 → 오른쪽 ㅣ: ✗ 없이 가운데 "기"가 남음, 점을 더하면 "가", 스페이스 → ✗와 쓰는 법(끝 "→ 스페이스"). 고 필순 + 스페이스 → ✓. 그래피티 "가": ㄱ → ㅣ → 탭 뒤 대기, 보조 줄 스페이스 → ✓, a·1은 바로 ✓. 무시된 획(위로 긋기)은 바로 ✗. 탭 자판 항목은 그대로 | SWIPE 10.2, FR-TUT-12 |
+| DV-30 | 자판 폭과 정렬(0.40, FSS#25) | 태블릿(SM-T725N)·휴대폰, 세로·가로: 기본값(세로 꽉 채움, 가로 세로와 같은 키 크기 가운데), 설정에서 키 크기 슬라이더·전체 폭 미리보기(0.54: 자판 사각형 폭 = 11 × 키)·하한(키 32dp: 자판 320dp, 자판 사각형 352dp)·꽉 채움·왼손·중앙·오른손모드, 여백 탭·여백에 손 얹고 치기 입력 없음, 줄인 자판 끝 키의 바깥쪽 획(0.54: 여유 칸 안에서 변 너머 8dp, DV-35), 화면 돌리면 그 방향 값, 입력 연습 자판도 같은 폭, 그래피티 안내표 버튼이 자판 오른쪽 끝 | SRS FR-CMN-14, FR-SET-09 |
+| DV-31 | 연습 판정 시점(0.41, FSS#43) | 그래피티 "가": ㄱ → ㅣ → 탭 뒤 대기, 보조 줄 스페이스 → ✓, a·1은 바로 ✓. "고"에 ㄱ → ㅣ → 탭 + 스페이스 → ✗와 쓰는 법(끝 "→ 스페이스"). 탭 자판 항목은 그대로 | SRS 부록 A.3, FR-TUT-12 |
 | DV-32 | 그래피티 인식 영역 경계(0.43, FSS#48) | 그래피티 모드와 입력 연습 그래피티 주제에서 문자·숫자 영역 둘레에 흐린 둥근 사각형 둘, 구석 점·"한"/"A"·"123"·대기 표시가 선과 겹치지 않음, 비율 1:1·3:1에서 경계가 따라옴, 비밀번호 칸에서도 보임 | FR-GRF-01a |
-| DV-33 | 맞힌 뒤 다음 항목(0.45, FSS#54) | 긋기 주제 "가": ㄱ 탭 → ㅣ → 점 → 스페이스 → "가 ✓"가 약 1초 보이고 그동안 자판을 눌러도 아무 일 없음, 뒤에 "쓸 것: 고"와 빈 입력 표시. 탭 자판·그래피티 주제도 같음. 마지막 항목 ✓ 뒤 1초 지나 "다 했어요" | SWIPE 10.2, FR-TUT-12 |
-| DV-34 | 긋기 기호 재배치(0.52, FSS#75) | 오너 기기: `.`·`,`·5 키의 탭과 네 방향이 표대로 입력됨, `,` 키 아래 ★와 왼쪽 ♥ 라벨이 보임, 그때 ♥가 글자로 보이는지 이모지로 보이는지 |
-| DV-35 | 자판 좌우 여유 칸(0.54, FSS#84) | 휴대폰·태블릿, 세로·가로, 꽉 채움과 줄인 자판: ① 끝 키 바깥쪽 획(긋기 자판 1·8·0·천지인·기호3 ←, 7·9·기호2 →, 탭 자판 1·q·한/영 ←, 0·p·`/` →)이 안쪽 키의 같은 방향 획과 같은 느낌으로 되는지(획 기록 `FSSStroke`에 LEFT·RIGHT 나감이 남는지 — 그 방향 배정이 없어 글자는 탭과 같다) ② 여유 칸을 눌러도 입력·진동·소리가 없고, 키를 누른 채 여유 칸에 둘째 손가락을 대도 입력이 없는지 ③ 꽉 채움에서 좁아진 키(360dp: 글자 키 약 32.7dp)로 오타가 느는지, 긋기 모음 획이 오른쪽 열에 닿는지 ④ 양쪽 여유 칸 폭이 같아 보이는지, 모드를 바꿔도 자판이 움직이지 않는지 ⑤ 그래피티 패드·안내표 버튼·덮개가 자판 폭 안에 있고 여유 칸이 비는지 ⑥ 입력 연습 자판이 같은 자리·폭인지 ⑦ 설정 화면 슬라이더 위 끝과 "전체" 숫자(11 × 키) ⑧ 0.53까지 저장한 키 크기가 그대로 읽히는지(자판 폭 같고 사각형이 한 칸 넓음, 넘치면 꽉 채움) ⑨ 꽉 채움에서 화면 끝 뒤로 가기 제스처와 겹치는지 | SRS FR-CMN-14 ⑧⑪, FR-SET-09, 6장 |
+| DV-33 | 맞힌 뒤 다음 항목(0.45, FSS#54) | 영문 대문자 주제 "A": a 키에서 위로 → "A ✓"가 약 1초 보이고 그동안 자판을 눌러도 아무 일 없음, 뒤에 "쓸 것: Hi"와 빈 입력 표시. 그래피티 주제도 같음. 마지막 항목 ✓ 뒤 1초 지나 "다 했어요" | SRS 부록 A.3, FR-TUT-12 |
+| DV-35 | 자판 좌우 여유 칸(0.54, FSS#84) | 휴대폰·태블릿, 세로·가로, 꽉 채움과 줄인 자판: ① 끝 키 바깥쪽 획(탭 자판 1·q·한/영 ←, 0·p·`/` →)이 안쪽 키의 같은 방향 획과 같은 느낌으로 되는지(획 기록 `FSSStroke`에 LEFT·RIGHT 나감이 남는지 — 그 방향 배정이 없어 글자는 탭과 같다) ② 여유 칸을 눌러도 입력·진동·소리가 없고, 키를 누른 채 여유 칸에 둘째 손가락을 대도 입력이 없는지 ③ 꽉 채움에서 좁아진 키(360dp: 글자 키 약 32.7dp)로 오타가 느는지 ④ 양쪽 여유 칸 폭이 같아 보이는지, 모드를 바꿔도 자판이 움직이지 않는지 ⑤ 그래피티 패드·안내표 버튼·덮개가 자판 폭 안에 있고 여유 칸이 비는지 ⑥ 입력 연습 자판이 같은 자리·폭인지 ⑦ 설정 화면 슬라이더 위 끝과 "전체" 숫자(11 × 키) ⑧ 0.53까지 저장한 키 크기가 그대로 읽히는지(자판 폭 같고 사각형이 한 칸 넓음, 넘치면 꽉 채움) ⑨ 꽉 채움에서 화면 끝 뒤로 가기 제스처와 겹치는지 | SRS FR-CMN-14 ⑧⑪, FR-SET-09, 6장 |
 | DV-36 | 투명한 남는 자리(0.55, FSS#85, HLD R11 — **실기 미확인**) | 휴대폰·태블릿, 3버튼·제스처 내비게이션, 세로·가로, 줄인 자판의 왼손·중앙·오른손모드. 앱은 키보드 높이만큼 줄어드는 것과 그렇지 않은 것 둘 다: ① 남는 자리로 아래 앱이 보이는지(검은 띠가 남지 않는지 — 창 배경, 제조사 화면) ② 남는 자리를 누르면 아래 앱의 버튼·목록이 눌리는지, 그때 키보드에 입력·진동·소리가 없는지 ③ 자판을 누른 채 남는 자리에 둘째 손가락을 댔을 때와 아래 앱을 누른 채 자판을 눌렀을 때 ④ 아래 시스템 막대 자리: 자판 사각형 아래만 칠해지고 남는 자리 아래는 앱이 보이는지, 그 띠를 눌렀을 때 아래 앱이 받는지(입력기가 제 창에 내비게이션 막대를 그리는 구성에서는 플랫폼이 그 띠를 이 창의 터치 영역에 더해 앱이 받지 못할 수 있음 — LLD-08 7.3 ⑤), 키보드 내리기·입력기 전환 버튼이 눌리는지, 가로 화면 옆 막대 자리(자판을 그쪽에 붙였을 때만 칠해짐) ⑤ 화면을 돌린 바로 뒤, 설정에서 폭·정렬을 바꾼 바로 뒤에 칠해진 자리와 눌리는 자리가 맞는지(옛 자리가 남지 않는지) ⑥ 앱이 키보드 높이만큼 줄어들 때 남는 자리에 보이는 것 ⑦ 끝 키에서 남는 자리로 그어 나간 획이 끝까지 이어지는지(획 기록에 LEFT·RIGHT 나감) ⑧ 꽉 채움에서 모습·터치가 앞 판과 같은지 ⑨ 입력 연습 화면에서 자판 사각형만 칠해지는지 | SRS FR-CMN-14 ⑫, HLD R11, LLD-08 7.3 |
+| DV-38 | 긋기 입력 모드 삭제·옮겨 오기(0.58, FSS#95 — **실기 미확인**) | ① 새로 설치: 한글 두벌식으로 시작, 모드 키가 한글 → 영문 → 그래피티 → 한글로 돎, 그래피티를 끄면 한글 ↔ 영문 ② 긋기 입력이 마지막 모드이던 기기에 덮어 설치: 죽지 않고 한글 두벌식으로 시작(숫자 입력창이면 영문 쿼티), 진동·소리·줄 높이·자판 폭·정렬·띄우기 자리는 그대로 ③ 탭 자판의 방향 긋기(↑ 대문자·쌍자음, ←·→·↓ 기호, 두벌식 겹받침)·모드 키 ↑ = 설정·좌우 여유 칸·띄운 자판·그래피티가 전과 같음 | FR-CMN-03 ②, FR-CMN-10a, FR-SET-08 |
 | DV-37 | 띄운 자판(0.56, FSS#86, HLD R12 — **실기 미확인**) | **태블릿 가로 화면 첫째**, 다음 태블릿 세로·폰 세로·폰 가로, 3버튼·제스처 내비게이션, 키보드 높이만큼 줄어드는 앱과 그렇지 않은 앱: ① 띄운 동안 앱이 밀리거나 줄지 않는지, 앱이 키보드 보임을 어떻게 받는지(LLD-08 7.4 ⑨) ② 화면만 한 투명 창: 판 밖으로 아래 앱이 보이고 눌리는지, 뜨고 내릴 때의 애니메이션·그리기 비용 ③ 입력 뷰가 어디까지 커지는지(상태 막대·컷아웃 아래까지인지, 위쪽 인셋을 받는지 — 7.4 ⑪) ④ 시스템의 키보드 내리기·입력기 전환 버튼과 뒤로 가기 ⑤ 자판을 누른 채 판 밖에 닿은 둘째 손가락, 아래 앱을 누른 채 자판에 닿은 손가락 ⑥ 분할 화면·팝업 창 ⑦ 끄는 동안 손가락이 판 밖으로 나가도 따라오는지, 놓은 바로 뒤 눌리는 자리가 새 판인지(7.4 ⑫) ⑧ 손잡이 띠 24dp가 잡기 쉬운지, 길게 누름 시간 ⑨ 판이 위 끝에 있을 때 맨 윗줄 키의 안내 팝업 ⑩ 낮은 가로 화면(폰)에서 붙은 자판으로 놓이는지, 붙은 자판 ↔ 띄운 자판이 되풀이되지 않는지 ⑪ 회전·설정 변경 뒤 그 방향의 자리, 키보드를 내렸다 띄우면 같은 자리 | SRS FR-CMN-15, HLD R12, LLD-08 7.4 |
 | DV-38 | 두벌식 겹받침 새 방향(0.57, FSS#97 — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ① ㄱ ↓ ㄳ, ㄴ ↑ ㄵ · ↓ ㄶ, ㅂ ↓ ㅄ, ㅅ ↓ ㄽ, ㅍ ↑ ㄿ이 받침 없는 글자 뒤에서 한 번에 들어가는지(몫, 앉, 않, 값, 곬, 읊) ② 키 위 작은 글자가 그 변 가운데에 있고 옛 변(ㄱ ←, ㄴ ← · →, ㅂ →, ㅅ ←, ㅍ ←)에는 없는지, 위 변의 ㄵ·ㄿ과 아래 변의 ㄳ·ㄶ·ㅄ·ㄽ이 키 글자와 겹치지 않는지 ③ 옛 방향으로 그으면 기본 글자인지 ④ 맨 윗글자 줄의 ㅂ·ㄱ·ㅅ ↓와 가운데 줄 ㄴ ↑·↓, 아랫글자 줄 ㅍ ↑가 이웃 줄 키로 넘어가도 그 변의 나감으로 잡히는지 ⑤ ↑·↓ 문지르기는 기본 글자인지 | FR-TAP-02c, FR-TAP-03b |
-| DV-39 | 조합 키 Ctrl·Alt(0.58, FSS#98, HLD R13 — **실기 미확인**) | 휴대폰·태블릿, 쿼티·두벌식: ① 메모·문서·메신저 앱, 웹 입력창에서 Ctrl + A·C·X·V·Z(전체 선택·복사·잘라내기·붙여넣기·실행 취소) ② 터미널류 앱에서 Ctrl + C(중단)·D·Z·L, Ctrl + `[`, Ctrl + V, Alt + 글자, Ctrl·Alt + 방향키·⇥ ③ Ctrl + ←·→, Ctrl + ⌫·Del, Ctrl + ↵와 누르고 있을 때의 반복 ④ Ctrl·Alt 누름·뗌 입력의 부작용(뒤 글자가 바뀌거나 포커스가 옮겨지지 않음) ⑤ Alt + ⇥ 등이 시스템 단축키가 되지 않음 ⑥ 키 입력을 처리하지 않는 앱에서 아무 일 없음(글자 안 들어감) ⑦ 두벌식 조합 중 Ctrl + 글자 = 확정 뒤 전달 ⑧ 켜짐 표시가 눈에 띄는지, 편집 줄 키(약 32.7dp)를 잘못 누르지 않는지, Esc·Ctrl·Alt·Del 글자가 키 안에 들어가는지(줄인 자판 포함) ⑨ 화면 읽기에서 켜짐·꺼짐 ⑩ 입력을 다시 시작시키는 입력창에서 켜 둔 조합 키가 뜻밖에 꺼지지 않는지 | SRS 6장 D 조합 키, FR-TAP-15~18, TBD-34 |
+| DV-39 | 조합 키 Ctrl·Alt(0.59, FSS#98, HLD R13 — **실기 미확인**) | 휴대폰·태블릿, 쿼티·두벌식: ① 메모·문서·메신저 앱, 웹 입력창에서 Ctrl + A·C·X·V·Z(전체 선택·복사·잘라내기·붙여넣기·실행 취소) ② 터미널류 앱에서 Ctrl + C(중단)·D·Z·L, Ctrl + `[`, Ctrl + V, Alt + 글자, Ctrl·Alt + 방향키·⇥ ③ Ctrl + ←·→, Ctrl + ⌫·Del, Ctrl + ↵와 누르고 있을 때의 반복 ④ Ctrl·Alt 누름·뗌 입력의 부작용(뒤 글자가 바뀌거나 포커스가 옮겨지지 않음) ⑤ Alt + ⇥ 등이 시스템 단축키가 되지 않음 ⑥ 키 입력을 처리하지 않는 앱에서 아무 일 없음(글자 안 들어감) ⑦ 두벌식 조합 중 Ctrl + 글자 = 확정 뒤 전달 ⑧ 켜짐 표시가 눈에 띄는지, 편집 줄 키(약 32.7dp)를 잘못 누르지 않는지, Esc·Ctrl·Alt·Del 글자가 키 안에 들어가는지(줄인 자판 포함) ⑨ 화면 읽기에서 켜짐·꺼짐 ⑩ 입력을 다시 시작시키는 입력창에서 켜 둔 조합 키가 뜻밖에 꺼지지 않는지 | SRS 6장 D 조합 키, FR-TAP-15~18, TBD-34 |
 
 ## 9. 안드로이드 클래스 대상 단위 시험 (G1)
 
@@ -1223,21 +1019,17 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | 대상 | 시험 ID |
 |---|---|
 | `TapKeyboardView` | KH-03, MQ-05, MQ-06, MQ-08, FB-01, FB-02 |
-| `KeyboardRootView` | FB-03, KR-01~KR-11, PL-01~PL-08(기록용 `Canvas`, 0.55) |
+| `KeyboardRootView` | FB-03, KR-01~KR-06, KR-08~KR-11, PL-01~PL-08(기록용 `Canvas`, 0.55) |
 | `KeyboardInsets`(`InputMethodService.Insets`, 액티비티 창의 `KeyboardRootView`, 0.55) | KI-01~KI-04, KI-05·KI-06(0.56) |
 | `KeyboardRootView` 띄운 자판(`Handler` 지연 호출, 0.56) | FL-01~FL-20 |
 | `OffKeyboardPointers`(`MotionEvent`) | OP-01~OP-05 |
 | `Feedback`(`SettingsStore` 기본값과 함께) | FB-04, FB-05(0.56) |
-| `SwipeKeyboardView` | SW-01~SW-04, SW-08, SW-08c, SW-20 |
 | `GraffitiPadView`(기록용 `Canvas`, 0.11, 이슈 #136) | PI-01~PI-07, PI-09·PI-10(0.43) |
 | `RepeatTimer`(가짜 `Handler`) | RT-05 |
-| `TapKeyboardView`·`TapKeyAccessHelper` 조합 키(기록용 `Canvas`, 실제 글꼴 측정, 0.58) | CV-01~CV-04, CV-06~CV-09 |
-| `AndroidEditorPort`(`KeyEvent`, 가짜 입력 연결, 0.58) | CP-01~CP-06 |
-| `KeyboardService` 조합 키 끄기(0.58) | CL-01~CL-05 |
+| `TapKeyboardView`·`TapKeyAccessHelper` 조합 키(기록용 `Canvas`, 실제 글꼴 측정, 0.59) | CV-01~CV-04, CV-06~CV-09 |
+| `AndroidEditorPort`(`KeyEvent`, 가짜 입력 연결, 0.59) | CP-01~CP-06 |
+| `KeyboardService` 조합 키 끄기(0.59) | CL-01~CL-05 |
 
-### 9.1 안내 설정 (0.11, 이슈 #135; 0.36: 연습 자판은 실제 `SwipeKeyboardView`라 SW-08이 같음)
+### 9.1 ~~안내 설정~~ — 삭제 (0.58, FSS#95)
 
-| ID | 대상·입력 | 기대 | 근거 |
-|---|---|---|---|
-| SW-08 | `SwipeKeyboardView`: `showCurrentChar = false`로 ㄴ 누르고 슬롭 넘게 이동 / 세 설정 모두 끄고 같은 획 | `GuideView`(방향 true, 현재 false, 다음 true) / SHOWING이지만 모두 false(그릴 것 없음) | FR-DSP-08 |
-| SW-08c | 〃: ㄱ(점 하나 대기) 자리에서 ㄱ 키 ↓ 긋는 중 기본 / `showStrokeTrail = false` / 뗌 / 다시 켬 | 경로 1 / 경로 0, 가운데 "ㄱ"·점 1 그대로 / [Vowel] 1회(켰을 때와 같음), 경로 0 / 경로 1(남긴 자국) | FR-DSP-09, FR-SET-02 (0.46, FSS#57) |
+안내 팝업과 획 자국 설정의 시험(SW-08, SW-08c)은 긋기 자판과 함께 없앴다.

@@ -58,7 +58,6 @@ import kbd.app.store.KeyboardWidth
 import kbd.app.store.PxRect
 import kbd.app.store.Settings
 import kbd.app.store.WidthSetting
-import kbd.app.swipe.SwipeModuleProvider
 import kbd.app.view.OffKeyboardPointers
 import kbd.app.view.PlatePainter
 import kbd.app.view.PlateView
@@ -69,13 +68,11 @@ import kbd.graffiti.ink.GraffitiLang
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
 import kbd.stroke.layout.TapLayouts
-import kbd.stroke.threshold.ThresholdDefaults
-import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The input practice screen (LLD-07 §2.3, SWIPE 10.0, HLD 7.1, FSS#17): topic list → explanation → items → end, with
+ * The input practice screen (LLD-07 §2.3, SRS appendix A.1, HLD 7.1, FSS#17): topic list → explanation → items → end, with
  * the real keyboard views below. [PracticeFlow] holds the state; every try gets a fresh [PracticeInput] and view.
  */
 class PracticeActivity : ComponentActivity() {
@@ -127,19 +124,19 @@ internal class BoardFactory(
         val row = settings.rowHeightDp
         var before = ""
         var beforeComposing = ""
-        val frame = BoardFrame(context, ThresholdDefaults.MIN_CROSS_DP * density, settings.portraitWidth, settings.landscapeWidth, held = { flow.holding }, onDown = {
+        val frame = BoardFrame(context, settings.portraitWidth, settings.landscapeWidth, held = { flow.holding }, onDown = {
             input.errored = false
             before = input.editor.text
             beforeComposing = input.editor.composing
             flow.onPress()
-        }) { reversed ->
+        }) {
             val text = input.editor.text
             val composing = input.editor.composing
             // Off the tap keyboard an action counts when it typed something, committed something (the graffiti finish
             // stroke commits without typing, FSS#43) or vibrated (a touch on a key that does nothing here, or a scroll
             // of the guide, is not an action).
             if (item.board == PracticeBoard.TAP_QWERTY || text != before || composing != beforeComposing || input.errored) {
-                flow.onAction(text, input.editor.display, input.errored, reversed, composing)
+                flow.onAction(text, input.editor.display, input.errored, composing)
             }
         }
         when (item.board) {
@@ -149,15 +146,12 @@ internal class BoardFactory(
                 v.setLayout(layout, input.thresholds, row)
                 frame.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, px(layout.rows * row)))
             }
-            PracticeBoard.SWIPE -> {
-                val v = SwipeModuleProvider.get().createSwipeView(context, input)   // with its guides (FR-TUT-11)
-                frame.addView(v, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
-            }
+
             PracticeBoard.GRAFFITI -> {
                 var pad: GraffitiPadView? = null
                 val handler = input.graffiti(templates, item.lang ?: GraffitiLang.KO, { pad?.flash(it) }, { pad?.invalidate() })
                 val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-                // The stroke guide, always open above the pad (not over it), only the item's section (SWIPE 10.1 ③).
+                // The stroke guide, always open above the pad (not over it), only the item's section (SRS appendix A.2 ③).
                 val panel = GraffitiGuidePanel(context, templates, input.feedback, GuideCatalog.groups.filter { it.section == item.guideSection() }, showClose = false) {}
                 panel.reveal = item.guideCells.toSet()   // the target's cell is in view from the start (FSS#72)
                 panel.highlight = flow.highlight.toSet()
@@ -182,8 +176,7 @@ internal class BoardFactory(
 /**
  * Sees every touch of the practice keyboard without taking it (LLD-07 §2.3): [onDown] on a press with no other finger
  * down; on each release,
- * after the view has handled it, [onUp] is posted (so an engine that posts its own work is done too). [onUp] gets
- * whether the released touch went up or left by more than [slopPx] (a reversed swipe stroke, SWIPE 10.2 덧붙임).
+ * after the view has handled it, [onUp] is posted (so an engine that posts its own work is done too).
  *
  * The board has the keyboard width and alignment of the screen's orientation (SRS FR-CMN-14 ⑥, LLD-07 §2.3, FSS#25):
  * the frame's width is the available width, [KeyboardWidth.place] gives the keyboard rectangle in it, the board sits
@@ -196,15 +189,15 @@ internal class BoardFactory(
  */
 private class BoardFrame(
     context: Context,
-    private val slopPx: Float,
     private val portraitWidth: WidthSetting,
     private val landscapeWidth: WidthSetting,
     private val held: () -> Boolean,
     private val onDown: () -> Unit,
-    private val onUp: (reversed: Boolean) -> Unit,
+    private val onUp: () -> Unit,
 ) : FrameLayout(context), PlateView {
 
-    private val starts = HashMap<Int, Pair<Float, Float>>()
+    /** The pointers that are down. */
+    private val starts = HashSet<Int>()
     private var span = KeyboardSpan(0, 0, 0)
 
     /** The keyboard rectangle by the frame's height: the frame has no system bar padding ([KeyboardPlate.rect]). */
@@ -266,18 +259,15 @@ private class BoardFrame(
                 // Only the first finger starts an action: a second one pressed meanwhile must not reset the first
                 // one's text and error mark before it is released (one-finger practice; review PR #27).
                 val first = starts.isEmpty()
-                starts[ev.getPointerId(i)] = ev.getX(i) to ev.getY(i)
+                starts += ev.getPointerId(i)
                 if (first) onDown()
             }
         }
         val handled = super.dispatchTouchEvent(ev)
         when (ev.actionMasked) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                val s = starts.remove(ev.getPointerId(i))
-                val dx = if (s == null) 0f else ev.getX(i) - s.first
-                val dy = if (s == null) 0f else ev.getY(i) - s.second
-                val reversed = maxOf(abs(dx), abs(dy)) > slopPx && (if (abs(dy) > abs(dx)) dy < 0 else dx < 0)
-                post { onUp(reversed) }
+                starts.remove(ev.getPointerId(i))
+                post { onUp() }
             }
             MotionEvent.ACTION_CANCEL -> starts.clear()
         }
@@ -293,7 +283,7 @@ internal fun PracticeScreen(
     boards: BoardFactory,
     close: () -> Unit,
 ) {
-    val now by settingsFlow.collectAsState(start)   // the topic ✓ marks as stored (SWIPE 10.0)
+    val now by settingsFlow.collectAsState(start)   // the topic ✓ marks as stored (SRS appendix A.1)
     val done = now.practiceDone
     val enabled = now.enabledModes   // "키보드에서 꺼져 있음" (FR-CMN-03f ⑦)
     // A right item stays on screen with its ✓, then the next one comes (FSS#54); [그만] meanwhile ends the hold.
@@ -371,7 +361,6 @@ private fun ColumnScope.Item(flow: PracticeFlow) {
         )
         Echo(flow.echo, flow.verdict)
         flow.howTo?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
-        flow.hint?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
     Buttons(flow) {}
 }
@@ -385,7 +374,7 @@ private fun ColumnScope.Finished(flow: PracticeFlow) {
     Button(onClick = { flow.stop() }) { Text(stringResource(R.string.practice_back)) }
 }
 
-/** [그만] on the left (back to the topic list at any time, SWIPE 10.0), [extra] on the right. */
+/** [그만] on the left (back to the topic list at any time, SRS appendix A.1), [extra] on the right. */
 @Composable
 private fun Buttons(flow: PracticeFlow, extra: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

@@ -8,8 +8,8 @@ import kbd.stroke.geom.StrokePoint
 
 /**
  * Classifies one stroke on a tap-keyboard key from its edge crossings (LLD-05A §2.1).
- * Length and turns are not looked at; [minCrossDp] is the same threshold the swipe keyboard
- * uses (FR-TAP-02b). Outer edges record nothing, so leaving only through them is a [TapGesture.Tap].
+ * Length and turns are not looked at; [minCrossDp] is the minimum crossing distance
+ * (FR-TAP-02b). Outer edges record nothing, so leaving only through them is a [TapGesture.Tap].
  */
 class TapGestureClassifier(key: KeyGeom, minCrossDp: Float) {
 

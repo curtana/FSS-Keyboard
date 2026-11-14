@@ -14,7 +14,7 @@ import kbd.hangul.jamo.Jamo.T
 
 /** Consonant tables (LLD-03 §3.1). */
 object JamoTables {
-    /** Base consonant → double consonant (FR-HGL-05, FR-SWP-30). */
+    /** Base consonant → double consonant (FR-HGL-05). */
     val DOUBLE_OF: Map<Jamo, Jamo> = mapOf(
         G to Jamo.GG,
         D to Jamo.DD,

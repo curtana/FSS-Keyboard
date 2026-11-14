@@ -1,6 +1,6 @@
 package kbd.app.practice
 
-/** Result of judging an item so far (FR-TUT-12, SWIPE 10.2). */
+/** Result of judging an item so far (FR-TUT-12, SRS appendix A.3). */
 enum class Verdict {
     /** Everything so far matches; more is needed. */
     PENDING,
@@ -13,7 +13,7 @@ enum class Verdict {
 }
 
 /**
- * Item judgement of the input practice (HLD 7.1, SWIPE 10.2, LLD-07 §2.4). Pure Kotlin: the practice screen passes
+ * Item judgement of the input practice (HLD 7.1, SRS appendix A.3, LLD-07 §2.4). Pure Kotlin: the practice screen passes
  * what the real engine left in the practice editor; nothing is measured.
  */
 object PracticeItemJudge {
@@ -30,11 +30,11 @@ object PracticeItemJudge {
     }
 
     /**
-     * Swipe and graffiti items (owner decision 2026-11-02, FSS#43): judged by what is committed only — a syllable still
+     * Graffiti items (owner decision 2026-11-02, FSS#43): judged by what is committed only — a syllable still
      * composing is not finished (기 may still become 가, and 가 becomes 각 on its way to 가가). [committed] is the try's
      * committed text (what still composes is left out); its spaces are dropped (the space is the closing action, PM
-     * decision A). [error] = the action gave the error vibration (an ignored stroke or element, dropped strokes, a
-     * failed recognition — SWIPE 10.2 오류 진동). ✗ when it vibrated or the committed text is no beginning of the
+     * decision A). [error] = the action gave the error vibration (an ignored element, a
+     * failed recognition — SRS appendix A.3 오류 진동). ✗ when it vibrated or the committed text is no beginning of the
      * target, ✓ when it is the target (closed by the space, or by the next syllable's consonant), else pending.
      */
     fun commit(item: PracticeItem, committed: String, error: Boolean): Verdict {

@@ -22,7 +22,7 @@ class ComposingController(private val port: EditorPort) {
     /** Temporary glyph at the end of [composingShown] (HLD 5, FR-HGL-04e). */
     private var glyph = ""
 
-    /** [composingShown] without the glyph: the composer's text, restored when the glyph goes (SWIPE 0.36 3.4). */
+    /** [composingShown] without the glyph: the composer's text, restored when the glyph goes (FR-HGL-04e). */
     private var bare = ""
 
     /** Cursor expected after our last write, −1 = unknown. */
@@ -34,14 +34,10 @@ class ComposingController(private val port: EditorPort) {
     /** Expected cursors of our writes not yet confirmed by an update (D-29). */
     private val expected = ArrayDeque<Int>()
 
-    /**
-     * [replacesLast]: [pendingGlyph] is shown in place of the composition's last character (swipe bare ‥ states,
-     * SWIPE 0.36 3.4: "‥" stands where the first stroke's ㅣ / ㅡ was); finishing restores it, as dropping a
-     * glyph restores the text without it.
-     */
-    fun show(r: ComposeResult, pendingGlyph: String = "", replacesLast: Boolean = false) {
+    /** [pendingGlyph]: the graffiti cheonjiin's temporary ㆍ / ‥ after the composition (FR-HGL-04e); dropping it restores the text without it. */
+    fun show(r: ComposeResult, pendingGlyph: String = "") {
         val base = r.composing
-        val d = (if (replacesLast && pendingGlyph.isNotEmpty()) base.dropLast(1) else base) + pendingGlyph
+        val d = base + pendingGlyph
         batch {
             if (r.committed.isNotEmpty()) {
                 port.commitText(r.committed)

@@ -307,21 +307,6 @@ class KeyboardRootViewTest {
         assertEquals(px(800f) - 2 * root.sideMargin, child.width)
     }
 
-    /** FSS#57: the service redraws the mode view when the stroke trail setting changes. */
-    @Test
-    fun `KR-07 redrawModeView invalidates the mode view`() {
-        var invalidated = 0
-        val v = object : View(RuntimeEnvironment.getApplication()) {
-            override fun invalidate() {
-                invalidated++
-                super.invalidate()
-            }
-        }
-        root.setModeView(v, CHILD_ROWS)
-        invalidated = 0
-        root.redrawModeView()
-        assertEquals(1, invalidated)
-    }
 
     private companion object {
         const val WIDTH = 360f
