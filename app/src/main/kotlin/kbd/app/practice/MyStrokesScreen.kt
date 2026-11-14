@@ -78,6 +78,8 @@ private fun ColumnScope.Letters(my: MyStrokesModel) {
             Text(stringResource(R.string.my_strokes_no_letters), style = MaterialTheme.typography.bodyLarge)
         } else {
             Text(stringResource(R.string.my_strokes_hint), style = MaterialTheme.typography.bodyMedium)
+            // "clear everything" is the one write of the letter list; only its failure is said here
+            if (my.message == MyStrokeMessage.WriteFailed) Text(stringResource(R.string.my_strokes_write_failed), style = MaterialTheme.typography.bodyLarge)
             for ((set, title) in listOf(SetName.KO_LETTER to R.string.my_strokes_section_ko, SetName.EN_LETTER to R.string.my_strokes_section_en)) {
                 Text(stringResource(title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
                 for (row in my.letters.filter { it.set == set }.chunked(LETTERS_PER_ROW)) {

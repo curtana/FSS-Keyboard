@@ -1,6 +1,7 @@
 package kbd.app.store
 
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import kbd.graffiti.recognize.PersonalStroke
@@ -124,12 +125,16 @@ object PersonalStrokeCodec {
  * (LLD-05 §11). Only the "my strokes" screen calls [add], [clear] and [clearAll] (FR-TUT-17 ①); everything else reads.
  *
  * A file that is missing or cannot be read is an empty book (FR-TUT-15 ④): the failure is logged by site and
- * exception kind only (NFR-05) and the file is left as it is until the next write replaces it. A write goes to a
- * temporary file that then replaces the real one in one step, so a write that stops half-way leaves the old file.
+ * exception kind only (NFR-05) and the file is left as it is until the next write, which first moves it to
+ * `<name>.bak` (one, the latest unreadable file). A write goes to a temporary file, synced to the disk, that then
+ * replaces the real one in one step, so a write that stops half-way or a power cut leaves the old file.
  */
 class PersonalStrokeStore(val file: File, private val log: ErrorLog) {
 
     private var loaded: PersonalStrokeBook? = null
+
+    /** The file was there but could not be read: the next write keeps it as [BAK_SUFFIX] before replacing it. */
+    private var unreadable = false
 
     /** Goes up by one with every successful write. */
     @Volatile
@@ -146,19 +151,34 @@ class PersonalStrokeStore(val file: File, private val log: ErrorLog) {
     @Synchronized
     fun clear(set: SetName, value: String): Boolean = write(book().clear(set, value))
 
+    /** Read first all the same, so that an unreadable file is kept as [BAK_SUFFIX] rather than replaced unseen. */
     @Synchronized
-    fun clearAll(): Boolean = write(PersonalStrokeBook.EMPTY)
+    fun clearAll(): Boolean {
+        book()
+        return write(PersonalStrokeBook.EMPTY)
+    }
 
     private fun read(): PersonalStrokeBook = try {
         if (file.isFile) PersonalStrokeCodec.decode(file.readText(Charsets.UTF_8)) else PersonalStrokeBook.EMPTY
     } catch (e: Exception) {
         log.record(SITE_READ, e)
+        unreadable = true
         PersonalStrokeBook.EMPTY
     }
 
+    /** False, logged, when anything fails; the book in memory and [revision] stay then as they were. */
     private fun write(book: PersonalStrokeBook): Boolean = try {
         val tmp = File(file.parentFile, file.name + TMP_SUFFIX)
-        tmp.writeText(PersonalStrokeCodec.encode(book), Charsets.UTF_8)
+        FileOutputStream(tmp).use { out ->
+            out.write(PersonalStrokeCodec.encode(book).toByteArray(Charsets.UTF_8))
+            out.fd.sync()
+        }
+        if (unreadable) {
+            if (file.exists()) {
+                Files.move(file.toPath(), File(file.parentFile, file.name + BAK_SUFFIX).toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+            unreadable = false
+        }
         Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         loaded = book
         revision++
@@ -171,6 +191,7 @@ class PersonalStrokeStore(val file: File, private val log: ErrorLog) {
     companion object {
         const val FILE_NAME = "personal-strokes.json"
         const val TMP_SUFFIX = ".tmp"
+        const val BAK_SUFFIX = ".bak"
         const val SITE_READ = "PersonalStrokeStore.read"
         const val SITE_WRITE = "PersonalStrokeStore.write"
     }

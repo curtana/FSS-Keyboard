@@ -20,7 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 §7.10 MS-01..MS-08 (LLD-07 §8.2, SRS FR-TUT-15·16·17): the personal stroke book, its file and who writes it. */
+/** LLD-11 §7.10 MS-01..MS-09 (LLD-07 §8.2, SRS FR-TUT-15·16·17): the personal stroke book, its file and who writes it. */
 class PersonalStrokeStoreTest {
 
     @get:Rule
@@ -130,13 +130,43 @@ class PersonalStrokeStoreTest {
         assertFalse(dir.exists())
     }
 
+    /**
+     * The files of [sources] (name → text) that call [PersonalStrokeStore.add], `clear` or `clearAll`. A file takes part
+     * when it names the type or a property / function declared with it (`AppStores.personalStrokes`, reached by type
+     * inference); in such a file a write is a call on one of those names or on a local `val`/`var` set to one of them.
+     */
+    private fun storeWriters(sources: Map<String, String>): Set<String> {
+        val declared = Regex("""\b(\w+)\s*(?:\([^)]*\))?\s*:\s*PersonalStrokeStore\b""")
+        val handles = sources.values.flatMap { t -> declared.findAll(t).map { it.groupValues[1] } }.toSet()
+        fun alt(names: Set<String>) = names.joinToString("|") { Regex.escape(it) }
+        val holders = sources.filter { (_, t) -> "PersonalStrokeStore" in t || (handles.isNotEmpty() && Regex("""\b(?:${alt(handles)})\b""").containsMatchIn(t)) }
+        return holders.filter { (_, t) ->
+            var known = handles + "PersonalStrokeStore"
+            while (true) {
+                val alias = Regex("""\b(?:val|var)\s+(\w+)\s*=\s*(?:[\w.]+\.)?(?:${alt(known)})\b(?:\([^)\n]*\))?[ \t]*(?://[^\n]*)?$""", RegexOption.MULTILINE)
+                val more = known + alias.findAll(t).map { it.groupValues[1] }
+                if (more == known) break
+                known = more
+            }
+            Regex("""\b(?:${alt(known)})(?:\([^)\n]*\))?\.(add|clear|clearAll)\(""").containsMatchIn(t)
+        }.keys
+    }
+
     @Test
     fun `MS-07 only the my strokes screen writes personal strokes`() {
         val root = File("src/main/kotlin")
         assertTrue(root.absolutePath, root.isDirectory)
-        val writes = Regex("""\b(store|personal\w*)\.(add|clear|clearAll)\(""")
-        val writers = root.walk().filter { it.isFile && it.extension == "kt" && writes.containsMatchIn(it.readText()) }.map { it.name }.toSet()
-        assertEquals(setOf("MyStrokes.kt"), writers)
+        val sources = root.walk().filter { it.isFile && it.extension == "kt" }.associate { it.name to it.readText() }
+        assertEquals(setOf("MyStrokes.kt"), storeWriters(sources))
+        // the check reaches the store through a declared type, an accessor and a local alias
+        val made = mapOf(
+            "Typed.kt" to "class A(private val s: PersonalStrokeStore) { fun f() = s.clearAll() }",
+            "Accessor.kt" to "fun g() { AppStores.personalStrokes(c, log).add(set, v, p) }",
+            "Alias.kt" to "fun h() {\n    val p = stores.personalStrokes   // read\n    p.clear(set, v)\n}",
+            "Reader.kt" to "fun r() {\n    val p = stores.personalStrokes\n    p.book().strokes\n    list.add(1)\n}",
+            "AppStores.kt" to "val personalStrokes: PersonalStrokeStore = make()",
+        )
+        assertEquals(setOf("Typed.kt", "Accessor.kt", "Alias.kt"), storeWriters(made))
     }
 
     @Test
@@ -150,5 +180,25 @@ class PersonalStrokeStoreTest {
         repeat(3) { sup.get().recognize(ink, GraffitiLang.KO, Expect.NORMAL) }
         assertEquals(1, s.revision)
         assertArrayEquals(before, file().readBytes())
+    }
+
+    @Test
+    fun `MS-09 an unreadable file is kept as one bak before a write replaces it`() {
+        file().writeText("not json", Charsets.UTF_8)
+        val bak = File(tmp.root, PersonalStrokeStore.FILE_NAME + PersonalStrokeStore.BAK_SUFFIX)
+        val s = PersonalStrokeStore(file(), log)
+        assertEquals(0, s.book().strokes.size)
+        assertFalse("reading moves nothing", bak.exists())
+        assertTrue(s.add(SetName.KO_LETTER, "ㄱ", stroke(1)))
+        assertEquals("not json", bak.readText(Charsets.UTF_8))
+        assertEquals(1, PersonalStrokeStore(file(), log).book().strokes.size)
+        assertTrue(s.add(SetName.KO_LETTER, "ㄱ", stroke(2)))
+        assertEquals("a readable file is not kept again", "not json", bak.readText(Charsets.UTF_8))
+        // a later unreadable file takes the one bak; clearing everything keeps it too
+        file().writeText("""{"version":2}""", Charsets.UTF_8)
+        assertTrue(PersonalStrokeStore(file(), log).clearAll())
+        assertEquals("""{"version":2}""", bak.readText(Charsets.UTF_8))
+        assertEquals(0, PersonalStrokeStore(file(), log).book().strokes.size)
+        assertEquals(setOf(PersonalStrokeStore.FILE_NAME, bak.name, "errors.log"), tmp.root.list()!!.toSet())
     }
 }

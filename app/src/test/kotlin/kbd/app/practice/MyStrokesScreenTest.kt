@@ -39,7 +39,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
-/** LLD-11 §7.10 MV-01..MV-04 (LLD-07 §8.3, SRS FR-TUT-14·16): the "my strokes" screens in the real practice screen. */
+/** LLD-11 §7.10 MV-01..MV-05 (LLD-07 §8.3, SRS FR-TUT-14·16): the "my strokes" screens in the real practice screen. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [ViewTestSdk.SDK], qualifiers = "w711dp-h1138dp-port")
 class MyStrokesScreenTest {
@@ -177,5 +177,22 @@ class MyStrokesScreenTest {
         compose.onNodeWithText("지우기").performClick()
         idle()
         assertEquals(0, store.book().strokes.size)
+    }
+
+    @Test
+    fun `MV-05 the letter list says when clearing everything could not be written`() {
+        open()
+        compose.runOnIdle { my.open(); my.pick(my.letters.first { it.label == "ㄱ" }) }
+        idle()
+        drawTemplate("ko_g")
+        compose.onNodeWithText("글자 목록").performClick()
+        idle()
+        File(tmp.root, PersonalStrokeStore.FILE_NAME + PersonalStrokeStore.TMP_SUFFIX).mkdir()   // the write fails
+        compose.onNodeWithText("전체 초기화").performClick()
+        idle()
+        compose.onNodeWithText("지우기").performClick()
+        idle()
+        compose.onNodeWithText("저장하지 못했어요.").assertExists()
+        assertEquals(1, store.book().strokes.size)
     }
 }

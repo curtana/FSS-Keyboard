@@ -178,7 +178,7 @@ class MyStrokesModel(
     fun answerClearAll(yes: Boolean) {
         askingClearAll = false
         if (yes) {
-            store.clearAll()
+            message = if (store.clearAll()) null else MyStrokeMessage.WriteFailed
             refresh()
         }
     }

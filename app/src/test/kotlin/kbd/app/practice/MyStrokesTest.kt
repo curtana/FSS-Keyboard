@@ -20,7 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 §7.10 MY-01..MY-04 (LLD-07 §8.1, §8.3 actions; SRS FR-TUT-14·16): letters, what is stored, the screen's model. */
+/** LLD-11 §7.10 MY-01..MY-05 (LLD-07 §8.1, §8.3 actions; SRS FR-TUT-14·16): letters, what is stored, the screen's model. */
 class MyStrokesTest {
 
     @get:Rule
@@ -131,5 +131,29 @@ class MyStrokesTest {
         assertEquals(0, my.book.taughtLetters)
         my.close()
         assertEquals(MyStrokesModel.Screen.CLOSED, my.screen)
+    }
+
+    @Test
+    fun `MY-05 clearing everything that cannot be written says so and keeps the strokes`() {
+        val log = ErrorLog(File(tmp.root, "e.log"))
+        val store = PersonalStrokeStore(File(tmp.root, PersonalStrokeStore.FILE_NAME), log)
+        val sup = GraffitiRecognizers(templates, log, { store.revision }, { store.book().strokes }, executor = Executor { it.run() })
+        val my = MyStrokesModel(templates, store, sup)
+        my.open()
+        my.pick(my.letters.first { it.label == "ㄱ" })
+        my.onStroke(drawn("ko_g"))
+        my.backToLetters()
+        // a folder where the temporary file goes: the write fails
+        File(tmp.root, PersonalStrokeStore.FILE_NAME + PersonalStrokeStore.TMP_SUFFIX).mkdir()
+        my.askClearAll()
+        my.answerClearAll(true)
+        assertEquals(MyStrokeMessage.WriteFailed, my.message)
+        assertEquals(1, my.book.taughtLetters)
+        assertTrue(log.readAll().contains(PersonalStrokeStore.SITE_WRITE + "\t"))
+        File(tmp.root, PersonalStrokeStore.FILE_NAME + PersonalStrokeStore.TMP_SUFFIX).delete()
+        my.askClearAll()
+        my.answerClearAll(true)
+        assertNull(my.message)
+        assertEquals(0, my.book.taughtLetters)
     }
 }
