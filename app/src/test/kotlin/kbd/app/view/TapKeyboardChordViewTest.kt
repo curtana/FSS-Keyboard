@@ -33,6 +33,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 
 /**
@@ -196,6 +197,7 @@ class TapKeyboardChordViewTest {
     }
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)   // real text widths
     fun `CV-04 the four words share one text size, no larger than the other labels, and fit their key`() {
         for ((widthDp, rowDp) in listOf(360f to 48f, 327.3f to 48f, 320f to 48f, 320f to 40f, 800f to 48f)) {
             show(widthDp = widthDp, rowDp = rowDp)
@@ -208,7 +210,10 @@ class TapKeyboardChordViewTest {
             assertEquals(view.labelTextSizePx, d.textSizes.getValue("q"), 0f)
             val inner = (widthDp / 10f - 2 * (2f + 2f)) * density               // key − 2 × (inset 2 dp + pad 2 dp)
             val paint = Paint().apply { textSize = view.wordTextSizePx }
-            for (w in listOf("Esc", "Ctrl", "Alt", "Del")) assertTrue("$w at $widthDp", paint.measureText(w) <= inner + 0.5f)
+            for (w in listOf("Esc", "Ctrl", "Alt", "Del")) assertTrue("$w at $widthDp", paint.measureText(w) <= inner)
+            // Shrunk only as far as needed: on a wide key the words keep the label size.
+            if (widthDp >= 800f) assertEquals(view.labelTextSizePx, view.wordTextSizePx, 0f)
+            if (widthDp <= 360f) assertTrue("$widthDp", view.wordTextSizePx < view.labelTextSizePx)
         }
     }
 

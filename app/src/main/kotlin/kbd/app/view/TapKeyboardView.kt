@@ -27,8 +27,8 @@ import kbd.stroke.threshold.Thresholds
 
 /**
  * Text size of the edit row's word labels, Esc · Ctrl · Alt · Del (FR-TAP-03c, LLD-05A §4): [base], the size of the
- * other key labels, when the widest word fits [innerWidth] at that size; otherwise scaled down so that it is exactly
- * as wide. [widestAtBase] is the widest word's measured width at [base]. Pure.
+ * other key labels, when the widest word fits [innerWidth] at that size; otherwise scaled down by the ratio of the
+ * two widths. [widestAtBase] is the widest word's measured width at [base]. Pure.
  */
 internal object WordLabelFit {
     fun size(base: Float, widestAtBase: Float, innerWidth: Float): Float =
@@ -139,18 +139,22 @@ class TapKeyboardView(
     }
 
     /**
-     * The size of the word labels (FR-TAP-03c): the key label size, or smaller until the widest of the four words is
-     * as wide as the inside of the narrowest of their keys ([WordLabelFit]).
+     * The size of the word labels (FR-TAP-03c): the key label size, or smaller until the widest of the four words
+     * fits the inside of the narrowest of their keys ([WordLabelFit]). Measured again after each step down: text
+     * widths are rounded and so not exactly proportional to the size.
      */
     private fun fitWordLabels() {
         val g = logic.geometry ?: return
         val words = g.keys.indices.filter { g.keys[it].function in WORD_KEYS }
         wordPaint.textSize = labelPaint.textSize
         if (words.isEmpty()) return
-        val widest = words.maxOf { wordPaint.measureText(g.keys[it].label) }
         val keyPx = words.minOf { g.geoms[it].rect.right - g.geoms[it].rect.left } * density
         val inner = keyPx - 2 * (KEY_INSET_DP + WORD_PAD_DP) * density
-        wordPaint.textSize = WordLabelFit.size(labelPaint.textSize, widest, inner)
+        repeat(WORD_FIT_STEPS) {
+            val widest = words.maxOf { wordPaint.measureText(g.keys[it].label) }
+            if (widest <= inner) return
+            wordPaint.textSize = WordLabelFit.size(wordPaint.textSize, widest, inner)
+        }
     }
 
     /**
@@ -317,6 +321,8 @@ class TapKeyboardView(
         const val CHORD_ON_COLOR = 0xFF2E6FBF.toInt()
         /** Space kept on each side between a word label and its key's edge. */
         const val WORD_PAD_DP = 2f
+        /** Steps down at most; one is enough where text width is proportional to its size. */
+        const val WORD_FIT_STEPS = 8
 
         /** The edit row keys labelled with a word (FR-TAP-03c). */
         val WORD_KEYS = setOf(FunctionKey.ESC, FunctionKey.CTRL, FunctionKey.ALT, FunctionKey.DELETE)
