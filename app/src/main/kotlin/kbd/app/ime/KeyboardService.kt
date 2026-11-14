@@ -61,6 +61,8 @@ class KeyboardService : InputMethodService() {
     private lateinit var graffiti: GraffitiInputHandler
     /** The graffiti pad on screen, null in the other modes; target of [GraffitiInputHandler]'s flash. */
     private var pad: GraffitiPadView? = null
+    /** The QWERTY or Dubeolsik view on screen, null in the other modes; it shows Ctrl and Alt on (FSS#98). */
+    private var tapView: TapKeyboardView? = null
     /** The built-in templates, also drawn by the stroke guide (FR-GRF-09c, LLD-05 §10). */
     private var templates: TemplateSet = TemplateSet(emptyMap())
 
@@ -83,6 +85,7 @@ class KeyboardService : InputMethodService() {
         composing = ComposingController(AndroidEditorPort(this))
         dispatcher = InputDispatcher(modes, composing, feedback, ::saveLastMode)
         dispatcher.onShowMode = { m -> showModeView(m, dispatcher.field) }
+        dispatcher.onChordChanged = { tapView?.chordChanged() }   // FR-TAP-15 ④, FR-TAP-18
         dispatcher.onOpenSettings = {   // mode key up stroke, all modes (issue #205)
             startActivity(android.content.Intent(this, kbd.app.settings.SettingsActivity::class.java)
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -120,6 +123,7 @@ class KeyboardService : InputMethodService() {
         super.onStartInputView(info, restarting)
         val f = FieldInfo.from(info.inputType, info.imeOptions)
         dispatcher.field = f
+        dispatcher.clearChord()   // a new field, or this one shown again (FR-TAP-17 ① (마)); nothing is sent
         dispatcher.finishAll()   // HLD 8
         dispatcher.resetParsers()
         modes.onFieldChanged()   // FR-CMN-03e
@@ -147,6 +151,7 @@ class KeyboardService : InputMethodService() {
      * (`finishingInput == false`) and stays open on a field change (FR-GRF-09).
      */
     override fun onFinishInputView(finishingInput: Boolean) {
+        dispatcher.clearChord()   // FR-TAP-17 ① (바)
         dispatcher.finishAll()
         if (::root.isInitialized) {
             root.cancelTouches()
@@ -156,6 +161,7 @@ class KeyboardService : InputMethodService() {
     }
 
     override fun onFinishInput() {
+        dispatcher.clearChord()   // FR-TAP-17 ① (바)
         dispatcher.finishAll()
         super.onFinishInput()
     }
@@ -178,6 +184,7 @@ class KeyboardService : InputMethodService() {
      */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        dispatcher.clearChord()   // FR-TAP-17 ① (사)
         if (::root.isInitialized) root.relayout()
     }
 
@@ -224,6 +231,7 @@ class KeyboardService : InputMethodService() {
         // Attached before enterMode() (G6) and before the view exists; null outside graffiti (LLD-08 §6).
         dispatcher.graffiti = if (mode == InputMode.GRAFFITI) graffiti else null
         pad = null
+        tapView = null
         if (!::root.isInitialized) return
         if (mode == InputMode.GRAFFITI) root.enableGuide(templates, feedback) else root.disableGuide()   // FR-GRF-09
         val tapLayout = when (mode) {
@@ -234,6 +242,7 @@ class KeyboardService : InputMethodService() {
         if (tapLayout != null) {
             val view = TapKeyboardView(this, dispatcher, guard, feedback)
             view.setLayout(tapLayout, thresholds, settings.rowHeightDp)
+            tapView = view
             root.setModeView(view, tapLayout.rows)
             return
         }
@@ -269,6 +278,7 @@ class KeyboardService : InputMethodService() {
      */
     private fun applyEnabledModes(on: Set<InputMode>) {
         val before = modes.current
+        if (before !in on) dispatcher.clearChord()   // an automatic mode change (FR-TAP-17 ① (다))
         if (before !in on && isInputViewShown) {
             dispatcher.finishAll()   // FR-CMN-03d
             dispatcher.resetParsers()

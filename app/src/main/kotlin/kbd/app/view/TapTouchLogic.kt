@@ -75,7 +75,8 @@ interface TapKeyRepeat {
 /**
  * Multi-pointer touch handling of the tap keyboard, free of Android (LLD-05A §4 `onTouchEvent`).
  * The view turns `MotionEvent`s into dp points per pointer and calls [down], [move], [up] and
- * [cancel]. Function keys act on press, outside the queue (FR-CMN-11, 11a ①); character keys are
+ * [cancel]. Function keys act on press, outside the queue (FR-CMN-11, 11a ①), Ctrl and Alt too (FR-TAP-15 ①:
+ * they toggle on press and do not repeat); character keys are
  * resolved on release from the first-pressed key only and leave in press order ([MultiPointerQueue]).
  * The mode key is judged on release, also outside the queue (issue #205): a first crossed edge up opens the
  * settings ([TapSink.onSettingsStroke]), anything else is the mode change (`MODE` down then up).
@@ -94,7 +95,10 @@ class TapTouchLogic(
 
     private class Stroke(val index: Int, val key: TapKeyDef, val classifier: TapGestureClassifier)
 
-    private val queue = MultiPointerQueue()
+    /** A released key waiting in the queue: the judged [gesture] goes on to the sink with the output (FSS#98). */
+    private class Result(val key: TapKeyDef, val out: TapOutput, val gesture: TapGesture)
+
+    private val queue = MultiPointerQueue<Result>()
     private val strokes = HashMap<Int, Stroke>()
     /** [classifier]: the mode key's stroke, judged on release (issue #205); null for keys that act on press. */
     private class FnPress(val index: Int, val key: FunctionKey, val classifier: TapGestureClassifier? = null)
@@ -147,8 +151,11 @@ class TapTouchLogic(
             return
         }
         val s = strokes.remove(pointerId) ?: return
-        val r = guard.run(SITE_CLASSIFY) { TapKeyResolver.resolve(s.key, s.classifier.finish(p)) }
-        val outs = if (r == null) queue.onCancel(pointerId) else queue.onUp(pointerId, s.key, r)   // a failed slot only
+        val r = guard.run(SITE_CLASSIFY) {   // judged once; the result carries the gesture
+            val g = s.classifier.finish(p)
+            Result(s.key, TapKeyResolver.resolve(s.key, g), g)
+        }
+        val outs = if (r == null) queue.onCancel(pointerId) else queue.onUp(pointerId, r)   // a failed slot only
         emit(outs)
     }
 
@@ -184,7 +191,7 @@ class TapTouchLogic(
             return
         }
         val r = guard.run(SITE_CLASSIFY) { TapKeyResolver.resolve(key, TapGesture.Tap) } ?: return
-        emit(listOf(key to r))
+        emit(listOf(Result(key, r, TapGesture.Tap)))
     }
 
     /** Mode key release (issue #205): first edge up = the settings, else the mode change (FR-CMN-13); a failed judgement gives nothing (LLD-09 §2). */
@@ -205,8 +212,8 @@ class TapTouchLogic(
     }
 
     /** One output = one guarded unit (LLD-09 §2), in press order. */
-    private fun emit(outs: List<Pair<TapKeyDef, TapOutput>>) {
-        for ((k, o) in outs) guard.stroke(SITE_OUTPUT) { sink.onTapOutput(k, o) }
+    private fun emit(outs: List<Result>) {
+        for (r in outs) guard.stroke(SITE_OUTPUT) { sink.onTapResult(r.key, r.out, r.gesture) }
     }
 
     companion object {

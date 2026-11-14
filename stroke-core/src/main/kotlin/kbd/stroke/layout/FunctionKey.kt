@@ -1,4 +1,4 @@
 package kbd.stroke.layout
 
 /** Function key kinds of the tap layout data and the graffiti auxiliary row (LLD-03 §1.2, §3.5). */
-enum class FunctionKey { BACKSPACE, SPACE, ENTER, TAB, MODE, ARROW_LEFT, ARROW_UP, ARROW_DOWN, ARROW_RIGHT, ESC, DELETE }   // ESC, DELETE: tap edit row (issue #198)
+enum class FunctionKey { BACKSPACE, SPACE, ENTER, TAB, MODE, ARROW_LEFT, ARROW_UP, ARROW_DOWN, ARROW_RIGHT, ESC, DELETE, CTRL, ALT }   // ESC, DELETE: tap edit row (issue #198); CTRL, ALT: its chord modifiers (FSS#98)

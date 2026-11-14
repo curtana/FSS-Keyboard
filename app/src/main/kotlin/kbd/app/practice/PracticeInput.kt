@@ -21,6 +21,8 @@ import kbd.hangul.compose.ComposePolicy
 import kbd.hangul.compose.HangulComposer
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
+import kbd.stroke.tap.ChordKey
+import kbd.stroke.tap.ChordModifier
 import kbd.stroke.tap.TapOutput
 import kbd.stroke.threshold.ThresholdDefaults
 import kbd.stroke.threshold.Thresholds
@@ -62,6 +64,9 @@ class PracticeEditor : EditorPort {
     }
 
     override fun sendKey(key: EditorKey) = Unit
+
+    /** No field takes key events here, and the practice sink never turns Ctrl or Alt on (FR-TAP-17 ④). */
+    override fun sendChord(key: ChordKey, mods: Set<ChordModifier>) = Unit
     override fun performEditorAction(actionId: Int) = Unit
     override fun setSelection(start: Int, end: Int) = Unit
     override fun beginBatch() = Unit
@@ -76,7 +81,7 @@ class PracticeEditor : EditorPort {
  * Only what the item practises reaches the dispatcher: letters, digits, symbols, graffiti strokes, on
  * the tap keyboard ⌫ (owner decision A, FSS#17), and on the graffiti pad the space, which
  * commits the composing syllable for judging (PM decision A, FSS#43). The other function keys (↵, arrows, the mode
- * key, the tap keyboard's space, the pad's ⌫) are shown as on the keyboard but do nothing
+ * key, Ctrl and Alt, the tap keyboard's space, the pad's ⌫) are shown as on the keyboard but do nothing
  * here (SRS appendix A.3: the pad has no edit keys in practice; the edit row's other keys are not
  * judged).
  */

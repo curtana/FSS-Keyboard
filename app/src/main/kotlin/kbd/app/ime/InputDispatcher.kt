@@ -16,6 +16,9 @@ import kbd.hangul.jamo.JamoKind
 import kbd.stroke.geom.Dir
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
+import kbd.stroke.tap.ChordKeys
+import kbd.stroke.tap.ChordModifier
+import kbd.stroke.tap.TapGesture
 import kbd.stroke.tap.TapOutput
 
 /**
@@ -43,7 +46,39 @@ class InputDispatcher(
     /** The service opens the keyboard settings screen (an up stroke on the mode key, issue #205). */
     var onOpenSettings: () -> Unit = {}
 
-    override fun onTapOutput(key: TapKeyDef, out: TapOutput) {
+    /**
+     * Ctrl and Alt turned on and waiting for the next target key (FSS#98, FR-TAP-15, LLD-08 §6.3). Kept here, not in
+     * a view: every key and every reason to turn them off passes through the dispatcher. Never stored, and not part
+     * of [snapshot]: a chord that failed stays taken (HLD 9).
+     */
+    override var chord: Set<ChordModifier> = emptySet()
+        private set
+
+    /** Called once each time [chord] changes: the tap view redraws the two keys and renews their accessibility nodes. */
+    var onChordChanged: () -> Unit = {}
+
+    /**
+     * What each function key held down took from [chord] when it was pressed, an empty set too, until its
+     * [onFunctionUp]: a repeat sends what its press took, whatever is on by then (FR-TAP-15 ③).
+     */
+    private val heldChords = HashMap<FunctionKey, Set<ChordModifier>>()
+
+    /** A resolved key without its gesture (the practice sink, an accessibility click): a tap. */
+    override fun onTapOutput(key: TapKeyDef, out: TapOutput) = onTapResult(key, out, TapGesture.Tap)
+
+    /**
+     * One letter, digit or symbol key as it leaves the view's queue. With Ctrl or Alt on, the key of that gesture
+     * goes out as a chord instead of the character (FR-TAP-16 ②③), and no error vibration for a missing script.
+     */
+    override fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) {
+        if (chord.isNotEmpty()) {
+            val mods = takeChord()
+            finishForChord()
+            val stroke = ChordKeys.ofTap(key.id, gesture)
+            this.out.chordKey(stroke.key, if (stroke.shift) mods + ChordModifier.SHIFT else mods)
+            markInput()
+            return
+        }
         val jamo = out.jamo
         val text = out.text
         if (jamo != null) {
@@ -61,6 +96,26 @@ class InputDispatcher(
     }
 
     override fun onFunctionDown(key: FunctionKey) {
+        when (key) {
+            FunctionKey.CTRL -> toggleChord(ChordModifier.CTRL)
+            FunctionKey.ALT -> toggleChord(ChordModifier.ALT)
+            FunctionKey.MODE -> onModeKey()
+            else -> targetKey(key)
+        }
+    }
+
+    /**
+     * A function key that a chord can ride on (FR-TAP-16 ①). The press takes the modifiers that are on; a repeat (a
+     * down with no up since the last one) reuses what its press took.
+     */
+    private fun targetKey(key: FunctionKey) {
+        val mods = heldChords.getOrPut(key) { takeChord() }
+        if (mods.isNotEmpty()) {
+            finishForChord()
+            out.chordKey(checkNotNull(ChordKeys.ofFunction(key)) { key }, mods)
+            if (key in CHORD_INPUT_KEYS) markInput()   // ⌫, space, ↵, ⇥; arrows, Esc and Del are not input (FR-TAP-16 ⑦)
+            return
+        }
         when (key) {
             FunctionKey.BACKSPACE -> {
                 backspace()
@@ -87,12 +142,44 @@ class InputDispatcher(
             FunctionKey.ARROW_RIGHT -> arrow(Dir.RIGHT)
             FunctionKey.ESC -> editKey(EditorKey.ESCAPE)
             FunctionKey.DELETE -> editKey(EditorKey.FORWARD_DEL)
-            FunctionKey.MODE -> onModeKey()
+            FunctionKey.MODE, FunctionKey.CTRL, FunctionKey.ALT -> error("not a target key: $key")
         }
     }
 
-    /** Release notification only; the view stops the repeat (FR-CMN-11a). */
-    override fun onFunctionUp(key: FunctionKey) {}
+    /** Release notification, no input; the view stops the repeat (FR-CMN-11a). What the press took from the chord goes. */
+    override fun onFunctionUp(key: FunctionKey) {
+        heldChords.remove(key)
+    }
+
+    /** Ctrl or Alt pressed: on ↔ off (FR-TAP-15 ①). Not input, and what is composing stays (FR-TAP-15 ⑤). */
+    private fun toggleChord(m: ChordModifier) = setChord(if (m in chord) chord - m else chord + m)
+
+    /**
+     * Turns Ctrl and Alt off and forgets what the held keys took; nothing is sent (FR-TAP-17 ①, LLD-08 §6.3). For the
+     * mode key, a new field, the keyboard going down, a rotation. Not for a cursor move (FR-TAP-17 ②).
+     */
+    fun clearChord() {
+        heldChords.clear()
+        setChord(emptySet())
+    }
+
+    /** The modifiers that are on, now off: they ride on one key only (FR-TAP-15 ②). */
+    private fun takeChord(): Set<ChordModifier> = chord.also { setChord(emptySet()) }
+
+    private fun setChord(s: Set<ChordModifier>) {
+        if (s == chord) return
+        chord = s
+        onChordChanged()
+    }
+
+    /**
+     * Start of the chord path (HLD 5A, FR-TAP-16 ③): what is composing is committed first, like an arrow or Esc. The
+     * key then goes out as key events only; the keyboard itself types, deletes and undoes nothing.
+     */
+    private fun finishForChord() {
+        finishAll()
+        resetParsers(ResetReason.CURSOR_MOVED)
+    }
 
     /** One ⌫; the repeat timer calls this too (FR-CMN-07, 07a, 07c). */
     fun backspace() {
@@ -107,6 +194,7 @@ class InputDispatcher(
      * the mode key).
      */
     override fun onSettingsStroke() {
+        clearChord()   // FR-TAP-17 ① (라)
         finishAll()
         resetParsers(ResetReason.MODE_CHANGED)
         onOpenSettings()
@@ -118,6 +206,7 @@ class InputDispatcher(
      * Since issue #205 the views call it on the mode key's release (a tap), not on its press.
      */
     fun onModeKey() {
+        clearChord()   // not a target key: the chord goes and nothing is sent (FR-TAP-17 ① (다))
         finishAll()
         resetParsers(ResetReason.MODE_CHANGED)
         val before = modes.current
@@ -193,4 +282,9 @@ class InputDispatcher(
     }
 
     private data class Snapshot(val composer: ComposerSnapshot?, val graffiti: GraffitiSnapshot?)
+
+    private companion object {
+        /** Function keys that count as input, with a chord as without (FR-CMN-03a, FR-TAP-16 ⑦). */
+        val CHORD_INPUT_KEYS = setOf(FunctionKey.BACKSPACE, FunctionKey.SPACE, FunctionKey.ENTER, FunctionKey.TAB)
+    }
 }

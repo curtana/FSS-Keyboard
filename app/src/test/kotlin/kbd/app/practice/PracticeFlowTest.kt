@@ -135,6 +135,22 @@ class PracticeFlowTest {
     }
 
     @Test
+    fun `PR-35 Ctrl and Alt do nothing on the practice keyboard - never on, the next key is typed (FSS#98)`() {
+        val i = tapInput()
+        for (f in listOf(FunctionKey.CTRL, FunctionKey.ALT)) {
+            i.tapSink.onFunctionDown(f)
+            i.tapSink.onFunctionUp(f)
+        }
+        assertTrue(i.tapSink.chord.isEmpty())
+        assertTrue(i.dispatcher.chord.isEmpty())
+        i.key("c", TapGesture.Tap)
+        i.key("a", TapGesture.Exit(Dir.UP))
+        assertEquals("cA", i.editor.text)
+        i.editor.sendChord(kbd.stroke.tap.ChordKey.C, setOf(kbd.stroke.tap.ChordModifier.CTRL))   // the practice editor takes no key events
+        assertEquals("cA", i.editor.text)
+    }
+
+    @Test
     fun `PR-05 tap symbol items resolve as SRS appendix A_2 says`() {
         for ((label, g, out) in listOf(
             Triple("1", TapGesture.Exit(Dir.UP), "!"), Triple("/", TapGesture.Exit(Dir.UP), "?"), Triple("i", TapGesture.Exit(Dir.LEFT), "["),

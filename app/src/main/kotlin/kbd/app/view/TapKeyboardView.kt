@@ -22,12 +22,24 @@ import kbd.stroke.geom.Dir
 import kbd.stroke.layout.TapKeyDef
 import kbd.stroke.layout.TapKeyKind
 import kbd.stroke.layout.TapLayout
+import kbd.stroke.tap.ChordModifier
 import kbd.stroke.threshold.Thresholds
+
+/**
+ * Text size of the edit row's word labels, Esc · Ctrl · Alt · Del (FR-TAP-03c, LLD-05A §4): [base], the size of the
+ * other key labels, when the widest word fits [innerWidth] at that size; otherwise scaled down by the ratio of the
+ * two widths. [widestAtBase] is the widest word's measured width at [base]. Pure.
+ */
+internal object WordLabelFit {
+    fun size(base: Float, widestAtBase: Float, innerWidth: Float): Float =
+        if (widestAtBase <= innerWidth || widestAtBase <= 0f) base else base * (innerWidth.coerceAtLeast(0f) / widestAtBase)
+}
 
 /**
  * The QWERTY and Dubeolsik keyboards, 6 rows (LLD-05A §4, SRS 3.3). Touch handling is
  * [TapTouchLogic]; this view converts events per pointer, draws the keys, corner hints (§3.4) and
- * pressed state, owns the ⌫·arrow repeat (§6) and the accessibility helper (§7, NFR-07).
+ * pressed state, owns the ⌫·arrow repeat (§6) and the accessibility helper (§7, NFR-07). Ctrl and Alt are drawn
+ * lit while they are on; which are on is the sink's to know ([TapSink.chord], FSS#98).
  */
 class TapKeyboardView(
     context: Context,
@@ -54,7 +66,13 @@ class TapKeyboardView(
     private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = KEY_COLOR }
     private val functionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = FUNCTION_COLOR }
     private val pressedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = PRESSED_COLOR }
+    private val chordOnPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = CHORD_ON_COLOR }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textAlign = Paint.Align.CENTER
+    }
+    /** Esc, Ctrl, Alt, Del: one size for the four, small enough for the longest to fit its key (FR-TAP-03c). */
+    private val wordPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
     }
@@ -115,8 +133,38 @@ class TapKeyboardView(
         logic.geometry = TapGeometry.build(l, wDp, rowDp, sideDp)
         labelPaint.textSize = rowDp * density * LABEL_SCALE
         hintPaint.textSize = labelPaint.textSize * HINT_SCALE   // D-15
+        fitWordLabels()
         access.invalidateRoot()
         invalidate()
+    }
+
+    /**
+     * The size of the word labels (FR-TAP-03c): the key label size, or smaller until the widest of the four words
+     * fits the inside of the narrowest of their keys ([WordLabelFit]). Measured again after each step down: text
+     * widths are rounded and so not exactly proportional to the size.
+     */
+    private fun fitWordLabels() {
+        val g = logic.geometry ?: return
+        val words = g.keys.indices.filter { g.keys[it].function in WORD_KEYS }
+        wordPaint.textSize = labelPaint.textSize
+        if (words.isEmpty()) return
+        val keyPx = words.minOf { g.geoms[it].rect.right - g.geoms[it].rect.left } * density
+        val inner = keyPx - 2 * (KEY_INSET_DP + WORD_PAD_DP) * density
+        repeat(WORD_FIT_STEPS) {
+            val widest = words.maxOf { wordPaint.measureText(g.keys[it].label) }
+            if (widest <= inner) return
+            wordPaint.textSize = WordLabelFit.size(wordPaint.textSize, widest, inner)
+        }
+    }
+
+    /**
+     * Ctrl or Alt went on or off (`InputDispatcher.onChordChanged`): the keys are drawn again and the two nodes tell
+     * their new state (FR-TAP-15 ④, FR-TAP-18).
+     */
+    fun chordChanged() {
+        invalidate()
+        val keys = logic.geometry?.keys ?: return
+        for (i in keys.indices) if (modifierOf(keys[i]) != null) access.invalidateVirtualView(i)
     }
 
     override fun onDetachedFromWindow() {
@@ -134,12 +182,14 @@ class TapKeyboardView(
             val r = g.geoms[i].rect
             keyRect.set(r.left * density + inset, r.top * density + inset, r.right * density - inset, r.bottom * density - inset)
             val paint = when {
+                isChordOn(k) -> chordOnPaint   // lit from the press that turns it on, also under the finger (FR-TAP-15 ④)
                 i in pressed -> pressedPaint
                 k.kind == TapKeyKind.FUNCTION -> functionPaint
                 else -> keyPaint
             }
             canvas.drawRoundRect(keyRect, inset * 2, inset * 2, paint)
-            canvas.drawText(k.label, keyRect.centerX(), keyRect.centerY() - (labelPaint.ascent() + labelPaint.descent()) / 2, labelPaint)
+            val text = if (k.function in WORD_KEYS) wordPaint else labelPaint
+            canvas.drawText(k.label, keyRect.centerX(), keyRect.centerY() - (text.ascent() + text.descent()) / 2, text)
             if (k.kind != TapKeyKind.FUNCTION) drawHints(canvas, k)
         }
     }
@@ -205,6 +255,20 @@ class TapKeyboardView(
 
     internal fun keyAt(index: Int): TapKeyDef? = logic.geometry?.keys?.getOrNull(index)
 
+    /** The modifier a key turns on and off, null for every key but Ctrl and Alt. */
+    internal fun modifierOf(key: TapKeyDef): ChordModifier? = when (key.function) {
+        FunctionKey.CTRL -> ChordModifier.CTRL
+        FunctionKey.ALT -> ChordModifier.ALT
+        else -> null
+    }
+
+    /** Ctrl or Alt, and on now (FR-TAP-15 ④). */
+    internal fun isChordOn(key: TapKeyDef): Boolean = modifierOf(key)?.let { it in sink.chord } == true
+
+    /** Text sizes of the key labels and of the four word labels, px (tests). */
+    internal val labelTextSizePx: Float get() = labelPaint.textSize
+    internal val wordTextSizePx: Float get() = wordPaint.textSize
+
     internal fun keyBoundsPx(index: Int, out: Rect) {
         val r = logic.geometry?.geoms?.getOrNull(index)?.rect
         if (r == null) out.setEmpty() else out.set(px(r.left), px(r.top), px(r.right), px(r.bottom))
@@ -214,6 +278,8 @@ class TapKeyboardView(
     internal fun describe(key: TapKeyDef): String = when (key.function) {
         null -> key.label
         FunctionKey.ESC -> context.getString(R.string.a11y_key_esc)
+        FunctionKey.CTRL -> context.getString(R.string.a11y_key_ctrl)
+        FunctionKey.ALT -> context.getString(R.string.a11y_key_alt)
         FunctionKey.DELETE -> context.getString(R.string.a11y_key_delete)
         FunctionKey.TAB -> context.getString(R.string.a11y_key_tab)
         FunctionKey.ARROW_LEFT -> context.getString(R.string.a11y_key_left)
@@ -251,6 +317,15 @@ class TapKeyboardView(
         const val KEY_COLOR = 0xFF3C3C3C.toInt()
         const val FUNCTION_COLOR = 0xFF2A2A2A.toInt()
         const val PRESSED_COLOR = 0xFF5A5A5A.toInt()
+        /** Ctrl / Alt turned on: unlike a function key and unlike a pressed key (FR-TAP-15 ④). */
+        const val CHORD_ON_COLOR = 0xFF2E6FBF.toInt()
+        /** Space kept on each side between a word label and its key's edge. */
+        const val WORD_PAD_DP = 2f
+        /** Steps down at most; one is enough where text width is proportional to its size. */
+        const val WORD_FIT_STEPS = 8
+
+        /** The edit row keys labelled with a word (FR-TAP-03c). */
+        val WORD_KEYS = setOf(FunctionKey.ESC, FunctionKey.CTRL, FunctionKey.ALT, FunctionKey.DELETE)
         const val HINT_COLOR = 0xFFB0B0B0.toInt()
 
         /** Platform repeat timing (D-16); before API 28 the same values were not public. */

@@ -2,13 +2,15 @@ package kbd.app.ime
 
 import kbd.hangul.event.ComposeResult
 import kbd.stroke.geom.Dir
+import kbd.stroke.tap.ChordKey
+import kbd.stroke.tap.ChordModifier
 
 /** Cursor-move verdict for `onUpdateSelection` (LLD-08 §4.1). */
 enum class SelectionVerdict { OWN, USER_MOVED, OTHER_MOVED }
 
 /**
  * Writes composer output to the editor and judges cursor-move notifications (LLD-08 §4, §4.1).
- * Callers finish composing before [commitText], [arrow], [tab] and [enter].
+ * Callers finish composing before [commitText], [arrow], [tab], [enter] and [chordKey].
  * If a port call throws, an open batch is still closed and state changes only for the calls that returned (issue #89).
  */
 class ComposingController(private val port: EditorPort) {
@@ -117,6 +119,15 @@ class ComposingController(private val port: EditorPort) {
     /** Esc or forward Del key event (issue #198); like an arrow, the resulting cursor is unknown. */
     fun editKey(k: EditorKey) {
         port.sendKey(k)
+        predictedSel = -1
+    }
+
+    /**
+     * One key with Ctrl / Alt (and Shift) as key events (FSS#98, FR-TAP-16); the caller finished composing. What the
+     * app does with it is unknown, so like an arrow the resulting cursor is unknown.
+     */
+    fun chordKey(key: ChordKey, mods: Set<ChordModifier>) {
+        port.sendChord(key, mods)
         predictedSel = -1
     }
 
