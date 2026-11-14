@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.33** (2026-11-15)
+- 버전 **0.34** (2026-11-15)
+- 0.34(FSS#104·#107, SRS 0.90 FR-TAP-02c·02d, HLD 0.83 5A): `TapKeyDef.compoundJamo` → **`dirJamo`**(두벌식 글자 키의 방향별 자모 = 겹받침 + 짝 모음, LLD-05A 3.1·3.3, D-74). 형은 그대로 `Map<Dir, Char>`(기본 빈 맵). 0.26의 `compoundJamo` 줄은 그때의 기록이다.
 - 0.33(FSS#105, SRS 0.89 FR-TAP-03d, HLD 0.82 5A): 3.3 바깥 변 문단에서 빈칸 문장을 고쳤다(탭 자판에 빈칸이 없음, 두 줄 높이 ↵의 변). `TapKeyDef.rowSpan`·`rect`와 `BlankDef` 삭제는 LLD-05A 0.21 3.1.
 - 0.32(FSS#98, SRS 0.87 FR-TAP-15~18, HLD 0.80 5A "조합 키 Ctrl·Alt"): `FunctionKey.CTRL`·`ALT`(탭 자판 편집 줄의 조합 키, LLD-05A 3.2), stroke-core `kbd.stroke.tap`에 `ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`(조합 키 대응, 안드로이드 없음, LLD-05A 2.4). 새 모듈·의존·라이브러리는 없다.
 - 0.31(FSS#95, SRS 0.86·HLD 0.79: 긋기 입력 모드 삭제): `gesture-engine` 모듈(`kbd.gesture`), core-hangul `kbd.hangul.stroke`, app `kbd.app.swipe`·`kbd.app.swipe.impl`을 지웠다(1절, 1.2). 2절은 "빌드"만 남기고 2.2(`SwipeModule`·`SwipeHost`·`SwipeEngineState`)를 지웠다 — 앱은 탭 자판 뷰와 그래피티 패드를 직접 만든다(LLD-08 3.1). 3.1 `MergeTables.NONE`은 그래피티만, 3.4 `Thresholds`는 `minCrossDp` 한 칸만(`longDp`·`guideDelayMs`·`posTolDp`·`keySizeWDp`·`keySizeHDp` 삭제), 3.5 `InputMode { DUBEOLSIK, QWERTY, GRAFFITI }`(순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티). 시험 MOD-02(긋기 경계)·MOD-04 삭제, MOD-03은 recognizer만 본다. 아래 0.30까지의 이력에 나오는 `Swipe…`·`gesture-engine`·`kbd.hangul.stroke`·LLD-04 4~6·8~10절·LLD-06은 이 판에서 없어진 것이다.
