@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
 - 버전 **0.37** (2026-11-14)
-- 0.37(FSS#96, SRS 0.87 FR-GRF-10~14·NFR-13, HLD 0.80 5.1): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지), 8.3(`GraffitiPadView.onInk`), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획 반영). 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
+- 0.37(FSS#96, SRS 0.87 FR-GRF-10~14·NFR-13, HLD 0.80 5.1): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지와 잰 영향·APK 증가분), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획의 판과 목록을 인자로 받음 — 저장소는 내 획 학습에서 잇는다). 학습·내보내기 스크립트 `tools/graffiti-nn/`. 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
 - 0.36(FSS#95, 긋기 입력 모드 삭제): 긋기 참조만 지웠다 — `CheonjiinAssembler`를 가지는 곳은 그래피티뿐이다(4절). 조합기 명세는 `LLD-04-stroke-hangul.md` 7절(절 번호 그대로). 동작·표는 그대로. 아래 이력의 "긋기 천지인 키"·"SWIPE n.n"은 그때의 일이다(SWIPE 10.1 ③은 지금 SRS 부록 A.2).
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑧, HLD 0.75 5A): 패드·보조 줄·덮개는 자판 폭 W 그대로이고 여유 칸은 비운다(배치 코드 그대로). `GraffitiPadView.sideMarginPx`(`SideMarginView`) — 보조 줄 모드 키의 `KeyGeom`을 만들 때 테두리의 왼쪽·오른쪽을 여유 칸만큼 밖으로 준다(8절). 인식·영역 판정은 그대로다.
 - 0.34(FSS#80, SRS 0.81): 영문 오너 획 템플릿 156개를 `EN_LETTER`에 더했다(7절). 판정 코드와 안내표 칸은 그대로다.
@@ -551,18 +551,26 @@ fun restore(s: GraffitiSnapshot) { asm.restore(s.asm); state.restore(s.state); r
 | `EXTENDED` | 79,141 | 글자 19, 예시 608 (79,040) |
 | 합 | 861,889 | 몸통 447,360(52 %) + 예시 3,185개 × 130 = 414,050(48 %) + 이름·글자 목록·머리 479 |
 
-- **줄일 수 있는 선택지(크기는 계산값이고, 정확도에 미치는 영향은 표시한 것 말고는 재지 않았다):**
+- **줄일 수 있는 선택지(이 PR은 32비트 그대로 낸다, FSS#96 작업지시서 v3 3절).** 영향은 출고 파일을 그대로 줄인 값으로 파이썬에서 잰 것이다 — 대조 표본 440획(NN-02의 고정 표본)과 GR-33 고리 864획의 최종 답(규칙 제외, 두 문턱, 대기 집합 먼저)이 32비트와 몇 개 달라지는가. 다시 학습하지 않았다.
 
-| 선택지 | 줄어드는 크기(계산) | 잰 것 |
-|---|---|---|
-| 가중치를 8비트 정수로 | 몸통 447 kB → 약 112 kB | **재지 않았다.** 학습 쪽과 같은 답을 내는지부터 다시 확인해야 한다(HLD 12장이 32비트를 고른 까닭) |
-| 예시 임베딩을 8비트 정수로 | 예시 414 kB → 약 108 kB(예시당 130 → 34바이트) | **재지 않았다** |
-| 합성 예시를 글자당 32 → 16개 | 2,912개 가운데 1,456개 × 130 = 약 189 kB | **재지 않았다**(측정은 글자당 32개로만 했다) |
-| 몸통 하나를 다섯 집합이 함께 | 몸통 4개 = 약 358 kB, 대기 중 순전파 1번 | 영문은 같고 한글 손가락 출고가 −2.4 %p(범위 −5.4 ~ −0.6, 유의한 시드 5개 중 1개 — 구분되지 않음. FSS#96 작업지시서 v2 2절) |
+| 선택지 | 크기(계산) | 대조 440획 답 변화 | 고리 864획 답 변화 | 임베딩 최대 차이 |
+|---|---|---|---|---|
+| 몸통 가중치 16비트 부동소수 | 몸통 447 → 224 kB | 0 | 0 | 1.7 × 10⁻⁴ |
+| 몸통 가중치 8비트 정수(텐서마다 눈금 하나) | 447 → 112 kB | 0 | 0 | 9.2 × 10⁻³ |
+| 몸통 가중치 8비트 정수(출력 채널마다 눈금) | 447 → 약 113 kB | 0 | 0 | 6.4 × 10⁻³ |
+| 예시 16비트 부동소수(읽을 때 길이 1로) | 예시 414 → 210 kB(예시당 130 → 66바이트) | 0 | 0 | – |
+| 예시 8비트(값이 0~1이라 눈금 1/255 고정, 읽을 때 길이 1로) | 414 → 108 kB(예시당 34바이트) | 0 | 0 | – |
+| 합성 예시 글자당 32 → 16 | 예시 1,456개 × 130 = 189 kB 줄어듦 | 0 | 1(862 / 864) | – |
+| 합성 예시 글자당 32 → 8 | 2,184개 × 130 = 284 kB 줄어듦 | 0 | 1(862 / 864) | – |
+| 몸통 16비트 + 예시 16비트 | 862 → 약 434 kB | 0 | 0 | 1.7 × 10⁻⁴ |
+| 몸통 8비트(채널) + 예시 8비트 | 862 → 약 221 kB | 0 | 0 | 6.4 × 10⁻³ |
+| 몸통 하나를 다섯 집합이 함께 | 몸통 4개 = 약 358 kB 줄어듦, 대기 중 순전파 1번 | 다시 학습해야 해서 재지 않음 | – | 영문은 같고 한글 손가락 출고 −2.4 %p(범위 −5.4 ~ −0.6, 유의한 시드 5개 중 1개 — 구분되지 않음. FSS#96 작업지시서 v2 2절) |
 
-  APK에 더해지는 크기는 LLD-11 6.7의 표에 적는다(부동소수 값이라 압축으로는 거의 줄지 않는다).
+  - 32비트(지금)에서 고리 864획 가운데 863획이 맞다(틀린 하나는 GR-33의 알려진 한계, LLD-11 6.7). 합성 예시를 줄이면 고리 하나가 더 틀린다.
+  - 16비트·8비트로 바꾸면 Kotlin 대조(NN-03, 허용 오차 10⁻⁵)는 지금 값 그대로는 맞지 않는다 — 대조 표본도 그 형식으로 다시 내고 허용 오차를 정해야 한다. 이 판에서는 바꾸지 않는다.
+  - **APK에 더해지는 크기(실측, 깨끗이 다시 빌드한 debug APK):** develop(93d4649) 13,032,550바이트 → 이 PR 13,595,075바이트, **+562,525바이트(약 549 kB)**. 그 가운데 모델 파일이 APK 안에서 529,574바이트(원 861,889바이트, deflate 압축 61 %)이고 dex가 +28,725바이트다. 부동소수 값도 압축으로 39 % 줄었다.
 - **글자 목록:** 집합의 글자 목록은 그 집합에서 템플릿 획이 있는 템플릿의 출력을 파일 순서로 모은 것과 같아야 한다(GM-02). 템플릿의 글자 구성이나 내장 오너 획을 바꾸면 모델과 대조 표본을 다시 만든다(HLD 5.1 "모델 자산").
-- **출고 예시:** 합성 예시는 학습에 쓴 합성 획 풀에서 글자마다 32개를 고른 것(고정 시드)이고, 오너 획 예시는 내장 템플릿의 `_oN` 획과 같은 획(`strokes/owner_en/`의 `en_<글자>_oN` 156개, `strokes/tools/owner_strokes.json` 117개)의 임베딩이다. 가중치 학습에는 합성 획만 쓴다(FR-GRF-13 ⑤). 시험 GM-03~GM-06.
+- **출고 예시:** 합성 예시는 학습에 쓴 합성 획 풀에서 글자마다 32개를 고른 것(고정 시드)이고, 오너 획 예시는 내장 템플릿의 `_oN` 획과 같은 획(`strokes/owner_en/`의 `en_<글자>_oN` 156개, 한글 117개)의 임베딩이다. 한글 117개는 기록 원본에서 냈고, 저장소의 `strokes/tools/owner_strokes.json`은 그 원본을 0.1 dp로 반올림한 사본이라 `tools/graffiti-nn/export.py`로 다시 내면 값이 최대 0.021 다르다(대조 표본 440획의 답은 같음, 그 폴더의 README). 가중치 학습에는 합성 획만 쓴다(FR-GRF-13 ⑤). 시험 GM-03~GM-06.
 
 ## 8. GraffitiPadView와 InkCollector (app)
 
@@ -631,8 +639,6 @@ UP:   패드 획 → stroke = onUp → guard.stroke("Graffiti.onStroke") { handl
       보조 줄 기능키 → sink.onFunctionUp(key); ⌫면 RepeatTimer 중지
 CANCEL: 진행 중 획 버림(InkCollector.cancel, 잉크 지움, 입력 없음), 반복 중지, 이미 처리한 기능키는 되돌리지 않음(FR-CMN-11a ③, HLD 4.1). 떼지 않은 모드 키는 입력 없음(0.22)
 ```
-
-- **`onInk: ((InkStroke) -> Unit)?`(0.37, FSS#96):** 값이 있으면 패드 획을 `handler.onStroke` 대신 여기로 넘긴다(`guard.stroke("Graffiti.onInk")` 안에서). 내 획 학습의 쓰기 화면만 쓴다(LLD-07 8.3) — 그 화면의 획은 글자로 입력되지 않는다. 키보드와 연습 주제는 `null`이라 지금과 같다. 패드의 상태 표시(언어 글자)는 그대로 `handler`의 상태에서 그린다. 시험 PI-11.
 
 #### `flash(label: String)`
 - 인식한 글자를 패드 위에 `FLASH_MS = 600ms` 보인다(FR-GRF-07, 표시 시간 D-13). 부르는 쪽(`onStroke`)이 비밀번호 입력창(`hidesDisplay`, FR-CMN-08 ①. 학습 금지 칸은 보임, ②, 0.21)과 인식 실패에서는 부르지 않는다(SRS FR-CMN-08, FR-GRF-07, GRAFFITI 6.2-6, HLD 5장, DCR-19 결정).
@@ -733,23 +739,29 @@ CANCEL: 따르기 끝
 - 시험: GD-03~GD-05, GD-10, GD-11(LLD-11 6.6).
 - **입력 연습용 값(0.33, LLD-07 2.3):** `highlight`(칸 이름 집합)는 ✗ 때 그 칸을 강조하고 첫 칸을 위로 넘긴다. `reveal`(칸 이름 집합)은 `highlight`가 비었을 때 같은 자리로 넘기기만 하고 그리지는 않는다. 넘기는 칸은 레이아웃 순서로 첫 칸이고(쌍자음 항목은 자음 칸), 크기가 정해지기 전에 넣어도 `onSizeChanged`에서 적용한다. 그 뒤의 끌기는 막지 않는다.
 
-## 11. 인식기 공급 `GraffitiRecognizers` (app, 0.36, FSS#96)
+## 11. 인식기 공급 `GraffitiRecognizers` (app, 0.37, FSS#96)
 
 `kbd.app.graffiti.GraffitiRecognizers` — 모델을 읽고, 개인 획을 넣은 `Recognizer`를 만들어 주는 곳이다. 키보드(`KeyboardService`)와 입력 연습(`PracticeActivity`)이 하나씩 갖는다. 안드로이드 클래스를 쓰지 않는다(JVM 시험).
 
 ```kotlin
-class GraffitiRecognizers(templates: TemplateSet, store: PersonalStrokeStore, log: ErrorLog,
-                          model: () -> GraffitiModel? = GraffitiRecognizers::sharedModel,
+class GraffitiRecognizers(templates: TemplateSet, log: ErrorLog,
+                          revision: () -> Int = { 0 },                          // 개인 획의 판. 바뀌면 다시 만든다
+                          personal: () -> List<PersonalStroke> = { emptyList() }, // 그 판의 개인 획
+                          model: () -> GraffitiModel? = { sharedModel(log) },
                           executor: Executor = GraffitiRecognizers.background) {
-    fun warm()               // 저장소의 지금 판에 맞는 인식기가 없으면 뒤 스레드에서 만들기 시작한다. 기다리지 않는다
-    fun get(): Recognizer    // 저장소의 지금 판에 맞는 인식기. 아직 만드는 중이면 끝날 때까지 기다린다
+    fun warm()               // 지금 판의 인식기가 없으면 뒤 스레드에서 만들기 시작한다. 기다리지 않는다
+    fun get(): Recognizer    // 지금 판의 인식기. 아직 만드는 중이면 끝날 때까지 기다린다
+    companion object {
+        fun sharedModel(log: ErrorLog): GraffitiModel?            // 프로세스에 한 번 읽음
+        internal fun readModel(log: ErrorLog, resource: String = GraffitiModelLoader.RESOURCE): GraffitiModel?
+    }
 }
 ```
 
 - **읽는 때(HLD 5.1 "읽는 때", R14):** 모델(862 kB)을 읽고 `Recognizer`를 꾸미는 일은 **뒤 스레드 하나**(`background`, 데몬 스레드 하나짜리 실행기)에서 한다. `KeyboardService.onCreate`가 `warm()`을 부르므로 키보드의 첫 표시(`onCreateInputView`·`onStartInputView`)는 이 일을 기다리지 않는다. 첫 획이 그보다 먼저 오면 `get()`이 남은 시간만 기다린다. 태블릿에서 잰 값(LLD-11 6.7): 모델 첫 읽기 44 ms, 인식기 첫 구성 68 ms, 개인 획 328개(한도 가까이) 반영 427 ms.
-- **모델은 프로세스에 하나:** `sharedModel()`이 리소스를 한 번 읽어 간직한다(키보드와 입력 연습이 같은 프로세스다). 읽지 못하면 `ErrorLog`에 한 번 적고 `null`을 간직한다 → 3.6 "모델 없는 구성".
-- **개인 획 반영(SRS FR-TUT-17 ③):** `PersonalStrokeStore.revision`(쓰기마다 1 증가, LLD-07 8.2)을 본다. `get()`·`warm()`은 간직한 인식기의 판이 저장소의 판과 다르면 새로 만든다 — 앞의 인식기에 `withPersonal(새 목록)`을 불러 바뀐 획만 계산한다. `KeyboardService.onStartInputView`가 `warm()`을 부르므로 **키보드가 뜰 때** 뒤에서 다시 만들기 시작하고, 획을 인식할 때의 `get()`이 늘 지금 판을 돌려준다(늦어도 다음에 키보드가 뜰 때 반영). 학습 화면은 저장·삭제 바로 뒤 `get()`으로 새 인식기를 받는다.
-- **쓰는 쪽:** `GraffitiInputHandler`의 첫 인자는 `recognizer: () -> Recognizer`다(획마다 불러 그 획을 끝까지 그 인식기로 본다). `Recognizer`를 바로 받는 보조 생성자도 둔다(시험).
-- **실패:** 만들다 예외가 나면(`IllegalStateException` = 글자 목록 어긋남 등) `ErrorLog`에 적고 `Recognizer(templates)`(모델 없는 구성)로 내려간다. 그것도 안 되면 빈 템플릿의 인식기(규칙 획만, LLD-09 4절과 같은 결과)다. 입력기는 멈추지 않는다(NFR-03). 획 좌표는 기록하지 않는다(NFR-05).
+- **모델은 프로세스에 하나:** `sharedModel()`이 리소스를 한 번 읽어 간직한다(키보드와 입력 연습이 같은 프로세스다). 읽지 못하면(리소스 없음, 형식 오류) `ErrorLog`에 `GraffitiModelLoader.load`로 한 번 적고 `null`을 간직한다 → 3.6 "모델 없는 구성".
+- **판과 개인 획:** `revision()`이 간직한 인식기의 판과 다르면 `get()`·`warm()`이 새로 만든다 — 앞의 인식기에 `withPersonal(personal())`을 불러 바뀐 획만 계산한다. 같은 판 안에서는 같은 인식기 객체를 돌려준다. 한 판에 만드는 일은 하나뿐이다(`warm()`을 여러 번 불러도). 만든 결과는 판이 더 새것일 때만 바꿔 끼운다. 이 PR(인식)에서는 쓰는 쪽이 기본값(판 0, 개인 획 없음)으로 만들므로 인식기는 출고 모델 + 템플릿 하나다. 개인 획 저장소를 이 두 인자에 잇는 것은 내 획 학습(LLD-07 8절)이다.
+- **쓰는 쪽:** `GraffitiInputHandler`의 첫 인자는 `recognizer: () -> Recognizer`다(획마다 불러 그 획을 끝까지 그 인식기로 본다). `Recognizer`를 바로 받는 보조 생성자도 둔다(시험). 입력 연습의 `BoardFactory`·`PracticeInput.graffiti`도 같은 `() -> Recognizer`를 받는다(기본값 = 템플릿만, 시험용).
+- **실패:** `personal()`이 예외를 내면 `ErrorLog`(`GraffitiRecognizers.build`)에 적고 개인 획 없이 만든다. 만들다 예외가 나면(`IllegalStateException` = 글자 목록 어긋남, 모델 읽기 예외 등) `ErrorLog`에 적고 `Recognizer(templates)`(모델 없는 구성)로 내려간다. 그것도 안 되면 빈 템플릿의 인식기(규칙 획만, LLD-09 4절과 같은 결과)다. `build`는 예외를 내지 않으므로 입력기는 멈추지 않는다(NFR-03). 획 좌표는 기록하지 않는다(NFR-05).
 - 한 획의 특징 계산·순전파에서 난 예외는 지금처럼 `GraffitiPadView`의 `EngineGuard.stroke`가 잡아 그 획을 버린다(8.3, LLD-09 2절).
 - 시험: RP-01~RP-06(LLD-11 7.9).
