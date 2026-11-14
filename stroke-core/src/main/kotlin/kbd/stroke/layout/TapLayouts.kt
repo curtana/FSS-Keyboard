@@ -7,8 +7,7 @@ package kbd.stroke.layout
  */
 object TapLayouts {
 
-    /** Edit row key width: 8 × 45 = 360; below NFR-06's 48 dp by owner decision (#198, LLD-05A §3.2). */
-    private const val EDIT_W = 45f
+    /** One of ten units of a row: letter, number and symbol keys, and since FSS#98 the edit row keys too (LLD-05A §3.2). */
     private const val KEY_W = 36f
     private const val INDENT_W = 18f
 
@@ -68,15 +67,17 @@ object TapLayouts {
             keys += TapKeyDef(id, row, x, w, TapKeyKind.SYMBOL, a.tap, assign = a)
             x += w
         }
-        // Row 0, edit row: eight 45 dp keys, ⌫ at the right end (#198).
-        fn(0, "esc", EDIT_W, "Esc", FunctionKey.ESC)
-        fn(0, "tab", EDIT_W, "⇥", FunctionKey.TAB)
-        fn(0, "left", EDIT_W, "←", FunctionKey.ARROW_LEFT)
-        fn(0, "up", EDIT_W, "↑", FunctionKey.ARROW_UP)
-        fn(0, "down", EDIT_W, "↓", FunctionKey.ARROW_DOWN)
-        fn(0, "right", EDIT_W, "→", FunctionKey.ARROW_RIGHT)
-        fn(0, "delete", EDIT_W, "Del", FunctionKey.DELETE)
-        fn(0, "backspace", EDIT_W, "⌫", FunctionKey.BACKSPACE)
+        // Row 0, edit row: ten keys as wide as a letter key, Ctrl and Alt right of Esc (FSS#98), ⌫ at the right end (#198).
+        fn(0, "esc", KEY_W, "Esc", FunctionKey.ESC)
+        fn(0, "ctrl", KEY_W, "Ctrl", FunctionKey.CTRL)
+        fn(0, "alt", KEY_W, "Alt", FunctionKey.ALT)
+        fn(0, "tab", KEY_W, "⇥", FunctionKey.TAB)
+        fn(0, "left", KEY_W, "←", FunctionKey.ARROW_LEFT)
+        fn(0, "up", KEY_W, "↑", FunctionKey.ARROW_UP)
+        fn(0, "down", KEY_W, "↓", FunctionKey.ARROW_DOWN)
+        fn(0, "right", KEY_W, "→", FunctionKey.ARROW_RIGHT)
+        fn(0, "delete", KEY_W, "Del", FunctionKey.DELETE)
+        fn(0, "backspace", KEY_W, "⌫", FunctionKey.BACKSPACE)
 
         // Row 1, number row.
         x = 0f

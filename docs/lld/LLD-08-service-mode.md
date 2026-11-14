@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.33** (2026-11-14)
+- 버전 **0.34** (2026-11-14)
+- 0.34(FSS#98, SRS 0.87 FR-TAP-15~18, HLD 0.80 5A "조합 키 Ctrl·Alt"·8장·R13): **조합 키 Ctrl·Alt**(새 6.3) — `InputDispatcher`가 켜진 조합 키 집합 `chord`와 눌린 기능키마다 그 누름에 실린 집합을 갖는다(`onChordChanged` 알림, `clearChord()`). 글자·숫자·기호 키의 입구 `onTapResult(key, out, gesture)`와 기능키의 입구 `onFunctionDown` 맨 앞에서 조합 키 길(꺼냄 → 조합 확정 → `ChordKeys`(LLD-05A 2.4) → `ComposingController.chordKey` → `EditorPort.sendChord`)과 평소 길을 가른다(6.1). `AndroidEditorPort.sendChord`는 물리 자판과 같은 순서의 키 입력만 보낸다(4절). 서비스는 `onStartInputView`·`onFinishInputView`·`onFinishInput`·`onConfigurationChanged`·꺼진 모드의 자동 전환에서 `clearChord()`를 부르고, 조합 키가 바뀌면 탭 자판 뷰에 알린다(3절). Ctrl·Alt가 꺼져 있으면 0.32와 모든 길이 같다.
 - 0.33(FSS#95, SRS 0.86 FR-CMN-02·03 ②·03f·10·10a, HLD 0.79 8장·8.1: **긋기 입력 모드 삭제, 모드 키 순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티**): ① `InputMode { DUBEOLSIK, QWERTY, GRAFFITI }`(선언 순서 = 순환 순서, LLD-03 3.5). 저장이 없을 때 시작 모드 = `available[0]` = 한글 두벌식(5절). `ModeController`의 코드는 그대로이고 순서만 바뀐다. ② **옮겨 오기:** 저장된 마지막 모드 이름이 지금 없는 이름(`"SWIPE"`)이면 `SettingsStore`가 없음으로 읽어 `ModeController(…, saved = null, …)`이 된다(5절, LLD-07 6.1, 시험 MC-40~MC-42). ③ `KeyboardService`는 `SwipeHost`가 아니고 `SwipeModule`을 쓰지 않는다. `showModeView`는 탭 자판 뷰 아니면 그래피티 패드다(3절). ④ `InputDispatcher`에서 `swipeState`·`onJamoEvents`·`onSwipeText`·`centerText`·`closeSwipe`를 지웠다. `resetParsers`는 그래피티만 비우고, ⌫는 그래피티 아니면 조합기다(6.1). ⑤ `ComposingController.show(r, g)`의 `replacesLast`(긋기 낱모음 ‥)를 지웠다(4절). ⑥ 7절: 모드 뷰는 탭 자판(6줄)·그래피티(5줄) 둘. 탭 자판·그래피티·모드 키·좌우 여유 칸·자판 판·띄운 자판의 동작은 그대로다. 아래 0.32까지의 이력에 나오는 긋기 자판·`Swipe…`·SWIPE n.n은 이 판에서 없어졌다.
 - 0.32(FSS#86, SRS 0.84 FR-CMN-15·1.3·TBD-33, HLD 0.77 5A "띄운 자판"·8장·R12): **띄운 자판**(새 7.4) — 순수 함수 `FloatingKeyboard.place`·`drag`·`ratios`(이동 영역 S, 자판 판 = 손잡이 띠 + 자판 사각형, 비율 fx·fy, 들어가지 않으면 붙은 자판), 순수 상태 기계 `PlateMover`(HLD ⓐ~ⓚ), `KeyboardRootView`의 `portraitFloat`·`landscapeFloat`·손잡이 띠 뷰 `MoveHandle`·`movePlate`·이동 영역의 위 t(상태 막대·컷아웃, 붙은 동안은 큰 값만), `KeyboardInsets`의 띄운 자판 인셋(내용·보이는 인셋 = 입력 뷰 아래 끝, 늘 `REGION`), `FeedbackPort.grab()`(8절), 서비스의 `saveFloatPosition`·설정 흐름의 띄우기 변경(3절). 플랫폼 동작 ⑨~⑭(문서 근거·미확인). 띄우기 끔이면 0.31과 모든 길이 같다.
 - 0.31(FSS#85, SRS 0.83 FR-CMN-14 ⑤⑫·3.3, HLD 0.76 5A·8장·R11): **자판 판과 투명한 자리**(새 7.3) — 순수 함수 `KeyboardPlate.rect`(입력 뷰 좌표의 사각형 `PxRect`), `KeyboardRootView`는 배경을 두지 않고 `plate`만 칠한다(`onLayout`에서 정함, `PlatePainter`), `KeyboardService.onComputeInsets`는 `KeyboardInsets.compute`로 줄인 자판에서 `TOUCHABLE_INSETS_REGION` + `touchableRegion` = 자판 판(창 좌표), 꽉 채움·첫 배치 전에는 `TOUCHABLE_INSETS_VISIBLE` 그대로. 내용·보이는 인셋은 그대로. 플랫폼 동작의 근거와 미확인 항목 표. 3절 `onComputeInsets` 행(코드와 달랐던 옛 값도 함께 고침), 7절 여백 색·`onTouchEvent`, 7.2 `onLayout`·"자판 사각형을 아는 곳"·"여백·여유 칸 터치" 행. `OffKeyboardPointers`·`KeyboardWidth.place`·판정은 그대로.
@@ -76,21 +77,22 @@ class KeyboardService : InputMethodService() {
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.27: 켜진 모드. 0.33: `lastMode`가 null이면 — 처음 설치했거나 저장된 이름이 지금 없는 모드 — 한글 두벌식으로 시작, FR-CMN-10·10a). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`. 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
+| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.27: 켜진 모드. 0.33: `lastMode`가 null이면 — 처음 설치했거나 저장된 이름이 지금 없는 모드 — 한글 두벌식으로 시작, FR-CMN-10·10a). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`, `dispatcher.onChordChanged = { tapView?.chordChanged() }`(0.34: `tapView` = 지금 보이는 쿼티·두벌식 뷰, 그래피티에서는 null — `showModeView`가 정함). 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
 | `onCreateInputView()` | `root = KeyboardRootView(…)`(줄 높이·두 방향 폭, 0.32: 두 방향 띄우기, `moveFeedback = feedback`, `onFloatMoved = ::saveFloatPosition`, 그리고 `relayout()`). `showModeView(modes.current)` | FR-CMN-10, FR-CMN-15 (0.32) |
 | `onStartInputView(info, restarting)` | 아래 3.1 | FR-CMN-03e, 04, 04b, 08 |
 | `onUpdateSelection(oldS, oldE, newS, newE, candS, candE)` | `r = composing.onUpdateSelection(newS, newE, candS, candE)`. `USER_MOVED` → `dispatcher.onCursorMoved(newS, newE, candS, candE)`. `OTHER_MOVED` → `dispatcher.onCursorMovedNoComposing()` | FR-CMN-06, HLD 8장, R4 |
-| `onFinishInputView(finishing)` | `dispatcher.finishAll()`, `guide?.dismiss()`, 반복 타이머 중지. `finishing == false`(키보드가 내려감)면 `root.closeGuide()`. `true`(입력창만 바뀜, 이어서 `onStartInputView`)면 획 안내표는 열린 채(0.24) | FR-CMN-06, FR-GRF-09 |
-| `onFinishInput()` | `dispatcher.finishAll()` | HLD 8장 |
+| `onFinishInputView(finishing)` | `dispatcher.clearChord()`(0.34, 6.3), `dispatcher.finishAll()`, `guide?.dismiss()`, 반복 타이머 중지. `finishing == false`(키보드가 내려감)면 `root.closeGuide()`. `true`(입력창만 바뀜, 이어서 `onStartInputView`)면 획 안내표는 열린 채(0.24) | FR-CMN-06, FR-GRF-09 |
+| `onFinishInput()` | `dispatcher.clearChord()`(0.34, 6.3), `dispatcher.finishAll()` | HLD 8장, FR-TAP-17 ① |
 | `onWindowHidden()` | 진행 중 터치·타이머 버림(`root.cancelTouches()` — 0.32: 띄운 자판의 옮기기·기다림도 취소, 7.4), `root.closeGuide()`(0.24) | D-27, FR-GRF-09, FR-CMN-15 ⑩ |
 | `onEvaluateFullscreenMode()` | `false` | FR-CMN-12 |
-| `onConfigurationChanged(c)` | `super`, `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2. 0.32: 그 방향의 띄우기·자리로, 옮기기 중이면 먼저 취소, 7.4) | FR-CMN-12, FR-CMN-14 ⑩, FR-CMN-15 ⑩⑬ |
+| `onConfigurationChanged(c)` | `super`, `dispatcher.clearChord()`(0.34, 6.3), `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2. 0.32: 그 방향의 띄우기·자리로, 옮기기 중이면 먼저 취소, 7.4) | FR-CMN-12, FR-CMN-14 ⑩, FR-CMN-15 ⑩⑬ |
 | `onComputeInsets(out)` | `super` 뒤, 루트가 창에 붙어 있으면 `KeyboardInsets.compute(root, out)`(7.3): `contentTopInsets = visibleTopInsets` = 입력 뷰 위 끝(창 좌표), 터치를 받는 자리 = **자판 판**(줄인 자판: `TOUCHABLE_INSETS_REGION` + `touchableRegion`, 꽉 채움: `TOUCHABLE_INSETS_VISIBLE` = 입력 뷰 전체). 빈 띠는 자판 판 안이라 터치를 받는다. 0.32: 띄운 자판이면 내용·보이는 인셋 = 입력 뷰 아래 끝, 터치를 받는 자리 = 띄운 자판의 자판 판(늘 `REGION`, 7.4) | SRS 3.3 빈 띠, FR-CMN-14 ⑫ (0.31), FR-CMN-15 ⑫ (0.32) |
 
 ### 3.1 `onStartInputView(info, restarting)`
 ```
 f = FieldInfo.from(info.inputType, info.imeOptions)
 dispatcher.field = f
+dispatcher.clearChord()                    // 0.34: 켜진 Ctrl·Alt를 끔, 아무것도 보내지 않음(FR-TAP-17 ① (마), 6.3)
 dispatcher.finishAll()                     // 조합 확정(HLD 8장)
 dispatcher.resetParsers()                  // 그래피티 조립기·일회성 상태(HLD 8장, 5장)
 modes.onFieldChanged()                     // typed = false, previous 유지(FR-CMN-03e)
@@ -106,18 +108,21 @@ if modes.current == GRAFFITI && before != GRAFFITI: dispatcher.graffiti?.enterMo
 - 같은 숫자류 입력창에서 키보드가 다시 떠도(`onStartInputView` 다시 호출) 이 순서를 그대로 탄다. 그래서 다시 영문 쿼티로 시작하고 돌아갈 모드는 그대로다(FR-CMN-04b).
 - 자동으로 바뀌는 모드(쿼티로 시작, 돌아가기)는 `previous`와 마지막 모드 저장을 바꾸지 않는다(5절, FR-CMN-04b).
 
+- 0.34(FSS#98): `clearChord()`는 `restarting`이어도 부른다(같은 입력창에서 키보드가 다시 뜸 = FR-TAP-17 ① (마)). 앱이 입력을 다시 시작시켜 켜 둔 조합 키가 뜻밖에 꺼지는 입력창이 있는지는 실기 확인이다(HLD R13 ⑦, DV-39 ⑩). 숫자류 입력창의 자동 전환(쿼티로 시작·돌아가기)도 이 한 번으로 꺼진다(FR-TAP-17 ① (다)). `onUpdateSelection`에서는 부르지 않는다(FR-TAP-17 ② — 글을 선택한 뒤 Ctrl + C).
 - 0.27: `applyEnabled`는 enter·leave 다음이다. 그래서 숫자류 입력창 안이면 `current`(= QWERTY, 늘 켬)는 그대로이고 돌아갈 모드만 고쳐지며, 문자 입력창으로 돌아온 뒤 돌아갈 모드가 꺼져 있었으면 그 다음 켜진 모드가 된다(사례 표 8행).
 
 ### 3.2 `applyEnabledModes(on)` (0.27, FSS#31)
 설정 `flow`의 값이 올 때마다(`applySettings`의 끝, 메인 스레드) 부른다. `on = settings.enabledModes`.
 ```
 before = modes.current
+if before ∉ on: dispatcher.clearChord()                                                  // 0.34: 자동 전환(FR-TAP-17 ① (다))
 if before ∉ on && isInputViewShown:  dispatcher.finishAll(); dispatcher.resetParsers()   // 바꾸기 전에 확정(FR-CMN-03d)
 modes.applyEnabled(on)?.let(saveLastMode)
 if modes.current == before || !isInputViewShown: return      // 떠 있지 않으면 다음 onStartInputView의 showModeView가 보임
 showModeView(modes.current, dispatcher.field)                   // 모드 키와 같은 길(뷰 교체)
 if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모드의 다음 켜진 모드는 그래피티가 될 수 없지만 같은 규칙을 둠)
 ```
+- 0.34(FSS#98): 조합 키가 있는 쿼티·두벌식은 끌 수 없는 모드라(FR-SET-08) 조합 키가 켜진 채 이 전환이 일어날 수는 없다. 그래도 "모드가 바뀌면 꺼진다"(FR-TAP-17 ① (다))를 한 규칙으로 두려고 부른다(꺼져 있으면 아무 일도 없다).
 - `resetParsers()`는 기본 이유(`FIELD_CHANGED`)다: 입력창이 바뀐 것이라 그래피티 조립기·일회성 상태만 비운다(LLD-05 6절).
 - 자동 전환이라 `typed`·`previous`는 바꾸지 않는다(5절). 저장은 `applyEnabled`가 돌려준 모드만 한다(숫자류 입력창 안이면 고친 돌아갈 모드, 밖이면 새 모드).
 - `Settings.enabledModes` = {DUBEOLSIK, QWERTY} ∪ (`graffitiEnabled`면 GRAFFITI)(LLD-07 6.1).
@@ -128,6 +133,7 @@ if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모�
 | `mode == DUBEOLSIK` / `QWERTY` | `TapKeyboardView(TapLayouts.DUBEOLSIK / QWERTY)` |
 | `mode == GRAFFITI` | `GraffitiPadView` |
 
+- 0.34(FSS#98): 쿼티·두벌식 뷰를 만들면 `tapView`에 두고, 다른 모드의 뷰를 보일 때는 null로 둔다(`pad`와 같은 방식). `dispatcher.onChordChanged`가 `tapView?.chordChanged()`를 부른다. 새로 만든 뷰는 그릴 때 `dispatcher.chord`를 읽으므로 따로 맞출 것이 없다.
 - 숫자류 입력창이라고 따로 고르는 뷰는 없다. `ModeController`가 이미 `current = QWERTY`로 바꿨으므로 쿼티 자판이 보이고, 사용자가 모드 키로 바꾸면 그 모드의 뷰가 보인다(FR-CMN-04b "모드 키는 평소처럼").
 - 뷰를 넣기 전에 `mode == GRAFFITI`면 `root.enableGuide(templates, feedback)`, 아니면 `root.disableGuide()`(획 안내표 닫힘·버튼 숨김, 0.24, 7.1). `templates`는 `createGraffiti()`가 읽은 `TemplateSet`(인식기와 같은 것).
 - 뷰는 `root.setModeView(view, rowsOfView)`로 넣는다(7절). 조합기 정책: DUBEOLSIK → `DUBEOLSIK`, GRAFFITI → `GRAFFITI`, QWERTY → 조합기 없음(글자는 바로 확정).
@@ -140,6 +146,7 @@ interface EditorPort {                     // 안드로이드 없는 경계. And
     fun commitText(text: String); fun setComposingText(text: String); fun finishComposingText()
     fun deleteBefore()                       // KEYCODE_DEL 내림·올림
     fun sendKey(key: EditorKey)              // DPAD_LEFT/RIGHT/UP/DOWN, ENTER, ESCAPE, FORWARD_DEL(0.22)
+    fun sendChord(key: ChordKey, mods: Set<ChordModifier>) {}   // 0.34: 조합 키 입력 하나(FSS#98). 기본 구현은 아무것도 하지 않음
     fun performEditorAction(actionId: Int)
     fun setSelection(start: Int, end: Int)
     fun beginBatch(); fun endBatch()
@@ -151,6 +158,7 @@ class ComposingController(private val port: EditorPort) {
     fun finishAfterUserMove(newS: Int, newE: Int, candS: Int, candE: Int)
     fun commitText(text: String)
     fun deleteBefore(); fun arrow(d: Dir); fun tab(); fun enter(f: FieldInfo)
+    fun chordKey(key: ChordKey, mods: Set<ChordModifier>)      // 0.34
     fun onStart(selStart: Int, selEnd: Int)
     fun onUpdateSelection(newS: Int, newE: Int, candS: Int, candE: Int): SelectionVerdict
     val composingShown: String
@@ -158,6 +166,30 @@ class ComposingController(private val port: EditorPort) {
 ```
 
 `AndroidEditorPort`는 부를 때마다 `service.currentInputConnection`을 얻고 null이면 아무것도 하지 않는다(HLD 9장). `InputConnection` 호출의 반환값(`false` = 실패)은 쓰지 않으며 예외로 바꾸지 않는다(LLD-09 2절 D-32).
+
+**`sendChord(key, mods)` (0.34, FSS#98, SRS FR-TAP-16 ④⑤, HLD 5A "보내기"):** 조합 키 입력 하나. `key`는 안드로이드 없는 `ChordKey`, `mods`는 실을 조합 키 집합(Ctrl·Alt와 딸린 Shift, 비어 있지 않음)이다(LLD-05A 2.4). `EditorKey`는 그대로 두고 새 형을 쓴다 — 조합 키 대응 함수가 `stroke-core`에 있어 앱의 `EditorKey`를 볼 수 없기 때문이다(LLD 결정 D-70).
+- `AndroidEditorPort.sendChord`는 `InputConnection.sendKeyEvent`만으로 **물리 자판에서 그 조합을 누른 것과 같은 순서**를 보낸다:
+  ```
+  held = mods를 Ctrl → Alt → Shift 순으로(ChordModifier 선언 순서, 실린 것만)
+  meta = 0
+  held 차례로:      meta |= metaOf(m);  ACTION_DOWN(keyCodeOf(m), meta)      // 조합 키 누름: 자기 비트를 넣은 값
+  ACTION_DOWN(keyCodeOf(key), meta); ACTION_UP(keyCodeOf(key), meta)         // 그 키: 전부 실은 값
+  held 거꾸로:      meta &= ~metaOf(m); ACTION_UP(keyCodeOf(m), meta)        // 조합 키 뗌: 떼고 남은 값
+  ```
+  | 조합 키 | 키 코드 | meta state |
+  |---|---|---|
+  | Ctrl | `KEYCODE_CTRL_LEFT` | `META_CTRL_ON \| META_CTRL_LEFT_ON` |
+  | Alt | `KEYCODE_ALT_LEFT` | `META_ALT_ON \| META_ALT_LEFT_ON` |
+  | Shift | `KEYCODE_SHIFT_LEFT` | `META_SHIFT_ON \| META_SHIFT_LEFT_ON` |
+
+  예: Ctrl + Shift + A = Ctrl↓(Ctrl) · Shift↓(Ctrl + Shift) · A↓(Ctrl + Shift) · A↑(Ctrl + Shift) · Shift↑(Ctrl) · Ctrl↑(0). 입력은 조합 키 수 × 2 + 2개다.
+- `keyCodeOf(key)`: `ChordKey`의 이름과 같은 `KEYCODE_*`(`A`~`Z` → `KEYCODE_A`~`KEYCODE_Z`, `D0`~`D9` → `KEYCODE_0`~`KEYCODE_9` — 플랫폼에서 이어진 값이라 차이로 계산, 나머지는 하나씩). 시험 CP-06이 57개 모두를 플랫폼 상수와 맞춰 본다.
+- 플래그(`FLAG_SOFT_KEYBOARD | FLAG_KEEP_TOUCH_MODE`)·장치(`KeyCharacterMap.VIRTUAL_KEYBOARD`)·반복 수 0·scan code 0은 지금의 키 입력(방향키 등)과 같다 — `sendKey`·`deleteBefore`와 같은 `event(downTime, action, keyCode, meta)` 하나로 만든다. 누름 시각은 모든 입력이 같고(`downTime`), 뗌의 이벤트 시각은 보낼 때의 `uptimeMillis()`다(0.32의 `sendDownUp`과 같음).
+- 조합 키 누름 입력의 meta state에 **자기 비트를 넣는** 것은 플랫폼 입력 처리(조합 키가 눌린 뒤의 상태를 그 누름 이벤트에 실음)를 따른 것이다. 물리 자판의 실제 값과 같은지는 실기 확인이다(HLD R13 ⑥, DV-39 ④).
+- **편집 명령(`performContextMenuAction`)은 부르지 않는다**(FR-TAP-16 ⑤ — Ctrl + A·C·V·X·Z도 키 입력 그대로). `commitText`도 부르지 않는다(글자를 대신 넣지 않음, FR-TAP-16 ⑥). 앱이 키 입력을 처리했는지는 알 수 없고 알려고 하지 않는다.
+- 입력 연결이 없으면 아무것도 하지 않고, `sendKeyEvent`의 반환값은 쓰지 않는다(위와 같음).
+- **기본 구현이 빈 이유:** 키 입력을 받을 입력창이 없는 편집기(입력 연습 `PracticeEditor`, 시험의 가짜 포트)는 조합 키 입력을 받을 일이 없다. `PracticeEditor`는 빈 구현을 드러내 적는다(LLD-07 2.3, FR-TAP-17 ④).
+- 근거: SRS FR-TAP-16 ④~⑥, HLD 5A "보내기", 12장. 시험: CP-01~CP-06(LLD-11 7.5).
 
 - `ComposingController`는 포트 호출이 돌아온 뒤에만 자기 상태(`composingShown`·`glyph`·`composeStart`·기대 커서)를 바꾼다(호출 하나 단위). 그래서 포트 호출이 예외를 내면 돌아온 호출까지의 상태가 남는다. `EngineGuard` 스냅숏에는 들어가지 않는다(LLD-09 2절, 이슈 #75).
 - 포트 호출이 던져도(0.6, PR #91): ① `beginBatch`로 연 배치는 `endBatch`로 항상 닫는다(`try`/`finally`, `show`·`finishAfterUserMove`). ② 임시 글자를 빼는 `setComposingText(composingShown − glyph)`가 돌아오면 그 자리에서 `composingShown`·`glyph`에서도 임시 글자를 뺀다(`finishComposing`·`finishAfterUserMove`). 그래서 뒤이은 `finishComposingText`가 던져도 `composingShown`은 편집기 조합 구간과 같다(임시 글자 없음). 예외는 그대로 호출자(`EngineGuard.stroke`)에게 간다.
@@ -171,6 +203,7 @@ class ComposingController(private val port: EditorPort) {
 | `deleteBefore()` | `port.deleteBefore()`. 확정 글자 한 글자를 지우고, 입력창에 선택 영역이 있으면 편집기 기본 동작대로 선택한 부분을 지운다(`KEYCODE_DEL`이 그렇게 동작함, SRS FR-CMN-07, HLD 8장, DCR-13 결정). 결과 커서를 알 수 없으므로 `predictedSel = −1` | FR-CMN-07 |
 | `arrow(d)` | (호출자가 먼저 확정) `sendKey(DPAD_d)`. `predictedSel = −1` | FR-TAP-10 |
 | `editKey(k)`(0.22) | (호출자가 먼저 확정) `sendKey(k)`(`ESCAPE`, 또는 `FORWARD_DEL` = 커서 오른쪽 한 글자·선택 영역은 편집기 기본 동작). `predictedSel = −1` | 이슈 #198 |
+| `chordKey(key, mods)`(0.34) | (호출자가 먼저 확정) `port.sendChord(key, mods)`. 앱이 그 키 입력으로 무엇을 하는지(커서 이동, 선택, 붙여넣기 …) 알 수 없으므로 방향키·Esc처럼 `predictedSel = −1`(기대 커서를 비움 — 뒤에 오는 `onUpdateSelection`은 4.1의 "모르는 커서" 길로 맞춰진다) | FR-TAP-16, HLD 5A "보내기" |
 | `tab()` | (호출자가 먼저 확정) `commitText("\t")` | FR-TAP-04 |
 | `enter(f)` | (호출자가 먼저 확정) `f.enterAction != null` → `performEditorAction(it)`, 아니고 `f.multiLine` → `commitText("\n")`, 그 밖(동작 없는 한 줄 입력창) → `sendKey(ENTER)`(`KEYCODE_ENTER`, SRS FR-CMN-09, HLD 8장, DCR-13 결정). 키 보냄·동작이면 `predictedSel = −1` | FR-CMN-09, HLD 8장 |
 | `onStart(selStart, selEnd)` | `predictedSel = selEnd`(−1이면 모름), `composeStart = −1`, `expected.clear()`, `composingShown = ""`, `glyph = ""` | HLD 8장 |
@@ -250,6 +283,9 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
     var composer: HangulComposer?                     // 모드 정책(3절)
     var graffiti: GraffitiInputHandler?                // 그래피티 모드만
     var field: FieldInfo
+    val chord: Set<ChordModifier>                      // 0.34: 켜진 조합 키(Ctrl, Alt). TapSink.chord(6.3)
+    var onChordChanged: () -> Unit                     // 0.34: chord가 바뀔 때마다 한 번
+    fun clearChord()                                   // 0.34: 조합 키 끄기(6.3)
 }
 ```
 
@@ -257,18 +293,22 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onTapOutput(key, o)` | `o.jamo != null`(두벌식 글자) → `j = Jamo.ofCompat(o.jamo)`, `composer.apply(if j.kind == CONSONANT Consonant(j) else Vowel(j))` → `out.show`. `o.text != null` → `finishAll()` 뒤 `out.commitText(o.text)`(쿼티 글자도 이 길, FR-TAP-11a). `o.errorVibe` → `feedback.error()`. `markInput()` | FR-TAP-01a~03a, 11a |
+| `onTapOutput(key, o)` (0.34) | `onTapResult(key, o, Tap)` — 동작 없이 온 결과는 탭이다(입력 연습 싱크, 0.33까지의 시험) | – |
+| `onTapResult(key, o, g)` (0.34, 뷰가 부르는 입구) | **`chord`가 비어 있지 않으면 조합 키 길**(6.3): `mods = takeChord()`; `finishForChord()`; `s = ChordKeys.ofTap(key.id, g)`; `out.chordKey(s.key, s.shift면 mods + SHIFT 아니면 mods)`; `markInput()`; 끝(글자·자모를 넣지 않고 `o.errorVibe`의 오류 진동도 없다). **비어 있으면 0.33의 `onTapOutput`과 같다:** `o.jamo != null`(두벌식 글자) → `j = Jamo.ofCompat(o.jamo)`, `composer.apply(if j.kind == CONSONANT Consonant(j) else Vowel(j))` → `out.show`. `o.text != null` → `finishAll()` 뒤 `out.commitText(o.text)`(쿼티 글자도 이 길, FR-TAP-11a). `o.errorVibe` → `feedback.error()`. `markInput()` | FR-TAP-01a~03a, 11a |
+| `onFunctionDown(CTRL)`, `onFunctionDown(ALT)` (0.34) | `toggleChord(m)`: `chord`에 있으면 빼고 없으면 넣음(`setChord`). 입력 아님(`markInput` 없음), 조합기·`ComposingController`를 건드리지 않음(조합 중 글자 그대로) | FR-TAP-15 ①⑤ |
+| `onFunctionDown(그 밖의 기능키)` (0.34) | `MODE`가 아니면 **대상 키**(`targetKey`): `mods = heldChords.getOrPut(key) { takeChord() }` — 그 키가 눌려 있지 않았으면(첫 누름) 켜진 집합을 꺼내 기억하고, 눌려 있었으면(반복) 기억한 집합을 쓴다. `mods`가 비어 있지 않으면 조합 키 길(6.3): `finishForChord()`; `out.chordKey(ChordKeys.ofFunction(key), mods)`; 그 키가 ⌫·스페이스·↵·⇥이면 `markInput()`; 끝. 비어 있으면 아래 행들의 평소 길 | FR-TAP-15 ②③, 16 |
 | `onFunctionDown(BACKSPACE)` | `backspace()`; `markInput()` | FR-CMN-07 |
 | `onFunctionDown(SPACE)` | `finishAll()`; `out.commitText(" ")`; `markInput()` | FR-CMN-03a |
 | `onFunctionDown(ENTER)` | `finishAll()`; `out.enter(field)`; `markInput()` | FR-CMN-09 |
 | `onFunctionDown(TAB)` | `finishAll()`; `out.tab()`; `markInput()` | FR-TAP-04 |
 | `onFunctionDown(ARROW_d)` | `finishAll()`; `resetParsers()`; `out.arrow(d)` (입력 아님) | FR-TAP-10, FR-CMN-03a |
 | `onFunctionDown(ESC)`, `onFunctionDown(DELETE)`(0.22) | 방향키와 같음: `finishAll()`; `resetParsers()`; `out.editKey(ESCAPE / FORWARD_DEL)` (입력 아님). Del 반복은 반복 한 번 = 이 호출 한 번(LLD-05A 6절) | 이슈 #198 |
-| `onFunctionDown(MODE)` | `onModeKey()`. 0.23부터 뷰는 모드 키를 뗄 때(탭이면) 부른다 | FR-CMN-03 |
-| `onSettingsStroke()`(0.23, `TapSink` 경유) | 모드 키 ↑: `finishAll()`(조합 중이면 확정, 공백 없음); `resetParsers(MODE_CHANGED)`; `onOpenSettings()`(서비스가 `SettingsActivity`를 새 작업으로 시작). 입력 아님(`markInput` 없음), 모드 바꾸지 않음. 0.18·0.21의 `onFunctionDown(SETTINGS)`·`onSettingsKey()`(조합 중 한 글자 완성만)는 삭제 | 이슈 #205 오너 결정 |
-| `onFunctionUp(key)` | 입력 없음(뗌 알림. 반복 중지는 뷰가 함) | FR-CMN-11a |
+| `onFunctionDown(MODE)` | `onModeKey()`. 0.23부터 뷰는 모드 키를 뗄 때(탭이면) 부른다. 대상 키가 아니다(0.34: 조합 키를 싣지 않고 `onModeKey`가 끈다) | FR-CMN-03, FR-TAP-16 ① |
+| `onSettingsStroke()`(0.23, `TapSink` 경유) | 모드 키 ↑: `clearChord()`(0.34, FR-TAP-17 ① (라)); `finishAll()`(조합 중이면 확정, 공백 없음); `resetParsers(MODE_CHANGED)`; `onOpenSettings()`(서비스가 `SettingsActivity`를 새 작업으로 시작). 입력 아님(`markInput` 없음), 모드 바꾸지 않음. 0.18·0.21의 `onFunctionDown(SETTINGS)`·`onSettingsKey()`(조합 중 한 글자 완성만)는 삭제 | 이슈 #205 오너 결정 |
+| `onFunctionUp(key)` | 입력 없음(뗌 알림. 반복 중지는 뷰가 함). 0.34: `heldChords.remove(key)` — 그 누름에 실린 집합을 잊는다(터치 취소 때도 온다, LLD-05A 4절) | FR-CMN-11a, FR-TAP-15 ③ |
+| `clearChord()` (0.34) | `heldChords.clear()`; `setChord(∅)`. 아무것도 보내지 않는다 | FR-TAP-17 ① |
 | `backspace()` | 그래피티면 `graffiti.backspace()`(LLD-05 6절). 아니면 `b = composer?.backspace()`(입력 단위 하나); `Handled(r)` → `out.show(r)`, 그 밖 → `out.deleteBefore()`. 반복 타이머도 이 함수를 부른다 | FR-CMN-07, 07a, 07b, 07c |
-| `onModeKey()` | `finishAll()`; `resetParsers()`; `next = modes.onModeKey()`; `if (!modes.inNumericField) saveMode(next)`(숫자류 입력창 안에서 바꾼 모드는 마지막 모드로 저장하지 않음, FR-CMN-04b·10, HLD 8.1); 서비스가 `showModeView(next)`. 그래피티로 새로 들어오면 `graffiti?.enterMode()`(→ `GraffitiState.enterMode()`, LLD-05 6절, G6) | FR-CMN-03d, 04b, HLD 8.1 |
+| `onModeKey()` | `clearChord()`(0.34, FR-TAP-17 ① (다)); `finishAll()`; `resetParsers()`; `next = modes.onModeKey()`; `if (!modes.inNumericField) saveMode(next)`(숫자류 입력창 안에서 바꾼 모드는 마지막 모드로 저장하지 않음, FR-CMN-04b·10, HLD 8.1); 서비스가 `showModeView(next)`. 그래피티로 새로 들어오면 `graffiti?.enterMode()`(→ `GraffitiState.enterMode()`, LLD-05 6절, G6) | FR-CMN-03d, 04b, HLD 8.1 |
 | `onCursorMoved(newS, newE, candS, candE)` | `composer?.finish()` + `out.finishAfterUserMove(newS, newE, candS, candE)`(임시 글자가 있으면 빼고 확정, 사용자 커서 위치 유지, 4절); `resetParsers()` | FR-CMN-06, FR-HGL-04e |
 | `onCursorMovedNoComposing()` | `resetParsers()` | FR-CMN-06, FR-HGL-04e |
 | `finishAll()` | `graffiti?.finishAll()` 또는 `composer?.finish()` + `out.finishComposing()` | FR-CMN-03d |
@@ -290,11 +330,78 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
 | 그래피티 천지인 요소 획(ㅣ·ㅡ·탭, 모음이 성립하기 전의 ㆍ·‥ 포함) | 예(SRS FR-CMN-03a, DCR-17 결정) |
 | 스페이스, 엔터, 탭, ⌫(어느 모드든) | 예 |
 | 방향키, 모드 키 | 아니오 |
+| Esc, Del | 아니오(방향키와 같음, 6.1) |
+| Ctrl·Alt 키를 눌러 켜고 끔(0.34) | 아니오(FR-TAP-15 ⑤) |
+| 조합 키가 실린 키(0.34) | 그 키의 구분 그대로: 글자·숫자·기호·스페이스·↵·⇥·⌫ = 예, 방향키·Esc·Del = 아니오(FR-TAP-16 ⑦) |
 | 그래피티 한영 전환·시프트·캡스록·확장 시프트·구두점 시프트 획 | 아니오 |
 | 그래피티 조합 강제 확정('J') 획 | 아니오(SRS FR-CMN-03a, DCR-17 결정) |
 | 그래피티 인식 실패 | 아니오(입력 없음, FR-GRF-08) |
 
 - 시험: ID-01~ID-24.
+
+### 6.3 조합 키 Ctrl·Alt (0.34, FSS#98)
+
+SRS FR-TAP-15~17, HLD 5A "조합 키 Ctrl·Alt". 안드로이드가 없어 JVM 단위 시험으로 본다(CD-01~CD-18, LLD-11 7.4a). 서비스가 끄는 곳(아래 "끄기를 부르는 곳"의 `KeyboardService` 행)은 Robolectric CL-01~CL-05(같은 절)다.
+
+**상태** (둘 다 저장하지 않고, `snapshot()`에 넣지 않는다)
+
+| 상태 | 뜻 |
+|---|---|
+| `chord: Set<ChordModifier>` | 켜져 있고 아직 실리지 않은 조합 키(`CTRL`, `ALT`만 — `SHIFT`는 들어가지 않는다). 처음에는 빈 집합. 뷰가 `TapSink.chord`로 읽는다 |
+| `heldChords: Map<FunctionKey, Set<ChordModifier>>` | **눌려 있는 기능키마다 그 누름에 실린 집합**(빈 집합 포함). `onFunctionDown`의 첫 누름에 넣고 `onFunctionUp`에서 뺀다 |
+
+**함수** (모두 `private`, `clearChord`만 공개)
+
+| 함수 | 처리 |
+|---|---|
+| `setChord(s)` | `s == chord`면 아무것도 안 함. 아니면 `chord = s`; `onChordChanged()` — 그래서 알림은 **바뀔 때마다 정확히 한 번**이다(Ctrl·Alt 둘이 함께 꺼져도 한 번) |
+| `toggleChord(m)` | `setChord(m ∈ chord면 chord − m 아니면 chord + m)` |
+| `takeChord()` | 지금 `chord`를 돌려주고 `setChord(∅)` — 한 번만 적용(FR-TAP-15 ②) |
+| `clearChord()` | `heldChords.clear()`; `setChord(∅)` |
+| `finishForChord()` | `finishAll()`; `resetParsers(CURSOR_MOVED)` — 방향키·Esc와 같은 정리(조합 확정, 그래피티 조립기·일회성 상태 닫음. 탭 자판 모드에서는 그래피티 상태가 없어 확정뿐이다) |
+
+**싣는 흐름** (HLD 5A ①~⑤. 두 입구 `onTapResult`, `onFunctionDown`의 대상 키 — 6.1)
+```
+① mods = 켜진 집합을 꺼내고 비움(takeChord, 알림)        // 기능키의 반복이면 그 누름이 기억한 집합
+   mods가 비어 있으면 평소 길(0.33과 같음)
+② finishForChord()                                        // 조합 중 글자 확정(FR-TAP-16 ③). ⌫도: 입력 단위를 되돌리지 않고 확정
+③ 키 대응: 글자·숫자·기호 키 = ChordKeys.ofTap(key.id, 판정된 동작) → (키, Shift)
+           기능키 = ChordKeys.ofFunction(key) → 키(Shift 없음)                                  // LLD-05A 2.4
+④ out.chordKey(키, mods (+ SHIFT))                        // ComposingController → EditorPort.sendChord(4절)
+⑤ markInput()은 그 키의 평소 구분대로(6.2)
+```
+- **평소 길을 타지 않는다:** 조합 키 길에서는 조합기에 자모를 넣지 않고, `commitText`(글자·스페이스·탭 문자·줄바꿈), 엔터의 입력창 동작(`performEditorAction`), ⌫의 입력 단위 되돌리기·`deleteBefore`, 윗첨자 없음의 오류 진동이 모두 없다(FR-TAP-16 ④⑥).
+- **글자 키가 조합 키를 보는 때:** 결과가 뷰의 대기열에서 나와 `onTapResult`에 닿을 때다(손을 뗀 때가 아니다, FR-TAP-15 ②의 "결과가 나갈 때"). 예: a를 누른 채 Ctrl을 켜고 a를 떼면 Ctrl + A. a·b를 겹쳐 눌러 b가 a를 기다리다 함께 나오면 먼저 나오는 a에 실리고 b는 그냥 글자다.
+- **누르고 있는 기능키(FR-TAP-15 ③):** 뷰의 반복은 뗌 없이 다시 오는 `onFunctionDown(key)`다(LLD-05A 6절). `heldChords`에 그 키가 있으면 반복이므로 켜진 집합을 보지 않고 기억한 집합으로 보낸다.
+
+  | 경우 | 결과 |
+  |---|---|
+  | Ctrl 켬 → ← 누르고 있음 | 누름과 모든 반복이 Ctrl + ←. `chord`는 누른 순간 비므로 그동안 다른 손가락으로 누른 키에는 실리지 않는다 |
+  | 조합 키 없이 ← 누르고 있는 중에 Ctrl을 켬 | ←의 반복은 그냥 ←(기억한 집합이 빈 집합). Ctrl은 켜진 채 남아 다음 대상 키(다른 키의 첫 누름, 글자 키의 결과)에 실린다 |
+  | 손을 뗌·터치 취소 | `onFunctionUp` → 기억을 잊음. 다음 누름은 새로 꺼낸다 |
+  | 누르고 있는 동안 `clearChord()`(입력창이 다시 시작 등) | 기억도 비워져 다음 반복은 조합 키 없이 그 키다(반복은 뷰가 멈출 때까지 이어진다 — 키보드가 내려가면 `cancelTouches`로 멈춘다) |
+
+  - 기억은 기능키 종류별 하나다. 같은 기능키를 두 손가락으로 겹쳐 누르는 경우(편집 줄에 같은 키가 둘 없으므로 한 키를 두 손가락으로)는 둘째 누름이 첫 누름의 반복처럼 같은 집합을 쓰고, 먼저 뗀 손가락이 기억을 지운다. 드문 경우라 따로 다루지 않는다(LLD 결정 D-72).
+  - 기억은 탭 자판 밖의 호출자에게도 같은 규칙이다(그래피티 보조 줄의 스페이스·⌫, 입력 연습): 그 모드에서는 `chord`가 늘 비어 있어(모드 키가 끈다) 기억은 늘 빈 집합이고 0.33과 같은 길이다. 뗌 알림을 보내지 않는 호출자(입력 연습 싱크)에서도 그렇다.
+- **모드 키는 대상이 아니다(FR-TAP-16 ①, 17 ① (다)(라)):** `onModeKey()`·`onSettingsStroke()`는 맨 앞에서 `clearChord()`를 부른다. 아무것도 보내지 않는다.
+- **끄기를 부르는 곳(FR-TAP-17 ①)**
+
+  | 때 | 부르는 곳 |
+  |---|---|
+  | (가) 대상 키에 실림 | `takeChord()` |
+  | (나) 켜진 키를 다시 누름 | `toggleChord()` |
+  | (다) 모드 키 탭 | `onModeKey()` |
+  | (다) 자동 전환 — 숫자류 입력창 진입·복귀 | `KeyboardService.onStartInputView`(3.1, (마)와 같은 호출) |
+  | (다) 자동 전환 — 쓰던 모드를 끔 | `KeyboardService.applyEnabledModes`(3.2) |
+  | (라) 모드 키 ↑(설정) | `onSettingsStroke()` |
+  | (마) 입력창이 바뀜·같은 입력창에서 다시 뜸 | `KeyboardService.onStartInputView` |
+  | (바) 키보드가 내려감·입력이 끝남 | `KeyboardService.onFinishInputView`·`onFinishInput` |
+  | (사) 화면 방향이 바뀜 | `KeyboardService.onConfigurationChanged` |
+
+  **부르지 않는 곳(FR-TAP-17 ②):** `onCursorMoved`·`onCursorMovedNoComposing`(사용자가 커서·선택을 바꿈), `onFunctionUp`(터치 취소 — 아직 실리지 않은 켜짐은 그대로), 자판 폭·정렬 설정 변경과 띄운 자판 옮기기(`applySettings`의 `relayout`, 7.4).
+- **오류 복구(HLD 9장):** `chord`·`heldChords`는 `snapshot()`·`restore()`에 넣지 않는다. 조합 키 길에서 예외가 나면(`EngineGuard.stroke`) 조합기는 그 단위 전으로 되돌아가지만 조합 키는 ①에서 꺼낸 대로 **꺼진 채**다 — 같은 조합이 켜진 채 남아 다음 키에 다시 실리지 않는다(시험 CD-16). 눌린 기능키의 기억은 남으므로 그 키의 반복은 같은 조합을 다시 보낸다(반복은 매번 같은 조합이라는 규칙 그대로).
+- **입력창 종류(FR-TAP-17 ③):** 따로 가르지 않는다. 비밀번호·숫자류 입력창에서도 같은 길이다. 조합 키와 보낸 키는 기록하지 않는다(`ErrorLog`는 예외의 자리와 클래스 이름만 적는다, NFR-05).
+- **입력 연습(FR-TAP-17 ④):** `PracticeInput.tapSink`는 Ctrl·Alt를 디스패처에 넘기지 않는다(편집 줄의 다른 키와 같음, LLD-07 2.3). 그래서 `chord`는 늘 비어 있고 켜짐 표시도 없다.
 
 ## 7. KeyboardRootView (창 높이 고정·바닥 정렬)
 

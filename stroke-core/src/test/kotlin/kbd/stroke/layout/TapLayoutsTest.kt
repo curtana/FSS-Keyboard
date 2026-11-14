@@ -48,10 +48,10 @@ class TapLayoutsTest {
     fun `TL-02 key sizes meet NFR-06 and the default row height is 48 dp`() {
         for (l in layouts) {
             for (k in l.keys) {
-                // Edit row function keys are 45 dp, an owner-decided NFR-06 exception (#198, LLD-05A §3.2).
+                // Edit row function keys are as wide as a letter key, an owner-decided NFR-06 exception (FSS#98, LLD-05A §3.2).
                 val min = when {
                     k.kind != TapKeyKind.FUNCTION -> 36f
-                    k.row == 0 -> 45f
+                    k.row == 0 -> 36f
                     else -> 48f
                 }
                 assertTrue("${l.name} ${k.id} w=${k.w}", k.w >= min)
@@ -95,12 +95,12 @@ class TapLayoutsTest {
     fun `QWERTY rows and widths follow LLD-05A 3_2`() {
         val l = TapLayouts.QWERTY
         fun ids(row: Int) = l.keys.filter { it.row == row }.sortedBy { it.x }.map { it.id }
-        val edit = listOf("esc", "tab", "left", "up", "down", "right", "delete", "backspace")
+        val edit = listOf("esc", "ctrl", "alt", "tab", "left", "up", "down", "right", "delete", "backspace")   // FSS#98
         assertEquals(edit, ids(0))
-        assertTrue(ids(0).all { l.key(it).w == 45f })
-        assertEquals(315f, l.key("backspace").x, 0f)
-        assertEquals(270f, l.key("delete").x, 0f)
-        assertEquals(listOf("Esc", "⇥", "←", "↑", "↓", "→", "Del", "⌫"), edit.map { l.key(it).label })
+        assertTrue(ids(0).all { l.key(it).w == 36f })
+        assertEquals(324f, l.key("backspace").x, 0f)
+        assertEquals(288f, l.key("delete").x, 0f)
+        assertEquals(listOf("Esc", "Ctrl", "Alt", "⇥", "←", "↑", "↓", "→", "Del", "⌫"), edit.map { l.key(it).label })
         assertEquals("1234567890".map { it.toString() }, ids(1))
         assertEquals("qwertyuiop".map { it.toString() }, ids(2))
         assertEquals("asdfghjkl".map { it.toString() }, ids(3))
@@ -120,12 +120,31 @@ class TapLayoutsTest {
             l.blanks,
         )
         assertEquals(
-            listOf(FunctionKey.ESC, FunctionKey.TAB, FunctionKey.ARROW_LEFT, FunctionKey.ARROW_UP, FunctionKey.ARROW_DOWN,
-                FunctionKey.ARROW_RIGHT, FunctionKey.DELETE, FunctionKey.BACKSPACE),
+            listOf(FunctionKey.ESC, FunctionKey.CTRL, FunctionKey.ALT, FunctionKey.TAB, FunctionKey.ARROW_LEFT, FunctionKey.ARROW_UP,
+                FunctionKey.ARROW_DOWN, FunctionKey.ARROW_RIGHT, FunctionKey.DELETE, FunctionKey.BACKSPACE),
             edit.map { l.key(it).function },
         )
         assertEquals(TapKeyKind.SYMBOL, l.key("minus").kind)
         assertTrue(l.keys.filter { it.row in 2..4 && it.id.length == 1 }.all { it.kind == TapKeyKind.QWERTY_LETTER })
+    }
+
+    @Test
+    fun `TL-06 the edit row is ten keys of one unit in both layouts, Ctrl and Alt right of Esc (FSS#98)`() {
+        for (l in layouts) {
+            val row = l.keys.filter { it.row == 0 }.sortedBy { it.x }
+            assertEquals(
+                l.name,
+                listOf(FunctionKey.ESC, FunctionKey.CTRL, FunctionKey.ALT, FunctionKey.TAB, FunctionKey.ARROW_LEFT, FunctionKey.ARROW_UP,
+                    FunctionKey.ARROW_DOWN, FunctionKey.ARROW_RIGHT, FunctionKey.DELETE, FunctionKey.BACKSPACE),
+                row.map { it.function },
+            )
+            assertEquals(l.name, List(10) { it * 36f }, row.map { it.x })
+            assertTrue(l.name, row.all { it.w == 36f && it.kind == TapKeyKind.FUNCTION })
+            assertEquals(l.name, 360f, row.sumOf { it.w.toDouble() }.toFloat(), 0f)
+            assertTrue(l.name, l.blanks.none { it.row == 0 })
+            // As wide as the number row keys under them.
+            assertEquals(l.name, l.keys.filter { it.row == 1 }.sortedBy { it.x }.map { it.x to it.w }, row.map { it.x to it.w })
+        }
     }
 
     @Test

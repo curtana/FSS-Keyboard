@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
 - 버전 **0.37** (2026-11-14)
-- 0.37(FSS#96, SRS 0.87 FR-GRF-10~14·NFR-13, HLD 0.80 5.1): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지와 잰 영향·APK 증가분), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획의 판과 목록을 인자로 받음 — 저장소는 내 획 학습에서 잇는다). 학습·내보내기 스크립트 `tools/graffiti-nn/`. 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
+- 0.37(FSS#96, SRS 0.88 FR-GRF-10~14·NFR-13·TBD-35, HLD 0.81 5.1·10.1 R14~R19): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지와 잰 영향·APK 증가분), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획의 판과 목록을 인자로 받음 — 저장소는 내 획 학습에서 잇는다). 학습·내보내기 스크립트 `tools/graffiti-nn/`. 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
 - 0.36(FSS#95, 긋기 입력 모드 삭제): 긋기 참조만 지웠다 — `CheonjiinAssembler`를 가지는 곳은 그래피티뿐이다(4절). 조합기 명세는 `LLD-04-stroke-hangul.md` 7절(절 번호 그대로). 동작·표는 그대로. 아래 이력의 "긋기 천지인 키"·"SWIPE n.n"은 그때의 일이다(SWIPE 10.1 ③은 지금 SRS 부록 A.2).
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑧, HLD 0.75 5A): 패드·보조 줄·덮개는 자판 폭 W 그대로이고 여유 칸은 비운다(배치 코드 그대로). `GraffitiPadView.sideMarginPx`(`SideMarginView`) — 보조 줄 모드 키의 `KeyGeom`을 만들 때 테두리의 왼쪽·오른쪽을 여유 칸만큼 밖으로 준다(8절). 인식·영역 판정은 그대로다.
 - 0.34(FSS#80, SRS 0.81): 영문 오너 획 템플릿 156개를 `EN_LETTER`에 더했다(7절). 판정 코드와 안내표 칸은 그대로다.
@@ -240,14 +240,14 @@ data class Template(val id: String, val output: TemplateOutput, val corners: Int
 | 상수 | 값 | 뜻 | 출처 |
 |---|---|---|---|
 | `Recognizer.WEIGHT` | 0.5 | FR-GRF-10 ④의 a | FSS#96 작업지시서 v2 3절(PM 측정 2026-11-14): 가르치는 날 안에서 고른 값이 30개 작업 가운데 19개에서 0.5 |
-| `Recognizer.SUM_MIN` | 0.80 | 합산 문턱 (가) | 같은 문서 3절. 결과를 보고한 자료 자체로 고른 값이다(SRS TBD-34 ①) |
+| `Recognizer.SUM_MIN` | 0.80 | 합산 문턱 (가) | 같은 문서 3절. 결과를 보고한 자료 자체로 고른 값이다(SRS TBD-35 ①) |
 | `Recognizer.TEMPLATE_MIN` | 0.78 | 템플릿 문턱 (나) | 같은 문서 3절. 합산 문턱 하나로는 영문 합성 낙서의 45 %가 들어왔다 |
 | `Recognizer.MATCH_MIN` | 0.80 | 모델 없는 구성의 템플릿 문턱(아래) | D-11(0.35까지의 값) |
 
 - 값 한 쌍을 다섯 집합에 모두 쓴다(집합별로 고르지 않았다). 한 사람의 획으로 고른 값이다(HLD 5.1 한계).
 - **코사인을 그대로 쓰는 까닭:** a와 문턱을 고른 측정이 코사인을 그대로 더했다(FR-GRF-11 ④). 범위를 바꾸면 문턱의 뜻이 달라진다.
 - **돌려줄 id:** `StrokeToken.Symbol(id)`의 id는 늘 `TemplateSet`에 있는 내장 템플릿 id다. `GraffitiState`가 `TemplateSet.outputOf(id)`로 출력을 찾고(5.2), id는 집합마다 겹치지 않으므로 대기 표의 판정(5.2 2·3행)도 그대로다. 개인 템플릿은 id가 밖으로 나가지 않는다. 합산이 템플릿 단독과 다른 글자를 고르면 그 글자의 내장 템플릿 가운데 가장 가까운 것이 나간다(예: 오너 획 `en_u_o6`). 같은 글자의 id가 0.35와 달라질 수 있으나 출력은 같다.
-- **글자 목록 일치:** 모델이 있을 때, 템플릿 획이 있는 템플릿의 출력이 그 집합의 모델 글자 목록에 없으면 `Recognizer`를 만들 때 `IllegalStateException`이다(HLD R17. 앱은 아래 "모델 없는 구성"으로 내려간다, 11절). 모델에만 있고 템플릿이 없는 글자는 고르지 않는다. 제품 템플릿과 출고 모델은 목록이 같다(GM-02).
+- **글자 목록 일치:** 모델이 있을 때, 템플릿 획이 있는 템플릿의 출력이 그 집합의 모델 글자 목록에 없으면 `Recognizer`를 만들 때 `IllegalStateException`이다(HLD R18. 앱은 아래 "모델 없는 구성"으로 내려간다, 11절). 모델에만 있고 템플릿이 없는 글자는 고르지 않는다. 제품 템플릿과 출고 모델은 목록이 같다(GM-02).
 - **개인 획(`PersonalStroke(set, value, points)`):** `points`는 원 표본 점 열(dp), `value`는 글자(`output.value`), `set`은 그 글자의 기본 집합이다.
   - 들어가는 곳: `KO_LETTER`·`EN_LETTER`뿐이다(`Recognizer.PERSONAL_SETS`, FR-GRF-14 ①). 다른 집합의 것, 그 집합에 없는 글자의 것, 점이 없는 것은 **버리고 넘어간다**(템플릿 구성이 바뀌어 글자가 없어진 뒤에도 파일을 읽을 수 있게).
   - 개인 템플릿 = 내장 오너 획 템플릿을 만드는 것과 같은 처리(`Recognizer.personalTemplate`): 32점 재표본(3.2 1번) → 둘레 상자의 왼쪽 위를 원점으로, 긴 변을 1로(같은 비율) → 소수 셋째 자리로 반올림(짝수 쪽) → **그 점 열에서** 3.2 5번대로 센 코너 수가 `corners`. 닫힌 고리 여부(끝 간격 ≤ 0.05)와 고리 점수(4a)도 내장 템플릿과 같게 적용된다.
@@ -758,7 +758,7 @@ class GraffitiRecognizers(templates: TemplateSet, log: ErrorLog,
 }
 ```
 
-- **읽는 때(HLD 5.1 "읽는 때", R14):** 모델(862 kB)을 읽고 `Recognizer`를 꾸미는 일은 **뒤 스레드 하나**(`background`, 데몬 스레드 하나짜리 실행기)에서 한다. `KeyboardService.onCreate`가 `warm()`을 부르므로 키보드의 첫 표시(`onCreateInputView`·`onStartInputView`)는 이 일을 기다리지 않는다. 첫 획이 그보다 먼저 오면 `get()`이 남은 시간만 기다린다. 태블릿에서 잰 값(LLD-11 6.7): 모델 첫 읽기 44 ms, 인식기 첫 구성 68 ms, 개인 획 328개(한도 가까이) 반영 427 ms.
+- **읽는 때(HLD 5.1 "읽는 때", R15):** 모델(862 kB)을 읽고 `Recognizer`를 꾸미는 일은 **뒤 스레드 하나**(`background`, 데몬 스레드 하나짜리 실행기)에서 한다. `KeyboardService.onCreate`가 `warm()`을 부르므로 키보드의 첫 표시(`onCreateInputView`·`onStartInputView`)는 이 일을 기다리지 않는다. 첫 획이 그보다 먼저 오면 `get()`이 남은 시간만 기다린다. 태블릿에서 잰 값(LLD-11 6.7): 모델 첫 읽기 44 ms, 인식기 첫 구성 68 ms, 개인 획 328개(한도 가까이) 반영 427 ms.
 - **모델은 프로세스에 하나:** `sharedModel()`이 리소스를 한 번 읽어 간직한다(키보드와 입력 연습이 같은 프로세스다). 읽지 못하면(리소스 없음, 형식 오류) `ErrorLog`에 `GraffitiModelLoader.load`로 한 번 적고 `null`을 간직한다 → 3.6 "모델 없는 구성".
 - **판과 개인 획:** `revision()`이 간직한 인식기의 판과 다르면 `get()`·`warm()`이 새로 만든다 — 앞의 인식기에 `withPersonal(personal())`을 불러 바뀐 획만 계산한다. 같은 판 안에서는 같은 인식기 객체를 돌려준다. 한 판에 만드는 일은 하나뿐이다(`warm()`을 여러 번 불러도). 만든 결과는 판이 더 새것일 때만 바꿔 끼운다. 이 PR(인식)에서는 쓰는 쪽이 기본값(판 0, 개인 획 없음)으로 만들므로 인식기는 출고 모델 + 템플릿 하나다. 개인 획 저장소를 이 두 인자에 잇는 것은 내 획 학습(LLD-07 8절)이다.
 - **쓰는 쪽:** `GraffitiInputHandler`의 첫 인자는 `recognizer: () -> Recognizer`다(획마다 불러 그 획을 끝까지 그 인식기로 본다). `Recognizer`를 바로 받는 보조 생성자도 둔다(시험). 입력 연습의 `BoardFactory`·`PracticeInput.graffiti`도 같은 `() -> Recognizer`를 받는다(기본값 = 템플릿만, 시험용).

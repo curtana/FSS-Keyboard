@@ -1,7 +1,8 @@
 # LLD-09 오류 처리
 
 - 대응 HLD 절: 9장(오류 처리)
-- 버전 **0.20** (2026-11-14)
+- 버전 **0.21** (2026-11-14)
+- 0.21(FSS#98, HLD 0.80 9장, LLD-08 0.34 6.3): 탭 자판 출력의 보호 단위 입구가 `onTapResult`(판정된 동작을 함께 받음)로 바뀜, 조합 키 상태는 스냅숏 밖(2절).
 - 0.20(FSS#95, 긋기 입력 모드 삭제): 보호 단위와 스냅숏에서 긋기 쪽(`StrokeClassifier`·`SwipeInputMapper`·`SwipeEngineState`·`ProgressState`)을 뺐다. 스냅숏은 조합기 입력 단위와 그래피티 조립기·상태 둘이다(2절). 아래 0.14~0.18 이력의 긋기 스냅숏은 없어졌다.
 - 0.19(FSS#17: 기준값이 코드 상수): 3절 기준값 파일 손상 처리를 지웠다(파일을 읽지 않음, LLD-07 4절).
 - 0.18(이슈 #173): 긋기 스냅숏(`SwipeMapperSnapshot`)에 모음 획 조립기의 획 열(`strokes`)이 더해짐(천지인 요소 `cj`와 함께).
@@ -38,9 +39,10 @@ s = state.snapshot()          // HangulComposer.snapshot(), GraffitiInputHandler
 try   { return block() }      // block 안에서 편집기 쓰기는 마지막에만
 catch (e: Exception) { state.restore(s); log.record(site, e); return null }
 ```
-- 쓰는 곳(상태를 바꾸는 동작 하나마다): 탭 자판 출력 하나(`InputDispatcher.onTapOutput`, LLD-05A 4절), 그래피티 획 하나(`GraffitiInputHandler.onStroke` — 인식 포함, LLD-05 8.3), 기능키 누름과 반복 한 번(두 뷰 모두, LLD-05A 6절). `null`(실패)이면 그 동작은 입력 없이 끝난다.
+- 쓰는 곳(상태를 바꾸는 동작 하나마다): 탭 자판 출력 하나(`InputDispatcher.onTapResult` — 0.20까지 `onTapOutput`, LLD-05A 4절), 그래피티 획 하나(`GraffitiInputHandler.onStroke` — 인식 포함, LLD-05 8.3), 기능키 누름과 반복 한 번(두 뷰 모두, LLD-05A 6절). `null`(실패)이면 그 동작은 입력 없이 끝난다.
 - 되돌림은 각 클래스의 `snapshot`/`restore`(LLD-04 7.3, LLD-05 4·5절)를 쓴다. 조합기 상태는 입력 단위 목록 복사로 되돌린다(HLD 9장 "입력 단위 목록 이용").
 - **스냅숏 범위(0.5, 이슈 #75):** 엔진 상태(조합기 입력 단위, 그래피티 조립기·상태)만 넣는다. `ComposingController`(기대 커서 `expected`·`predictedSel`, `composingShown`·`glyph`·`composeStart`)는 넣지 않는다. block 안에서 편집기 쓰기는 마지막이라 그 전에 실패하면 `ComposingController`는 바뀌지 않았고, `ComposingController`는 포트 호출이 돌아온 뒤에만 자기 상태를 바꾸기 때문이다(LLD-08 4절). 구현: `InputDispatcher.snapshot()`·`restore()`(LLD-08 6.1).
+- **조합 키(0.21, FSS#98):** 켜진 조합 키(`InputDispatcher.chord`)와 눌린 기능키의 기억(`heldChords`)은 스냅숏에 넣지 않는다(LLD-08 6.3, HLD 9장). 조합 키 길은 맨 앞에서 켜진 조합 키를 꺼내므로, 그 뒤(조합 확정, `ChordKeys`, `sendChord`)에서 예외가 나면 조합기는 되돌아가고 조합 키는 **꺼진 채** 남는다 — 실패한 조합이 다음 키에 다시 실리지 않는다. `ChordKeys.ofTap`이 표에 없는 글자를 만나 던지는 경우(개발 중 CM-10이 막음, LLD-05A 2.4)도 같다. 시험 CD-16.
 - **편집기 쓰기 도중 예외(D-32, 0.5에서 바꿈, 0.6에서 PR #91 동작에 맞춤):** 다른 예외와 똑같이 처리한다. 엔진 상태를 동작 시작 전으로 되돌리고 기록한다(HLD 9장 "조합 상태는 획 시작 전으로 되돌린다"). 조합기 강제 확정·표시 상태 비움 같은 별도 처리는 없고, 맡는 곳도 없다(`EngineGuard.stroke`의 되돌림뿐). `ComposingController`의 표시 상태(`composingShown`·`glyph`)는 돌아온 포트 호출까지만 바뀌고 나머지는 그 동작 전 값으로 남는다(LLD-08 4절). 임시 글자가 없으면 이것이 되돌린 조합기와 맞는다(EG-05). 임시 글자가 있는 `finishComposing`·`finishAfterUserMove`(그래피티)에서 `setComposingText(임시 글자 뺀 것)`은 돌아왔고 `finishComposingText`가 던졌다면, `composingShown`·`glyph`에서도 임시 글자가 이미 빠져 있어 편집기 조합 구간(임시 글자 없음)과 같다(0.6, PR #91 — 0.5까지는 `composingShown`에 임시 글자가 남는다고 적었다). 이때 조립기는 동작 전 상태(임시 글자 대기)로 되돌아가므로 그 사이 화면에만 임시 글자가 없고, 다음 `show`(`asm.pendingGlyph()`를 넘김, LLD-05 6절)가 다시 그린다. `show`·`finishAfterUserMove`에서 `beginBatch` 뒤에 던져도 `endBatch`는 `finally`로 불린다(0.6, PR #91 — 0.5까지는 불리지 않는다고 적었다. 이 경로가 생기는 조건은 아래). 던진 호출 전에 큐에 넣은 기대 커서 일부가 `expected`에 남을 수 있으나 다음 USER_MOVED·OTHER_MOVED 판정이나 `onStart`에서 비워진다(LLD-08 4.1). 시험: CC-20~CC-22.
   - 편집기가 그 쓰기를 실제로 반영한 뒤에 예외가 났다면 편집기와 조합기가 어긋날 수 있다. `InputConnection`은 실패를 반환값(`false`)으로 알리고 예외를 내지 않으므로(`AndroidEditorPort`는 반환값을 쓰지 않는다, LLD-08 4절) 이 경로는 우리 코드 결함에서만 생기며, 오류 기록으로 찾는다. 0.4의 "조합기 `finish()` + 표시 상태 비움"은 EG-05(되돌림)와 반대 결과였고 HLD 9장과도 맞지 않아 없앴다.
 - 근거: NFR-03, HLD 9장. 시험: EG-01~EG-06, CC-20~CC-22.

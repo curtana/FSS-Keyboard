@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.58** (2026-11-14)
+- 버전 **0.59** (2026-11-14)
+- 0.59(FSS#98, SRS 0.87 FR-TAP-03·03c·15~18·NFR-06, HLD 0.80 5A, LLD-05A 0.20, LLD-08 0.34, LLD-07 0.38): 탭 자판 편집 줄의 Ctrl·Alt 조합 키 — TL-02(편집 줄 기능키 하한 45 → 36), TL-06(편집 줄 10키), 새 5.6 CM-01~CM-12(`ChordKeysTest`, JVM), 새 7.4a CD-01~CD-18(`InputDispatcherChordTest`, JVM)·CL-01~CL-05(`KeyboardServiceChordTest`, Robolectric), 7.5에 CP-01~CP-06(`AndroidEditorPortChordTest`, Robolectric)·CV-01~CV-09(`TapKeyboardChordViewTest`, Robolectric), 7.6에 PR-35, 8절 DV-39(**실기 미확인**), 9절 표. MK-00b의 `FunctionKey` 목록에 `CTRL`·`ALT`. MQ-01~MQ-04는 `MultiPointerQueue<R>`(결과 형이 타입 인자, LLD-05A 5절)로 고쳤을 뿐 입력·기대는 그대로다. Ctrl·Alt가 꺼져 있을 때의 기존 시험 기대값은 바뀌지 않았다(편집 줄 배치를 보는 `TapLayoutsTest`의 id·라벨·x 목록만 10키로).
 - 0.58(FSS#95, SRS 0.86·HLD 0.79 11장, LLD-03 0.31·LLD-04 0.36·LLD-07 0.37·LLD-08 0.33: **긋기 입력 모드 삭제, 모드 키 순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티**): ① 지운 시험 — 4절 전부(`gesture-engine`의 SC·NK·CJ·PS·SM·SL·성능과 긋기 자판 뷰 SW-01~SW-17), 2.3(VS), 9.1(SW-08·SW-08c), HC-24c·HC-52, KH-06, CC-23, ID-05·06·25·26·30~34, CT-01~06, GT-01~10, CS-01~04, MOD-02·04, PR-10~13·16·30, TH-10, KR-07, SM-04, SW-20, MK-06·07, 실기기 DV-01·03·04·23·26·27·29·34. ② 순서 때문에 기대값이 바뀐 시험 — 7.2 MC-01~MC-10, 7.2a NF-02·06·08·09, 7.2b(OM-01~OM-07로 다시 적음), ID-08·ID-23. ③ 긋기 가짜(`SwipeEngineState`)·긋기 주제로 서 있던 시험을 두벌식·그래피티·탭 자판으로 바꿔 세움(보는 동작과 기대값은 그대로) — ID-12·13·19·20·27, EG-05, PR-03·06·08·22·23·31·33·34, HC-21·22·26·50·51·53·BS-20·21(정책 이름만 그래피티 정책으로: 두 정책은 같은 값이었다). ④ 새 시험 — 7.2c 옮겨 오기(SS-15, MC-40~MC-42, PR-36), MC-00(순서), `InputDispatcherGraffitiTest` NF-02. ⑤ PR-01(주제 넷·54항목), PR-14, SS-01·07·08, MOD-03(recognizer만). 아래 0.57까지의 이력에 나오는 긋기 시험 ID는 이 판에서 없어졌다.
 - 0.57(FSS#97, SRS 0.85 FR-TAP-02c, LLD-05A 0.18): 두벌식 겹받침 여섯 개의 방향이 바뀜(ㄱ ↓ ㄳ, ㄴ ↑ ㄵ · ↓ ㄶ, ㅂ ↓ ㅄ, ㅅ ↓ ㄽ, ㅍ ↑ ㄿ) — 기대값 바뀜: TK-08(r ↓ = ㄳ), TK-11·TK-20(r ← = ㄱ, 겹받침 사례는 f ← ㄺ → ㄻ), TK-23(r ↓ ㄳ, r ← ㄱ, s ↑ ㄵ, f ← ㄺ), TA-12(ㅂ: ← ㅂ → ㅂ ↓ ㅄ, ㄴ: ↑ ㄵ ← ㄴ → ㄴ ↓ ㄶ), TA-20(ㅂ 힌트 ↑ ㅃ ↓ ㅄ, ㄴ 힌트 ↑ ㄵ ↓ ㄶ), TA-21(일곱 키의 다섯 동작 전부, 옛 방향 = 기본 자모, 힌트는 새 변에만). 사례 더함: TK-05(s ↑ = ㄵ), TK-14(s·f·v ↑ 문지르기 = 기본 자모), TK-17(r·s·f·q·t ↓ 문지르기 = 기본 자모). 8절에 DV-38. HC-60·HC-61·ID-40(ㄹ ←)은 그대로다.
 - 0.56(FSS#86, LLD-08 0.32 7.4, LLD-07 0.36): 띄운 자판 — 새 7.8에 FK-01~FK-08(`FloatingKeyboardTest`, JVM), PM-01~PM-12(`PlateMoverTest`, JVM), FL-01~FL-20(`KeyboardFloatViewTest`, Robolectric), KI-05·KI-06(`KeyboardInsetsTest`). 7.5에 SS-12~SS-14, 4장 표에 FB-05, 7.6에 PR-34, 7.7에 OB-06·OB-07, 8절에 DV-37(실기 미확인 항목), 9절 표. 기존 시험의 기대값은 바꾸지 않았다(띄우기 끔은 0.55의 길 그대로 — FL-01이 그것을 고정한다).
@@ -300,10 +301,11 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 | ID | 대상 | 입력 | 기대 | 근거 |
 |---|---|---|---|---|
 | TL-01 | `TapLayouts.QWERTY`, `DUBEOLSIK` | 줄마다 폭 합 | 360(빈칸 포함), 6줄 | FR-TAP-03 |
-| TL-02 | 〃 | 키 크기 | 글자·숫자·기호 키 폭 ≥ 36, 기능키 ≥ 48(편집 줄 기능키는 ≥ 45, 0.22 NFR-06 예외), 줄 높이 48 | NFR-06, 이슈 #198 |
+| TL-02 | 〃 | 키 크기 | 글자·숫자·기호 키 폭 ≥ 36, 기능키 ≥ 48(편집 줄 기능키는 ≥ 36 — 0.59 NFR-06 예외, 0.22~0.58은 45), 줄 높이 48 | NFR-06, 이슈 #198, FSS#98 |
 | TL-03 | 〃 | 모드 키 | 줄 5 왼쪽 첫 키 | SRS 3.3 |
 | TL-04 | 〃 + `TapKeyResolver` | 모든 키 × 모든 동작의 출력 모음 | 숫자 10개 + PC 특수 문자 32개를 모두 포함 | FR-TAP-11 |
 | TL-05 | 〃 (0.22) | 모든 키의 `KeyAssign` 기호 모음 | PC 특수 문자 32개가 각각 정확히 한 번(겹침·빠짐 없음) | FR-TAP-03a, 이슈 #198 |
+| TL-06 | 〃 (0.59) | 편집 줄(줄 0), 쿼티·두벌식 | 기능키 Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫ 차례, x = 0, 36, …, 324, 폭 각 36(합 360), 줄 0에 빈칸 없음, 열 키의 (x, 폭) = 바로 아래 숫자 줄 열 키의 (x, 폭) | FR-TAP-03, 15, FR-CMN-14 ⑦, FSS#98 |
 | MQ-01 | `MultiPointerQueue` | A 누름, B 누름, B 뗌, A 뗌 | B 뗄 때 출력 없음, A 뗄 때 [A, B] | FR-CMN-11 |
 | MQ-02 | 〃 | A 누름, A 뗌, B 누름, B 뗌 | [A], [B] | FR-CMN-11 |
 | MQ-03 | 〃 | A 누름, B 누름, C 누름, C 뗌, A 뗌, B 뗌 | –, [A], [B, C] | FR-CMN-11 |
@@ -336,6 +338,25 @@ SRS 0.16 탭 자판 동작 표는 8행(동작) × 3열(키 종류)이다. 열: �
 | MK-04 | 〃 | 모드 키 누르고 위로 민 채 `ACTION_CANCEL`, 늦은 뗌 | 입력 없음, 눌림 없음 | FR-CMN-11a ③ |
 | MK-05 | 〃 | 글자 키 q 누름, 모드 키 탭, q 뗌 | `down:MODE`, `up:MODE`, 그 뒤 q(대기열 밖) | FR-CMN-11 |
 | MK-08 | `GraffitiPadView`(Robolectric 합성 터치) | 보조 줄 모드 키 탭 / 패드로 위로 66dp / 위로 민 채 `ACTION_CANCEL` | 누를 때 입력 없음, 뗄 때 `down:MODE`, `up:MODE` / `settings`, 패드 상태 그대로(패드 획 아님) / 입력 없음 | 이슈 #205, LLD-05 8절 |
+
+### 5.6 조합 키 대응 `ChordKeys` (0.59, FSS#98, LLD-05A 2.4)
+
+JVM(`stroke-core`, `ChordKeysTest`). 기대값은 SRS 조합 키 대응표와 FR-TAP-16 ②③이다. 표에서 `plain(k)` = `ChordStroke(k, shift = false)`, `shift(k)` = `ChordStroke(k, shift = true)`, "돌아옴" = `ExitReturn`.
+
+| ID | 대상 | 입력 | 기대 | 근거 |
+|---|---|---|---|---|
+| CM-01 | `ChordKeys.CHARS`, `ofChar` | 표의 글자 모음 / 공백, `ㄱ`, 윗첨자 `ᵃ` | `!`~`~` 94자와 정확히 같음 / 모두 null | FR-TAP-16 ② |
+| CM-02 | `ofChar` | `a`~`z` / `A`~`Z` | plain(`A`~`Z`) / shift(같은 키). 키 이름 = 대문자 | 조합 키 대응표 |
+| CM-03 | 〃 | `0`~`9` / `) ! @ # $ % ^ & * (` | plain(`D0`~`D9`) / shift(`D0`~`D9` 차례로) | 〃 |
+| CM-04 | 〃 | 그 밖의 기호 22자 | `` ` `` `-` `=` `[` `]` `\` `;` `'` `,` `.` `/` = plain(`GRAVE` … `SLASH`), `~ _ + { } \| : " < > ?` = shift(같은 차례의 키). Shift가 실리는 글자 = 대문자 26 + SRS 목록 21자, 그 밖에 없음 | FR-TAP-16 ② |
+| CM-05 | `ofTap`(쿼티 글자 키 26개) | 탭 / ↑ 나감·돌아옴 / ↑·↓ 문지르기 / a의 ←·→·↓ 나감·돌아옴, ← 문지르기 | plain(그 키) / shift(그 키) / plain(그 키)(윗첨자·아래첨자 → 그 글자 키, 아래첨자가 없는 b도) / plain(`A`) | FR-TAP-16 ② |
+| CM-06 | 〃 (기호가 배정된 글자 키) | i ← · → / o ← · → / p ← · ↓ / l ← · ↓ / i ← 문지르기, l ← 돌아옴 / i ↓(배정 없음) | plain(`LEFT_BRACKET`·`RIGHT_BRACKET`) / shift(같은 두 키) / plain(`BACKSLASH`)·shift(`BACKSLASH`) / plain(`SEMICOLON`)·shift(`SEMICOLON`) / 나감과 같음 / plain(`I`) | 3.3 기호 배정, 동작 표 |
+| CM-07 | 〃 (숫자 줄) | 1~0 탭 / ↑ / ↑·↓ 문지르기 / 1 → · ↓ / 2 ← · ↓(배정 없음) | plain(`D1`…`D0`) / shift(같은 키) / plain(같은 키) / plain(`GRAVE`)·shift(`GRAVE`) / plain(`D2`) | 〃 |
+| CM-08 | 〃 (기호 키) | `=` 키(id `minus`) 탭·↑·←·↓·→ / `,` 탭·↑·←·→·↑ 문지르기 / `.` 탭·↑·← / `/` 탭·↑ | plain(`EQUALS`), shift(`MINUS`), plain(`MINUS`), shift(`EQUALS`), plain(`EQUALS`) / plain(`COMMA`), shift(`COMMA`), plain(`APOSTROPHE`), shift(`APOSTROPHE`), plain(`COMMA`) / plain(`PERIOD`), shift(`PERIOD`), plain(`PERIOD`) / plain(`SLASH`), shift(`SLASH`) | 〃 |
+| CM-09 | 〃 (두벌식 키 id) | 두 배치의 키 id 목록 / ㅂ 탭·↑(ㅃ)·↓(ㅄ) / ㄹ ←(ㄺ)·↑(ㅀ) / ㅡ ↑, ㅁ ↑(시프트 자모 없음) / ㅣ ← / ㅁ ↑ 문지르기 | 같음 / plain(`Q`), shift(`Q`), plain(`Q`)(쿼티 q ↓는 배정 없음) / plain(`F`), shift(`F`) / shift(`M`), shift(`A`) / plain(`SEMICOLON`) / plain(`A`) | FR-TAP-16 ③ |
+| CM-10 | 〃 (쿼티 글자·숫자·기호 키 40개 × 동작 13가지: 탭, 네 방향의 나감·돌아옴·문지르기) | 모든 쌍 | 예외 없음. 각 결과 = `ofChar`(그 동작 — ↑·↓ 문지르기는 탭 — 의 `TapKeyResolver` 글자). 나온 결과 모음 = `CHARS`의 값 94개 전부 | FR-TAP-16 ②, 기호 배정 변경 감시 |
+| CM-11 | `ofFunction` | `FunctionKey` 13개 전부 | 스페이스·↵·⇥·←↑↓→·Esc·Del·⌫ = `SPACE` `ENTER` `TAB` `DPAD_*` `ESCAPE` `FORWARD_DEL` `DEL`, `MODE`·`CTRL`·`ALT` = null. 탭 자판 배치의 대상 기능키는 모두 키가 있음 | FR-TAP-16 ① |
+| CM-12 | `ofTap`, `ChordModifier` | id `esc`·`ctrl`·`space`·`nope` / 선언 순서 | 모두 `IllegalArgumentException` / `CTRL`, `ALT`, `SHIFT`(누름 입력의 순서) | LLD-05A 2.4, FR-TAP-16 ④ |
 
 ## 6. recognizer·그래피티
 
@@ -721,6 +742,41 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 | ID-24 | `onFunctionUp(BACKSPACE)` | 편집기 호출 없음, typed 그대로 | FR-CMN-11a |
 | ID-27 | 두벌식 "고" 조합 중 `onSettingsStroke()` / 이어서 한 번 더 | "finish"만(공백 없음, 설정 화면을 열 때 이미 확정), 조합 끝, 오류 0, 설정 화면 1회, 입력 아님, 모드 그대로 / 설정 화면 2회, 더 확정할 것 없음. `FunctionKey`에 SETTINGS 없음 | 이슈 #205, FR-CMN-13 |
 
+### 7.4a 조합 키 Ctrl·Alt (0.59, FSS#98, LLD-08 6.3)
+
+`InputDispatcherChordTest`(JVM): 실제 `InputDispatcher`·`ComposingController`·`ModeController`(쿼티·두벌식), 호출을 적는 가짜 `EditorPort`(`sendChord`는 `chord(키,[조합 키])`로 적음). `press(f)` = `onFunctionDown(f)` + `onFunctionUp(f)`, `down`·`up`은 그 하나, `hit(키, 동작)` = 그 동작의 `TapKeyResolver` 결과로 `onTapResult`, `changes` = `onChordChanged` 호출 수. 조합 중 호출(`begin`·`end`)은 기대에서 뺐다.
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| CD-01 | 두벌식 "가" 조합 중 Ctrl 누름 / 뗌 / 다시 누름·뗌, Alt 두 번 | {CTRL} / 그대로 / 꺼짐, {ALT} → 꺼짐. 포트 호출 없음, "가" 조합 중 그대로, `typed` false, `changes` 4 | FR-TAP-15 ①⑤ |
+| CD-02 | Ctrl, Alt, c / Alt, Ctrl, ← | `chord(C,[CTRL, ALT])`, 둘 다 꺼짐, `changes` 3 / `chord(DPAD_LEFT,[CTRL, ALT])`(켠 순서와 상관없이 같은 차례) | FR-TAP-15 ①②, 16 ④ |
+| CD-03 | Ctrl, c, c / Alt, x | `chord(C,[CTRL])`, 꺼짐, `typed` true, 다음 c = `commit(c)` / `chord(X,[ALT])` | FR-TAP-15 ②, 16 ⑦ |
+| CD-04 | Ctrl + (a ↑ / a ← / `=` 키 ←·탭·↓ / i ← / p ↓ / 1 / 2 ↑ / `/` ↑ / `,` ← / b ↓ 문지르기 / a ↑ 문지르기), Alt + f ↑ | `A`+Shift / `A` / `MINUS`, `EQUALS`, `EQUALS`+Shift / `LEFT_BRACKET` / `BACKSLASH`+Shift / `D1` / `D2`+Shift / `SLASH`+Shift / `APOSTROPHE` / `B` / `A`, 오류 진동 0 / `chord(F,[ALT, SHIFT])` | FR-TAP-16 ② |
+| CD-05 | 두벌식 "각" 조합 중 Ctrl(아직 "각") → ㅊ / Ctrl + ㅂ 탭·↑·↓, ㄹ ←, ㅁ ↑, ㅣ ←, 숫자 5 ↑ | `finish`, `chord(C,[CTRL])`, 조합 없음 / `Q`, `Q`+Shift, `Q`(ㅄ 자리, 쿼티 q ↓ 배정 없음), `F`, `A`+Shift, `SEMICOLON`, `D5`+Shift. 조합기에 자모 없음 | FR-TAP-16 ③ |
+| CD-06 | 두벌식 "닭" 조합 중(여러 줄·동작 있는 입력창) Ctrl + 스페이스·↵·⇥·⌫·Esc·Del·←·↑·↓·→ | 각각 `finish`, `chord(SPACE / ENTER / TAB / DEL / ESCAPE / FORWARD_DEL / DPAD_*,[CTRL])`. 공백·탭 문자·줄바꿈·입력창 동작·⌫의 되돌리기(닭 → 달) 없음 | FR-TAP-16 ③④ |
+| CD-07 | Alt + 스페이스·↵·⇥·⌫ / Alt + ←↑↓→·Esc·Del / Alt + 1 | `typed` true / false / true | FR-TAP-16 ⑦, FR-CMN-03a |
+| CD-08 | Ctrl, ← 누름 → 반복 → (다른 손가락) a, ↑ → 반복 → 뗌 → ← 다시 / Alt + ⌫ 누름·반복 2, Ctrl + Del 누름·반복 1 | `chord(DPAD_LEFT,[CTRL])` 2, `commit(a)`, `key(DPAD_UP)`, `chord(DPAD_LEFT,[CTRL])`. 누른 순간 꺼짐 / 다음 ← = `key(DPAD_LEFT)` / `chord(DEL,[ALT])` 3, `chord(FORWARD_DEL,[CTRL])` 2 | FR-TAP-15 ③ |
+| CD-09 | ← 누르고 있는 중 Ctrl → 반복 2 → c → 반복 → 뗌 | `key(DPAD_LEFT)` 3, Ctrl 켜진 채 / `chord(C,[CTRL])`, `key(DPAD_LEFT)`, 꺼짐 | FR-TAP-15 ②③ |
+| CD-10 | Ctrl, Alt, 모드 키 → c | 둘 다 꺼짐, 포트 호출 없음, 두벌식으로 바뀜, `changes` 3 / `commit(c)` | FR-TAP-16 ①, 17 ① (다) |
+| CD-11 | Ctrl, `onSettingsStroke()` | 꺼짐, 설정 열기 1회, 포트 호출 없음 | FR-TAP-17 ① (라) |
+| CD-12 | `clearChord()`(꺼져 있음) / Ctrl, Alt, `clearChord()`, 다시 `clearChord()` → v | `changes` 0 / 꺼짐, `changes` 3(끄기 알림 1번), 그대로 3, 포트 호출 없음 / `commit(v)` | FR-TAP-17 ① |
+| CD-13 | Ctrl, → 누름, `clearChord()`, → 반복 | `chord(DPAD_RIGHT,[CTRL])`, `key(DPAD_RIGHT)` | LLD-08 6.3 기억 |
+| CD-14 | 두벌식 Ctrl, `onCursorMovedNoComposing()` / Ctrl, `onStart(0, 0)`, `onCursorMoved(3, 3, −1, −1)` → ㅊ | {CTRL} 그대로 / {CTRL} 그대로, `chord(C,[CTRL])` | FR-TAP-17 ② |
+| CD-15 | Ctrl, Alt, Alt, a, a, ←, Ctrl, ← 누름·반복·뗌 | `changes` 6(켬·켬·끔·실림, 꺼진 동안은 없음, 누름이 꺼냄, 반복·뗌은 없음) | LLD-08 6.3 `setChord` |
+| CD-16 | `EngineGuard.stroke`: 두벌식 "가" 중 Ctrl + ㅊ에서 `sendChord`가 던짐 → 던지지 않게 하고 ㅊ / `snapshot()`, Alt, `restore` | 꺼진 채 / 둘째 ㅊ에 `chord` 없음 / {ALT} 그대로(스냅숏에 조합 키 없음) | HLD 9장, LLD-09 2절 |
+| CD-17 | 조합 키 꺼짐: `onTapResult`로 a ↑, b ↓ 문지르기, 두벌식 ㄱ, `onTapOutput`(두 인자)으로 ㅏ, ⇥, ⌫ | `commit(A)`, `commit(b)`(오류 진동 1), `compose(ㄱ)`, `compose(가)`, `finish`, `commit(\t)`, `del`. `changes` 0 | FR-TAP-16 ② 끝, 0.58까지와 같음 |
+| CD-18 | 비밀번호 입력창, Ctrl, `onTapOutput(a, 탭 결과)` | `chord(A,[CTRL])`(동작 없이 온 결과 = 탭) | FR-TAP-17 ③, 18 |
+
+`KeyboardServiceChordTest`(Robolectric, 실제 `KeyboardService`): 매번 Ctrl·Alt를 켜고(`turnOn`) 부른다. "꺼짐" = `chord` 빈 집합.
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| CL-01 | `onStartInputView`(글 입력창, `restarting` false / true / 숫자 입력창) | 셋 다 꺼짐 | FR-TAP-17 ① (다)(마) |
+| CL-02 | `onFinishInputView(false)` / `(true)` / `onFinishInput()` | 셋 다 꺼짐 | FR-TAP-17 ① (바) |
+| CL-03 | `onConfigurationChanged`(가로) | 꺼짐 | FR-TAP-17 ① (사) |
+| CL-04 | `onUpdateSelection`(선택 2~5) / (커서 7) | {CTRL, ALT} 그대로 | FR-TAP-17 ② |
+| CL-05 | `dispatcher.onFunctionDown(MODE)` | 꺼짐 | FR-TAP-17 ① (다) |
+
 ### 7.5 그 밖의 app
 
 | ID | 대상 | 입력 | 기대 | 근거 |
@@ -767,6 +823,21 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 | EG-06 | 〃 | 그래피티 "ㄱㆍ"(GH-02 상태: 조합기 ㄱ, 조립기 Pending ㆍ)에서 `stroke { graffiti.handle(Consonant(ㄴ)) }`, 가짜 `EditorPort.setComposingText`가 예외(`asm.clear()`·`composer.apply(ㄴ)` 뒤 `show` 안의 편집기 쓰기) | null, 조립기 Pending ㆍ(`pendingGlyph()` = "ㆍ")·`GraffitiState` 값·조합기 "ㄱ"이 동작 전과 같음, 기록 1건(`InputDispatcher.snapshot()`의 `graffiti?.snapshot()`, LLD-08 6.1·LLD-05 6절, 0.5) | HLD 9장, 이슈 #75 |
 | MOD-01 | 빌드 | `./gradlew assembleDebug` | 성공 | 이슈 #251 (0.35) |
 | MOD-03 | 소스 검사(시험 코드가 파일을 읽음) | `recognizer` | `kbd.hangul.compose` import 없음(검사 함수가 금지 import를 찾는지도 봄) | LLD-03 1.1 |
+| CP-01 | `AndroidEditorPort.sendChord`(Robolectric, 입력 연결을 적는 가짜) | `C`, {CTRL} | `sendKeyEvent` 4개: CTRL_LEFT ↓(meta Ctrl), C ↓·↑(Ctrl), CTRL_LEFT ↑(0) | FR-TAP-16 ④, LLD-08 4절 (0.59) |
+| CP-02 | 〃 | `TAB`, {ALT} | ALT_LEFT ↓(Alt), TAB ↓·↑(Alt), ALT_LEFT ↑(0) | 〃 |
+| CP-03 | 〃 | `LEFT_BRACKET`, {SHIFT, ALT, CTRL}(집합의 순서와 상관없이) / `A`, {CTRL, SHIFT} | 8개: CTRL ↓(Ctrl), ALT ↓(Ctrl + Alt), SHIFT ↓(셋), `[` ↓·↑(셋), SHIFT ↑(Ctrl + Alt), ALT ↑(Ctrl), CTRL ↑(0) / 6개, 같은 규칙 | 〃 |
+| CP-04 | 〃 | Ctrl + A·C·V·X·Z·스페이스·↵·⇥ | 입력 연결 호출은 `sendKeyEvent`만(편집 명령·`commitText`·입력창 동작 없음), 32개 모두 `FLAG_SOFT_KEYBOARD \| FLAG_KEEP_TOUCH_MODE`, `VIRTUAL_KEYBOARD`, 반복 수 0, 이벤트 시각 ≥ 누름 시각 | FR-TAP-16 ⑤⑥ |
+| CP-05 | 〃 | 입력 연결 없음 | 아무 호출 없음 | HLD 9장 |
+| CP-06 | `keyCodeOf`·조합 키 표 | `ChordKey` 57개 전부, `ChordModifier` 3개 | 이름과 같은 `KEYCODE_*`(`D0`~`D9` = `KEYCODE_0`~`9`), Ctrl·Alt·Shift = `*_LEFT` 키 코드와 `META_*_ON \| META_*_LEFT_ON` | LLD-08 4절 |
+| CV-01 | `TapKeyboardView`(Robolectric 합성 터치, 기록하는 싱크) | Ctrl 누름 → 반복 시간 × 3 → 뗌 / Alt 탭 | `key()` 1, `down:CTRL`, 반복 없음, `up:CTRL` / `down:ALT`, `up:ALT`, {CTRL, ALT}. `REPEATING`에 Ctrl·Alt 없음 | FR-TAP-15 ①, FR-CMN-11a (0.59) |
+| CV-02 | 〃 | c 탭 / a ↑ 나감 누른 채 i ← 나감 뗌(a를 기다림), a 뗌 | `onTapResult` c·`Tap`, a·`A`·`Exit(UP)`, i·`[`·`Exit(LEFT)` 차례. `onTapOutput` 호출 없음 | LLD-05A 4절, FR-CMN-11 |
+| CV-03 | 〃 (기록용 `Canvas`) | 꺼짐 / Ctrl 누름 + Esc 누름 / 둘 뗌 / 싱크가 {ALT}로 바꾸고 `chordChanged()` | Ctrl·Alt 바탕 = Esc 바탕 / Ctrl은 기능키 바탕·눌림 바탕과 다름 / Ctrl 켜짐 바탕 그대로, Esc 보통, `isChordOn` Ctrl만 / Ctrl 보통, Alt 켜짐 바탕 | FR-TAP-15 ④ |
+| CV-04 | 〃 (실제 글꼴 측정, 폭 360·327.3·320·800dp × 줄 48dp, 320 × 40dp) | Esc·Ctrl·Alt·Del 글자 크기 | 넷이 한 크기 = `wordTextSizePx` ≤ 다른 글자 크기, ⇥·q는 다른 글자 크기 그대로, 네 낱말 폭 ≤ 키 폭 − 2 × 4dp. 800dp는 다른 글자와 같은 크기, 360dp 이하는 더 작음 | FR-TAP-03c |
+| CV-05 | `WordLabelFit.size(20, 넓이, 안쪽 폭)` | (24, 24) / (10, 24) / (30, 24) / (48, 24) / (30, −3) / (0, 24) | 20 / 20 / 16 / 10 / 0 / 20 | LLD-05A 4절 |
+| CV-06 | `TapKeyAccessHelper` 노드 | Ctrl·Alt / Esc·⇥·a·모드 키 / Ctrl 탭 / 싱크가 끄고 `chordChanged()` | 켜고 끄는 항목(`ToggleButton`), 꺼짐, 이름 "Ctrl"·"Alt" / 켜고 끄는 항목 아님 / Ctrl 켜짐, Alt 꺼짐 / Ctrl 꺼짐 | FR-TAP-18 |
+| CV-07 | 〃 `ACTION_CLICK` | Ctrl / c / Ctrl | `down:CTRL`, `up:CTRL`, 켜짐 / c·`Tap` / 꺼짐 | FR-TAP-18 |
+| CV-08 | 두벌식 뷰 | 키 id 목록, Alt 탭 | 쿼티와 같은 id, `down:ALT`·`up:ALT`, 켜짐 바탕, 노드 켜짐 | FR-TAP-15 |
+| CV-09 | 조합 키를 다루지 않는 싱크(기본 `chord`) | Ctrl 탭 | `chord` 빈 집합, 켜짐 바탕·노드 켜짐 없음 | FR-TAP-17 ④ |
 
 ### 7.6 입력 연습 (LLD-07 2절, SRS 부록 A, FSS#17, 0.36)
 
@@ -785,6 +856,7 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 | PR-32 | 〃(그래피티 영문 주제, 0.54) | a 항목 | 묶음 안의 패드 `sideMarginPx` 21, 패드 폭 420 | LLD-07 2.3 `applySideMargin` |
 | PR-33 | 연습 화면(PR-31과 같은 구성, 0.55) | 영문 대문자 주제 시작 / 틀을 기록용 `Canvas`에 그림 / 남는 자리(x 0·가운데·사각형 바로 왼쪽)에서 눌러 자판으로 끌고 뗌 | 틀 `plate` = (틀 폭 − 462, 0, 틀 폭, 틀 높이), 틀 배경 없음·`willNotDraw` 거짓 / 처음 그려진 사각형 = `plate`·키보드 배경색 / 소비, 입력 표시·판정·시도 번호 그대로 | FR-CMN-14 ⑫ 자, LLD-07 2.3 (FSS#85) |
 | PR-34 | 연습 화면(PR-31과 같은 구성, 세로·가로 띄우기 켬, 0.56) | 영문 대문자 주제 시작 | 틀의 `plate` = PR-33과 같음(오른쪽 끝 462 × 틀 높이, 위 0), 틀 높이 = 6줄, 자식은 연습 자판 하나뿐, 손잡이 띠(`HANDLE_NAME`) 뷰 없음 | FR-CMN-15 ⑭, LLD-07 2.3 (FSS#86) |
+| PR-35 | `PracticeInput.tapSink`(0.59, FSS#98) | Ctrl·Alt 누름·뗌 → c 탭 → a ↑ / 연습 편집기에 Ctrl + C | `tapSink.chord`·`dispatcher.chord` 빈 집합, 편집기 "cA" / 그대로 "cA" | FR-TAP-17 ④, LLD-07 2.3 |
 | PR-14 | `PracticeTopic.offInKeyboard` | 기본 설정 / 그래피티 끔 | 표시 없음 / graffiti_ko·graffiti_en | FR-CMN-03f ⑦, SRS 부록 A.1 (0.38, 0.58) |
 | PR-20 | 그래피티 항목(실제 템플릿·`GraffitiInputHandler`) | 가: ko_g, ↓, 탭 / 고: ko_g, 탭, → / a: en_a / 1: 숫자 영역 ↓ | ㄱ 기 가 / ㄱ ㄱㆍ 고 / a / 1, 모두 ✓(0.41: 가·고는 가는 동안 대기, 보조 줄 스페이스 뒤 ✓. a·1은 바로 ✓) | SRS 부록 A.2 ③, D-65 |
 | PR-21 | 〃 | 템플릿에 없는 지그재그(a 차례) | ✗ | FR-GRF-08, SRS 부록 A.3 |
@@ -938,6 +1010,7 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | DV-38 | 긋기 입력 모드 삭제·옮겨 오기(0.58, FSS#95 — **실기 미확인**) | ① 새로 설치: 한글 두벌식으로 시작, 모드 키가 한글 → 영문 → 그래피티 → 한글로 돎, 그래피티를 끄면 한글 ↔ 영문 ② 긋기 입력이 마지막 모드이던 기기에 덮어 설치: 죽지 않고 한글 두벌식으로 시작(숫자 입력창이면 영문 쿼티), 진동·소리·줄 높이·자판 폭·정렬·띄우기 자리는 그대로 ③ 탭 자판의 방향 긋기(↑ 대문자·쌍자음, ←·→·↓ 기호, 두벌식 겹받침)·모드 키 ↑ = 설정·좌우 여유 칸·띄운 자판·그래피티가 전과 같음 | FR-CMN-03 ②, FR-CMN-10a, FR-SET-08 |
 | DV-37 | 띄운 자판(0.56, FSS#86, HLD R12 — **실기 미확인**) | **태블릿 가로 화면 첫째**, 다음 태블릿 세로·폰 세로·폰 가로, 3버튼·제스처 내비게이션, 키보드 높이만큼 줄어드는 앱과 그렇지 않은 앱: ① 띄운 동안 앱이 밀리거나 줄지 않는지, 앱이 키보드 보임을 어떻게 받는지(LLD-08 7.4 ⑨) ② 화면만 한 투명 창: 판 밖으로 아래 앱이 보이고 눌리는지, 뜨고 내릴 때의 애니메이션·그리기 비용 ③ 입력 뷰가 어디까지 커지는지(상태 막대·컷아웃 아래까지인지, 위쪽 인셋을 받는지 — 7.4 ⑪) ④ 시스템의 키보드 내리기·입력기 전환 버튼과 뒤로 가기 ⑤ 자판을 누른 채 판 밖에 닿은 둘째 손가락, 아래 앱을 누른 채 자판에 닿은 손가락 ⑥ 분할 화면·팝업 창 ⑦ 끄는 동안 손가락이 판 밖으로 나가도 따라오는지, 놓은 바로 뒤 눌리는 자리가 새 판인지(7.4 ⑫) ⑧ 손잡이 띠 24dp가 잡기 쉬운지, 길게 누름 시간 ⑨ 판이 위 끝에 있을 때 맨 윗줄 키의 안내 팝업 ⑩ 낮은 가로 화면(폰)에서 붙은 자판으로 놓이는지, 붙은 자판 ↔ 띄운 자판이 되풀이되지 않는지 ⑪ 회전·설정 변경 뒤 그 방향의 자리, 키보드를 내렸다 띄우면 같은 자리 | SRS FR-CMN-15, HLD R12, LLD-08 7.4 |
 | DV-38 | 두벌식 겹받침 새 방향(0.57, FSS#97 — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ① ㄱ ↓ ㄳ, ㄴ ↑ ㄵ · ↓ ㄶ, ㅂ ↓ ㅄ, ㅅ ↓ ㄽ, ㅍ ↑ ㄿ이 받침 없는 글자 뒤에서 한 번에 들어가는지(몫, 앉, 않, 값, 곬, 읊) ② 키 위 작은 글자가 그 변 가운데에 있고 옛 변(ㄱ ←, ㄴ ← · →, ㅂ →, ㅅ ←, ㅍ ←)에는 없는지, 위 변의 ㄵ·ㄿ과 아래 변의 ㄳ·ㄶ·ㅄ·ㄽ이 키 글자와 겹치지 않는지 ③ 옛 방향으로 그으면 기본 글자인지 ④ 맨 윗글자 줄의 ㅂ·ㄱ·ㅅ ↓와 가운데 줄 ㄴ ↑·↓, 아랫글자 줄 ㅍ ↑가 이웃 줄 키로 넘어가도 그 변의 나감으로 잡히는지 ⑤ ↑·↓ 문지르기는 기본 글자인지 | FR-TAP-02c, FR-TAP-03b |
+| DV-39 | 조합 키 Ctrl·Alt(0.59, FSS#98, HLD R13 — **실기 미확인**) | 휴대폰·태블릿, 쿼티·두벌식: ① 메모·문서·메신저 앱, 웹 입력창에서 Ctrl + A·C·X·V·Z(전체 선택·복사·잘라내기·붙여넣기·실행 취소) ② 터미널류 앱에서 Ctrl + C(중단)·D·Z·L, Ctrl + `[`, Ctrl + V, Alt + 글자, Ctrl·Alt + 방향키·⇥ ③ Ctrl + ←·→, Ctrl + ⌫·Del, Ctrl + ↵와 누르고 있을 때의 반복 ④ Ctrl·Alt 누름·뗌 입력의 부작용(뒤 글자가 바뀌거나 포커스가 옮겨지지 않음) ⑤ Alt + ⇥ 등이 시스템 단축키가 되지 않음 ⑥ 키 입력을 처리하지 않는 앱에서 아무 일 없음(글자 안 들어감) ⑦ 두벌식 조합 중 Ctrl + 글자 = 확정 뒤 전달 ⑧ 켜짐 표시가 눈에 띄는지, 편집 줄 키(약 32.7dp)를 잘못 누르지 않는지, Esc·Ctrl·Alt·Del 글자가 키 안에 들어가는지(줄인 자판 포함) ⑨ 화면 읽기에서 켜짐·꺼짐 ⑩ 입력을 다시 시작시키는 입력창에서 켜 둔 조합 키가 뜻밖에 꺼지지 않는지 | SRS 6장 D 조합 키, FR-TAP-15~18, TBD-34 |
 
 ## 9. 안드로이드 클래스 대상 단위 시험 (G1)
 
@@ -953,6 +1026,9 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | `Feedback`(`SettingsStore` 기본값과 함께) | FB-04, FB-05(0.56) |
 | `GraffitiPadView`(기록용 `Canvas`, 0.11, 이슈 #136) | PI-01~PI-07, PI-09·PI-10(0.43) |
 | `RepeatTimer`(가짜 `Handler`) | RT-05 |
+| `TapKeyboardView`·`TapKeyAccessHelper` 조합 키(기록용 `Canvas`, 실제 글꼴 측정, 0.59) | CV-01~CV-04, CV-06~CV-09 |
+| `AndroidEditorPort`(`KeyEvent`, 가짜 입력 연결, 0.59) | CP-01~CP-06 |
+| `KeyboardService` 조합 키 끄기(0.59) | CL-01~CL-05 |
 
 ### 9.1 ~~안내 설정~~ — 삭제 (0.58, FSS#95)
 
