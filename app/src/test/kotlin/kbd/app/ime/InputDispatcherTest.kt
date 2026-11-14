@@ -140,6 +140,73 @@ class InputDispatcherTest {
         assertEquals("달", cc.composingShown)
     }
 
+    /** What the editor shows after [port]'s calls: committed text plus the composing text. */
+    private fun shownText(calls: List<String>): String {
+        val text = StringBuilder()
+        var composing = ""
+        for (c in calls) when {
+            c.startsWith("compose(") -> composing = c.removePrefix("compose(").removeSuffix(")")
+            c.startsWith("commit(") -> { text.append(c.removePrefix("commit(").removeSuffix(")")); composing = "" }
+            c == "finish" -> { text.append(composing); composing = "" }
+            c == "del" -> if (text.isNotEmpty()) text.setLength(text.length - 1)
+        }
+        return text.toString() + composing
+    }
+
+    /**
+     * Dubeolsik input from [keys]: a jamo alone is a tap on its key, a jamo then an arrow (↑ ← → ↓) a stroke out of
+     * that edge of it, and ⌫ a backspace. Returns what the editor shows, on a fresh composer.
+     */
+    private fun shownAfter(keys: String): String {
+        d.finishAll()                     // the case before is done
+        dubeolsik()
+        port.calls.clear()
+        var i = 0
+        while (i < keys.length) {
+            val c = keys[i]
+            if (c == '⌫') {
+                d.onFunctionDown(FunctionKey.BACKSPACE)
+                i++
+                continue
+            }
+            val dir = when (keys.getOrNull(i + 1)) {
+                '↑' -> kbd.stroke.geom.Dir.UP
+                '←' -> kbd.stroke.geom.Dir.LEFT
+                '→' -> kbd.stroke.geom.Dir.RIGHT
+                '↓' -> kbd.stroke.geom.Dir.DOWN
+                else -> null
+            }
+            val k = dubeolsikKey(c)
+            d.onTapOutput(k, TapKeyResolver.resolve(k, if (dir == null) TapGesture.Tap else TapGesture.Exit(dir)))
+            i += if (dir == null) 1 else 2
+        }
+        return shownText(port.calls)
+    }
+
+    @Test
+    fun `ID-41 a paired vowel stroke composes as its key would - no vowel merge, dokkaebibul, ⌫ unit (FSS 104, FSS 107)`() {
+        val cases = listOf(
+            "ㄱㅗ↑" to "교", "ㄱㅓ←" to "겨", "ㄱㅏ→" to "갸", "ㄱㅜ↓" to "규",
+            "ㄱㅗ↑ㅏ" to "교ㅏ",     // ㅛ + ㅏ does not merge, as ㅛ typed on its key
+            "ㄱㅏㄱㅓ←" to "가겨",   // dokkaebibul: the final ㄱ goes to the next syllable
+            "ㄱㅜ↓ㄹ" to "귤",
+            "ㄱㅜㅓ←" to "구ㅕ",     // ㅜ + ㅕ does not merge
+            "ㄱㅜㅓ" to "궈",        // the tap still merges
+            "ㄱㅏㅌ↑" to "갍",       // ㄾ final (FSS#107)
+            "ㄱㅏㅌ←" to "같",       // ← is ㅌ now
+            "ㄱㅏㅌ" to "같",
+            "ㄱㅗ↑⌫" to "ㄱ",        // ⌫ takes the vowel, one unit
+            "ㄱㅏㅌ↑⌫" to "갈",      // ⌫ takes the second consonant of ㄾ, as two taps
+        )
+        val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㄹㅌ", "ㅌ←" to "ㅌ")
+        for ((keys, expected) in cases) {
+            assertEquals(keys, expected, shownAfter(keys))
+            // The same as the keys typed by taps (ㄾ as ㄹ ㅌ).
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+    }
+
     // ---- RT ----
 
     @Test

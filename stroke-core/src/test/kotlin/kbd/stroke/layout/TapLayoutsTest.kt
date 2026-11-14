@@ -8,7 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** LLD-11 §5.4 TL-01..TL-03, TL-07, TL-08 and §3 KH-05, plus transcription checks of LLD-05A §3.2, §3.3. */
+/** LLD-11 §5.4 TL-01..TL-03, TL-07..TL-09 and §3 KH-05, plus transcription checks of LLD-05A §3.2, §3.3. */
 class TapLayoutsTest {
 
     private val layouts = listOf(TapLayouts.QWERTY, TapLayouts.DUBEOLSIK)
@@ -233,5 +233,28 @@ class TapLayoutsTest {
                 .filterNotNull()
             assertEquals(l.name, pc.map { it.toString() }.sorted(), symbols.sorted())
         }
+    }
+
+    @Test
+    fun `TL-09 no Dubeolsik letter key has two assignments in one direction, QWERTY letters have no direction jamo (FSS#104)`() {
+        // Shift jamo (↑ only), direction jamo (compound finals, paired vowels) and assigned symbols: at most one per
+        // key and direction, so the resolver's order never changes a result (HLD 5A).
+        val letters = TapLayouts.DUBEOLSIK.keys.filter { it.kind == TapKeyKind.DUBEOLSIK_LETTER }
+        assertEquals(26, letters.size)
+        for (k in letters) {
+            for (d in kbd.stroke.geom.Dir.entries) {
+                val symbol = when (d) {
+                    kbd.stroke.geom.Dir.UP -> k.assign?.up
+                    kbd.stroke.geom.Dir.LEFT -> k.assign?.left
+                    kbd.stroke.geom.Dir.RIGHT -> k.assign?.right
+                    kbd.stroke.geom.Dir.DOWN -> k.assign?.down
+                }
+                val placed = listOfNotNull(if (d == kbd.stroke.geom.Dir.UP) k.shiftJamo else null, k.dirJamo[d], symbol)
+                assertTrue("${k.id} $d $placed", placed.size <= 1)
+            }
+        }
+        // 11 compound finals and 4 paired vowels, each once.
+        assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅑㅕㅛㅠ".toList(), letters.flatMap { it.dirJamo.values }.sorted())
+        assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
     }
 }

@@ -16,7 +16,8 @@ object TapLayouts {
 
     /**
      * Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each. QWERTY has none.
-     * FSS#97 (owner) moved six of them: ㄳ ㄶ ㅄ ㄽ to ↓ and ㄵ ㄿ to ↑; the directions they left type the plain jamo.
+     * FSS#97 (owner) moved six of them: ㄳ ㄶ ㅄ ㄽ to ↓ and ㄵ ㄿ to ↑, FSS#107 (owner) ㄾ to ↑; the directions they
+     * left type the plain jamo.
      */
     private val COMPOUND_JAMO: Map<Char, Map<kbd.stroke.geom.Dir, Char>> = run {
         val up = kbd.stroke.geom.Dir.UP
@@ -29,9 +30,28 @@ object TapLayouts {
             'ㄹ' to mapOf(up to 'ㅀ', left to 'ㄺ', right to 'ㄻ', down to 'ㄼ'),
             'ㅂ' to mapOf(down to 'ㅄ'),   // ↓ (FSS#97); it was ← (#242), then → (#246)
             'ㅅ' to mapOf(down to 'ㄽ'),
-            'ㅌ' to mapOf(left to 'ㄾ'),
+            'ㅌ' to mapOf(up to 'ㄾ'),     // ↑ (FSS#107); it was ← (#242)
             'ㅍ' to mapOf(up to 'ㄿ'),
         )
+    }
+
+    /**
+     * Paired vowels on four Dubeolsik vowel keys (owner, FSS#104): a stroke towards the pair's direction types it. The
+     * ㅛ ㅕ ㅑ ㅠ keys stay. Kept apart from [COMPOUND_JAMO]; both go into [TapKeyDef.dirJamo].
+     */
+    private val PAIR_VOWEL: Map<Char, Map<kbd.stroke.geom.Dir, Char>> = mapOf(
+        'ㅗ' to mapOf(kbd.stroke.geom.Dir.UP to 'ㅛ'),
+        'ㅓ' to mapOf(kbd.stroke.geom.Dir.LEFT to 'ㅕ'),
+        'ㅏ' to mapOf(kbd.stroke.geom.Dir.RIGHT to 'ㅑ'),
+        'ㅜ' to mapOf(kbd.stroke.geom.Dir.DOWN to 'ㅠ'),
+    )
+
+    /** The direction jamo of [jamo]'s key: its compound finals and paired vowels, never two in one direction. */
+    private fun dirJamo(jamo: Char): Map<kbd.stroke.geom.Dir, Char> {
+        val compound = COMPOUND_JAMO[jamo].orEmpty()
+        val pair = PAIR_VOWEL[jamo].orEmpty()
+        require(compound.keys.none { it in pair }) { "$jamo: a compound final and a paired vowel in one direction" }
+        return compound + pair
     }
 
     /** Letter key symbols by key position (LLD-05A §3.3); i and o carry brackets left/right (#198). */
@@ -100,7 +120,7 @@ object TapLayouts {
                     TapKeyDef(
                         id.toString(), row, x, KEY_W, TapKeyKind.DUBEOLSIK_LETTER, jamo.toString(),
                         assign = symbols?.assign(jamo.toString()),
-                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], compoundJamo = COMPOUND_JAMO[jamo].orEmpty(),
+                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirJamo(jamo),
                     )
                 } else {
                     TapKeyDef(

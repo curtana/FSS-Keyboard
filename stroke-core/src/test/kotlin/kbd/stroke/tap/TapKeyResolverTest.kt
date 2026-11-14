@@ -275,13 +275,13 @@ class TapKeyResolverTest {
         assertRow(TapLayouts.DUBEOLSIK, "f", j('ㄹ'), j('ㅀ'), j('ㄺ'), j('ㄻ'), j('ㄼ'))   // ㄹ did not move
         assertRow(TapLayouts.DUBEOLSIK, "q", j('ㅂ'), j('ㅃ'), j('ㅂ'), j('ㅂ'), j('ㅄ'))   // ← and → are the plain ㅂ
         assertRow(TapLayouts.DUBEOLSIK, "t", j('ㅅ'), j('ㅆ'), j('ㅅ'), j('ㅅ'), j('ㄽ'))   // ← is the plain ㅅ again
-        assertRow(TapLayouts.DUBEOLSIK, "x", j('ㅌ'), j('ㅌ'), j('ㄾ'), j('ㅌ'), j('ㅌ'))   // ㅌ did not move
+        assertRow(TapLayouts.DUBEOLSIK, "x", j('ㅌ'), j('ㄾ'), j('ㅌ'), j('ㅌ'), j('ㅌ'))   // ↑ ㄾ (FSS#107); ← is the plain ㅌ again
         assertRow(TapLayouts.DUBEOLSIK, "v", j('ㅍ'), j('ㄿ'), j('ㅍ'), j('ㅍ'), j('ㅍ'))   // ← is the plain ㅍ again
         // Each of the 11 compound finals is on exactly one key and one direction.
-        val placed = TapLayouts.DUBEOLSIK.keys.flatMap { it.compoundJamo.values }
+        val placed = TapLayouts.DUBEOLSIK.keys.filter { it.jamo !in PAIR_KEYS }.flatMap { it.dirJamo.values }
         assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ".toList(), placed.sorted())
         // Exit-and-return is the exit; an up/down rub is the plain jamo (SRS tap action table rows 5, 6, 8).
-        for (key in TapLayouts.DUBEOLSIK.keys.filter { it.compoundJamo.isNotEmpty() }) {
+        for (key in TapLayouts.DUBEOLSIK.keys.filter { it.dirJamo.isNotEmpty() && it.jamo !in PAIR_KEYS }) {
             for (dir in Dir.entries) assertEquals("${key.id} $dir", TapKeyResolver.resolve(key, exit(dir)), TapKeyResolver.resolve(key, back(dir)))
             for (dir in listOf(UP, DOWN)) assertEquals("${key.id} rub $dir", j(key.jamo!!), TapKeyResolver.resolve(key, rub(dir)))
         }
@@ -294,7 +294,50 @@ class TapKeyResolverTest {
         assertEquals(mapOf(UP to "ㅀ", LEFT to "ㄺ", RIGHT to "ㄻ", DOWN to "ㄼ"), h("f"))
         assertEquals(mapOf(UP to "ㅃ", DOWN to "ㅄ"), h("q"))
         assertEquals(mapOf(UP to "ㅆ", DOWN to "ㄽ"), h("t"))
-        assertEquals(mapOf(LEFT to "ㄾ"), h("x"))
+        assertEquals(mapOf(UP to "ㄾ"), h("x"))                                            // not on the left edge any more
         assertEquals(mapOf(UP to "ㄿ"), h("v"))
+    }
+
+    @Test
+    fun `TA-22 Dubeolsik paired vowels - ㅗ up ㅛ, ㅓ left ㅕ, ㅏ right ㅑ, ㅜ down ㅠ, everything else unchanged (FSS 104)`() {
+        // The whole table (SRS FR-TAP-02d): tap / ↑ / ← / → / ↓ of the four keys; the other directions type the vowel.
+        assertRow(TapLayouts.DUBEOLSIK, "h", j('ㅗ'), j('ㅛ'), j('ㅗ'), j('ㅗ'), j('ㅗ'))
+        assertRow(TapLayouts.DUBEOLSIK, "j", j('ㅓ'), j('ㅓ'), j('ㅕ'), j('ㅓ'), j('ㅓ'))
+        assertRow(TapLayouts.DUBEOLSIK, "k", j('ㅏ'), j('ㅏ'), j('ㅏ'), j('ㅑ'), j('ㅏ'))
+        assertRow(TapLayouts.DUBEOLSIK, "n", j('ㅜ'), j('ㅜ'), j('ㅜ'), j('ㅜ'), j('ㅠ'))
+        // Exit-and-return is the exit; a left/right rub is the exit (ㅓ ← rub = ㅕ); an up/down rub is the plain vowel.
+        for (id in listOf("h", "j", "k", "n")) {
+            val key = TapLayouts.DUBEOLSIK.keys.single { it.id == id }
+            for (dir in Dir.entries) assertEquals("$id $dir", TapKeyResolver.resolve(key, exit(dir)), TapKeyResolver.resolve(key, back(dir)))
+            for (dir in listOf(LEFT, RIGHT)) assertEquals("$id rub $dir", TapKeyResolver.resolve(key, exit(dir)), TapKeyResolver.resolve(key, rub(dir)))
+            for (dir in listOf(UP, DOWN)) assertEquals("$id rub $dir", j(key.jamo!!), TapKeyResolver.resolve(key, rub(dir)))
+        }
+        assertEquals(j('ㅕ'), d("j", rub(LEFT)))
+        assertEquals(j('ㅑ'), d("k", rub(RIGHT)))
+        assertEquals(j('ㅗ'), d("h", rub(UP)))
+        assertEquals(j('ㅜ'), d("n", rub(DOWN)))
+        // The ㅛ ㅕ ㅑ ㅠ keys stay, ㅑ with its brackets.
+        assertRow(TapLayouts.DUBEOLSIK, "y", j('ㅛ'), j('ㅛ'), j('ㅛ'), j('ㅛ'), j('ㅛ'))
+        assertRow(TapLayouts.DUBEOLSIK, "u", j('ㅕ'), j('ㅕ'), j('ㅕ'), j('ㅕ'), j('ㅕ'))
+        assertRow(TapLayouts.DUBEOLSIK, "i", j('ㅑ'), j('ㅑ'), t("["), t("]"), j('ㅑ'))
+        assertRow(TapLayouts.DUBEOLSIK, "b", j('ㅠ'), j('ㅠ'), j('ㅠ'), j('ㅠ'), j('ㅠ'))
+        // Only the four keys carry paired vowels, one each.
+        val vowels = TapLayouts.DUBEOLSIK.keys.filter { it.jamo in PAIR_KEYS }.associate { it.jamo!! to it.dirJamo }
+        assertEquals(mapOf('ㅗ' to mapOf(UP to 'ㅛ'), 'ㅓ' to mapOf(LEFT to 'ㅕ'), 'ㅏ' to mapOf(RIGHT to 'ㅑ'), 'ㅜ' to mapOf(DOWN to 'ㅠ')), vowels)
+        // QWERTY h j k n unchanged.
+        for (id in listOf("h", "j", "k", "n")) assertRow(TapLayouts.QWERTY, id, t(id), t(id.uppercase()), t(id), t(id), t(id))
+        // Edge hints: the pair on its own edge, nothing on the others (owner #198).
+        fun h(id: String) = TapKeyResolver.edgeHints(TapLayouts.DUBEOLSIK.keys.single { it.id == id })
+        assertEquals(mapOf(UP to "ㅛ"), h("h"))
+        assertEquals(mapOf(LEFT to "ㅕ"), h("j"))
+        assertEquals(mapOf(RIGHT to "ㅑ"), h("k"))
+        assertEquals(mapOf(DOWN to "ㅠ"), h("n"))
+        assertEquals(mapOf(LEFT to "[", RIGHT to "]"), h("i"))
+        for (id in listOf("y", "u", "b")) assertEquals(id, emptyMap<Dir, String>(), h(id))
+    }
+
+    private companion object {
+        /** The four Dubeolsik vowel keys with a paired vowel (FSS#104). */
+        val PAIR_KEYS = setOf('ㅗ', 'ㅓ', 'ㅏ', 'ㅜ')
     }
 }

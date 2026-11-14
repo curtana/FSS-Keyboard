@@ -13,8 +13,8 @@ import kbd.stroke.layout.TapKeyKind
 object TapKeyResolver {
     /**
      * What a stroke out of each edge types, where it differs from the tap (owner #198: every stroked character is shown
-     * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, the assigned symbols. Function
-     * keys have none. The view draws these; it never decides anything with them.
+     * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, compound final or paired vowel, the
+     * assigned symbols. Function keys have none. The view draws these; it never decides anything with them.
      */
     fun edgeHints(key: TapKeyDef): Map<Dir, String> {
         if (key.kind == TapKeyKind.FUNCTION) return emptyMap()
@@ -57,10 +57,10 @@ object TapKeyResolver {
         val base = requireNotNull(key.jamo) { key.id }
         return when (g) {
             is TapGesture.Exit -> when (g.dir) {
-                Dir.UP -> jamo(key.shiftJamo ?: key.compoundJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㄹ ↑ ㅀ, ㅍ ↑ ㄿ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
-                else -> key.compoundJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)
+                Dir.UP -> jamo(key.shiftJamo ?: key.dirJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㅌ ↑ ㄾ, ㅗ ↑ ㅛ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
+                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)   // ㄹ ← ㄺ, ㅓ ← ㅕ
             }
-            // Tap and up/down rubs: no super/subscripts for jamo, and no compound final either (FSS#97).
+            // Tap and up/down rubs: no super/subscripts for jamo, and no compound final or paired vowel either (FSS#97, FSS#104).
             else -> jamo(base)
         }
     }

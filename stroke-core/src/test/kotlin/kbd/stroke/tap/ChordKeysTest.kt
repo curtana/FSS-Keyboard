@@ -14,8 +14,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * LLD-11 §5.6 CM-01..CM-12: the SRS chord table (FR-TAP-16, LLD-05A §2.4). Key ids are QWERTY positions, the same
- * in the Dubeolsik layout: q = ㅂ, a = ㅁ, f = ㄹ, l = ㅣ.
+ * LLD-11 §5.6 CM-01..CM-13: the SRS chord table (FR-TAP-16, LLD-05A §2.4). Key ids are QWERTY positions, the same
+ * in the Dubeolsik layout: q = ㅂ, a = ㅁ, f = ㄹ, l = ㅣ, h = ㅗ, j = ㅓ, k = ㅏ, n = ㅜ, x = ㅌ.
  */
 class ChordKeysTest {
 
@@ -163,6 +163,20 @@ class ChordKeysTest {
         assertEquals(shift(ChordKey.A), ChordKeys.ofTap(dub('ㅁ'), exit(UP)))             // ㅁ ↑ types ㅁ, still Shift + A
         assertEquals(plain(ChordKey.SEMICOLON), ChordKeys.ofTap(dub('ㅣ'), exit(LEFT)))
         assertEquals(plain(ChordKey.A), ChordKeys.ofTap(dub('ㅁ'), rub(UP)))
+    }
+
+    @Test
+    fun `CM-13 a paired vowel and ㅌ up ㄾ send the English key of their place (FSS#104, FSS#107)`() {
+        val d = TapLayouts.DUBEOLSIK.keys
+        fun dub(jamo: Char) = d.single { it.jamo == jamo }.id
+        assertEquals(shift(ChordKey.H), ChordKeys.ofTap(dub('ㅗ'), exit(UP)))             // ㅛ
+        assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), exit(LEFT)))           // ㅕ: QWERTY j ← has nothing
+        assertEquals(plain(ChordKey.K), ChordKeys.ofTap(dub('ㅏ'), exit(RIGHT)))          // ㅑ
+        assertEquals(plain(ChordKey.N), ChordKeys.ofTap(dub('ㅜ'), exit(DOWN)))           // ㅠ
+        assertEquals(shift(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(UP)))             // ㄾ
+        assertEquals(plain(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(LEFT)))           // ㅌ
+        assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), rub(LEFT)))
+        assertEquals(shift(ChordKey.H), ChordKeys.ofTap(dub('ㅗ'), back(UP)))
     }
 
     @Test
