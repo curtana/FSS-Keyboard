@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
-- 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터)
-- 버전 **0.36** (2026-11-14)
+- 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터, 7.4 내 획 학습)
+- 버전 **0.37** (2026-11-14)
+- 0.37(FSS#96, SRS 0.85 FR-TUT-14~17·TBD-30, HLD 0.78 7.3·7.4): **내 획 학습** — 새 8절: 대상 글자와 저장 판정 `MyStrokes`(8.1), 개인 획 저장소 `PersonalStrokeStore`·`PersonalStrokeBook`·`PersonalStrokeCodec`과 파일 형식(판 1, `noBackupFilesDir`, 임시 파일에 쓰고 바꿔 끼움, 읽을 수 없는 파일은 빈 목록으로 보고 그대로 둠, 8.2), 화면과 문구 `MyStrokesScreen`(8.3), 인식 반영(8.4). 주제 목록에 "내 획 학습" 줄(2.3). 연습 주제와 설정 저장 형식은 그대로다.
 - 0.36(FSS#86, SRS 0.84 FR-CMN-15·FR-SET-09, HLD 0.77 5A "띄운 자판"·7.3): 방향별 **띄우기**와 띄운 자판의 자리 비율 — `Settings.portraitFloat`·`landscapeFloat`(`FloatSetting(on, fx, fy)`), 키 여섯 개(`float_portrait`·`float_x_portrait`·`float_y_portrait`, 가로도 같음), `SettingsStore.setFloatPosition`(놓을 때 준 축만 씀, 6.1). 설정 화면 방향 상자의 "띄우기" 스위치(7절). 입력 연습 `BoardFrame`은 띄우기를 읽지 않는다(2.3, PR-34).
 - 0.35(FSS#85, SRS 0.83 FR-CMN-14 ⑫ 자, HLD 0.76 5A "입력 연습"): 입력 연습의 `BoardFrame`은 틀 전체 배경을 두지 않고 자판 사각형만 칠한다(`KeyboardPlate.rect`·`PlatePainter`, LLD-08 7.3). 남는 자리에는 연습 화면 배경이 보이고 그 터치는 지금처럼 틀이 소비한다(2.3).
 - 0.34(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑪·FR-TUT-02·FR-SET-09, HLD 0.75 5A): 입력 연습의 `BoardFrame`이 자판 사각형·여유 칸을 실제 키보드와 같게 놓는다(2.3). 설정 화면의 키 크기 슬라이더 위 끝 = 가용 폭 / 11 올림, 미리보기 전체 폭 = 11 × 키 크기(7절). 저장 형식·키 이름은 그대로다(6.1).
@@ -38,6 +39,7 @@
 | 5 | (삭제) 기준값 JSON 형식 |
 | 6 | `SettingsStore`, `ErrorLog` |
 | 7 | `SettingsActivity` |
+| 8 | 내 획 학습(0.37): `MyStrokes`(8.1), `PersonalStrokeStore`·`PersonalStrokeBook`·`PersonalStrokeCodec`(8.2), `MyStrokesScreen`(8.3), 인식 반영(8.4) |
 
 ## 2. 입력 연습 (HLD 7.1, SWIPE 10장, FSS#17)
 
@@ -250,3 +252,106 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 - 0.24: "튜터 다시 실행"은 "입력 연습"으로, 기준값 초기화·내보내기·가져오기는 삭제(FSS#17 오너 결정 ①, FR-TUT-07 삭제).
 - 안내 표시 항목(방향 안내·다음 글자·현재 글자)은 늘 보인다(0.23, 이슈 #251). 줄 높이는 40~64dp 범위에서 고른다(FR-SET-06, DCR-14 결정). 설정 화면에는 기준값 상태 안내를 두지 않는다(FR-TUT-05).
 - 시험: 실기기 DV-11.
+
+## 8. 내 획 학습 (HLD 7.4, SRS FR-TUT-14~17, 0.37, FSS#96)
+
+세부(대상 글자, 글자당 8획, 화면의 기본값)는 SRS TBD-30 ①~⑭의 잠정 값 그대로다(오너 확인 전). 2절의 "아무것도 재지 않는다·저장하지 않는다"는 연습 주제의 것이고, **획을 저장하는 곳은 이 절의 화면뿐이다.**
+
+### 8.1 대상 글자와 저장 판정 `MyStrokes` (안드로이드 없음)
+
+```kotlin
+data class MyLetter(val set: SetName, val value: String, val label: String)   // value = 템플릿 output.value, label = 화면 글자(영문은 대문자)
+enum class MyStrokeVerdict { SAVE, RULE_STROKE, NUMBER_AREA }
+object MyStrokes {
+    fun letters(templates: TemplateSet): List<MyLetter>        // 한글 자음 → 영문 순
+    fun verdict(stroke: InkStroke): MyStrokeVerdict
+    fun guideGroups(templates: TemplateSet, letter: MyLetter): List<GuideGroup>   // 그 글자의 안내표 칸만
+}
+```
+
+- **대상 글자(FR-TUT-14 ①):** `KO_LETTER`에서 출력이 자음(`TemplateOutput.Jamo`)인 글자와 `EN_LETTER`에서 출력이 영문 한 글자(`TemplateOutput.Text`, a~z)인 글자를 템플릿 파일 순서로. 제품 템플릿에서 한글 자음 14(ㄱ~ㅎ), 영문 25(i는 템플릿이 없다)다. `SPACE_V`·`FINISH_J`(제어 획)와 숫자·기호 집합은 들지 않는다. 템플릿을 읽지 못했으면 빈 목록이고 화면은 안내 문구만 보인다.
+- **저장 판정(FR-TUT-14 ④):** 숫자 영역에서 시작한 획(`stroke.area == NUMBER`) → `NUMBER_AREA`. `StrokeRules.tap` 또는 `StrokeRules.line`이 토큰을 내는 획(인식의 3.1 1·2번과 같은 함수) → `RULE_STROKE`. 그 밖 → `SAVE`. 모양이 목표와 달라 보여도 막지 않는다(충돌 검사 없음, TBD-30 ⑥).
+- **안내표 칸:** `GuideCatalog.groups`에서 표시가 템플릿 하나이고 그 템플릿의 출력이 이 글자인 칸만 남긴다(ㅁ·ㅎ처럼 ①②가 있으면 둘 다. "시프트 + 자음" 칸은 표시가 둘이라 빠진다).
+- 시험: MY-01~MY-04(LLD-11 7.9).
+
+### 8.2 개인 획 저장소 `PersonalStrokeStore`·`PersonalStrokeBook`·`PersonalStrokeCodec` (app `kbd.app.store`)
+
+```kotlin
+class PersonalStrokeBook(val letters: Map<Pair<SetName, String>, List<PersonalStroke>>) {   // 바뀌지 않는 값. 글자마다 오래된 획이 앞
+    fun add(set: SetName, value: String, points: List<Pair<Float, Float>>): PersonalStrokeBook   // MAX_PER_LETTER를 넘으면 앞에서 뺀다
+    fun clear(set: SetName, value: String): PersonalStrokeBook
+    fun count(set: SetName, value: String): Int
+    val strokes: List<PersonalStroke>            // Recognizer.withPersonal에 넘기는 목록
+    val taughtLetters: Int                       // 개인 획이 하나라도 있는 글자 수
+    companion object { const val MAX_PER_LETTER = 8; val EMPTY: PersonalStrokeBook }
+}
+object PersonalStrokeCodec { fun encode(book: PersonalStrokeBook): String; fun decode(text: String): PersonalStrokeBook }   // decode: 형식 오류면 IllegalStateException
+class PersonalStrokeStore(file: File, log: ErrorLog) {      // 메서드는 모두 synchronized
+    val revision: Int                            // 쓰기(더하기·지우기)에 성공할 때마다 1 증가. 인식기가 다시 만들 때를 안다(LLD-05 11절)
+    fun book(): PersonalStrokeBook               // 처음 부를 때 파일을 읽는다
+    fun add(set: SetName, value: String, points: List<Pair<Float, Float>>): Boolean
+    fun clear(set: SetName, value: String): Boolean
+    fun clearAll(): Boolean                      // 반환: 파일에 썼는가
+}
+```
+
+- **위치:** `Context.noBackupFilesDir`의 `personal-strokes.json`(앱 전용 내부 저장소. 이 폴더는 시스템 백업과 기기 간 옮기기에서 빠진다). 매니페스트의 `android:allowBackup="false"`도 그대로 둔다(SRS FR-TUT-15 ③). 내보내기·가져오기 기능은 없다. 키보드와 입력 연습은 프로세스에 하나뿐인 저장소 객체를 함께 쓴다(`AppStores.personalStrokes(context)`).
+- **파일 형식(판 번호 1, UTF-8 JSON):**
+
+```json
+{ "version": 1,
+  "letters": [
+    { "set": "EN_LETTER", "value": "a", "strokes": [ [[12.5, 40.0], [13.25, 41.5]], [[…]] ] },
+    { "set": "KO_LETTER", "value": "ㄱ", "strokes": [ [[…]] ] }
+  ] }
+```
+
+  - `strokes`: 그 글자의 획 목록, **오래된 획이 앞**. 획 하나 = 패드에서 받은 원 표본 점 `[x, y]`의 열(dp, 32비트 값을 그대로 다시 읽히게 적는다). 시각은 저장하지 않는다(특징과 템플릿이 쓰지 않는다). 임베딩과 개인 템플릿은 저장하지 않고 인식기를 만들 때 계산한다(FR-TUT-15 ①).
+  - 크기: 글자 39 × 8획 × 획당 점 수십 개 → 가득 차도 수백 kB 아래다.
+- **읽을 때 버리는 것(오류가 아님):** `set`이 `KO_LETTER`·`EN_LETTER`가 아닌 글자, 점이 없는 획, 글자당 8획을 넘는 앞쪽 획. 지금 템플릿에 없는 글자의 획은 파일에 남겨 두고 인식기가 건너뛴다(LLD-05 3.6).
+- **읽을 수 없는 파일(FR-TUT-15 ④):** 파일이 없으면 빈 목록이다. JSON이 아니거나, `version`이 1이 아니거나(나중 판의 파일 포함), 칸이 빠졌거나 형이 다르면 **빈 목록으로 보고** `ErrorLog`에 자리 이름과 예외 종류만 적는다(획 좌표·파일 내용은 적지 않는다, NFR-05). 그 파일은 **건드리지 않고 둔다** — 다음에 학습 화면에서 저장하거나 지울 때 새 내용으로 바뀐다. 따로 옮겨 두지 않는다(가져오기 기능이 없어 쓸 데가 없고, 개인 획의 사본을 늘리지 않는다).
+- **깨지지 않게 쓰기:** 같은 폴더의 `personal-strokes.json.tmp`에 전부 쓰고 닫은 뒤 `Files.move(tmp, file, ATOMIC_MOVE, REPLACE_EXISTING)`로 바꿔 끼운다. 쓰다가 멈추면 앞의 파일이 그대로 남는다. 쓰기에 실패하면 메모리의 목록도 바꾸지 않고 `false`를 돌려주며(화면이 알린다) `ErrorLog`에 적는다. 남은 `.tmp`는 다음 쓰기가 덮는다.
+- **쓰는 곳은 학습 화면뿐이다(FR-TUT-17 ①):** `add`·`clear`·`clearAll`을 부르는 코드는 `MyStrokesScreen.kt` 하나다. `KeyboardService`, `GraffitiPadView`, `GraffitiInputHandler`, 연습 주제(`PracticeInput`)는 `GraffitiRecognizers`를 거쳐 `book()`만 읽는다. 시험 MS-07(소스 검사), MS-08(그래피티 모드로 획을 넣어도 파일이 그대로).
+- 쓰기는 손을 뗀 그 자리(메인 스레드)에서 한다(작은 파일 하나).
+- 시험: MS-01~MS-08.
+
+### 8.3 화면 `MyStrokesScreen` (app `kbd.app.practice`, FR-TUT-14·16)
+
+`PracticeActivity`의 주제 목록에서 연습 주제들 **아래** 한 줄로 들어간다. `PracticeFlow`·`PracticeItemJudge`·`GraffitiState`의 해석·조합기를 쓰지 않는다(획이 글자로 입력되지 않고 ✓·✗도 없다).
+
+```
+주제 목록 ── [내 획 학습  ·  N글자] ──▶ 글자 목록 ──(글자)──▶ 쓰기 화면
+                                        │  [전체 초기화] → 물음 → 모두 지움        │  [다시 학습] 그 글자 지우고 이 화면에 남음
+                                        │  [그만] → 주제 목록                      │  [초기화] 그 글자 지우고 글자 목록으로
+                                                                                   │  [글자 목록]
+```
+
+- **주제 줄:** 제목 "내 획 학습", 요약 "내 글씨를 그래피티 인식에 더하기". ✓ 대신 오른쪽에 "N글자"(개인 획이 있는 글자 수, 0이면 "0글자"). 그래피티 모드가 설정에서 꺼져 있으면 연습 주제처럼 "키보드에서 꺼져 있음"을 보이고 그대로 들어갈 수 있다(FR-TUT-14 ⑥).
+- **글자 목록:** 안내 문구, "한글 자음"·"영문" 구획, 글자 칸마다 글자와 저장된 획 수("0"~"8"). 칸을 누르면 그 글자의 쓰기 화면. [전체 초기화]는 누르면 "저장한 내 획을 모두 지울까요? 기본 인식은 그대로예요." [지우기] [취소]를 한 번 묻는다.
+- **쓰기 화면:** "쓸 글자: ㄱ", "저장된 획: 3 / 8", 결과 줄, 아래에 그 글자의 안내표 칸(`GraffitiGuidePanel`, 8.1 `guideGroups`, 닫기 단추 없음)과 실제 패드 뷰(`GraffitiPadView`). 패드의 언어 표시는 글자의 언어다(한글 자음 = "한", 영문 = "A"). 패드의 보조 줄 키와 구석 탭은 아무 일도 하지 않는다. 연습 자판과 같은 `BoardFrame` 안에 놓아 자판 폭·정렬이 실제와 같다(띄우기는 적용하지 않는다, FR-TUT-14 ⑦).
+- **한 획(손을 뗄 때):** `GraffitiPadView.onInk`(LLD-05 8.3)로 획을 받아
+  1. `MyStrokes.verdict` — `RULE_STROKE`·`NUMBER_AREA`면 저장하지 않고 문구만 보인다.
+  2. `SAVE`면 **저장하기 전 인식기**로 `recognizer.score(획, 그 글자의 집합)`을 내어 결과 줄에 보인다(받아들임이면 그 글자, 아니면 "인식 안 됨". 대기 없음, 규칙은 1에서 이미 걸렀다).
+  3. `store.add` → 4. `recognizers.get()`으로 새 인식기를 받아 둠 → 5. 획 수를 고쳐 보인다. 확인 물음은 없다(TBD-30 ⑧).
+- **문구(`strings_practice.xml`):**
+
+| 자리 | 문구 |
+|---|---|
+| 주제 줄 | 내 획 학습 / 내 글씨를 그래피티 인식에 더하기 / %d글자 |
+| 글자 목록 안내 | 글자를 고르고 패드에 그 글자를 쓰면, 쓴 획이 이 기기에 저장되어 그 글자를 알아보는 데 쓰여요. 글자마다 8획까지 저장하고, 넘으면 가장 오래된 획부터 빠져요. 저장한 획은 기기 밖으로 나가지 않아요. |
+| 구획 | 한글 자음 / 영문 |
+| 단추 | 전체 초기화 / 그만 / 다시 학습 / 초기화 / 글자 목록 / 지우기 / 취소 |
+| 전체 초기화 물음 | 저장한 내 획을 모두 지울까요? 기본 인식은 그대로예요. |
+| 쓰기 화면 | 쓸 글자: %s / 저장된 획: %d / 8 / 패드의 문자 영역(왼쪽)에 이 글자를 써 주세요. |
+| 저장함 | 저장했어요. 저장하기 전 인식: %s / 저장했어요. 저장하기 전 인식: 인식 안 됨 |
+| 저장하지 않음 | 탭이나 직선 획은 저장하지 않아요. 이런 획은 글자보다 먼저 규칙으로 판정해요. / 숫자 영역에서 시작한 획은 저장하지 않아요. 문자 영역(왼쪽)에 써 주세요. |
+| 지움 | 이 글자의 획을 지웠어요. 새로 써 주세요. |
+| 저장 실패 | 저장하지 못했어요. |
+| 글자 없음 | 그래피티 글자를 읽지 못해 학습할 수 없어요. |
+
+- 시험: MV-01~MV-07(Robolectric, LLD-11 7.9), 실기 DV-38.
+
+### 8.4 인식에 반영 (FR-TUT-17)
+
+- 키보드와 연습 주제, 학습 화면 모두 `GraffitiRecognizers`(LLD-05 11절)에서 인식기를 받는다. 저장된 개인 획의 반영은 모든 입력창에서 같다(비밀번호·학습 금지 입력창 포함, FR-TUT-17 ②) — `FieldInfo`를 보지 않는다.
+- 반영 시점: 학습 화면에는 저장·삭제 바로 뒤, 키보드에는 다음에 뜰 때(`onStartInputView`가 `warm()`), 이미 떠 있는 키보드에는 다음 획부터다.
