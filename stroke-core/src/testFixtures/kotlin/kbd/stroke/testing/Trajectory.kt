@@ -151,13 +151,6 @@ object Trajectories {
             val n = v.num()
             t = when (name) {
                 "minCrossDp" -> t.copy(minCrossDp = n.toFloat())
-                "longDp" -> t.copy(longDp = n.toFloat())
-                "addIDp", "returnLongDp", "turnAngleDeg" -> t   // format 5 has none of these (issue #173)
-                "doubleTapWindowMs" -> t   // format 4 has no time threshold (issue #168)
-                "guideDelayMs" -> t.copy(guideDelayMs = n.toLong())
-                "posTolDp" -> t.copy(posTolDp = n.toFloat())
-                "keySizeWDp" -> t.copy(keySizeWDp = n.toFloat())
-                "keySizeHDp" -> t.copy(keySizeHDp = n.toFloat())
                 else -> error("unknown threshold field: $name")
             }
         }

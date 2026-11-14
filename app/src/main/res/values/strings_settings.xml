@@ -2,22 +2,17 @@
 <resources>
     <!-- Settings screen (LLD-07 §7). No threshold status text (FR-TUT-05). -->
     <string name="settings_title">키보드 설정</string>
-    <!-- FR-SET-08 (FSS#31): QWERTY and Dubeolsik are always on. -->
+    <!-- FR-SET-08 (FSS#31): Dubeolsik and QWERTY are always on. -->
     <string name="settings_section_modes">입력 모드</string>
     <string name="settings_mode_qwerty">영문(쿼티)</string>
     <string name="settings_mode_dubeolsik">한글(두벌식)</string>
     <string name="settings_mode_graffiti">그래피티(한 획 손글씨)</string>
-    <string name="settings_mode_swipe">긋기 입력</string>
     <string name="settings_mode_always_on">늘 켜짐</string>
     <string name="settings_modes_summary">끈 모드는 모드 키로 넘길 때 건너뜁니다</string>
     <string name="settings_section_input">입력기</string>
     <string name="settings_ime">입력기 켜기·고르기</string>
     <string name="settings_ime_summary">시스템 입력기 설정 화면을 엽니다</string>
-    <string name="settings_section_display">안내 표시</string>
-    <string name="settings_direction_guide">방향 안내</string>
-    <string name="settings_next_char">다음 글자 안내</string>
-    <string name="settings_current_char">현재 글자 크게 보기</string>
-    <string name="settings_stroke_trail">획 자국</string>
+
     <string name="settings_section_feedback">피드백</string>
     <string name="settings_haptic">진동</string>
     <string name="settings_sound">소리</string>
@@ -44,9 +39,9 @@
     <string name="settings_graffiti_ratio_3_1">3 : 1</string>
     <string name="settings_section_practice">입력 연습</string>
     <string name="settings_practice_open">입력 연습</string>
-    <string name="settings_practice_open_summary">영문 대문자 · 기호 · 그래피티 · 긋기를 골라서 짧게 연습</string>
+    <string name="settings_practice_open_summary">영문 대문자 · 기호 · 그래피티를 골라서 짧게 연습</string>
 
-    <!-- Input practice (LLD-07 §2.3, SWIPE 10, FSS#17): topic texts are in PracticeTopics; nothing is measured. -->
+    <!-- Input practice (LLD-07 §2.3, SRS appendix A, FSS#17): topic texts are in PracticeTopics; nothing is measured. -->
     <string name="practice_title">입력 연습</string>
     <string name="practice_list_hint">주제를 골라 보세요. 어느 것부터 해도 돼요.</string>
     <string name="practice_close">닫기</string>

@@ -350,7 +350,7 @@ class GraffitiPadView(
         internal const val AREA_RADIUS_DP = 6f
         internal const val AREA_STROKE_DP = 1f
 
-        /** Platform repeat timing (D-16), as in the swipe keyboard; before API 28 the values were not public. */
+        /** Platform repeat timing (D-16), as on the tap keyboards; before API 28 the values were not public. */
         private fun repeatSchedule(): RepeatSchedule =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 RepeatSchedule(ViewConfiguration.getKeyRepeatTimeout().toLong(), ViewConfiguration.getKeyRepeatDelay().toLong())

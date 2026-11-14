@@ -7,7 +7,7 @@ plugins {
 
 // D-02 (LLD-03 §2.1): one project-wide test command, `./gradlew testDebugUnitTest`.
 // JVM modules only have `test`; the app has its own `testDebugUnitTest` (one edition since issue #251).
-listOf(":core-hangul", ":stroke-core", ":gesture-engine", ":recognizer").forEach { path ->
+listOf(":core-hangul", ":stroke-core", ":recognizer").forEach { path ->
     project(path) {
         tasks.register("testDebugUnitTest") { dependsOn("test") }
     }
