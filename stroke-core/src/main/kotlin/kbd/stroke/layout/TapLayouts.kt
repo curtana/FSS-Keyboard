@@ -15,20 +15,23 @@ object TapLayouts {
     private val DUBEOLSIK_ROWS = listOf("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ", "ㅋㅌㅊㅍㅠㅜㅡ")
     private val SHIFT_JAMO = mapOf('ㅂ' to 'ㅃ', 'ㅈ' to 'ㅉ', 'ㄷ' to 'ㄸ', 'ㄱ' to 'ㄲ', 'ㅅ' to 'ㅆ', 'ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ')
 
-    /** Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each. QWERTY has none. */
+    /**
+     * Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each. QWERTY has none.
+     * FSS#97 (owner) moved six of them: ㄳ ㄶ ㅄ ㄽ to ↓ and ㄵ ㄿ to ↑; the directions they left type the plain jamo.
+     */
     private val COMPOUND_JAMO: Map<Char, Map<kbd.stroke.geom.Dir, Char>> = run {
         val up = kbd.stroke.geom.Dir.UP
         val left = kbd.stroke.geom.Dir.LEFT
         val right = kbd.stroke.geom.Dir.RIGHT
         val down = kbd.stroke.geom.Dir.DOWN
         mapOf(
-            'ㄱ' to mapOf(left to 'ㄳ'),
-            'ㄴ' to mapOf(left to 'ㄵ', right to 'ㄶ'),
+            'ㄱ' to mapOf(down to 'ㄳ'),
+            'ㄴ' to mapOf(up to 'ㄵ', down to 'ㄶ'),
             'ㄹ' to mapOf(up to 'ㅀ', left to 'ㄺ', right to 'ㄻ', down to 'ㄼ'),
-            'ㅂ' to mapOf(right to 'ㅄ'),   // → (owner, issue #246): ㅂ is the window's left-edge key, ← is hard there
-            'ㅅ' to mapOf(left to 'ㄽ'),
+            'ㅂ' to mapOf(down to 'ㅄ'),   // ↓ (FSS#97); it was ← (#242), then → (#246)
+            'ㅅ' to mapOf(down to 'ㄽ'),
             'ㅌ' to mapOf(left to 'ㄾ'),
-            'ㅍ' to mapOf(left to 'ㄿ'),
+            'ㅍ' to mapOf(up to 'ㄿ'),
         )
     }
 
