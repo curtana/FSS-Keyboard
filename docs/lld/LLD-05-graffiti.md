@@ -361,7 +361,7 @@ if g != "" && !dropped && !sink.hidesDisplay: flash(g)   // FR-GRF-07, FR-CMN-08
    Handled(res)            → show(res)
    NothingComposing        → out.deleteBefore()                              // 확정 글자 한 글자
 ```
-- 조합기 단위 목록에는 조립기가 성립시킨 `Vowel` 하나와 그 뒤 요소마다 `ReplaceVowel`이 쌓인다(0.16, LLD-04 7.1). 그래서 `ToVowel`은 마지막 `ReplaceVowel` 하나를, 모음이 성립하지 않게 되면(`ToPending`·`ToNone`) `Vowel` 하나(와 도깨비불)를 `undoLast()` 한 번으로 되돌린다. 조립기가 닫힌 뒤(받침)에는 `Empty`라 조합기 ⌫로 가고, 그때도 요소 하나씩 지운다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, SRS FR-SWP-64 "그래피티와 같음"). 닫힌 모음은 다시 열지 않는다(BS-17).
+- 조합기 단위 목록에는 조립기가 성립시킨 `Vowel` 하나와 그 뒤 요소마다 `ReplaceVowel`이 쌓인다(0.16, LLD-04 7.1). 그래서 `ToVowel`은 마지막 `ReplaceVowel` 하나를, 모음이 성립하지 않게 되면(`ToPending`·`ToNone`) `Vowel` 하나(와 도깨비불)를 `undoLast()` 한 번으로 되돌린다. 조립기가 닫힌 뒤(받침)에는 `Empty`라 조합기 ⌫로 가고, 그때도 요소 하나씩 지운다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, SRS FR-CMN-07b). 닫힌 모음은 다시 열지 않는다(BS-17).
 - 도깨비불이 일어난 뒤의 되돌림은 확정 경계를 넘지 않는다: 각 + 탭 + ㅣ(= 가거) ⌫ = 가ㄱㆍ(앞 가는 확정됨, FR-CMN-07 확정 경계와 두벌식 "가가 ⌫ = 가ㄱ" 사례와 같은 규칙). 시험 GH-24.
 - 반복: 보조 줄 ⌫를 누르고 있으면 `RepeatTimer`(LLD-05A 6절)가 이 함수를 되풀이한다(FR-CMN-07c).
 

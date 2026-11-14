@@ -19,7 +19,7 @@
 - 0.17(이슈 #168): 긋기 자판이 6줄(쌍자음 줄)이 되어 창을 채운다(`setModeView` 긋기 6줄, 위 빈 띠 없음, 7절). `backspace()`에서 `swipeState.onBackspace`(⌫ 뒤 기준 키)를 지웠다(6.1). `resetParsers()`는 긋기 매퍼의 천지인 조립기만 비운다. 무시된 긋기(기준 키 밖)는 없다(6.2).
 - 0.16(이슈 #160): 긋기 천지인 키. `onJamoEvents`는 매퍼의 임시 글자(ㆍ·‥)를 조합 글자 뒤에 보이고(빈 이벤트 목록도 보임), `backspace()`는 긋기면 매퍼의 조립기에 먼저 묻는다(6.1). 천지인 키 요소는 입력이다(6.2).
 - 0.14(이슈 #150): `BlockParser` → `SwipeInputMapper`(`SwipeEngineState`). `SwipeHost.hasJong` 삭제. `backspace()`는 조합기 다음 `swipeState.onBackspace(composer.lastConsonant())`로 ⌫ 뒤 기준 키를 정하고 편집기를 마지막에 쓴다(FR-SWP-39). 기준 키 밖 긋기의 오류 진동은 뷰가 `feedback.error()`로 낸다(8절 진동 설정을 따름).
-- `InputMode`·`FunctionKey`는 [LLD-03-modules.md#35-모드와-기능키](LLD-03-modules.md#35-모드와-기능키), 조합기는 [LLD-04-swipe.md#7](LLD-04-swipe.md#7-hangulcomposer-core-hangul)에 있다.
+- `InputMode`·`FunctionKey`는 [LLD-03-modules.md#35-모드와-기능키](LLD-03-modules.md#35-모드와-기능키), 조합기는 [LLD-04-stroke-hangul.md#7](LLD-04-stroke-hangul.md#7-hangulcomposer-core-hangul)에 있다.
 - 요구: FR-CMN-01~12(03f·04·04b·11a 포함), FR-CMN-14, FR-SET-08, FR-TAP-04, 10, 11a, FR-CMN-09, FR-GRF-08, NFR-05.
 
 ## 1. 범위

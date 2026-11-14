@@ -70,7 +70,7 @@
 {
   "version": 1,
   "id": "EC-07",
-  "key": { "kind": "TAP_LETTER", "label": "a", "rect": [0, 0, 51, 48], "outer": [] },
+  "key": { "kind": "CONSONANT", "label": "ㄱ", "rect": [0, 0, 51, 48], "outer": [] },
   "thresholds": "default",
   "start": [25.5, 24], "t0": 0,
   "legs": [["V", 45, -45]],
@@ -81,7 +81,7 @@
 
 | 칸 | 뜻 |
 |---|---|
-| `key.kind` | `TAP_LETTER` 등. `label`은 키 글자 |
+| `key.kind` | 키 종류 이름(판정에 쓰지 않는다. 지금 있는 EC 파일은 `CONSONANT`·`label` ㄱ으로 적혀 있다) |
 | `key.rect` | 키 사각형 dp `[left, top, right, bottom]` |
 | `key.outer` | 바깥 변 목록(`"LEFT"` 등) |
 | `thresholds` | `"default"`(LLD-03 3.4) 또는 칸을 덮어쓴 객체 |
