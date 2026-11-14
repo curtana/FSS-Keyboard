@@ -206,7 +206,7 @@ class InputDispatcherChordTest {
         }
         assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), TapGesture.Tap))
         assertEquals("chord(Q,[CTRL, SHIFT])", chord(jamoKey('ㅂ'), exit(Dir.UP)))      // ㅃ
-        assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), exit(Dir.RIGHT)))          // ㅄ: nothing on QWERTY q →
+        assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), exit(Dir.DOWN)))           // ㅄ: nothing on QWERTY q ↓
         assertEquals("chord(F,[CTRL])", chord(jamoKey('ㄹ'), exit(Dir.LEFT)))           // ㄺ
         assertEquals("chord(A,[CTRL, SHIFT])", chord(jamoKey('ㅁ'), exit(Dir.UP)))      // ㅁ ↑ types ㅁ; still Shift + A
         assertEquals("chord(SEMICOLON,[CTRL])", chord(jamoKey('ㅣ'), exit(Dir.LEFT)))

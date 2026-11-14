@@ -156,7 +156,7 @@ class ChordKeysTest {
         fun dub(jamo: Char) = d.single { it.jamo == jamo }.id
         assertEquals(plain(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), tap))
         assertEquals(shift(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), exit(UP)))             // ㅃ
-        assertEquals(plain(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), exit(RIGHT)))          // ㅄ: QWERTY q → has nothing
+        assertEquals(plain(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), exit(DOWN)))           // ㅄ: QWERTY q ↓ has nothing
         assertEquals(plain(ChordKey.F), ChordKeys.ofTap(dub('ㄹ'), exit(LEFT)))           // ㄺ: QWERTY f ← has nothing
         assertEquals(shift(ChordKey.F), ChordKeys.ofTap(dub('ㄹ'), exit(UP)))             // ㅀ
         assertEquals(shift(ChordKey.M), ChordKeys.ofTap("m", exit(UP)))                   // ㅡ ↑ types ㅡ, still Shift + M
