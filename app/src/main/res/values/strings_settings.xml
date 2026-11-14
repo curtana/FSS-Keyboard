@@ -12,7 +12,6 @@
     <string name="settings_section_input">입력기</string>
     <string name="settings_ime">입력기 켜기·고르기</string>
     <string name="settings_ime_summary">시스템 입력기 설정 화면을 엽니다</string>
-
     <string name="settings_section_feedback">피드백</string>
     <string name="settings_haptic">진동</string>
     <string name="settings_sound">소리</string>

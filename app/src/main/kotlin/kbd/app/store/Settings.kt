@@ -19,7 +19,6 @@ data class Settings(
     val portraitWidth: WidthSetting = WidthSetting.DEFAULT,
     /** The same on the landscape screen; the default key size is the portrait one (FR-CMN-14 ③). */
     val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
-
     /** Floating and the place last put, on the portrait screen (FR-CMN-15, FR-SET-09, FSS#86). Default off, never put. */
     val portraitFloat: FloatSetting = FloatSetting.DEFAULT,
     /** The same on the landscape screen; the two are kept apart (FR-CMN-15 ⑤). */
