@@ -12,7 +12,7 @@ import kbd.stroke.layout.TapKeyKind
  */
 object TapKeyResolver {
     /**
-     * What a stroke out of each edge types, where it differs from the tap (owner #198: every swiped character is shown
+     * What a stroke out of each edge types, where it differs from the tap (owner #198: every stroked character is shown
      * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, the assigned symbols. Function
      * keys have none. The view draws these; it never decides anything with them.
      */
@@ -57,10 +57,10 @@ object TapKeyResolver {
         val base = requireNotNull(key.jamo) { key.id }
         return when (g) {
             is TapGesture.Exit -> when (g.dir) {
-                Dir.UP -> jamo(key.shiftJamo ?: key.compoundJamo[Dir.UP] ?: base)   // ㄹ ↑ ㅀ (issue #242); ㄱ·ㅂ keep ㄲ·ㅃ
+                Dir.UP -> jamo(key.shiftJamo ?: key.compoundJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㄹ ↑ ㅀ, ㅍ ↑ ㄿ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
                 else -> key.compoundJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)
             }
-            // Tap and up/down rubs: no super/subscripts for jamo.
+            // Tap and up/down rubs: no super/subscripts for jamo, and no compound final either (FSS#97).
             else -> jamo(base)
         }
     }

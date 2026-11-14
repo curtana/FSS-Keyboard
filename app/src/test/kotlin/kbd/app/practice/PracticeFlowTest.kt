@@ -16,34 +16,46 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 PR-01..PR-09, PR-14, PR-22, PR-27 (FSS#17, FSS#43, FSS#54, FSS#72, SWIPE 10.0–10.2, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
+/** LLD-11 PR-01..PR-09, PR-14, PR-22, PR-27 (FSS#17, FSS#43, FSS#54, FSS#72, SRS appendix A, FR-TUT-01·02·09·12): topics, judgement, flow, first open. */
 class PracticeFlowTest {
 
     @get:Rule
     val tmp = TemporaryFolder()
 
+    /** The two syllable items of the graffiti topic (가, 고) as a topic of their own: items judged by what is committed. */
+    private val gaGo = PracticeTopic(
+        "ga_go", "가 고", "", "", listOf(""),
+        PracticeTopics.GRAFFITI_KO.items.filter { it.target == "가" || it.target == "고" },
+    )
+
     @Test
-    fun `PR-01 five topics, 63 items, in the SWIPE 10_1 order`() {
+    fun `PR-01 four topics, 54 items, in the order of SRS appendix A_2`() {
         val t = PracticeTopics.ALL
-        assertEquals(listOf("upper", "symbol", "graffiti_ko", "graffiti_en", "swipe"), t.map { it.id })
-        assertEquals(listOf(3, 6, 21, 27, 6), t.map { it.items.size })
-        assertEquals(63, t.sumOf { it.items.size })
+        assertEquals(listOf("upper", "symbol", "graffiti_ko", "graffiti_en"), t.map { it.id })
+        assertEquals(listOf(3, 3, 21, 27), t.map { it.items.size })
+        assertEquals(54, t.sumOf { it.items.size })
+        assertEquals(listOf("약 30초", "약 25초", "약 2분 20초", "약 2분"), t.map { it.time })
         assertEquals(listOf("A", "Hi", "OK"), PracticeTopics.UPPER.items.map { it.target })
-        assertEquals(listOf("!", "?", "[", "@", "(", "?"), PracticeTopics.SYMBOL.items.map { it.target })
-        assertEquals(listOf(PracticeBoard.TAP_QWERTY, PracticeBoard.TAP_QWERTY, PracticeBoard.TAP_QWERTY,
-            PracticeBoard.SWIPE, PracticeBoard.SWIPE, PracticeBoard.SWIPE), PracticeTopics.SYMBOL.items.map { it.board })
+        assertEquals(listOf("!", "?", "["), PracticeTopics.SYMBOL.items.map { it.target })
+        assertTrue((PracticeTopics.UPPER.items + PracticeTopics.SYMBOL.items).all { it.board == PracticeBoard.TAP_QWERTY })
+        assertEquals(listOf("가", "고"), gaGo.items.map { it.target })
         assertTrue((PracticeTopics.GRAFFITI_KO.items + PracticeTopics.GRAFFITI_EN.items).all { it.board == PracticeBoard.GRAFFITI && it.guideCells.isNotEmpty() })
         assertTrue(t.all { it.intro.isNotEmpty() && it.items.all { i -> i.howTo.startsWith(i.target + " = ") } })
     }
 
     @Test
-    fun `PR-14 graffiti and swipe topics show off in keyboard when their mode is off`() {
+    fun `PR-14 the graffiti topics show off in keyboard when graffiti is off`() {
         val on = Settings.DEFAULT.enabledModes
         assertTrue(PracticeTopics.ALL.none { it.offInKeyboard(on) })
-        val off = Settings.DEFAULT.copy(graffitiEnabled = false, swipeEnabled = false).enabledModes
-        assertEquals(listOf("graffiti_ko", "graffiti_en", "swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(off) }.map { it.id })
-        val noSwipe = Settings.DEFAULT.copy(swipeEnabled = false).enabledModes
-        assertEquals(listOf("swipe"), PracticeTopics.ALL.filter { it.offInKeyboard(noSwipe) }.map { it.id })   // symbol's swipe items stay
+        val off = Settings.DEFAULT.copy(graffitiEnabled = false).enabledModes
+        assertEquals(listOf("graffiti_ko", "graffiti_en"), PracticeTopics.ALL.filter { it.offInKeyboard(off) }.map { it.id })
+    }
+
+    @Test
+    fun `PR-36 done marks of topics that are gone are ignored (FR-CMN-10a)`() {
+        val done = setOf("swipe", "graffiti", "upper")   // what an older version may have stored
+        assertEquals(listOf("upper"), PracticeTopics.ALL.filter { it.id in done }.map { it.id })
+        assertTrue(PracticeTopics.ALL.none { it.id == "swipe" || it.id == "graffiti" })
     }
 
     @Test
@@ -58,8 +70,8 @@ class PracticeFlowTest {
 
     @Test
     fun `PR-03 commit judgement - a composing syllable is no result, the space or the next syllable commits (FSS#43)`() {
-        val ga = PracticeTopics.SWIPE.items[0]
-        val go = PracticeTopics.SWIPE.items[1]
+        val ga = gaGo.items[0]
+        val go = gaGo.items[1]
         @Suppress("UNUSED_PARAMETER") fun j(i: PracticeItem, committed: String, composing: String, error: Boolean = false) = PracticeItemJudge.commit(i, committed, error)   // composing: shown, never judged
         assertEquals(Verdict.PENDING, j(ga, "", "ㄱ"))
         assertEquals(Verdict.PENDING, j(ga, "", "기"))                 // 기 may still become 가
@@ -72,7 +84,7 @@ class PracticeFlowTest {
         assertEquals(Verdict.WRONG, j(go, "기", "가"))                  // the next syllable committed 기
         assertEquals(Verdict.RIGHT, j(ga, "가", "ㄸ"))                  // 가 committed by a consonant that is no final (ㄸ): ✓ as by the space
         assertEquals(Verdict.PENDING, j(ga, " ", ""))                  // a space alone commits nothing
-        val gaga = PracticeItem("가가", PracticeBoard.SWIPE, "가가 = …", listOf("가가"))
+        val gaga = PracticeItem("가가", PracticeBoard.GRAFFITI, "가가 = …", listOf("가가"))
         assertEquals(Verdict.PENDING, j(gaga, "", "가"))
         assertEquals(Verdict.PENDING, j(gaga, "", "각"))               // 가 → 각 → 가가: each step is still on the way
         assertEquals(Verdict.PENDING, j(gaga, "가", "가"))             // the first 가 committed by the second
@@ -123,7 +135,7 @@ class PracticeFlowTest {
     }
 
     @Test
-    fun `PR-05 tap symbol items resolve as SWIPE 10_1 says`() {
+    fun `PR-05 tap symbol items resolve as SRS appendix A_2 says`() {
         for ((label, g, out) in listOf(
             Triple("1", TapGesture.Exit(Dir.UP), "!"), Triple("/", TapGesture.Exit(Dir.UP), "?"), Triple("i", TapGesture.Exit(Dir.LEFT), "["),
         )) {
@@ -134,9 +146,9 @@ class PracticeFlowTest {
     }
 
     @Test
-    fun `PR-06 a wrong swipe action shows the how-to and starts a new try, the next press clears the marks`() {
-        val f = PracticeFlow(listOf(PracticeTopics.SWIPE))
-        f.open(PracticeTopics.SWIPE)
+    fun `PR-06 a wrong action off the tap keyboard shows the how-to and starts a new try, the next press clears the marks`() {
+        val f = PracticeFlow(listOf(gaGo))
+        f.open(gaGo)
         f.start()
         val t0 = f.tryNo
         f.onAction("ㄴ", "ㄴ")                                           // a committed ㄴ (no composing part)
@@ -146,17 +158,16 @@ class PracticeFlowTest {
         f.onPress()
         assertNull(f.verdict)
         assertEquals("", f.echo)
-        assertEquals(PracticeTopics.SWIPE.items[0].howTo, f.howTo)   // kept until the item is right
+        assertEquals(gaGo.items[0].howTo, f.howTo)   // kept until the item is right
         f.onAction("ㄱ", "ㄱ", composing = "ㄱ")
-        f.onAction("기", "기", error = true, reversed = true, composing = "기")
-        assertEquals(PracticeTopics.REVERSE_HINT, f.hint)
+        f.onAction("기", "기", error = true, composing = "기")       // the error vibration is ✗ at once
+        assertEquals(Verdict.WRONG, f.verdict)
         f.onPress()
         f.onAction("ㄱ", "ㄱ", composing = "ㄱ"); f.onAction("기", "기", composing = "기"); f.onAction("가", "가", composing = "가")
         assertNull(f.verdict)                                            // composing 가: not judged yet
         f.onAction("가 ", "가")                                          // the space
         assertEquals(Verdict.RIGHT, f.verdict)
         assertNull(f.howTo)
-        assertNull(f.hint)
         f.advance()
         assertEquals(1, f.index)
     }
@@ -208,7 +219,7 @@ class PracticeFlowTest {
         assertEquals(listOf("upper"), done)
         f.stop()
         assertEquals(PracticeFlow.Screen.LIST, f.screen)
-        f.open(PracticeTopics.SWIPE)
+        f.open(PracticeTopics.GRAFFITI_KO)
         f.start()
         f.stop()   // [그만] midway: nothing marked
         assertEquals(PracticeFlow.Screen.LIST, f.screen)
@@ -224,8 +235,8 @@ class PracticeFlowTest {
 
     @Test
     fun `PR-22 a right item stays with its check, takes no input, then the next one comes (FSS#54)`() {
-        val f = PracticeFlow(listOf(PracticeTopics.SWIPE))
-        f.open(PracticeTopics.SWIPE)
+        val f = PracticeFlow(listOf(gaGo))
+        f.open(gaGo)
         f.start()
         f.onAction("가", "가", composing = "가")
         f.onAction("가 ", "가")                                          // the space: ✓
@@ -249,7 +260,7 @@ class PracticeFlowTest {
         assertEquals(1, f.index)
         f.onAction("가 ", "가")
         assertEquals(Verdict.WRONG, f.verdict)                           // 가 on 고 is ✗, with 고's how-to
-        assertEquals(PracticeTopics.SWIPE.items[1].howTo, f.howTo)
+        assertEquals(gaGo.items[1].howTo, f.howTo)
         f.onAction("고 ", "고")
         assertTrue(f.holding)
         f.stop()                                                         // [그만] while it is shown: the hold ends

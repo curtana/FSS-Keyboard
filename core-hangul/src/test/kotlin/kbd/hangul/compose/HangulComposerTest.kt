@@ -14,7 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** HangulComposer (LLD-04 §7; LLD-11 §2 HC-06..HC-31, HC-41..HC-44, HC-50..HC-53 (swipe double tap, last consonant), §2.1 BS-01..BS-05, BS-20, BS-21). */
+/** HangulComposer (LLD-04 §7; LLD-11 §2 HC-06..HC-31, HC-41..HC-44, HC-50, HC-51, HC-53 (UndoLast and DoubleConsonant), §2.1 BS-01..BS-05, BS-20, BS-21). */
 class HangulComposerTest {
 
     private fun j(c: Char): Jamo = Jamo.ofCompat(c)!!
@@ -119,23 +119,23 @@ class HangulComposerTest {
     fun `HC-20 ss as final`() = assertEquals("했", typed("ㅎㅐㅆ"))
 
     @Test
-    fun `HC-21 swipe consecutive vowels never merge`() {
-        assertEquals("가ㅣ", typed("ㄱㅏㅣ", ComposePolicy.SWIPE))    // FR-SWP-21, issue #156: 가 + ㅣ (was 개)
-        assertEquals("가ㅏ", typed("ㄱㅏㅏ", ComposePolicy.SWIPE))
-        assertEquals("고ㅜ", typed("ㄱㅗㅜ", ComposePolicy.SWIPE))    // FR-SWP-21: no merge, a new syllable
+    fun `HC-21 the no-merge policy - consecutive vowels never merge`() {
+        assertEquals("가ㅣ", typed("ㄱㅏㅣ", ComposePolicy.GRAFFITI))    // no merge table: 가 + ㅣ
+        assertEquals("가ㅏ", typed("ㄱㅏㅏ", ComposePolicy.GRAFFITI))
+        assertEquals("고ㅜ", typed("ㄱㅗㅜ", ComposePolicy.GRAFFITI))    // no merge, a new syllable
         assertEquals("가ㅣ", typed("ㄱㅏㅣ"))                          // dubeolsik table has no ㅏ + ㅣ
         assertTrue(reports.isEmpty())
     }
 
     @Test
-    fun `HC-22 swipe does not merge dubeolsik pairs either`() {
-        assertEquals("고ㅏ", typed("ㄱㅗㅏ", ComposePolicy.SWIPE))    // TBD-18 = B, issue #156 (dubeolsik: 과)
+    fun `HC-22 the no-merge policy does not merge dubeolsik pairs either`() {
+        assertEquals("고ㅏ", typed("ㄱㅗㅏ", ComposePolicy.GRAFFITI))    // dubeolsik: 과
         assertEquals("과", typed("ㄱㅗㅏ"))
-        assertEquals("그ㅣ", typed("ㄱㅡㅣ", ComposePolicy.SWIPE))
-        assertEquals("과ㅣ", typed("ㄱㅘㅣ", ComposePolicy.SWIPE))    // the one-stroke ㅘ, then ㅣ: no 괘
-        assertEquals("과", typed("ㄱㅘ", ComposePolicy.SWIPE))        // the one-stroke ㅘ is one vowel event
-        assertEquals("가기", typed("ㄱㅏㄱㅣ", ComposePolicy.SWIPE))   // after a final: dokkaebibul, as dubeolsik
-        assertEquals("갈기", typed("ㄱㅏㄹㄱㅣ", ComposePolicy.SWIPE)) // compound final splits, as dubeolsik
+        assertEquals("그ㅣ", typed("ㄱㅡㅣ", ComposePolicy.GRAFFITI))
+        assertEquals("과ㅣ", typed("ㄱㅘㅣ", ComposePolicy.GRAFFITI))    // a ㅘ event, then ㅣ: no 괘
+        assertEquals("과", typed("ㄱㅘ", ComposePolicy.GRAFFITI))        // ㅘ is one vowel event
+        assertEquals("가기", typed("ㄱㅏㄱㅣ", ComposePolicy.GRAFFITI))   // after a final: dokkaebibul, as dubeolsik
+        assertEquals("갈기", typed("ㄱㅏㄹㄱㅣ", ComposePolicy.GRAFFITI)) // compound final splits, as dubeolsik
     }
 
     @Test
@@ -157,7 +157,7 @@ class HangulComposerTest {
 
     @Test
     fun `HC-24c ReplaceVowel after dokkaebibul stays in the new syllable`() {
-        val c = composer(ComposePolicy.SWIPE)
+        val c = composer(ComposePolicy.GRAFFITI)
         c.type(ev("ㄱㅏㄱ"))                                           // 각
         assertEquals(ComposeResult("가", "기"), c.apply(Vowel(j('ㅣ'))))
         assertEquals(ComposeResult("", "가"), c.apply(ReplaceVowel(j('ㅏ'))))
@@ -206,7 +206,7 @@ class HangulComposerTest {
 
     @Test
     fun `HC-26 applyAll returns one result without the intermediate syllable`() {
-        val c = composer(ComposePolicy.SWIPE)
+        val c = composer(ComposePolicy.GRAFFITI)
         c.type(ev("ㄱㅗ"))
         assertEquals(ComposeResult("고", "구"), c.applyAll(listOf(Consonant(j('ㄱ')), Vowel(j('ㅜ')))))
     }
@@ -330,17 +330,16 @@ class HangulComposerTest {
     }
 
     @Test
-    fun `BS-20 swipe backspace removes one jamo at a time`() {
-        val c = composer(ComposePolicy.SWIPE)
-        c.type(ev("ㄱㅐ"))                              // 개 = ㄱ tap + one-stroke ㅐ (issue #156)
+    fun `BS-20 the no-merge policy - backspace removes one jamo at a time`() {
+        val c = composer(ComposePolicy.GRAFFITI)
+        c.type(ev("ㄱㅐ"))                              // 개 = ㄱ + a ㅐ event
         assertEquals("개", c.composingText())
-        assertEquals("ㄱ", c.bs().composing)          // one vowel swipe = one unit (FR-CMN-07)
+        assertEquals("ㄱ", c.bs().composing)          // one vowel event = one unit (FR-CMN-07)
         assertEquals("", c.bs().composing)
         assertFalse(c.isComposing())
 
-        c.type(ev("ㄱㅘ"))                              // 과 = one-stroke ㅘ: one ⌫ removes it (SWIPE 5.2)
+        c.type(ev("ㄱㅘ"))                              // 과 = a ㅘ event: one ⌫ removes it
         assertEquals("ㄱ", c.bs().composing)
-        assertEquals(j('ㄱ'), c.lastConsonant())
         c.bs()
 
         c.type(ev("ㄱㅏㅣ"))                            // 가ㅣ: ⌫ removes the lone ㅣ, the committed 가 stays
@@ -349,14 +348,14 @@ class HangulComposerTest {
 
         c.type(ev("ㄷㅏㄹㄱ"))
         assertEquals("닭", c.composingText())
-        assertEquals("달", c.bs().composing)          // SRS 3.1 swipe row: 닭 ⌫⌫⌫ = 달, 다, ㄷ
+        assertEquals("달", c.bs().composing)          // 닭 ⌫⌫⌫ = 달, 다, ㄷ
         assertEquals("다", c.bs().composing)
         assertEquals("ㄷ", c.bs().composing)
     }
 
     @Test
-    fun `BS-21 swipe backspace leaves the committed syllable`() {
-        val c = composer(ComposePolicy.SWIPE)
+    fun `BS-21 the no-merge policy - backspace leaves the committed syllable`() {
+        val c = composer(ComposePolicy.GRAFFITI)
         assertEquals("가가", c.type(ev("ㄱㅏㄱㅏ")))
         assertEquals(ComposeResult("", "ㄱ"), c.bs())   // 가ㄱ: the committed 가 is not reopened
         assertEquals(ComposeResult("", ""), c.bs())
@@ -364,20 +363,20 @@ class HangulComposerTest {
         assertNull(c.currentVowel())
     }
 
-    // --- Swipe double tap and last consonant (HLD 4.3, issue #150) ----------------------------
+    // --- UndoLast and DoubleConsonant (HLD 4.4, issue #150) ----------------------------
 
     @Test
     fun `HC-50 UndoLast then DoubleConsonant turns the tap just typed into a double`() {
-        val c = composer(ComposePolicy.SWIPE)
+        val c = composer(ComposePolicy.GRAFFITI)
         c.type(ev("ㅂㅏㄱ"))                                                              // 박
         assertEquals(ComposeResult("", "밖"), c.applyAll(listOf(UndoLast, DoubleConsonant(j('ㄱ')))))
         assertEquals(ComposeResult("바", "까"), c.apply(Vowel(j('ㅏ'))))                   // 바까: dokkaebibul moves ㄲ
 
-        val d = composer(ComposePolicy.SWIPE)
+        val d = composer(ComposePolicy.GRAFFITI)
         d.type(ev("ㄷㅏㄹㄱ"))                                                            // 닭
         assertEquals(ComposeResult("달", "ㄲ"), d.applyAll(listOf(UndoLast, DoubleConsonant(j('ㄱ')))))   // ㄹ + ㄲ is no compound
 
-        val e = composer(ComposePolicy.SWIPE)
+        val e = composer(ComposePolicy.GRAFFITI)
         e.type(ev("ㅇㅏㅂ"))                                                              // 압
         assertEquals(ComposeResult("아", "ㅃ"), e.applyAll(listOf(UndoLast, DoubleConsonant(j('ㅂ')))))   // ㅃ cannot be a final
         assertEquals("빠", e.apply(Vowel(j('ㅏ'))).composing)
@@ -386,34 +385,15 @@ class HangulComposerTest {
 
     @Test
     fun `HC-51 a double final moves whole on dokkaebibul`() {
-        val c = composer(ComposePolicy.SWIPE)
+        val c = composer(ComposePolicy.GRAFFITI)
         c.type(ev("ㄱㅗㄱ"))                                                              // 곡
         assertEquals(ComposeResult("", "곢"), c.applyAll(listOf(UndoLast, DoubleConsonant(j('ㄱ')))))
         assertEquals(ComposeResult("고", "끼"), c.apply(Vowel(j('ㅣ'))))                   // 고끼
     }
 
     @Test
-    fun `HC-52 lastConsonant is the last consonant of the composing syllable`() {
-        val c = composer(ComposePolicy.SWIPE)
-        assertNull(c.lastConsonant())
-        c.type(ev("ㄷㅏㄹㄱ"))
-        assertEquals(j('ㄱ'), c.lastConsonant())   // compound final: the second consonant
-        c.bs()
-        assertEquals(j('ㄹ'), c.lastConsonant())
-        c.bs()
-        assertEquals(j('ㄷ'), c.lastConsonant())   // no final: the initial
-        c.finish()
-        c.type(ev("ㅂㅏ"))
-        c.applyAll(listOf(Consonant(j('ㄱ')), UndoLast, DoubleConsonant(j('ㄱ'))))
-        assertEquals(j('ㄲ'), c.lastConsonant())   // a double as itself
-        c.finish()
-        c.apply(Vowel(j('ㅏ')))
-        assertNull(c.lastConsonant())              // only a vowel
-    }
-
-    @Test
     fun `HC-53 UndoLast on an empty list does nothing and snapshot restores the units`() {
-        val c = composer(ComposePolicy.SWIPE)
+        val c = composer(ComposePolicy.GRAFFITI)
         assertEquals(ComposeResult("", ""), c.apply(UndoLast))
         c.type(ev("ㄱㅏㄱ"))
         val s = c.snapshot()

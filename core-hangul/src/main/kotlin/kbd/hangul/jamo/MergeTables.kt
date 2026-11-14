@@ -29,10 +29,7 @@ object MergeTables {
         (EU to I) to Jamo.UI,
     )
 
-    /**
-     * Never merges: graffiti, and swipe since issue #156 (every vowel is one stroke, so two vowel
-     * swipes in a row are two syllables: 가 + ㅣ = 가ㅣ, 고 + ㅏ = 고ㅏ, FR-HGL-04b, FR-SWP-21).
-     */
+    /** Never merges: graffiti (its vowels come assembled, FR-HGL-04c). */
     val NONE: VowelMergeTable = VowelMergeTable { _, _ -> null }
 
     private fun tableOf(vararg pairs: Pair<Pair<Jamo, Jamo>, Jamo>): VowelMergeTable {

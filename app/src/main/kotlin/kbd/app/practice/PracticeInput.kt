@@ -6,16 +6,11 @@ import kbd.app.graffiti.GraffitiInputHandler
 import kbd.app.ime.ComposingController
 import kbd.app.ime.EditorKey
 import kbd.app.ime.EditorPort
-import kbd.app.ime.FieldClass
-import kbd.app.ime.FieldInfo
 import kbd.app.ime.InputDispatcher
 import kbd.app.ime.InputMode
 import kbd.app.ime.ModeController
 import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
-import kbd.app.swipe.SwipeEngineState
-import kbd.app.swipe.SwipeHost
-import kbd.app.view.CenterText
 import kbd.app.view.TapSink
 import kbd.graffiti.ink.GraffitiLang
 import kbd.graffiti.recognize.Recognizer
@@ -24,8 +19,6 @@ import kbd.graffiti.state.GraffitiState
 import kbd.hangul.cheonjiin.CheonjiinAssembler
 import kbd.hangul.compose.ComposePolicy
 import kbd.hangul.compose.HangulComposer
-import kbd.hangul.event.JamoEvent
-import kbd.hangul.jamo.Jamo
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
 import kbd.stroke.tap.TapOutput
@@ -39,11 +32,11 @@ import kbd.stroke.threshold.Thresholds
 class PracticeEditor : EditorPort {
     private val committed = StringBuilder()
 
-    /** The composing text as shown, temporary ㆍ / ‥ included (SWIPE 3.4). */
+    /** The composing text as shown, temporary ㆍ / ‥ included (FR-HGL-04e). */
     var composing: String = ""
         private set
 
-    /** Everything the item typed so far: what the judgement compares (SWIPE 10.2). */
+    /** Everything the item typed so far: what the judgement compares (SRS appendix A.3). */
     val text: String get() = committed.toString() + composing
 
     /** The input display (FR-TUT-09): the composing syllable as shown ("ㄱㆍ" too), else the last typed character (a space is none). */
@@ -76,30 +69,30 @@ class PracticeEditor : EditorPort {
 }
 
 /**
- * One try of one practice item (LLD-07 §2.3, HLD 7.1): the real `InputDispatcher`, composer and swipe / graffiti
- * engines writing into a [PracticeEditor], at the fixed thresholds. Android-free; the practice screen gives
- * [tapSink] to the tap keyboard and graffiti views and this object (a [SwipeHost]) to the swipe view.
+ * One try of one practice item (LLD-07 §2.3, HLD 7.1): the real `InputDispatcher`, composer and graffiti
+ * engine writing into a [PracticeEditor], at the fixed thresholds. Android-free; the practice screen gives
+ * [tapSink] to the tap keyboard and graffiti views.
  *
- * Only what the item practises reaches the dispatcher: letters, digits, symbols, swipe strokes, graffiti strokes, on
- * the tap keyboard ⌫ (owner decision A, FSS#17), and on the swipe keyboard and the graffiti pad the space, which
+ * Only what the item practises reaches the dispatcher: letters, digits, symbols, graffiti strokes, on
+ * the tap keyboard ⌫ (owner decision A, FSS#17), and on the graffiti pad the space, which
  * commits the composing syllable for judging (PM decision A, FSS#43). The other function keys (↵, arrows, the mode
- * key, the tap keyboard's space, the swipe keyboard's and the pad's ⌫) are shown as on the keyboard but do nothing
- * here (SWIPE 10.2: the swipe keyboard and the pad have no edit keys in practice; the edit row's other keys are not
+ * key, the tap keyboard's space, the pad's ⌫) are shown as on the keyboard but do nothing
+ * here (SRS appendix A.3: the pad has no edit keys in practice; the edit row's other keys are not
  * judged).
  */
 class PracticeInput(
     val board: PracticeBoard,
     private val out: FeedbackPort,
     errorLog: ErrorLog,
-    override val settings: Settings,
-) : SwipeHost {
+    val settings: Settings,
+) {
 
     val editor = PracticeEditor()
 
-    /** The current action vibrated as an error (SWIPE 10.2 오류 진동); the screen clears it at each touch. */
+    /** The current action vibrated as an error (SRS appendix A.3 오류 진동); the screen clears it at each touch. */
     var errored: Boolean = false
 
-    override val feedback: FeedbackPort = object : FeedbackPort {
+    val feedback: FeedbackPort = object : FeedbackPort {
         override fun key() = out.key()
         override fun error() {
             errored = true
@@ -109,7 +102,6 @@ class PracticeInput(
 
     private val mode = when (board) {
         PracticeBoard.TAP_QWERTY -> InputMode.QWERTY
-        PracticeBoard.SWIPE -> InputMode.SWIPE
         PracticeBoard.GRAFFITI -> InputMode.GRAFFITI
     }
 
@@ -118,12 +110,14 @@ class PracticeInput(
     val dispatcher = InputDispatcher(ModeController(listOf(mode), mode), composing, feedback) {}.also {
         it.composer = when (board) {
             PracticeBoard.TAP_QWERTY -> null   // QWERTY commits at once (LLD-08 §3.1)
-            PracticeBoard.SWIPE -> HangulComposer(ComposePolicy.SWIPE)
+
             PracticeBoard.GRAFFITI -> HangulComposer(ComposePolicy.GRAFFITI)
         }
     }
 
-    override val guard = EngineGuard(errorLog, dispatcher)
+    val guard = EngineGuard(errorLog, dispatcher)
+
+    val thresholds: Thresholds = ThresholdDefaults.VALUES
 
     /** What the tap keyboard and the graffiti pad report: see the class comment for the keys that do nothing. */
     val tapSink: TapSink = object : TapSink {
@@ -139,14 +133,14 @@ class PracticeInput(
     }
 
     /**
-     * The graffiti engine of this try, the pad's language set to [lang] (SWIPE 10.1 ③: the item sets it, no switching stroke).
-     * [recognizer] is the practice screen's supply (model and personal strokes, LLD-05 §11); the default is the templates alone.
+     * The graffiti engine of this try, the pad's language set to [lang] (SRS appendix A.2 ③: the item sets it, no switching stroke).
+     * [recognizer] is the practice screen's supply (templates and model, LLD-05 §11); the default is the templates alone.
      */
     fun graffiti(templates: TemplateSet, lang: GraffitiLang, flash: (String) -> Unit, redraw: () -> Unit, recognizer: () -> Recognizer = Recognizer(templates).let { r -> { r } }): GraffitiInputHandler {
         check(board == PracticeBoard.GRAFFITI) { "graffiti engine on $board" }
         val state = GraffitiState(templates).also { it.lang = lang }
         return GraffitiInputHandler(
-            recognizer = recognizer,   // the keyboard's own judgement, personal strokes included (FR-TUT-17 ④)
+            recognizer = recognizer,   // the keyboard's own judgement (FR-TUT-17 ④)
             state = state,
             asm = CheonjiinAssembler(),
             composer = { checkNotNull(dispatcher.composer) },
@@ -155,25 +149,5 @@ class PracticeInput(
             flash = flash,
             redraw = redraw,
         ).also { dispatcher.graffiti = it }
-    }
-
-    // --- SwipeHost -----------------------------------------------------------------------------------
-
-    override val thresholds: Thresholds = ThresholdDefaults.VALUES
-    override val fieldInfo = FieldInfo(FieldClass.TEXT, isPassword = false, noLearning = false, multiLine = false, enterAction = null)
-    override val centerConsonant: Jamo? get() = dispatcher.composer?.lastConsonant()
-    override val centerText: CenterText? get() = dispatcher.centerText()
-
-    override fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean) = dispatcher.onJamoEvents(events, errorVibe)
-    override fun onSwipeText(text: String, errorVibe: Boolean) = dispatcher.onSwipeText(text, errorVibe)
-    /** The swipe keyboard's space commits the composing syllable as on the keyboard (FSS#43); its other function keys do nothing. */
-    override fun onFunctionKey(key: FunctionKey) {
-        if (key == FunctionKey.SPACE) dispatcher.onFunctionDown(key)
-    }
-    override fun onFunctionKeyUp(key: FunctionKey) = Unit
-    override fun onSettingsStroke() = Unit
-
-    override fun registerSwipeState(state: SwipeEngineState?) {
-        dispatcher.swipeState = state
     }
 }

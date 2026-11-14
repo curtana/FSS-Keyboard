@@ -7,7 +7,7 @@ import kbd.hangul.jamo.VowelMergeTable
 
 /**
  * Per-mode composing rules (LLD-04 §7.1). Backspace removes one input unit in every mode
- * (FR-CMN-07; swipe too since issue #150, so the former per-mode backspace field is gone).
+ * (FR-CMN-07).
  */
 data class ComposePolicy(
     val name: String,
@@ -16,12 +16,7 @@ data class ComposePolicy(
 ) {
     companion object {
         val DUBEOLSIK = ComposePolicy("dubeolsik", MergeTables.DUBEOLSIK, true)
-        /**
-         * Dubeolsik composing (finals, compound finals, dokkaebibul, FR-SWP-34) with no vowel merge:
-         * every vowel is one swipe, two vowel swipes in a row are two syllables (고 + ㅏ = 고ㅏ,
-         * FR-SWP-20, 21, FR-HGL-04b, SRS TBD-18 = B, issue #156).
-         */
-        val SWIPE = ComposePolicy("swipe", MergeTables.NONE, false)
+        /** No vowel merge: the cheonjiin assembler sends the vowel and its `ReplaceVowel` steps (FR-HGL-04c). */
         val GRAFFITI = ComposePolicy("graffiti", MergeTables.NONE, false)
     }
 }

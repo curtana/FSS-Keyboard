@@ -5,11 +5,14 @@ import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import java.io.File
 import kbd.app.ime.InputMode
 import kbd.app.ime.InputMode.GRAFFITI
+import kbd.app.ime.ModeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,7 +32,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** SS-01..SS-05, SS-07, SS-08 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
+/** SS-01..SS-05, SS-07, SS-08, SS-10..SS-15 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
 class SettingsStoreTest {
 
     @get:Rule
@@ -71,10 +74,6 @@ class SettingsStoreTest {
         assertEquals(48f, s.rowHeightDp)
         assertFalse(s.practiceListShown)
         assertTrue(s.practiceDone.isEmpty())
-        assertTrue(s.showDirectionGuide)
-        assertTrue(s.showNextChar)
-        assertTrue(s.showCurrentChar)   // #135: default on
-        assertTrue(s.showStrokeTrail)   // FSS#57: default on
         assertEquals(2f / 3f, s.graffitiLetterRatio)
     }
 
@@ -198,33 +197,94 @@ class SettingsStoreTest {
     fun `SS-07 practice topics marked done read back as a set`() {
         runBlocking {
             val st = SettingsStore(open())
-            st.markPracticeDone("swipe")
+            st.markPracticeDone("symbol")
             st.markPracticeDone("upper")
-            st.markPracticeDone("swipe")
+            st.markPracticeDone("symbol")
         }
-        assertEquals(setOf("swipe", "upper"), SettingsStore(reopen()).loadBlocking().practiceDone)
+        assertEquals(setOf("symbol", "upper"), SettingsStore(reopen()).loadBlocking().practiceDone)
     }
 
     @Test
-    fun `SS-08 modes on by default, graffiti and swipe turn off and read back`() {
-        val all = setOf(InputMode.SWIPE, InputMode.QWERTY, InputMode.DUBEOLSIK, GRAFFITI)
+    fun `SS-08 modes on by default, graffiti turns off and reads back`() {
+        val all = setOf(InputMode.DUBEOLSIK, InputMode.QWERTY, GRAFFITI)
         val d = SettingsStore(open()).loadBlocking()
         assertTrue(d.graffitiEnabled)
-        assertTrue(d.swipeEnabled)
         assertEquals(all, d.enabledModes)
         runBlocking { SettingsStore(reopen()).update { it.copy(graffitiEnabled = false) } }
-        assertEquals(all - GRAFFITI, SettingsStore(reopen()).loadBlocking().enabledModes)
-        runBlocking { SettingsStore(reopen()).update { it.copy(swipeEnabled = false) } }
-        assertEquals(setOf(InputMode.QWERTY, InputMode.DUBEOLSIK), SettingsStore(reopen()).loadBlocking().enabledModes)
+        assertEquals(setOf(InputMode.DUBEOLSIK, InputMode.QWERTY), SettingsStore(reopen()).loadBlocking().enabledModes)
+    }
+
+    /** What a version that still had the swipe mode may have left in the store (SRS FR-CMN-10a, FSS#95). */
+    private fun writeOldVersionValues(lastMode: String) = runBlocking {
+        reopen().edit {
+            it[stringPreferencesKey("last_mode")] = lastMode
+            it[booleanPreferencesKey("swipe_enabled")] = false
+            it[booleanPreferencesKey("show_stroke_trail")] = false
+            it[booleanPreferencesKey("show_direction_guide")] = false
+            it[booleanPreferencesKey("show_next_char")] = false
+            it[booleanPreferencesKey("show_current_char")] = false
+            it[stringSetPreferencesKey("practice_done")] = setOf("swipe", "upper")
+            it[SettingsStore.HAPTIC] = false
+            it[SettingsStore.ROW_HEIGHT_DP] = 56f
+        }
+    }
+
+    @Test
+    fun `SS-15 values left by a version with the swipe mode - the last mode reads as none and the keyboard starts in Dubeolsik`() {
+        writeOldVersionValues("SWIPE")
+        val s = SettingsStore(reopen()).loadBlocking()   // no exception
+        assertNull(s.lastMode)                           // a mode that is gone = nothing saved (FR-CMN-10a ①)
+        assertEquals(setOf(InputMode.DUBEOLSIK, InputMode.QWERTY, GRAFFITI), s.enabledModes)
+        assertFalse(s.haptic)                            // the other values read as they were stored
+        assertEquals(56f, s.rowHeightDp)
+        assertEquals(setOf("swipe", "upper"), s.practiceDone)   // kept; a topic that is gone matches nothing (PR-36)
+
+        // The service's start (LLD-08 §3): the first mode of the order, nothing to save.
+        val mc = ModeController(InputMode.entries.toList(), s.lastMode, s.enabledModes)
+        assertEquals(InputMode.DUBEOLSIK, mc.current)
+        assertNull(mc.fixedStart)
+        mc.enterNumericField()                           // a numeric field: QWERTY, back to Dubeolsik after it
+        assertEquals(InputMode.QWERTY, mc.current)
+        assertEquals(InputMode.DUBEOLSIK, mc.returnMode)
+        // Graffiti off as well (SRS case 4): Dubeolsik and QWERTY only.
+        val two = ModeController(InputMode.entries.toList(), s.lastMode, s.copy(graffitiEnabled = false).enabledModes)
+        assertEquals(listOf(InputMode.DUBEOLSIK, InputMode.QWERTY, InputMode.DUBEOLSIK), listOf(two.current, two.onModeKey(), two.onModeKey()))
+    }
+
+    @Test
+    fun `SS-15 values left by a version with the swipe mode - writes go through, the old keys are neither read nor removed`() {
+        writeOldVersionValues("SWIPE")
+        runBlocking {
+            val st = SettingsStore(reopen())
+            st.update { it.copy(sound = true) }          // the settings screen
+            st.markPracticeDone("symbol")
+            st.setLastMode(InputMode.QWERTY)             // the mode key
+        }
+        val r = reopen()
+        val s = SettingsStore(r).loadBlocking()
+        assertEquals(InputMode.QWERTY, s.lastMode)
+        assertTrue(s.sound)
+        assertFalse(s.haptic)
+        assertEquals(setOf("swipe", "upper", "symbol"), s.practiceDone)
+        val raw = runBlocking { r.data.first() }
+        for (name in listOf("swipe_enabled", "show_stroke_trail", "show_direction_guide", "show_next_char", "show_current_char")) {
+            assertEquals(name, false, raw[booleanPreferencesKey(name)])   // left as it was (LLD-07 §6.1, D-69)
+        }
+    }
+
+    @Test
+    fun `SS-15 a last mode that is still there reads as it was, whatever else the old version left`() {
+        writeOldVersionValues("GRAFFITI")                // SRS case 3
+        val s = SettingsStore(reopen()).loadBlocking()
+        assertEquals(GRAFFITI, s.lastMode)
+        assertTrue(s.graffitiEnabled)
+        assertEquals(GRAFFITI, ModeController(InputMode.entries.toList(), s.lastMode, s.enabledModes).current)
     }
 
     @Test
     fun `update writes every field and null lastMode removes the key`() {
         val changed = Settings(
             lastMode = GRAFFITI,
-            showDirectionGuide = false,
-            showNextChar = false,
-            showCurrentChar = false,
             haptic = false,
             sound = true,
             rowHeightDp = 56f,
@@ -232,10 +292,8 @@ class SettingsStoreTest {
             practiceListShown = true,
             practiceDone = setOf("graffiti"),
             graffitiEnabled = false,
-            swipeEnabled = false,
             portraitWidth = WidthSetting(44f, KeyboardAlign.RIGHT),
             landscapeWidth = WidthSetting(KeyboardWidth.FULL, KeyboardAlign.LEFT),
-            showStrokeTrail = false,
         )
         runBlocking { SettingsStore(open()).update { changed } }
         val store = SettingsStore(reopen())

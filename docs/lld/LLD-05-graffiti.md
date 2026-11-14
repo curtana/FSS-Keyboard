@@ -1,8 +1,9 @@
 # LLD-05 그래피티
 
 - 대응 HLD 절: 5장(그래피티 처리 흐름)
-- 버전 **0.36** (2026-11-14)
-- 0.36(FSS#96, SRS 0.85 FR-GRF-10~14·NFR-13, HLD 0.78 5.1): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지), 8.3(`GraffitiPadView.onInk`), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획 반영). 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
+- 버전 **0.37** (2026-11-14)
+- 0.37(FSS#96, SRS 0.87 FR-GRF-10~14·NFR-13, HLD 0.80 5.1): **글자 획 = 템플릿 점수와 신경망 점수의 합산.** 3.1 4번(집합마다 `고르기`), 3.2(`Recognizer(templates, model, personal)`·`withPersonal`·`score`), 새 3.4(특징 `StrokeFeatures`: 8 × 8 격자 × 방향 8 + 가운데 1 = 576), 3.5(순전파 `NnBody`: 합성곱 둘·풀링·완전연결, 임베딩 32), 3.6(합산 a = 0.5, 문턱 0.80·0.78과 출처, 돌려줄 id = 고른 글자의 내장 템플릿 최고, 개인 획 = 개인 템플릿 + 예시, 모델 없는 구성), 새 7.1(모델 파일 형식·항목별 크기·줄일 선택지), 8.3(`GraffitiPadView.onInk`), 새 11절(`GraffitiRecognizers`: 모델을 뒤 스레드에서 읽음, 개인 획 반영). 규칙 획, 집합 순서, `TemplateMatcher`의 점수 계산, `StrokeToken`, `GraffitiState`는 그대로다. **설계 문서에 없어 여기서 임시로 정한 것:** 모델을 읽지 못하면 템플릿 점수만으로 인식(3.6 "모델 없는 구성").
+- 0.36(FSS#95, 긋기 입력 모드 삭제): 긋기 참조만 지웠다 — `CheonjiinAssembler`를 가지는 곳은 그래피티뿐이다(4절). 조합기 명세는 `LLD-04-stroke-hangul.md` 7절(절 번호 그대로). 동작·표는 그대로. 아래 이력의 "긋기 천지인 키"·"SWIPE n.n"은 그때의 일이다(SWIPE 10.1 ③은 지금 SRS 부록 A.2).
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑥⑧, HLD 0.75 5A): 패드·보조 줄·덮개는 자판 폭 W 그대로이고 여유 칸은 비운다(배치 코드 그대로). `GraffitiPadView.sideMarginPx`(`SideMarginView`) — 보조 줄 모드 키의 `KeyGeom`을 만들 때 테두리의 왼쪽·오른쪽을 여유 칸만큼 밖으로 준다(8절). 인식·영역 판정은 그대로다.
 - 0.34(FSS#80, SRS 0.81): 영문 오너 획 템플릿 156개를 `EN_LETTER`에 더했다(7절). 판정 코드와 안내표 칸은 그대로다.
 - 0.33(FSS#72, SWIPE 0.56 10.1 ③, LLD-07 0.32): `GraffitiGuidePanel.reveal`(10.2). 강조 없이 그 칸이 보이게 넘긴다. 키보드의 덮개는 쓰지 않는다.
@@ -19,7 +20,7 @@
 - 0.22(이슈 #205): 보조 줄 모드 키는 **뗄 때** 판정한다(8절 터치). 위로 나감(패드 쪽) = `sink.onSettingsStroke()`(조합 확정 뒤 설정 화면), 그 밖 = 모드 전환. 판정은 탭 자판과 같은 `TapGestureClassifier` + `ModeKeyGesture.of`(LLD-05A 4절, HLD 8.2), 문턱 `minCrossDp`는 서비스가 기준값에서 넣는다. 모드 키에서 시작한 손가락은 패드로 올라가도 패드 획이 아니다. 시험 MK-08(LLD-11 5.5).
 - 0.21(이슈 #179, SRS 0.44 FR-CMN-08 ①/② 분리·FR-GRF-07): `InputSink.restricted` → `hidesDisplay`(비밀번호 입력창만). 학습 금지 입력창에서도 인식 글자를 잠깐 보인다(6절 `onStroke`, 8.3 `flash`). 기록(오류 기록)은 그대로 끈다(LLD-08 3.1 `noRecord`).
 - 0.16(이슈 #160, HLD 0.32 3장·5장, SRS 0.36 FR-HGL-04c·FR-CMN-07b): `CheonjiinAssembler`·`CjElement`·`CjState`·`CjPush`·`CjPop`·`CjSnapshot`을 recognizer `kbd.graffiti.cheonjiin`에서 **core-hangul `kbd.hangul.cheonjiin`**으로 옮겼다(긋기 천지인 키와 함께 씀, 4절). 동작·표는 그대로. 조합기의 `ReplaceVowel`이 자기 단위로 쌓이므로(LLD-04 7.1) ⌫의 `ToVowel`은 `undoLast()`로 바꿨다(6절). 그 결과 조립기가 닫힌 뒤의 ⌫도 요소 하나씩이다(간 ⌫ = 가, ⌫ = 기).
-- 공통 타입은 [LLD-03-modules.md#3](LLD-03-modules.md#3-모듈-사이-공통-타입), 조합기는 [LLD-04-swipe.md#7](LLD-04-swipe.md#7-hangulcomposer-core-hangul)에 있다.
+- 공통 타입은 [LLD-03-modules.md#3](LLD-03-modules.md#3-모듈-사이-공통-타입), 조합기는 [LLD-04-stroke-hangul.md#7](LLD-04-stroke-hangul.md#7-hangulcomposer-core-hangul)에 있다.
 - 획 체계의 정본은 그래피티 규칙 문서(비공개, 저장소에 두지 않음, 이슈 #249) 0.15(이하 GRAFFITI) 4.2·6장(6.1 영문 글자·6.3 숫자·6.4 구두점·확장 기호 획 표, 6.2 "이 앱에서 정한 세부", 6.5 겹치는 모양 포함), 요구는 SRS 0.28 FR-GRF-01~08(05a~05d 포함), FR-HGL-04c~04e, FR-CMN-07b다. 영문·숫자·기호 획은 오너 결정 #79 OD-1·OD-2 A, 겹치는 모양은 오너 결정 #79 OD-3~OD-7 A대로다(0.7).
 - 숫자류 입력창(숫자·전화·날짜시간·비밀번호)에서는 그래피티가 아니라 영문 쿼티로 시작하므로(SRS FR-CMN-04, LLD-08 5절) 숫자 입력창 전용 패드는 없다.
 
@@ -36,7 +37,7 @@
 | 8 | `GraffitiPadView`, `InkCollector` | app |
 | 9 | 시퀀스: 그래피티 한 획, ⌫ | – |
 | 10 | 획 안내표: `GuideCatalog`(recognizer), `GraffitiGuideLayout`·`GraffitiGuidePanel`(app) (0.23) | recognizer, app |
-| 11 | 인식기 공급 `GraffitiRecognizers`: 모델 읽기, 개인 획 반영 (0.36) | app |
+| 11 | 인식기 공급 `GraffitiRecognizers`: 모델 읽기, 개인 획 반영 (0.37) | app |
 
 ## 2. 타입
 
@@ -98,7 +99,7 @@ recognize(stroke, lang, expect):
        고르기(stroke, 기호표 집합)가 받아들이면 → Symbol(id)                // 기호표 획이 먼저(FR-GRF-05c ⑥ 단서)
     평소 집합 = TemplateSet.setNameFor(area, lang, NORMAL)               // 기호표에 없는 획은 평소대로(05c ⑦)
     고르기(stroke, 평소 집합)가 받아들이면 Symbol(id) 아니면 Unknown
-       // 고르기 = 글자별 합산 점수의 최고 글자와 두 문턱(0.36, FSS#96, 3.6). 모델이 없으면 템플릿 점수 ≥ MATCH_MIN(0.35까지의 판정)
+       // 고르기 = 글자별 합산 점수의 최고 글자와 두 문턱(0.37, FSS#96, 3.6). 모델이 없으면 템플릿 점수 ≥ MATCH_MIN(0.35까지의 판정)
 ```
 
 - 매개변수 초기값(D-11): `TAP_MAX_DP = 8`, `CORNER_RATIO = 0.15`(SRS FR-GRF-05a, 구현 시 조정), `LINE_STRAIGHTNESS = 0.92`, `LINE_SECTOR = 20°`, `MATCH_MIN = 0.80`(0.36부터 모델 없는 구성에서만 쓴다. 합산의 a와 두 문턱은 3.6), `LIFT_TAIL_RATIO = 0.2`(0.29). 모두 실측으로 조정하는 인식 매개변수다.
@@ -176,7 +177,7 @@ data class Template(val id: String, val output: TemplateOutput, val corners: Int
 - 규칙 항목(`rule`이 있는 템플릿)은 `strokes`가 비어 있으므로 `TemplateMatcher.best`가 건너뛴다(맞출 획이 없는 템플릿). 그래서 규칙 항목은 3.1 3번에서만 쓰인다.
 - PUNCT·EXTENDED 집합에서 맞는 것이 없으면 `recognize`가 같은 area·lang의 NORMAL 집합으로 다시 찾는다(3.1 4번). 템플릿 id는 집합 사이에 겹치지 않으므로 5.2 2·3행은 id가 어느 집합에 속하는지로 가른다.
 
-### 3.4 신경망 입력 특징 `StrokeFeatures` (0.36, FSS#96, SRS FR-GRF-12)
+### 3.4 신경망 입력 특징 `StrokeFeatures` (0.37, FSS#96, SRS FR-GRF-12)
 
 `kbd.graffiti.nn.StrokeFeatures.compute(xs: DoubleArray, ys: DoubleArray): FloatArray` — 획의 **원 표본 점 열**(dp, 재표본·정규화 전)에서 값 576개(`SIZE`)를 낸다. 놓이는 순서는 `[채널][행][열]`(채널 0~7 = 방향, 8 = 가운데. 행 = 격자 y, 열 = 격자 x)이다. **학습 스크립트(`tools/graffiti-nn/features.py`)와 연산 순서까지 같게** 계산한다 — 출고 가중치가 그 값으로 학습됐기 때문이다(FR-GRF-12 ⑤). 중간 계산은 64비트 부동소수, 칸에 쌓는 값은 32비트다.
 
@@ -201,7 +202,7 @@ data class Template(val id: String, val output: TemplateOutput, val corners: Int
 - 점이 하나뿐이면 모든 값이 0이다(규칙이 먼저 탭으로 받으므로 인식 경로에서는 일어나지 않는다).
 - 결정성: 시계·난수 없음(NFR-04). 시험: SF-01~SF-08, NN-02(학습 쪽 값과 대조, LLD-11 6.7).
 
-### 3.5 순전파 `NnBody.embed` (0.36, FSS#96, SRS FR-GRF-11·13)
+### 3.5 순전파 `NnBody.embed` (0.37, FSS#96, SRS FR-GRF-11·13)
 
 `kbd.graffiti.nn.NnBody.embed(features: FloatArray): FloatArray` — 특징 576개 → 길이 1인 임베딩 32개. 라이브러리 없이 32비트 부동소수 곱셈·덧셈만 쓴다.
 
@@ -219,7 +220,7 @@ data class Template(val id: String, val output: TemplateOutput, val corners: Int
 - 덧셈 순서가 학습 틀과 같지 않아 값이 마지막 자리에서 다르다. 고정 표본 440획에서 잰 차이는 임베딩 7.7 × 10⁻⁷ 이하다(허용 오차 10⁻⁵, NN-03).
 - 기기에서 가중치를 바꾸지 않는다. 시험: NN-03, GM-01.
 
-### 3.6 합산·문턱·개인 획 (0.36, FSS#96, SRS FR-GRF-10·11·14)
+### 3.6 합산·문턱·개인 획 (0.37, FSS#96, SRS FR-GRF-10·11·14)
 
 집합 하나에서 글자를 고르는 방법이다(3.1 4번의 `고르기`).
 
@@ -259,7 +260,7 @@ data class Template(val id: String, val output: TemplateOutput, val corners: Int
 
 ## 4. CheonjiinAssembler
 
-**소속(0.16, 이슈 #160, HLD 3장):** core-hangul, 패키지 `kbd.hangul.cheonjiin`(0.15까지 recognizer `kbd.graffiti.cheonjiin`). 그래피티(`GraffitiInputHandler`, 6절)와 긋기 천지인 키(`SwipeInputMapper`, LLD-04 6절)가 각자 객체를 하나씩 가진다. recognizer는 `CjElement`(획 → 요소)만 쓴다. gesture-engine·recognizer는 core-hangul의 `kbd.hangul.cheonjiin`을 참조할 수 있다(MOD-03은 `kbd.hangul.compose`만 막음).
+**소속(0.16, 이슈 #160, HLD 3장):** core-hangul, 패키지 `kbd.hangul.cheonjiin`(0.15까지 recognizer `kbd.graffiti.cheonjiin`). 그래피티(`GraffitiInputHandler`, 6절)가 객체를 하나 가진다. recognizer는 `CjElement`(획 → 요소)만 쓴다. recognizer는 core-hangul의 `kbd.hangul.cheonjiin`을 참조할 수 있다(MOD-03은 `kbd.hangul.compose`만 막음).
 
 ### 4.1 타입과 전이 표 (GRAFFITI 4.2)
 
@@ -449,7 +450,7 @@ if g != "" && !dropped && !sink.hidesDisplay: flash(g)   // FR-GRF-07, FR-CMN-08
    Handled(res)            → show(res)
    NothingComposing        → out.deleteBefore()                              // 확정 글자 한 글자
 ```
-- 조합기 단위 목록에는 조립기가 성립시킨 `Vowel` 하나와 그 뒤 요소마다 `ReplaceVowel`이 쌓인다(0.16, LLD-04 7.1). 그래서 `ToVowel`은 마지막 `ReplaceVowel` 하나를, 모음이 성립하지 않게 되면(`ToPending`·`ToNone`) `Vowel` 하나(와 도깨비불)를 `undoLast()` 한 번으로 되돌린다. 조립기가 닫힌 뒤(받침)에는 `Empty`라 조합기 ⌫로 가고, 그때도 요소 하나씩 지운다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, SRS FR-SWP-64 "그래피티와 같음"). 닫힌 모음은 다시 열지 않는다(BS-17).
+- 조합기 단위 목록에는 조립기가 성립시킨 `Vowel` 하나와 그 뒤 요소마다 `ReplaceVowel`이 쌓인다(0.16, LLD-04 7.1). 그래서 `ToVowel`은 마지막 `ReplaceVowel` 하나를, 모음이 성립하지 않게 되면(`ToPending`·`ToNone`) `Vowel` 하나(와 도깨비불)를 `undoLast()` 한 번으로 되돌린다. 조립기가 닫힌 뒤(받침)에는 `Empty`라 조합기 ⌫로 가고, 그때도 요소 하나씩 지운다(간 ⌫ = 가, ⌫ = 기, ⌫ = ㄱ, SRS FR-CMN-07b). 닫힌 모음은 다시 열지 않는다(BS-17).
 - 도깨비불이 일어난 뒤의 되돌림은 확정 경계를 넘지 않는다: 각 + 탭 + ㅣ(= 가거) ⌫ = 가ㄱㆍ(앞 가는 확정됨, FR-CMN-07 확정 경계와 두벌식 "가가 ⌫ = 가ㄱ" 사례와 같은 규칙). 시험 GH-24.
 - 반복: 보조 줄 ⌫를 누르고 있으면 `RepeatTimer`(LLD-05A 6절)가 이 함수를 되풀이한다(FR-CMN-07c).
 
@@ -516,7 +517,7 @@ fun restore(s: GraffitiSnapshot) { asm.restore(s.asm); state.restore(s.state); r
 - 직선 규칙으로 처리하는 글자(영문 I = 문자 영역 ↓, 숫자 1 = 숫자 영역 ↓, 5.2 17·18행)는 템플릿을 두지 않는다. 기호표의 직선·탭 기호는 `rule` 항목으로 둔다(3.1 3번). 쐐기형 기호가 템플릿에 없는 동안 구두점 대기 + 쐐기 획은 3.1 4번에서 기호표에 맞는 것이 없어 평소 집합으로 간다(05c ⑦).
 - 읽기: `TemplateLoader.load(stream): TemplateSet`. `version != 1`이거나 `id` 중복이거나 위 `rule` 규칙을 어기면 `IllegalStateException`(앱 시작 시 한 번, 실패하면 그래피티 패드는 인식 실패만 낸다, LLD-09 4절). 시험 GR-31.
 
-### 7.1 모델 파일 형식 (0.36, FSS#96, SRS FR-GRF-13)
+### 7.1 모델 파일 형식 (0.37, FSS#96, SRS FR-GRF-13)
 
 위치: `recognizer/src/main/resources/graffiti/graffiti-nn.bin`(템플릿 JSON과 같은 자리, `GraffitiModelLoader.RESOURCE`). 만드는 스크립트는 `tools/graffiti-nn/`(절차는 그 폴더의 README). **모델 파일과 시험용 대조 표본 `recognizer/src/test/resources/graffiti/nn-parity.json`은 한 번의 내보내기에서 나온 짝이다** — 다시 학습하면 가중치가 비트 단위로 같지 않을 수 있으므로 둘을 함께 간다.
 
@@ -631,7 +632,7 @@ UP:   패드 획 → stroke = onUp → guard.stroke("Graffiti.onStroke") { handl
 CANCEL: 진행 중 획 버림(InkCollector.cancel, 잉크 지움, 입력 없음), 반복 중지, 이미 처리한 기능키는 되돌리지 않음(FR-CMN-11a ③, HLD 4.1). 떼지 않은 모드 키는 입력 없음(0.22)
 ```
 
-- **`onInk: ((InkStroke) -> Unit)?`(0.36, FSS#96):** 값이 있으면 패드 획을 `handler.onStroke` 대신 여기로 넘긴다(`guard.stroke("Graffiti.onInk")` 안에서). 내 획 학습의 쓰기 화면만 쓴다(LLD-07 8.3) — 그 화면의 획은 글자로 입력되지 않는다. 키보드와 연습 주제는 `null`이라 지금과 같다. 패드의 상태 표시(언어 글자)는 그대로 `handler`의 상태에서 그린다. 시험 PI-11.
+- **`onInk: ((InkStroke) -> Unit)?`(0.37, FSS#96):** 값이 있으면 패드 획을 `handler.onStroke` 대신 여기로 넘긴다(`guard.stroke("Graffiti.onInk")` 안에서). 내 획 학습의 쓰기 화면만 쓴다(LLD-07 8.3) — 그 화면의 획은 글자로 입력되지 않는다. 키보드와 연습 주제는 `null`이라 지금과 같다. 패드의 상태 표시(언어 글자)는 그대로 `handler`의 상태에서 그린다. 시험 PI-11.
 
 #### `flash(label: String)`
 - 인식한 글자를 패드 위에 `FLASH_MS = 600ms` 보인다(FR-GRF-07, 표시 시간 D-13). 부르는 쪽(`onStroke`)이 비밀번호 입력창(`hidesDisplay`, FR-CMN-08 ①. 학습 금지 칸은 보임, ②, 0.21)과 인식 실패에서는 부르지 않는다(SRS FR-CMN-08, FR-GRF-07, GRAFFITI 6.2-6, HLD 5장, DCR-19 결정).

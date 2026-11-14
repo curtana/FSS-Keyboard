@@ -3,8 +3,6 @@ package kbd.app.view
 import kbd.app.store.KeyboardAlign
 import kbd.app.store.KeyboardWidth
 import kbd.app.store.WidthSetting
-import kbd.app.swipe.impl.SwipeGeometry
-import kbd.stroke.cross.CrossDir
 import kbd.stroke.cross.EdgeCrossingTracker
 import kbd.stroke.geom.Dir
 import kbd.stroke.geom.Edge
@@ -19,8 +17,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The keyboard's side margins and the end keys' outward strokes (LLD-11 §7.7 SM-01~SM-05, SRS FR-CMN-14 ⑧⑪,
- * FR-SWP-03·45, LLD-08 §7.2, FSS#84). The key geometry is the mode views' own ([TapGeometry], [SwipeGeometry]) at the
+ * The keyboard's side margins and the end keys' outward strokes (LLD-11 §7.7 SM-01~SM-03, SM-05, SRS FR-CMN-14 ⑧⑪,
+ * FR-SWP-03·45, LLD-08 §7.2, FSS#84). The key geometry is the tap keyboard view's own ([TapGeometry]) at the
  * width and side margin [KeyboardWidth.place] gives; density 1, so px = dp.
  *
  * An end key's outer edge is judged like an inner key's edge of the same direction: an exit at [MIN] dp past the
@@ -45,14 +43,6 @@ class SideMarginStrokeTest {
         return c.finish(StrokePoint(toX, cy(g), 10))
     }
 
-    /** The first crossing of a stroke from the centre of [g] straight to x = [toX], as the swipe classifier records it. */
-    private fun firstCrossing(g: KeyGeom, toX: Float): String? {
-        val t = EdgeCrossingTracker(g, MIN)
-        t.begin(StrokePoint(cx(g), cy(g), 0))
-        t.add(StrokePoint((cx(g) + toX) / 2, cy(g), 5))
-        t.add(StrokePoint(toX, cy(g), 10))
-        return t.crossings.firstOrNull()?.let { "${it.edge} ${it.dir}" }
-    }
 
     @Test
     fun `SM-01 the boards - full width 328 + 2 x 16 = 360, narrowed 400 + 2 x 20`() {
@@ -99,32 +89,6 @@ class SideMarginStrokeTest {
             }
             // The exit point of every end key lies inside the side margin: the finger need not leave the keyboard.
             assertTrue(side >= MIN)
-        }
-    }
-
-    @Test
-    fun `SM-04 swipe keyboard - the end columns' outward strokes cross 8 dp past the edge, like the inner columns'`() {
-        for ((w, side) in boards) {
-            val geo = SwipeGeometry.build(w, ROW, side)
-            for (g in geo.geoms) assertTrue("${g.id} at $w", Edge.LEFT !in g.outerEdges && Edge.RIGHT !in g.outerEdges)
-            fun geom(id: String) = geo.geoms[geo.keys.indexOfFirst { it.id == id }]
-            // Left end column 1 8 0 cheonjiin symbol3 mode, right end column 7 9 backspace enter symbol2; inner 4 and ㄱ.
-            for (id in listOf("1", "8", "0", "cheonjiin", "symbol3", "mode", "4", "ㄱ")) {
-                val g = geom(id)
-                assertEquals("$id at $w", null, firstCrossing(g, g.rect.left))
-                assertEquals("$id at $w", null, firstCrossing(g, g.rect.left - MIN + 0.1f))
-                assertEquals("$id at $w", "${Edge.LEFT} ${CrossDir.OUT}", firstCrossing(g, g.rect.left - MIN))
-            }
-            for (id in listOf("7", "9", "backspace", "enter", "symbol2", "4", "ㄱ")) {
-                val g = geom(id)
-                assertEquals("$id at $w", null, firstCrossing(g, g.rect.right))
-                assertEquals("$id at $w", null, firstCrossing(g, g.rect.right + MIN - 0.1f))
-                assertEquals("$id at $w", "${Edge.RIGHT} ${CrossDir.OUT}", firstCrossing(g, g.rect.right + MIN))
-            }
-            assertEquals(0f, geom("1").rect.left, 0f)
-            assertEquals(w, geom("7").rect.right, 0.01f)
-            // C stays at the middle of the keys (FR-CMN-14 ⑨).
-            assertEquals(w / 2, (geo.consonantBox.left + geo.consonantBox.right) / 2, 0.01f)
         }
     }
 

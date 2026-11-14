@@ -228,7 +228,7 @@ class TapKeyboardView(
 
     internal fun clickKey(index: Int) = logic.click(index)
 
-    /** History points of the pointer at [idx], then its current point, in dp (HLD 4.1). */
+    /** History points of the pointer at [idx], then its current point, in dp (HLD 5A). */
     private fun pointsOf(e: MotionEvent, idx: Int): List<StrokePoint> {
         val out = ArrayList<StrokePoint>(e.historySize + 1)
         for (h in 0 until e.historySize) {
