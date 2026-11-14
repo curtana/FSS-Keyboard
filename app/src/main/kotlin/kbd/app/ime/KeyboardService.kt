@@ -19,6 +19,7 @@ import kbd.app.graffiti.GraffitiInputHandler
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
 import kbd.app.graffiti.GraffitiRecognizers
+import kbd.app.settings.AppStores
 import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.store.SettingsStore
@@ -133,7 +134,7 @@ class KeyboardService : InputMethodService() {
         modes.applyEnabled(settings.enabledModes)?.let(::saveLastMode)   // FR-CMN-03f; committed above
         errorLog.enabled = !f.noRecord   // NFR-05, FR-CMN-08 ① ②
         composing.onStart(info.initialSelStart, info.initialSelEnd)
-        recognizers.warm()   // a recognizer for the current personal strokes is on its way (LLD-05 §11)
+        recognizers.warm()   // personal strokes stored since the last show are in from now on (FR-TUT-17 ③, LLD-05 §11)
         showModeView(modes.current, f)
         if (modes.current == InputMode.GRAFFITI && before != InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
     }
@@ -212,7 +213,8 @@ class KeyboardService : InputMethodService() {
             val stream = checkNotNull(TemplateLoader::class.java.getResourceAsStream(TEMPLATES_RESOURCE)) { "missing $TEMPLATES_RESOURCE" }
             stream.use { TemplateLoader.load(it) }
         } ?: TemplateSet(emptyMap())
-        recognizers = GraffitiRecognizers(templates, errorLog)
+        val personal = AppStores.personalStrokes(this, errorLog)   // read only: the keyboard never stores a stroke (FR-TUT-17 ①)
+        recognizers = GraffitiRecognizers(templates, errorLog, { personal.revision }, { personal.book().strokes })
         recognizers.warm()
         graffiti = GraffitiInputHandler(
             recognizer = recognizers::get,

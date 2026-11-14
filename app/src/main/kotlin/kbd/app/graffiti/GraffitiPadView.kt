@@ -21,6 +21,7 @@ import kbd.app.view.RepeatTimer
 import kbd.app.view.SideMarginView
 import kbd.app.view.TapSink
 import kbd.graffiti.ink.GraffitiLang
+import kbd.graffiti.ink.InkStroke
 import kbd.graffiti.ink.RectF2
 import kbd.graffiti.state.GraffitiStateSnapshot
 import kbd.stroke.geom.KeyGeom
@@ -55,6 +56,12 @@ class GraffitiPadView(
     private val repeatTimer = RepeatTimer(looper, repeatSchedule()) { key ->
         guard.stroke(SITE_FN) { sink.onFunctionDown(key) }   // no feedback on repeats (FR-CMN-11a ②)
     }
+
+    /**
+     * When set, a pad stroke goes here instead of to [handler] (LLD-05 §8.3): the "my strokes" screen stores it and
+     * types nothing (LLD-07 §8.3). Null on the keyboard and in the practice topics.
+     */
+    var onInk: ((InkStroke) -> Unit)? = null
 
     /** Letter share of the pad width (FR-SET-05, `Settings.graffitiLetterRatio`). */
     var letterRatio: Float = Settings.DEFAULT.graffitiLetterRatio
@@ -264,7 +271,9 @@ class GraffitiPadView(
                 } else {
                     val stroke = ink.onUp(e)
                     if (stroke != null) {
-                        guard.stroke(SITE_STROKE) { handler.onStroke(stroke) }   // on failure: rolled back, no input (LLD-09 §2)
+                        val taker = onInk
+                        if (taker != null) guard.stroke(SITE_INK) { taker(stroke) }
+                        else guard.stroke(SITE_STROKE) { handler.onStroke(stroke) }   // on failure: rolled back, no input (LLD-09 §2)
                     }
                 }
                 invalidate()
@@ -314,6 +323,7 @@ class GraffitiPadView(
 
         private const val SITE_FN = "Graffiti.fn"
         private const val SITE_STROKE = "Graffiti.onStroke"
+        private const val SITE_INK = "Graffiti.onInk"
         private const val NONE = -1
 
         private const val NUMBER_HINT = "123"
