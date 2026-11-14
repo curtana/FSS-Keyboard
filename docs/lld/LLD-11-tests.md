@@ -1036,6 +1036,7 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | RP-04 | 모델 글자 목록에 없는 글자(ㄲ)의 시험 템플릿 + 출고 모델 | `GraffitiRecognizers.build` + `IllegalStateException` 한 줄, 템플릿만으로 ㄲ | 11절 "실패", HLD R18 |
 | RP-05 | 줄에 쌓는 실행기, `warm()` 두 번 뒤 다른 스레드가 50 ms 뒤 실행 | 쌓인 일 하나, `get()`이 끝날 때까지 기다려 그 인식기를 돌려줌 | 11절 "읽는 때" |
 | RP-06 | 개인 획 공급이 예외, 모델 공급도 예외 | `GraffitiRecognizers.build` 두 줄, 원 획 = ㅇ(템플릿만) | 11절 "실패", NFR-03 |
+| RP-07 | 모델 공급이 `OutOfMemoryError`(빌드가 받지 않는 오류), `get()` 두 번 / 판 1에서 모델 공급 정상 | `get()`이 던지지 않음, `GraffitiRecognizers.build` + `OutOfMemoryError` 한 줄, 템플릿만으로 원 획 = ㅇ, 둘째 `get()`은 같은 객체이고 모델 공급 한 번 / 새로 만들어(모델 공급 두 번째) 신경망 점수가 있음 | 11절 "실패", NFR-03 |
 
 ## 8. 실기기 시험 (D)
 

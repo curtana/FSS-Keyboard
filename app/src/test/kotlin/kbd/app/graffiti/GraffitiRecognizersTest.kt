@@ -22,7 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** LLD-11 §7.9 RP-01..RP-06 (LLD-05 §11): the recognizer supply — model read once, rebuilt by revision, never failing. */
+/** LLD-11 §7.9 RP-01..RP-07 (LLD-05 §11): the recognizer supply — model read once, rebuilt by revision, never failing. */
 class GraffitiRecognizersTest {
 
     @get:Rule
@@ -132,5 +132,26 @@ class GraffitiRecognizersTest {
         assertEquals(lines.toString(), 2, lines.size)
         assertTrue(lines.all { it.startsWith(GraffitiRecognizers.SITE_BUILD + "\t") })
         assertEquals("ㅇ", checkNotNull(r.score(circle, SetName.KO_LETTER)).letter)
+    }
+
+    @Test
+    fun `RP-07 an Error past the build is dropped, the templates stand in and the next revision builds afresh`() {
+        var rev = 0
+        var models = 0
+        var fail = true
+        val shared = GraffitiRecognizers.sharedModel(log)
+        val sup = GraffitiRecognizers(templates, log, revision = { rev }, model = { models++; if (fail) throw OutOfMemoryError("test") else shared }, executor = now)
+        val r = sup.get()
+        val s = checkNotNull(r.score(circle, SetName.KO_LETTER))
+        assertTrue("templates alone", s.network.isNaN())
+        assertEquals("ㅇ", s.letter)
+        assertTrue(log.readAll(), log.readAll().startsWith(GraffitiRecognizers.SITE_BUILD + "	OutOfMemoryError"))
+        assertSame("the failed build is not retried for the same revision", r, sup.get())
+        assertEquals(1, models)
+        fail = false
+        rev = 1
+        val next = sup.get()
+        assertEquals("a fresh build, not one on the stand-in", 2, models)
+        assertFalse("the network scores again", checkNotNull(next.score(circle, SetName.KO_LETTER)).network.isNaN())
     }
 }

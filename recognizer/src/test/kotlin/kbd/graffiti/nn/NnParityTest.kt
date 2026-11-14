@@ -17,7 +17,7 @@ import org.junit.Test
  * LLD-11 §6.7 NN-01..NN-05 (SRS FR-GRF-13 acceptance, HLD 11.1 가): on the fixed sample `graffiti/nn-parity.json`
  * — 440 strokes of the repository's stroke files with what the training side computed for them — the app side
  * computes the same features, embedding, network letter, weighted letter and final answer. The sample and the
- * model file come from one run of `tools/graffiti-nn/export_model.py` and are replaced together.
+ * model file come from one run of `tools/graffiti-nn/export.py` and are replaced together.
  */
 class NnParityTest {
 
