@@ -1,8 +1,8 @@
 # LLD-06 안내 표시 — 삭제 (FSS#95)
 
-- 대응 HLD 절: 6장(안내 표시, HLD 0.78에서 삭제)
+- 대응 HLD 절: 6장(안내 표시, HLD 0.79에서 삭제)
 - 버전 **0.25** (2026-11-14)
-- 0.25(FSS#95, SRS 0.85 3.5·HLD 0.78 6장): 안내 팝업(방향 안내·획 안내·현재 글자·다음 글자)은 긋기 자판에만 있던 표시라 긋기 입력 모드와 함께 없앴다. `GuideTimerLogic`·`GuideOverlay`(`kbd.app.swipe.impl`)와 그 시험(GT·GO), 표시 지연 기준값 `guideDelayMs`, 세 안내 설정(`showDirectionGuide`·`showNextChar`·`showCurrentChar`)이 함께 없어졌다. 0.24까지의 명세는 git 이력에 있다.
+- 0.25(FSS#95, SRS 0.86 3.5·HLD 0.79 6장): 안내 팝업(방향 안내·획 안내·현재 글자·다음 글자)은 긋기 자판에만 있던 표시라 긋기 입력 모드와 함께 없앴다. `GuideTimerLogic`·`GuideOverlay`(`kbd.app.swipe.impl`)와 그 시험(GT·GO), 표시 지연 기준값 `guideDelayMs`, 세 안내 설정(`showDirectionGuide`·`showNextChar`·`showCurrentChar`)이 함께 없어졌다. 0.24까지의 명세는 git 이력에 있다.
 
 남은 표시의 명세는 다음에 있다.
 
