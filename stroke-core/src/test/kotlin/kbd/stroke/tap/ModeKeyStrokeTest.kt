@@ -31,7 +31,7 @@ class ModeKeyStrokeTest {
     @Test
     fun `MK-00b the settings function key is gone`() {
         assertEquals(
-            listOf("BACKSPACE", "SPACE", "ENTER", "TAB", "MODE", "ARROW_LEFT", "ARROW_UP", "ARROW_DOWN", "ARROW_RIGHT", "ESC", "DELETE"),
+            listOf("BACKSPACE", "SPACE", "ENTER", "TAB", "MODE", "ARROW_LEFT", "ARROW_UP", "ARROW_DOWN", "ARROW_RIGHT", "ESC", "DELETE", "CTRL", "ALT"),   // CTRL, ALT: FSS#98
             FunctionKey.entries.map { it.name },
         )
     }
