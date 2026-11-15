@@ -23,6 +23,7 @@ import kbd.stroke.geom.Dir
 import kbd.stroke.layout.TapKeyDef
 import kbd.stroke.layout.TapKeyKind
 import kbd.stroke.layout.TapLayout
+import kbd.stroke.layout.TapLayouts
 import kbd.stroke.tap.ChordModifier
 import kbd.stroke.threshold.Thresholds
 
@@ -40,7 +41,8 @@ internal object WordLabelFit {
  * The QWERTY and Dubeolsik keyboards, 6 rows (LLD-05A §4, SRS 3.3). Touch handling is
  * [TapTouchLogic]; this view converts events per pointer, draws the keys, corner hints (§3.4) and
  * pressed state, owns the ⌫·arrow repeat (§6) and the accessibility helper (§7, NFR-07). Ctrl and Alt are drawn
- * lit while they are on; which are on is the sink's to know ([TapSink.chord], FSS#98).
+ * lit while they are on; which are on is the sink's to know ([TapSink.chord], FSS#98). While either is on, Dubeolsik
+ * is drawn and named as QWERTY ([TapLayouts.shown], FSS#117); touch still resolves the layout that was set.
  */
 class TapKeyboardView(
     context: Context,
@@ -63,6 +65,8 @@ class TapKeyboardView(
 
     private var layout: TapLayout? = null
     private var rowHeightDp = 0f
+    /** The layout last drawn and named, to tell the screen reader when Ctrl or Alt flips it (FSS#117). */
+    private var lastShown: TapLayout? = null
 
     private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = KEY_COLOR }
     private val functionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = FUNCTION_COLOR }
@@ -165,8 +169,17 @@ class TapKeyboardView(
     fun chordChanged() {
         invalidate()
         val keys = logic.geometry?.keys ?: return
+        val shown = shownLayout()
+        if (shown !== lastShown) {   // Dubeolsik <-> QWERTY drawing: every key's name changed (FSS#117)
+            lastShown = shown
+            access.invalidateRoot()
+        }
         for (i in keys.indices) if (modifierOf(keys[i]) != null) access.invalidateVirtualView(i)
     }
+
+    /** The layout drawn now: QWERTY for Dubeolsik while Ctrl or Alt is on (FR-TAP-15 ⑥, FSS#117). */
+    private fun shownLayout(): TapLayout? =
+        logic.geometry?.layout?.let { TapLayouts.shown(it, sink.chord.isNotEmpty()) }
 
     override fun onDetachedFromWindow() {
         logic.detach()   // the mode key replaced this view mid-touch
@@ -178,8 +191,10 @@ class TapKeyboardView(
         val g = logic.geometry ?: return
         val pressed = logic.pressed
         val inset = KEY_INSET_DP * density
+        val shown = TapLayouts.shown(g.layout, sink.chord.isNotEmpty())   // same key order and places (FSS#117)
+        lastShown = shown
         for (i in g.keys.indices) {
-            val k = g.keys[i]
+            val k = shown.keys[i]
             val r = g.geoms[i].rect
             keyRect.set(r.left * density + inset, r.top * density + inset, r.right * density - inset, r.bottom * density - inset)
             val paint = when {
@@ -262,6 +277,9 @@ class TapKeyboardView(
     internal fun keyIndexAtPx(x: Float, y: Float): Int = logic.geometry?.indexAt(x / density, y / density) ?: -1
 
     internal fun keyAt(index: Int): TapKeyDef? = logic.geometry?.keys?.getOrNull(index)
+
+    /** The key drawn at [index]: [keyAt], or its QWERTY key while Ctrl or Alt is on over Dubeolsik (FSS#117). */
+    internal fun shownKeyAt(index: Int): TapKeyDef? = shownLayout()?.keys?.getOrNull(index)
 
     /** The modifier a key turns on and off, null for every key but Ctrl and Alt. */
     internal fun modifierOf(key: TapKeyDef): ChordModifier? = when (key.function) {

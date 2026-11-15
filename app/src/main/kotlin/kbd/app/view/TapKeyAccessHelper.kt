@@ -29,7 +29,8 @@ class TapKeyAccessHelper(private val view: TapKeyboardView) : ExploreByTouchHelp
         view.keyBoundsPx(virtualViewId, bounds)   // empty when the layout changed under the framework
         node.setBoundsInParent(bounds)
         val key = view.keyAt(virtualViewId)
-        node.contentDescription = key?.let(view::describe) ?: ""   // the helper requires one
+        // The name of the key as drawn: QWERTY over Dubeolsik while Ctrl or Alt is on (FSS#117); the helper requires one.
+        node.contentDescription = view.shownKeyAt(virtualViewId)?.let(view::describe) ?: ""
         if (key != null) node.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK)
         if (key != null && view.modifierOf(key) != null) {   // Ctrl, Alt: a toggle that tells its state (FR-TAP-18)
             node.className = TOGGLE_CLASS

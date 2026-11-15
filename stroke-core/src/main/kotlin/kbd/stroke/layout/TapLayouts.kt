@@ -93,6 +93,14 @@ object TapLayouts {
     val QWERTY: TapLayout = build("QWERTY", dubeolsik = false)
     val DUBEOLSIK: TapLayout = build("DUBEOLSIK", dubeolsik = true)
 
+    /**
+     * The layout drawn for [layout] (SRS FR-TAP-15 ⑥, FSS#117): while Ctrl or Alt is on ([chordOn]) Dubeolsik is drawn
+     * as QWERTY — labels, edge hints and screen reader names — since its keys then send the QWERTY key of their place
+     * (FR-TAP-16 ③). Only the drawing: touch, keys sent and composing stay [layout]'s. The two share key order, ids and
+     * places (TL-13), so key i of the result is drawn where key i of [layout] is.
+     */
+    fun shown(layout: TapLayout, chordOn: Boolean): TapLayout = if (chordOn && layout === DUBEOLSIK) QWERTY else layout
+
     private fun build(name: String, dubeolsik: Boolean): TapLayout {
         val keys = mutableListOf<TapKeyDef>()
 
