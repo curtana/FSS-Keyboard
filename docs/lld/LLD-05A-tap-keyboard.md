@@ -1,7 +1,8 @@
 # LLD-05A 탭 자판 (쿼티·두벌식)
 
 - 대응 HLD 절: 5A장(탭 자판)
-- 버전 **0.24** (2026-11-15)
+- 버전 **0.25** (2026-11-15)
+- 0.25(FSS#117 오너 결정 "차라리 ctrl, alt가 눌리면 순간 자반을 영문으로 바꾸자 키 선택이되면 다시 한글로 돌아오고"·보탬, SRS 0.94 FR-TAP-15 ⑥, HLD 0.87 5A "켜진 동안 두벌식을 쿼티로 그림"): **Ctrl·Alt가 켜진 동안 두벌식을 쿼티로 그림** — `TapLayouts.shown(layout, chordOn)`(3.1), `TapKeyboardView`의 `onDraw`·`chordChanged()`·`shownKeyAt`(4절), 접근성 이름(7절). 시험 TL-13, CV-10~CV-14
 - 0.24(FSS#110 오너 결정 "모음은 획의 방향으로 해야지"·"좋아 대각선 써보자"·⌫ "한 단계씩", SRS 0.92 FR-TAP-02g·FR-HGL-04f·TBD-39, HLD 0.85 4.2·5A "두벌식 겹모음 한 번 긋기"): **두벌식 겹모음 한 번 긋기** — `TapLayouts.COMPOUND_VOWEL`(ㅗ → ㅘ · ↓ ㅚ · ↘ ㅙ, ㅜ ← ㅝ · ↑ ㅟ · ↙ ㅞ, ㅡ ↓ ㅢ)을 겹받침 표·짝 모음 표와 따로 두고 셋을 `TapKeyDef.dirJamo`로 합친다(3.3 "두벌식 겹모음 배정표"). **원리 둘을 나란히 적는다: 모음은 덧붙는 획이 뻗는 방향, 자음 겹받침은 뒤 자음 키의 위치.** ㅙ·ㅞ가 대각선이라 ㅗ(h)·ㅜ(n)는 데이터만으로 8방향 키가 되고(3.1 `eightWay`, 2.1 판정 그대로), ㅡ(m)는 4방향 그대로다. **판정·결과(`TapKeyResolver`)·표시(`edgeHints`·`drawHints`)·Ctrl·Alt(`ChordKeys`)·손 뗀 키 우선(`ReleaseKeyCompound`) 코드는 바꾸지 않았다** — 모두 데이터로 정해지고, 손 뗀 키 우선은 모음 키가 `COMPOUND_JONG`에 없어 이미 건너뛴다(4.1). 바뀐 코드는 `TapLayouts`의 표 하나와 `dirJamo` 합치기(셋, 한 방향에 둘이면 `require` 실패)다. 입력 단위를 획 단계로 나누는 것은 조합기 일이다(LLD-04 7.4). 꺾기(키를 벗어난 뒤 꺾음)는 SRS에서 폐기돼 분류기에 더하지 않았다. 시험 TL-09·TL-10(새 기대)·TL-12, TA-21·TA-22(새 기대)·TA-25, CM-15, GJ-02(새 기대), GV-01~GV-03, ID-43(LLD-11 0.65)
 - 0.23(FSS#109 오너 결정 "8방향으로 해"·"만드는 원리가 일정해야지"·"비어있는 방향으로 긋는 것은 그냥 키를 누른 것과 같은 효과", PM 결정(문지르기), SRS 0.91 FR-TAP-02c ①~⑤·02e·03b·16 ③·TBD-38, HLD 0.84 4.2·5A "겹받침 방향 규칙과 8방향 키"): **겹받침 방향 규칙 하나와 8방향 키** — 방향 타입에 대각선을 더했다: `sealed interface Way { dx; dy }`를 `Dir`(그대로 네 값, 부호 `dx`·`dy`만 더함)과 새 `Diag`(↖ ↗ ↙ ↘)가 구현한다(LLD-03 3.3, D-75). `TapGesture`의 방향은 `Way`(2.1). `TapGestureClassifier(key, minCrossDp, eightWay)`는 `eightWay`이면 처음 나감 순간의 점과 누른 점의 각도로 8방향을 정한다(위아래좌우 60°·대각선 30°, 경계는 위아래좌우 쪽 — `wayOfAngle`·`wayOfVector`, 2.1). 나감·나갔다 돌아옴·문지르기는 처음 나간 변의 통과 횟수 그대로. `TapKeyResolver`는 대각선 나감·나갔다 돌아옴·문지르기를 그 대각선의 `dirJamo`로, 없으면 탭 결과로 낸다(2.2 1·2번). `TapKeyDef.dirJamo`는 `Map<Way, Char>`, **`TapKeyDef.eightWay` = 대각선 배정이 있는가**(데이터로 정함, 키 이름 갈래 없음 — 3.1). 겹받침 표 `COMPOUND_JAMO`(3.3)는 규칙 (sign 열 차, sign 줄 차)의 결과: ㄹ ↖ ㄼ ↑ ㄺ ↗ ㄽ ← ㄻ → ㅀ ↙ ㄾ ↓ ㄿ, ㄱ → ㄳ, ㄴ ↑ ㄵ → ㄶ, ㅂ → ㅄ(ㅅ·ㅌ·ㅍ 키의 겹받침은 없앰). 빈 방향 = 탭(2.2). `edgeHints`가 대각선도 내고 `TapKeyboardView`가 모서리에 그린다(3.4, 4절). `ChordKeys`는 고치지 않았다 — 쿼티 f에 대각선이 없어 F(2.4). **같은 판 덧붙임(SRS FR-TAP-02f, 오너 결정 "더해줘"): 손 뗀 키 우선** — 두벌식 자음 키에서 나감이 세어진 획을 겹받침 짝 자음 키 위에서 떼면 방향과 관계없이 그 겹받침(4.1). 뗀 점의 키는 `TapGeometry.releasedKey(p)`(뷰 안이면 누름과 같은 키 찾기, 뷰 밖·여유 칸은 없음), 짝 판정은 app의 순수 함수 `ReleaseKeyCompound.of(누른 키, 뗀 키)`가 `core-hangul`의 `JamoTables.COMPOUND_JONG`(조합기가 겹받침을 나누는 표와 같은 표)으로 한다 — stroke-core는 core-hangul에 의존하지 않으므로(LLD-03 1.2) 이 단계는 `TapTouchLogic.up`에 있고 `TapGestureClassifier`·`TapKeyResolver`는 뗀 키를 모른다(D-76). 동작(`TapGesture`)은 그대로 실어 Ctrl·Alt가 켜져 있으면 방향 규칙의 키 입력이 나간다. 시험 TG-11~14, TA-23·24, TL-10·11, CM-14, ID-42, GJ-01~03, CD-20(LLD-11 0.64).
 - 0.22(FSS#104 오너 결정·FSS#107 오너 지시, SRS 0.90 FR-TAP-02c·02d·두벌식 짝 모음 배정표·TBD-37, HLD 0.83 5A): **두벌식 짝 모음 긋기와 ㅌ ↑ ㄾ** — `TapLayouts.PAIR_VOWEL`(ㅗ ↑ ㅛ, ㅓ ← ㅕ, ㅏ → ㅑ, ㅜ ↓ ㅠ)을 겹받침 표 `COMPOUND_JAMO`와 나란히 두고, 두 표를 키 정의의 방향별 자모 **`TapKeyDef.dirJamo`**(0.21까지 `compoundJamo`, 이름만 바꿈 — D-74)로 합친다(3.1·3.3). 겹받침 표의 ㅌ(x)를 ← ㄾ에서 ↑ ㄾ으로(←는 기본 자모 ㅌ). `TapKeyResolver`의 찾는 순서는 그대로이고(2.2, 짝 모음은 겹받침 자리), `edgeHints`(3.4)·`ChordKeys`(2.4)·`HangulComposer`도 고치지 않았다. 한 키·한 방향에 시프트 자모·방향별 자모·배정 기호가 둘 이상 없음을 배치 시험 TL-09로 지킨다.
@@ -332,7 +333,7 @@ interface TapSink {                              // InputDispatcher가 구현(LL
 | `hit(p)` | `KeyHitTester.hit(p)`(LLD-04 2절: 사각형 포함 → 가장 가까운 키). 0.21: 빈칸이 없어 뷰 안의 모든 점이 어느 키 사각형 안이다 — ↵ 사각형(왼쪽·위 변 포함, 오른쪽·아래 변 제외) 안은 어느 줄이든 ↵. 0.20까지의 ① 빈칸 단계(`BlankDef` → 같은 줄 키)는 지웠다(D-73) | SRS 3.3, FR-TAP-03d ② |
 | `onMeasure` | 폭 = 부모, 높이 = `layout.rows × rowHeight` | 5A |
 | `onDraw` | 키 배경·글자·모서리 표시(3.4). 누른 키 강조. 0.20: 켜진 조합 키는 켜짐 바탕, Esc·Ctrl·Alt·Del은 낱말 글자 크기(아래 "조합 키 Ctrl·Alt") | FR-TAP-03b, 03c, 15 ④ |
-| `chordChanged()`(0.20) | `invalidate()` + Ctrl·Alt 두 키의 접근성 노드 `invalidateVirtualView`. 서비스가 `InputDispatcher.onChordChanged`에서 부른다(LLD-08 3절) | FR-TAP-15 ④, 18 |
+| `chordChanged()`(0.20) | `invalidate()` + Ctrl·Alt 두 키의 접근성 노드 `invalidateVirtualView`. 서비스가 `InputDispatcher.onChordChanged`에서 부른다(LLD-08 3절). 0.25: 보이는 배치(`TapLayouts.shown`)가 마지막으로 그린 것(`lastShown`)과 다르면 `invalidateRoot()`도 — 모든 키의 이름이 바뀌었다 | FR-TAP-15 ④, 18 |
 | `onTouchEvent` | 아래 | FR-CMN-11 |
 
 #### `onTouchEvent(e)`
@@ -401,7 +402,8 @@ internal object ReleaseKeyCompound { fun of(pressed: TapKeyDef, released: TapKey
                            size = WordLabelFit.size(size, widest, 안쪽 폭)     // = size × 안쪽 폭 / widest
   ```
   `WordLabelFit.size(base, widestAtBase, innerWidth)`는 순수 함수다: 들어가면(`widestAtBase ≤ innerWidth`) `base`, 아니면 `base × max(innerWidth, 0) / widestAtBase`(`widestAtBase ≤ 0`이면 `base`). 글자 폭은 반올림되어 크기에 정확히 비례하지 않으므로 줄인 뒤 다시 재어 들어갈 때까지 줄인다(보통 한두 번). 그래서 가장 긴 낱말이 키 한 칸 32dp(안쪽 폭 24dp)에서도 들어가고, 키가 넓으면(태블릿) 다른 키와 같은 크기다. Robolectric 실제 글꼴 측정(시험 CV-04): 줄 높이 48dp(글자 19.2)에서 키 36dp → 약 17.3, 약 32.7dp → 약 15.3, 32dp → 약 14.9. ⇥·방향키·⌫와 글자·숫자·기호 키의 글자는 그대로 `labelPaint`다.
-- 근거: SRS FR-TAP-03c·15·17 ④, HLD 5A "그리기". 시험: CV-01~CV-09(LLD-11 7.5).
+- **켜진 동안 두벌식을 쿼티로 그림(0.25, FSS#117, SRS FR-TAP-15 ⑥):** stroke-core에 순수 함수 `TapLayouts.shown(layout: TapLayout, chordOn: Boolean): TapLayout` = `chordOn && layout === DUBEOLSIK`이면 `QWERTY`, 아니면 `layout`. `onDraw`는 `shown(geometry.layout, sink.chord.isNotEmpty())`의 키 i로 글자·모서리 표시(3.4 `edgeHints`)를 그리고, 바탕·자리는 `geometry`의 키 i(설정된 배치)로 정한다. 두 배치는 키 순서·id·줄·x·폭·줄 수·기능키가 같다(TL-13) — 그래서 자리·크기가 그대로고, Esc·Ctrl·Alt·Del 낱말 크기(`fitWordLabels`)도 그대로다. `shownKeyAt(i)` = 보이는 배치의 키 i(접근성 이름용). `keyAt(i)`·누름 판정·`onTapResult`의 키는 설정된 배치 그대로라 보내는 키(2.4 `ChordKeys.ofTap`은 id로 쿼티 키를 찾는다)·조합·모드가 바뀌지 않는다. 하나만 끄면 집합이 비지 않아 쿼티 그대로다. 디스패처는 싣는 순간 집합을 한 번에 비우므로 그 사이에 두벌식이 그려지지 않는다. 쿼티 배치와 조합 키를 다루지 않는 싱크(연습)는 바뀌지 않는다.
+- 근거: SRS FR-TAP-03c·15·17 ④, HLD 5A "그리기". 시험: CV-01~CV-14(LLD-11 7.5), TL-13.
 
 ## 5. MultiPointerQueue (app)
 
@@ -451,7 +453,7 @@ class TapKeyAccessHelper(private val view: TapKeyboardView) : ExploreByTouchHelp
 |---|---|
 | `getVirtualViewAt(x, y)` | `hit(x, y)`의 키 번호(0.21: ↵ 사각형의 두 줄 모두 ↵ 노드) |
 | `getVisibleVirtualViews(list)` | 키 번호 전부 |
-| `onPopulateNodeForVirtualView(id, node)` | 경계 = 키 사각형(px), `contentDescription` = 키 글자(기능키는 이름 문자열 리소스), 동작 = `ACTION_CLICK`. 0.20: Ctrl·Alt 키는 `className = "android.widget.ToggleButton"`, `isCheckable = true`, `isChecked = view.isChordOn(key)` |
+| `onPopulateNodeForVirtualView(id, node)` | 경계 = 키 사각형(px), `contentDescription` = 키 글자(기능키는 이름 문자열 리소스. 0.25: `shownKeyAt(id)`의 키 — Ctrl·Alt가 켜진 두벌식에서는 쿼티 키 이름), 동작 = `ACTION_CLICK`. 0.20: Ctrl·Alt 키는 `className = "android.widget.ToggleButton"`, `isCheckable = true`, `isChecked = view.isChordOn(key)` |
 | `onPerformActionForVirtualView(id, CLICK)` | 그 키의 `Tap` 결과를 `sink`로(`onTapResult(key, out, Tap)`. 기능키는 down+up) |
 
 - 쿼티·두벌식에만 붙인다(NFR-07). 읽어 주는 문구는 UI 문구라 문자열 리소스로 둔다.
