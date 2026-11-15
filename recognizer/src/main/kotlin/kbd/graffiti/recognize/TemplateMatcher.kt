@@ -59,26 +59,48 @@ object TemplateMatcher {
      */
     fun best(stroke: InkStroke, set: List<Template>): Pair<String, Float>? {
         if (stroke.points.isEmpty()) return null
-        val raw = stroke.points.map { it.x to it.y }
-        val input = normalize(resample(raw))
-        val inputCorners = cornerCount(input)
-        // null: not a near-closed loop, or one with corners (a rounded ㅁ keeps the plain comparison and its corner aid)
-        val lap = if (inputCorners >= CORNER_MISMATCH) null else loopOf(raw)?.let { normalize(resample(it)) }
+        val input = prepare(stroke)
         var bestId: String? = null
         var bestScore = 0f
         for (t in set) {
-            var s = t.strokes.maxOfOrNull { ts ->
-                val tn = normalize(resample(ts))
-                val plain = score(input, tn)
-                if (lap != null && t.corners == 0 && isClosed(ts)) maxOf(plain, cyclicScore(lap, tn)) else plain
-            } ?: continue
-            if (abs(inputCorners - t.corners) >= CORNER_MISMATCH) s -= CORNER_PENALTY
+            val s = score(input, prepare(t)) ?: continue
             if (bestId == null || s > bestScore) {
                 bestId = t.id
                 bestScore = s
             }
         }
         return bestId?.let { it to bestScore }
+    }
+
+    /** A stroke made ready for [score]: steps 1–2, its corner count, and its lap when it is a near-closed loop (step 4a). */
+    internal class PreparedInput(val points: List<Pair<Float, Float>>, val corners: Int, val lap: List<Pair<Float, Float>>?)
+
+    /** A template whose strokes went through steps 1–2 once, so that a recognizer need not redo them for every stroke. */
+    internal class PreparedTemplate(val template: Template, val strokes: List<List<Pair<Float, Float>>>, val closed: List<Boolean>)
+
+    internal fun prepare(stroke: InkStroke): PreparedInput {
+        val raw = stroke.points.map { it.x to it.y }
+        val input = normalize(resample(raw))
+        val corners = cornerCount(input)
+        // null: not a near-closed loop, or one with corners (a rounded ㅁ keeps the plain comparison and its corner aid)
+        val lap = if (corners >= CORNER_MISMATCH) null else loopOf(raw)?.let { normalize(resample(it)) }
+        return PreparedInput(input, corners, lap)
+    }
+
+    internal fun prepare(t: Template): PreparedTemplate =
+        PreparedTemplate(t, t.strokes.map { normalize(resample(it)) }, t.strokes.map { isClosed(it) })
+
+    /** The score of [input] against [t] as [best] counts it (steps 4, 4a, 5); null when [t] has no strokes to match. */
+    internal fun score(input: PreparedInput, t: PreparedTemplate): Float? {
+        if (t.strokes.isEmpty()) return null
+        var s = -Float.MAX_VALUE
+        for (i in t.strokes.indices) {
+            val tn = t.strokes[i]
+            val plain = score(input.points, tn)
+            s = maxOf(s, if (input.lap != null && t.template.corners == 0 && t.closed[i]) maxOf(plain, cyclicScore(input.lap, tn)) else plain)
+        }
+        if (abs(input.corners - t.template.corners) >= CORNER_MISMATCH) s -= CORNER_PENALTY
+        return s
     }
 
     /** A closed template stroke: its ends meet ([LOOP_TEMPLATE_GAP]). */

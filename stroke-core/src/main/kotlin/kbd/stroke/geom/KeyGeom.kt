@@ -7,6 +7,10 @@ package kbd.stroke.geom
  *
  * [topAtWindow]: the key's top edge lies on the window's top border (the top row, issue #237).
  *
+ * The border's left and right sides may lie outside the key area: a keyboard has a side margin of half a key cell on
+ * each side (SRS FR-CMN-14 ⑧⑪, HLD 5A, FSS#84), so its end keys' left and right edges are not outer and a stroke out
+ * of them is an ordinary crossing, `minCrossDp` past the edge.
+ *
  * The platform does not report touch points beyond the window: it pins them to its border. So a point on the border
  * at one of the key's window edges ([windowEdges] = [outerEdges] and the top when [topAtWindow]) counts as
  * `minCrossDp` past that edge — an exit (`EdgeCrossingTracker`, issue #237: the four borders alike). An outer edge is
@@ -20,11 +24,15 @@ data class KeyGeom(val id: String, val rect: RectDp, val outerEdges: Set<Edge>, 
         /** Float-error margin when comparing a key edge with the window border (LLD-04 §2). */
         const val OUTER_TOLERANCE_DP = 0.5f
 
-        /** Computes [outerEdges] from the window size once, when the layout is built (LLD-04 §2). */
-        fun build(id: String, rect: RectDp, windowW: Float, windowH: Float): KeyGeom {
+        /**
+         * Computes [outerEdges] from the window size once, when the layout is built (LLD-04 §2). The key area is
+         * [windowW] wide; the border's left and right sides are [sideDp] outside it, at −[sideDp] and
+         * [windowW] + [sideDp] (the keyboard's side margins, FR-CMN-14 ⑧).
+         */
+        fun build(id: String, rect: RectDp, windowW: Float, windowH: Float, sideDp: Float = 0f): KeyGeom {
             val outer = mutableSetOf<Edge>()
-            if (rect.left <= OUTER_TOLERANCE_DP) outer += Edge.LEFT
-            if (rect.right >= windowW - OUTER_TOLERANCE_DP) outer += Edge.RIGHT
+            if (rect.left <= -sideDp + OUTER_TOLERANCE_DP) outer += Edge.LEFT
+            if (rect.right >= windowW + sideDp - OUTER_TOLERANCE_DP) outer += Edge.RIGHT
             if (rect.bottom >= windowH - OUTER_TOLERANCE_DP) outer += Edge.BOTTOM
             return KeyGeom(id, rect, outer, topAtWindow = rect.top <= OUTER_TOLERANCE_DP)
         }

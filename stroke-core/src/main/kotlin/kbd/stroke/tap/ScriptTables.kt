@@ -4,7 +4,7 @@ package kbd.stroke.tap
  * Superscript and subscript tables for letters a–z and digits 0–9 (LLD-05A §2.3). Values are
  * `String` because q's superscript U+107A5 is outside the BMP. A missing key means the script
  * form does not exist in Unicode: the caller types the plain character with the error vibration
- * (FR-TAP-01b). The nine letters without a subscript (b c d f g q w y z) match SWIPE ch. 6.
+ * (FR-TAP-01b). The nine letters without a subscript are b c d f g q w y z (SRS FR-TAP-01b).
  */
 object ScriptTables {
 

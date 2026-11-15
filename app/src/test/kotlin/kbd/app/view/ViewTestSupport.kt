@@ -90,3 +90,12 @@ internal fun layoutExactly(v: View, wPx: Int, hPx: Int) {
     )
     v.layout(0, 0, v.measuredWidth, v.measuredHeight)
 }
+
+/** A canvas that draws nothing and keeps the rectangles it was asked to fill (left, top, right, bottom) with their colour. */
+internal class RectCanvas : android.graphics.Canvas() {
+    val rects = ArrayList<Pair<List<Float>, Int>>()
+
+    override fun drawRect(left: Float, top: Float, right: Float, bottom: Float, paint: android.graphics.Paint) {
+        rects += listOf(left, top, right, bottom) to paint.color
+    }
+}

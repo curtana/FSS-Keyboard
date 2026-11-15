@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Keyboard"
 
-include(":core-hangul", ":stroke-core", ":gesture-engine", ":recognizer", ":app")
+include(":core-hangul", ":stroke-core", ":recognizer", ":app")

@@ -3,8 +3,9 @@ package kbd.app.view
 import android.view.MotionEvent
 
 /**
- * Pointers that went down off the keyboard (the blank band, the side margins of a narrowed keyboard, the system bar
- * padding) give no input, even while another finger is on the keyboard (SRS FR-CMN-14 ⑤, HLD 5A, LLD-08 §7.2).
+ * Pointers that went down off the keys (the blank band, the keyboard's side margins, the rest of the width beside a
+ * narrowed keyboard, the system bar padding) give no input, even while another finger is on the keys (SRS FR-CMN-14
+ * ⑤⑪, HLD 5A, LLD-08 §7.2).
  *
  * Android would attach such a pointer to the child that already has a touch (`ACTION_POINTER_DOWN` outside every
  * child goes to the earliest target) and, when it is the first finger, keep every later finger of the gesture from the

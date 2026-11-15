@@ -36,7 +36,7 @@ class MergeTablesTest {
     }
 
     @Test
-    fun `HC-05 NONE never merges (graffiti, swipe since issue 156)`() {
+    fun `HC-05 NONE never merges (graffiti)`() {
         assertOnly(MergeTables.NONE, emptyMap())
     }
 }

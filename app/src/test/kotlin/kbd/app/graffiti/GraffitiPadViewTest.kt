@@ -319,6 +319,29 @@ class GraffitiPadViewTest {
         assertTrue(keyEvents.isEmpty())                         // an unreleased mode key gives nothing
     }
 
+    /**
+     * FSS#84: the window border's left side is a side margin outside the pad, so the mode key's left edge is an
+     * ordinary edge — out at 8 dp past it, not on reaching x 0.
+     */
+    @Test
+    fun `MK-09 graffiti mode key - with a side margin its left edge is crossed 8 dp past it, not at the pad's left end`() {
+        fun leftThenUp(toX: Float) {
+            keyEvents.clear()
+            touch.down(0, 10f * density, 216f * density)
+            touch.move(0, toX * density, 216f * density, steps = 4)   // left, over the margin
+            touch.move(0, toX * density, 180f * density, steps = 4)   // then up, 12 dp past the key's top
+            touch.up(0)
+        }
+        view.sideMarginPx = px(16f)
+        leftThenUp(-4f)                                          // 4 dp past the left edge: not out, so the first exit is ↑
+        assertEquals(listOf("settings"), keyEvents)
+        leftThenUp(-9f)                                          // 9 dp past it: ← is the first exit, the mode change
+        assertEquals(listOf("down:MODE", "up:MODE"), keyEvents)
+        view.sideMarginPx = 0                                    // no margin: the pad's left end is the border, reached = out
+        leftThenUp(-4f)
+        assertEquals(listOf("down:MODE", "up:MODE"), keyEvents)
+    }
+
     @Test
     fun `pendingLabel orders caps lock first and joins with a space`() {
         val none = GraffitiStateSnapshot(GraffitiLang.KO, capsLock = false, shiftPending = false, extPending = false, punctPending = false)

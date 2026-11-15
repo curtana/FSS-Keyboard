@@ -111,29 +111,29 @@ class TapTouchLogicTest {
     }
 
     @Test
-    fun `KH-03 an indent blank goes to its same-row key even when the row above is nearer`() {
+    fun `KH-03 no blanks since FSS#105 - where the indent blanks were are a, z and enter themselves`() {
         val row3 = 3 * ROW
         val row4 = 4 * ROW
         assertEquals("a", idAt(5f, row3 + 1))
         assertEquals("a", idAt(5f, row3 + ROW / 2))
-        assertEquals("l", idAt(355f, row3 + 1))
+        assertEquals("enter", idAt(355f, row3 + 1))
         assertEquals("z", idAt(5f, row4 + 1))
-        // Not a blank: the key itself (row 2 starts at x = 0).
         assertEquals("q", idAt(5f, 2 * ROW + 1))
     }
 
     @Test
-    fun `KH-03b new key positions of the #198 layout`() {
+    fun `KH-03b key positions of the #198 layout as moved by FSS#105`() {
         val row5 = 5 * ROW
-        // Bottom row: , . / with / at the right end, no blank.
-        assertEquals("slash", idAt(359f, row5 + 1))
-        assertEquals("period", idAt(290f, row5 + ROW / 2))
-        assertEquals("slash", idAt(325f, row5 + ROW / 2))
-        assertEquals("comma", idAt(253f, row5 + ROW / 2))
+        // Bottom row: , . with `.` at the right end; space 216.
+        assertEquals("period", idAt(359f, row5 + 1))
+        assertEquals("period", idAt(325f, row5 + ROW / 2))
+        assertEquals("comma", idAt(290f, row5 + ROW / 2))
+        assertEquals("space", idAt(287f, row5 + ROW / 2))
         assertEquals("space", idAt(250f, row5 + ROW / 2))
         assertEquals("enter", idAt(355f, row5 - 1))
-        // Row 4 after m is the `-` key, row 0 holds Esc … Del ⌫ (45 dp each).
-        assertEquals("minus", idAt(280f, 4 * ROW + 1))
+        // Row 4 after m is the `-` key, then `/` (FSS#105); row 0 holds Esc … Del ⌫.
+        assertEquals("minus", idAt(260f, 4 * ROW + 1))
+        assertEquals("slash", idAt(300f, 4 * ROW + 1))
         assertEquals("esc", idAt(1f, 1f))
         assertEquals("delete", idAt(300f, 1f))
         assertEquals("backspace", idAt(359f, 1f))
@@ -220,7 +220,7 @@ class TapTouchLogicTest {
     }
 
     @Test
-    fun `blank press gives key feedback and types the nearest key`() {
+    fun `a press at the left end of row 3 gives key feedback and types a (the blank there is gone, FSS#105)`() {
         logic.down(1, StrokePoint(5f, 3 * ROW + 1, 0))
         logic.up(1, StrokePoint(5f, 3 * ROW + 1, 10))
         assertEquals(1, feedback.keys)

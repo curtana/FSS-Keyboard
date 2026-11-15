@@ -15,7 +15,7 @@ import org.junit.Test
  */
 class SymbolRuleTest {
 
-    private val rec = Recognizer(TestStrokes.production)
+    private val rec = TestStrokes.productionRecognizer
 
     private fun outputOf(t: StrokeToken): String? =
         ((t as? StrokeToken.Symbol)?.id?.let { TestStrokes.production.outputOf(it) } as? TemplateOutput.Text)?.value

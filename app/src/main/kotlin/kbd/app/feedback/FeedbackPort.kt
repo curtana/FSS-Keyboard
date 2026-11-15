@@ -7,4 +7,10 @@ interface FeedbackPort {
 
     /** Unsupported super/subscript (FR-TAP-01b), graffiti recognition failure (FR-GRF-08). */
     fun error()
+
+    /**
+     * The floating keyboard's move began (FR-CMN-15 ⑦ 나, FSS#86): one vibration, no sound; not key feedback. Ports that
+     * have no keyboard to move leave it empty.
+     */
+    fun grab() {}
 }

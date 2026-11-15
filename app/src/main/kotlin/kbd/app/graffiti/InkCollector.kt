@@ -31,7 +31,7 @@ class InkCollector(private val density: Float) {
         down(e.getPointerId(idx), e.getX(idx) / density, e.getY(idx) / density, e.eventTime, areaOf, rectOf)
     }
 
-    /** History points of the stroke's pointer, then its current point (HLD 4.1). */
+    /** History points of the stroke's pointer, then its current point (HLD 5). */
     fun onMove(e: MotionEvent) {
         val idx = e.findPointerIndex(pointerId)
         if (idx < 0) return

@@ -1,36 +1,77 @@
 package kbd.stroke.layout
 
+import kbd.stroke.geom.Diag
+import kbd.stroke.geom.Dir
+import kbd.stroke.geom.Way
+
 /**
- * QWERTY and Dubeolsik tap layouts: six rows filling the window, 360 dp per row including
- * blanks (LLD-05A §3.2, SRS 3.3). Both layouts share key positions, key ids and symbol
+ * QWERTY and Dubeolsik tap layouts: six rows filling the window, 360 dp of keys per row, no
+ * blanks, ↵ two rows high (LLD-05A §3.2, SRS 3.3, FSS#105). Both layouts share key positions, key ids and symbol
  * assignments (the ㅣ key is the l key, §3.3); numeric-like fields use [QWERTY] (§3.5).
  */
 object TapLayouts {
 
-    /** Edit row key width: 8 × 45 = 360; below NFR-06's 48 dp by owner decision (#198, LLD-05A §3.2). */
-    private const val EDIT_W = 45f
+    /** One of ten units of a row: letter, number and symbol keys, and since FSS#98 the edit row keys too (LLD-05A §3.2). */
     private const val KEY_W = 36f
-    private const val INDENT_W = 18f
 
     private val LETTER_ROWS = listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")
     private val DUBEOLSIK_ROWS = listOf("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ", "ㅋㅌㅊㅍㅠㅜㅡ")
     private val SHIFT_JAMO = mapOf('ㅂ' to 'ㅃ', 'ㅈ' to 'ㅉ', 'ㄷ' to 'ㄸ', 'ㄱ' to 'ㄲ', 'ㅅ' to 'ㅆ', 'ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ')
 
-    /** Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each. QWERTY has none. */
-    private val COMPOUND_JAMO: Map<Char, Map<kbd.stroke.geom.Dir, Char>> = run {
-        val up = kbd.stroke.geom.Dir.UP
-        val left = kbd.stroke.geom.Dir.LEFT
-        val right = kbd.stroke.geom.Dir.RIGHT
-        val down = kbd.stroke.geom.Dir.DOWN
-        mapOf(
-            'ㄱ' to mapOf(left to 'ㄳ'),
-            'ㄴ' to mapOf(left to 'ㄵ', right to 'ㄶ'),
-            'ㄹ' to mapOf(up to 'ㅀ', left to 'ㄺ', right to 'ㄻ', down to 'ㄼ'),
-            'ㅂ' to mapOf(right to 'ㅄ'),   // → (owner, issue #246): ㅂ is the window's left-edge key, ← is hard there
-            'ㅅ' to mapOf(left to 'ㄽ'),
-            'ㅌ' to mapOf(left to 'ㄾ'),
-            'ㅍ' to mapOf(left to 'ㄿ'),
-        )
+    /**
+     * Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each, on the key of the
+     * first consonant only. QWERTY has none. The direction is one rule (owner, FSS#109, SRS FR-TAP-02c ①): (sign of
+     * the second consonant key's column − the first's, sign of its row − the first's), column = x ÷ 36, row = row
+     * number; this table is its result, and TL-11 computes the rule from these coordinates again. ㄹ points to seven
+     * keys around it, so it has diagonals and is judged in eight directions (SRS FR-TAP-02e). A direction without a
+     * jamo types the plain jamo, like the tap (FR-TAP-02c ④: ㄹ ↘, ㄱ ↓, ㅂ ↓ …). FSS#97 and FSS#107 had other
+     * directions, and ㅅ ㅌ ㅍ keys of their own for ㄽ ㄾ ㄿ.
+     */
+    internal val COMPOUND_JAMO: Map<Char, Map<Way, Char>> = mapOf(
+        'ㄱ' to mapOf(Dir.RIGHT to 'ㄳ'),                                      // ㅅ (t) is right of ㄱ (r)
+        'ㄴ' to mapOf(Dir.UP to 'ㄵ', Dir.RIGHT to 'ㄶ'),                      // ㅈ (w) above, ㅎ (g) right
+        'ㄹ' to mapOf(
+            Diag.UP_LEFT to 'ㄼ', Dir.UP to 'ㄺ', Diag.UP_RIGHT to 'ㄽ',       // ㅂ (q), ㄱ (r), ㅅ (t)
+            Dir.LEFT to 'ㄻ', Dir.RIGHT to 'ㅀ',                                // ㅁ (a), ㅎ (g)
+            Diag.DOWN_LEFT to 'ㄾ', Dir.DOWN to 'ㄿ',                           // ㅌ (x), ㅍ (v); ↘ has none
+        ),
+        'ㅂ' to mapOf(Dir.RIGHT to 'ㅄ'),                                      // ㅅ (t) is right of ㅂ (q)
+    )
+
+    /**
+     * Paired vowels on four Dubeolsik vowel keys (owner, FSS#104): a stroke towards the pair's direction types it. The
+     * ㅛ ㅕ ㅑ ㅠ keys stay. Kept apart from [COMPOUND_JAMO] and [COMPOUND_VOWEL]; all go into [TapKeyDef.dirJamo].
+     */
+    internal val PAIR_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
+        'ㅗ' to mapOf(Dir.UP to 'ㅛ'),
+        'ㅓ' to mapOf(Dir.LEFT to 'ㅕ'),
+        'ㅏ' to mapOf(Dir.RIGHT to 'ㅑ'),
+        'ㅜ' to mapOf(Dir.DOWN to 'ㅠ'),
+    )
+
+    /**
+     * Compound vowels on the Dubeolsik ㅗ ㅜ ㅡ keys (owner, FSS#110, SRS FR-TAP-02g). The direction is one rule, not the
+     * key positions of the compound finals: a vowel goes the way its added strokes go — ㅏ → (1, 0), ㅓ ← (−1, 0), ㅣ ↓
+     * (0, 1), summed and taken by sign as the 3 × 3 direction, the vertical flipped where the key's paired vowel is
+     * (ㅜ + ㅣ = ↓ is ㅠ's, so ㅟ is ↑). This table is its result, and TL-12 computes the rule again. ㅙ and ㅞ are
+     * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e); ㅡ stays 4-way. A direction
+     * without a jamo types the plain vowel, like the tap. Kept apart from [COMPOUND_JAMO] and [PAIR_VOWEL].
+     */
+    internal val COMPOUND_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
+        'ㅗ' to mapOf(Dir.RIGHT to 'ㅘ', Dir.DOWN to 'ㅚ', Diag.DOWN_RIGHT to 'ㅙ'),   // + ㅏ, + ㅣ, + ㅏ ㅣ
+        'ㅜ' to mapOf(Dir.LEFT to 'ㅝ', Dir.UP to 'ㅟ', Diag.DOWN_LEFT to 'ㅞ'),      // + ㅓ, + ㅣ (↓ is ㅠ), + ㅓ ㅣ
+        'ㅡ' to mapOf(Dir.DOWN to 'ㅢ'),                                               // + ㅣ
+    )
+
+    /**
+     * The direction jamo of [jamo]'s key: its compound finals, paired vowels and compound vowels, never two in one
+     * direction.
+     */
+    private fun dirJamo(jamo: Char): Map<Way, Char> {
+        val tables = listOf(COMPOUND_JAMO, PAIR_VOWEL, COMPOUND_VOWEL).map { it[jamo].orEmpty() }
+        val ways = tables.flatMap { it.keys }
+        require(ways.size == ways.toSet().size) { "$jamo: two direction jamo in one direction" }
+        return tables.fold(emptyMap()) { all, t -> all + t }
     }
 
     /** Letter key symbols by key position (LLD-05A §3.3); i and o carry brackets left/right (#198). */
@@ -54,26 +95,27 @@ object TapLayouts {
 
     private fun build(name: String, dubeolsik: Boolean): TapLayout {
         val keys = mutableListOf<TapKeyDef>()
-        val blanks = mutableListOf<BlankDef>()
 
         var x = 0f
-        fun fn(row: Int, id: String, w: Float, label: String, f: FunctionKey) {
-            keys += TapKeyDef(id, row, x, w, TapKeyKind.FUNCTION, label, function = f)
+        fun fn(row: Int, id: String, w: Float, label: String, f: FunctionKey, rowSpan: Int = 1) {
+            keys += TapKeyDef(id, row, x, w, TapKeyKind.FUNCTION, label, function = f, rowSpan = rowSpan)
             x += w
         }
         fun sym(row: Int, id: String, w: Float, a: KeyAssign) {
             keys += TapKeyDef(id, row, x, w, TapKeyKind.SYMBOL, a.tap, assign = a)
             x += w
         }
-        // Row 0, edit row: eight 45 dp keys, ⌫ at the right end (#198).
-        fn(0, "esc", EDIT_W, "Esc", FunctionKey.ESC)
-        fn(0, "tab", EDIT_W, "⇥", FunctionKey.TAB)
-        fn(0, "left", EDIT_W, "←", FunctionKey.ARROW_LEFT)
-        fn(0, "up", EDIT_W, "↑", FunctionKey.ARROW_UP)
-        fn(0, "down", EDIT_W, "↓", FunctionKey.ARROW_DOWN)
-        fn(0, "right", EDIT_W, "→", FunctionKey.ARROW_RIGHT)
-        fn(0, "delete", EDIT_W, "Del", FunctionKey.DELETE)
-        fn(0, "backspace", EDIT_W, "⌫", FunctionKey.BACKSPACE)
+        // Row 0, edit row: ten keys as wide as a letter key, Ctrl and Alt right of Esc (FSS#98), ⌫ at the right end (#198).
+        fn(0, "esc", KEY_W, "Esc", FunctionKey.ESC)
+        fn(0, "ctrl", KEY_W, "Ctrl", FunctionKey.CTRL)
+        fn(0, "alt", KEY_W, "Alt", FunctionKey.ALT)
+        fn(0, "tab", KEY_W, "⇥", FunctionKey.TAB)
+        fn(0, "left", KEY_W, "←", FunctionKey.ARROW_LEFT)
+        fn(0, "up", KEY_W, "↑", FunctionKey.ARROW_UP)
+        fn(0, "down", KEY_W, "↓", FunctionKey.ARROW_DOWN)
+        fn(0, "right", KEY_W, "→", FunctionKey.ARROW_RIGHT)
+        fn(0, "delete", KEY_W, "Del", FunctionKey.DELETE)
+        fn(0, "backspace", KEY_W, "⌫", FunctionKey.BACKSPACE)
 
         // Row 1, number row.
         x = 0f
@@ -86,14 +128,11 @@ object TapLayouts {
             x += KEY_W
         }
 
-        // Rows 2..4, letters; rows 3 and 4 start with an indent blank; row 4 ends with the `=`/`-` key and ↵.
+        // Rows 2..4, letters from x 0 (FSS#105: no indent blanks); ↵ two rows high at the right of rows 3 and 4,
+        // listed after l; row 4 ends with the `=`/`-` key and `/` left of ↵.
         LETTER_ROWS.forEachIndexed { r, ids ->
             val row = r + 2
             x = 0f
-            if (row >= 3) {
-                blanks += BlankDef(row, x, INDENT_W, ids.first().toString())
-                x += INDENT_W
-            }
             ids.forEachIndexed { i, id ->
                 val symbols = LETTER_SYMBOLS[id]
                 keys += if (dubeolsik) {
@@ -101,7 +140,7 @@ object TapLayouts {
                     TapKeyDef(
                         id.toString(), row, x, KEY_W, TapKeyKind.DUBEOLSIK_LETTER, jamo.toString(),
                         assign = symbols?.assign(jamo.toString()),
-                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], compoundJamo = COMPOUND_JAMO[jamo].orEmpty(),
+                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirJamo(jamo),
                     )
                 } else {
                     TapKeyDef(
@@ -112,24 +151,23 @@ object TapLayouts {
                 x += KEY_W
             }
             if (row == 3) {
-                blanks += BlankDef(row, x, INDENT_W, ids.last().toString())
-                x += INDENT_W
+                // ↵ at x 324 over rows 3 and 4 (FSS#105): one key, so one press, one drawing, one accessibility node.
+                fn(row, "enter", KEY_W, "↵", FunctionKey.ENTER, rowSpan = 2)
             }
             if (row == 4) {
-                // The `=`/`-` key after m (#198; FSS#62 swapped tap and left), then ↵ at the right end.
+                // The `=`/`-` key after m (#198; FSS#62 swapped tap and left), then `/` between it and ↵ (FSS#105).
                 sym(row, "minus", KEY_W, KeyAssign("=", up = "_", left = "-", down = "+"))
-                fn(row, "enter", 54f, "↵", FunctionKey.ENTER)
+                sym(row, "slash", KEY_W, KeyAssign("/", up = "?"))
             }
         }
 
         // Row 5, function row; the mode key is bottom-left in every mode (SRS 3.3).
         x = 0f
         fn(5, "mode", 72f, "한/영", FunctionKey.MODE)
-        fn(5, "space", 180f, "", FunctionKey.SPACE)
+        fn(5, "space", 216f, "", FunctionKey.SPACE)   // 216 since `/` moved up (FSS#105, SRS TBD-36 ①)
         sym(5, "comma", KEY_W, KeyAssign(",", up = "<", left = "'", right = "\""))
-        sym(5, "period", KEY_W, KeyAssign(".", up = ">"))
-        sym(5, "slash", KEY_W, KeyAssign("/", up = "?"))   // right end, no blank (#198)
+        sym(5, "period", KEY_W, KeyAssign(".", up = ">"))   // right end (FSS#105)
 
-        return TapLayout(name, rows = 6, keys = keys, blanks = blanks)
+        return TapLayout(name, rows = 6, keys = keys)
     }
 }

@@ -14,8 +14,8 @@ import org.junit.Test
 /** The stroke guide catalog against the production templates (LLD-11 §6.6 GC-01~GC-08, LLD-05 §10.1, SRS FR-GRF-09b·09c). */
 class GuideCatalogTest {
 
-    /** The owner's own strokes (FSS#64): recognition only, the guide shows the drawn templates. */
-    private val OWNER_ID = Regex("ko_.+_o[0-9]+")
+    /** The owner's own strokes (FSS#64, FSS#80): recognition only, the guide shows the drawn templates. */
+    private val OWNER_ID = Regex("(ko|en)_.+_o[0-9]+")
 
     private val templates: TemplateSet =
         GuideCatalogTest::class.java.getResourceAsStream("/graffiti/templates.json")!!.use { TemplateLoader.load(it) }

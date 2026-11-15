@@ -202,4 +202,29 @@ class EdgeCrossingTrackerTest {
         val corner = kbd.stroke.geom.KeyGeom.build("1", kbd.stroke.geom.RectDp(0f, 0f, 51f, 48f), 360f, 288f)
         assertEquals("TOP OUT", first(corner, 6f to 40f, 0.3f to 20f, 0f to 0f))
     }
+
+    @Test
+    fun `EC-16 with a side margin an end key's outer edge is an ordinary edge - out at minCrossDp past it (FSS#84)`() {
+        fun first(k: kbd.stroke.geom.KeyGeom, start: Pair<Float, Float>, vararg p: Pair<Float, Float>): String? {
+            val tr = EdgeCrossingTracker(k, 8f)
+            tr.begin(StrokePoint(start.first, start.second, 0))
+            p.forEachIndexed { i, (x, y) -> tr.add(StrokePoint(x, y, i + 1L)) }
+            return tr.crossings.firstOrNull()?.let { "${it.edge} ${it.dir}" }
+        }
+        // Keys 328 dp wide, a 16 dp margin on each side: the border is at -16 and 344.
+        fun key(l: Float, r: Float) = kbd.stroke.geom.KeyGeom.build("k", kbd.stroke.geom.RectDp(l, 48f, r, 96f), 328f, 288f, 16f)
+        val left = key(0f, 32.8f)
+        assertNull(first(left, 16f to 72f, 0f to 72f))                          // on its edge: no longer an exit
+        assertNull(first(left, 16f to 72f, -7.9f to 72f))
+        assertEquals("LEFT OUT", first(left, 16f to 72f, -8f to 72f))
+        assertEquals("LEFT OUT", first(left, 2f to 72f, -8f to 72f))            // pressed near the edge: the same point
+        val right = key(295.2f, 328f)
+        assertNull(first(right, 310f to 72f, 328f to 72f))
+        assertNull(first(right, 310f to 72f, 335.9f to 72f))
+        assertEquals("RIGHT OUT", first(right, 310f to 72f, 336f to 72f))
+        // An inner key of the same row: the same distances.
+        val inner = key(32.8f, 65.6f)
+        assertNull(first(inner, 49f to 72f, 24.9f to 72f))
+        assertEquals("LEFT OUT", first(inner, 49f to 72f, 24.8f to 72f))
+    }
 }

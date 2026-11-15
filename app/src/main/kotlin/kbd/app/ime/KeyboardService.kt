@@ -18,26 +18,19 @@ import kbd.app.feedback.FeedbackPort
 import kbd.app.graffiti.GraffitiInputHandler
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
+import kbd.app.graffiti.GraffitiRecognizers
+import kbd.app.settings.AppStores
 import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.store.SettingsStore
-import kbd.app.swipe.SwipeEngineState
-import kbd.app.swipe.SwipeHost
-import kbd.app.swipe.SwipeModule
-import kbd.app.swipe.SwipeModuleProvider
-import kbd.app.view.CenterText
 import kbd.app.view.KeyboardRootView
 import kbd.app.view.TapKeyboardView
 import kbd.hangul.cheonjiin.CheonjiinAssembler
-import kbd.graffiti.recognize.Recognizer
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
 import kbd.graffiti.state.GraffitiState
 import kbd.hangul.compose.ComposePolicy
 import kbd.hangul.compose.HangulComposer
-import kbd.hangul.event.JamoEvent
-import kbd.hangul.jamo.Jamo
-import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapLayouts
 import kbd.stroke.threshold.ThresholdDefaults
 import kbd.stroke.threshold.Thresholds
@@ -51,9 +44,9 @@ import kotlinx.coroutines.launch
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 /**
- * The input method (LLD-08 §3, HLD 8): swipe, QWERTY, Dubeolsik and graffiti views.
+ * The input method (LLD-08 §3, HLD 8): Dubeolsik, QWERTY and graffiti views.
  */
-class KeyboardService : InputMethodService(), SwipeHost {
+class KeyboardService : InputMethodService() {
     lateinit var dispatcher: InputDispatcher
     lateinit var modes: ModeController
     lateinit var root: KeyboardRootView
@@ -63,39 +56,38 @@ class KeyboardService : InputMethodService(), SwipeHost {
 
     private lateinit var errorLog: ErrorLog
     private lateinit var settingsStore: SettingsStore
-    private lateinit var swipe: SwipeModule
     private lateinit var composing: ComposingController
 
     /** Graffiti handler, one per service: language and caps lock survive field changes (FR-GRF-05a, LLD-05 §6). */
     private lateinit var graffiti: GraffitiInputHandler
     /** The graffiti pad on screen, null in the other modes; target of [GraffitiInputHandler]'s flash. */
     private var pad: GraffitiPadView? = null
+    private lateinit var recognizers: GraffitiRecognizers
+    /** The QWERTY or Dubeolsik view on screen, null in the other modes; it shows Ctrl and Alt on (FSS#98). */
+    private var tapView: TapKeyboardView? = null
     /** The built-in templates, also drawn by the stroke guide (FR-GRF-09c, LLD-05 §10). */
     private var templates: TemplateSet = TemplateSet(emptyMap())
 
     /** Fixed code constants (HLD 7.2, FSS#17): no stored file, nothing measured. */
-    override val thresholds: Thresholds = ThresholdDefaults.VALUES
-    override var settings: Settings = Settings.DEFAULT
-        private set
-    override val fieldInfo: FieldInfo get() = dispatcher.field
-    override val centerConsonant: Jamo? get() = if (::dispatcher.isInitialized) dispatcher.composer?.lastConsonant() else null
-    override val centerText: CenterText? get() = if (::dispatcher.isInitialized) dispatcher.centerText() else null
-    override lateinit var guard: EngineGuard
-    override lateinit var feedback: FeedbackPort
+    private val thresholds: Thresholds = ThresholdDefaults.VALUES
+    private var settings: Settings = Settings.DEFAULT
+    private lateinit var guard: EngineGuard
+    private lateinit var feedback: FeedbackPort
 
     override fun onCreate() {
         super.onCreate()
         errorLog = ErrorLog(File(filesDir, ERROR_LOG_FILE))
         settingsStore = SettingsStore(settingsDataStore, errorLog)
         settings = settingsStore.loadBlocking()   // once at start (D-24)
-        swipe = SwipeModuleProvider.get()
-        // Every mode in every build (issue #251); the settings turn graffiti and swipe off (FR-SET-08).
+        // Every mode in every build (issue #251); the settings turn graffiti off (FR-SET-08). No saved mode, or the
+        // name of a mode that is gone (FR-CMN-10a), starts in the first one, Dubeolsik.
         modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)
         modes.fixedStart?.let(::saveLastMode)   // the last mode was off (FR-CMN-03f ③)
         feedback = Feedback({ if (::root.isInitialized) root else null }, getSystemService(AudioManager::class.java), { settings })
         composing = ComposingController(AndroidEditorPort(this))
         dispatcher = InputDispatcher(modes, composing, feedback, ::saveLastMode)
         dispatcher.onShowMode = { m -> showModeView(m, dispatcher.field) }
+        dispatcher.onChordChanged = { tapView?.chordChanged() }   // FR-TAP-15 ④, FR-TAP-18
         dispatcher.onOpenSettings = {   // mode key up stroke, all modes (issue #205)
             startActivity(android.content.Intent(this, kbd.app.settings.SettingsActivity::class.java)
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -118,6 +110,11 @@ class KeyboardService : InputMethodService(), SwipeHost {
             it.rowHeightDp = settings.rowHeightDp
             it.portraitWidth = settings.portraitWidth   // FR-CMN-14
             it.landscapeWidth = settings.landscapeWidth
+            it.portraitFloat = settings.portraitFloat   // FR-CMN-15
+            it.landscapeFloat = settings.landscapeFloat
+            it.moveFeedback = feedback
+            it.onFloatMoved = ::saveFloatPosition
+            it.relayout()   // the move handle, when this orientation floats
         }
         showModeView(modes.current, dispatcher.field)
         return root
@@ -128,6 +125,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
         super.onStartInputView(info, restarting)
         val f = FieldInfo.from(info.inputType, info.imeOptions)
         dispatcher.field = f
+        dispatcher.clearChord()   // a new field, or this one shown again (FR-TAP-17 ① (마)); nothing is sent
         dispatcher.finishAll()   // HLD 8
         dispatcher.resetParsers()
         modes.onFieldChanged()   // FR-CMN-03e
@@ -136,6 +134,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
         modes.applyEnabled(settings.enabledModes)?.let(::saveLastMode)   // FR-CMN-03f; committed above
         errorLog.enabled = !f.noRecord   // NFR-05, FR-CMN-08 ① ②
         composing.onStart(info.initialSelStart, info.initialSelEnd)
+        recognizers.warm()   // personal strokes stored since the last show are in from now on (FR-TUT-17 ③, LLD-05 §11)
         showModeView(modes.current, f)
         if (modes.current == InputMode.GRAFFITI && before != InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
     }
@@ -150,10 +149,12 @@ class KeyboardService : InputMethodService(), SwipeHost {
     }
 
     /**
-     * FR-CMN-06. The cancel reaches the mode view, which drops its guide and repeat timer. The stroke guide
-     * closes when the keyboard goes down (`finishingInput == false`) and stays open on a field change (FR-GRF-09).
+     * FR-CMN-06. The cancel reaches the mode view, which drops its guide and repeat timer, and the root, which gives
+     * up a move of the floating keyboard (FR-CMN-15 ⑩). The stroke guide closes when the keyboard goes down
+     * (`finishingInput == false`) and stays open on a field change (FR-GRF-09).
      */
     override fun onFinishInputView(finishingInput: Boolean) {
+        dispatcher.clearChord()   // FR-TAP-17 ① (바)
         dispatcher.finishAll()
         if (::root.isInitialized) {
             root.cancelTouches()
@@ -163,6 +164,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
     }
 
     override fun onFinishInput() {
+        dispatcher.clearChord()   // FR-TAP-17 ① (바)
         dispatcher.finishAll()
         super.onFinishInput()
     }
@@ -179,37 +181,43 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /** FR-CMN-12. */
     override fun onEvaluateFullscreenMode(): Boolean = false
 
-    /** Same layout with the new orientation's keyboard width (FR-CMN-12, FR-CMN-14 ⑩), same row height. */
+    /**
+     * Same layout with the new orientation's keyboard width (FR-CMN-12, FR-CMN-14 ⑩), same row height; docked or
+     * floating at that orientation's place, a move in progress given up first (FR-CMN-15 ⑩⑬).
+     */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        dispatcher.clearChord()   // FR-TAP-17 ① (사)
         if (::root.isInitialized) root.relayout()
     }
 
     /**
-     * Content and visible insets at the top of the input view; the whole input view, blank band
-     * included, takes touches (SRS 3.3). See the PR note on `TOUCHABLE_INSETS_VISIBLE`.
+     * Content and visible insets at the top of the input view; the keyboard plate, blank band included, takes
+     * touches (SRS 3.3, FR-CMN-14 ⑫, [KeyboardInsets]). The platform asks again on each traversal of the window, so
+     * a new layout of the root gives the new plate (LLD-08 §7.3). A floating keyboard's insets start at the input
+     * view's bottom, and its plate is the handle and the keyboard rectangle (FR-CMN-15 ③⑫, LLD-08 §7.4).
      */
     override fun onComputeInsets(outInsets: Insets) {
         super.onComputeInsets(outInsets)
         if (!::root.isInitialized || !root.isAttachedToWindow) return
-        val loc = IntArray(2)
-        root.getLocationInWindow(loc)
-        outInsets.contentTopInsets = loc[1]
-        outInsets.visibleTopInsets = loc[1]
-        outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_VISIBLE
+        KeyboardInsets.compute(root, outInsets)
     }
 
     /**
      * Templates are read once at start (LLD-05 §7). A failure is logged and leaves an empty set: rule
-     * strokes still work, template strokes are recognition failures (LLD-09 §4).
+     * strokes still work, template strokes are recognition failures (LLD-09 §4). The model is read and the
+     * recognizer built on a background thread, so the first display does not wait for them (LLD-05 §11).
      */
     private fun createGraffiti() {
         templates = guard.run(SITE_TEMPLATES) {
             val stream = checkNotNull(TemplateLoader::class.java.getResourceAsStream(TEMPLATES_RESOURCE)) { "missing $TEMPLATES_RESOURCE" }
             stream.use { TemplateLoader.load(it) }
         } ?: TemplateSet(emptyMap())
+        val personal = AppStores.personalStrokes(this, errorLog)   // read only: the keyboard never stores a stroke (FR-TUT-17 ①)
+        recognizers = GraffitiRecognizers(templates, errorLog, { personal.revision }, { personal.book().strokes })
+        recognizers.warm()
         graffiti = GraffitiInputHandler(
-            recognizer = Recognizer(templates),
+            recognizer = recognizers::get,
             state = GraffitiState(templates),
             asm = CheonjiinAssembler(),
             composer = { checkNotNull(dispatcher.composer) },   // graffiti policy while the pad is shown (LLD-08 §6)
@@ -223,7 +231,6 @@ class KeyboardService : InputMethodService(), SwipeHost {
     /** LLD-08 §3.1 `showModeView`; the composer is re-created for the mode (D-10). */
     private fun showModeView(mode: InputMode, f: FieldInfo) {
         dispatcher.composer = when (mode) {
-            InputMode.SWIPE -> HangulComposer(ComposePolicy.SWIPE, ::onInvalidComposerEvent)
             InputMode.DUBEOLSIK -> HangulComposer(ComposePolicy.DUBEOLSIK, ::onInvalidComposerEvent)
             InputMode.GRAFFITI -> HangulComposer(ComposePolicy.GRAFFITI, ::onInvalidComposerEvent)
             InputMode.QWERTY -> null
@@ -231,20 +238,18 @@ class KeyboardService : InputMethodService(), SwipeHost {
         // Attached before enterMode() (G6) and before the view exists; null outside graffiti (LLD-08 §6).
         dispatcher.graffiti = if (mode == InputMode.GRAFFITI) graffiti else null
         pad = null
+        tapView = null
         if (!::root.isInitialized) return
         if (mode == InputMode.GRAFFITI) root.enableGuide(templates, feedback) else root.disableGuide()   // FR-GRF-09
-        if (mode == InputMode.SWIPE) {
-            root.setModeView(swipe.createSwipeView(this, this), SWIPE_ROWS)
-            return
-        }
         val tapLayout = when (mode) {
             InputMode.QWERTY -> TapLayouts.QWERTY   // numeric-like fields too (FR-CMN-04, LLD-05A §3.5)
             InputMode.DUBEOLSIK -> TapLayouts.DUBEOLSIK
-            else -> null
+            InputMode.GRAFFITI -> null
         }
         if (tapLayout != null) {
             val view = TapKeyboardView(this, dispatcher, guard, feedback)
             view.setLayout(tapLayout, thresholds, settings.rowHeightDp)
+            tapView = view
             root.setModeView(view, tapLayout.rows)
             return
         }
@@ -259,14 +264,16 @@ class KeyboardService : InputMethodService(), SwipeHost {
     private fun applySettings(s: Settings) {
         val rowChanged = s.rowHeightDp != settings.rowHeightDp
         val widthChanged = s.portraitWidth != settings.portraitWidth || s.landscapeWidth != settings.landscapeWidth
-        val trailChanged = s.showStrokeTrail != settings.showStrokeTrail
         settings = s
-        if (trailChanged && ::root.isInitialized) root.redrawModeView()   // FSS#57: the swipe view reads it when it draws
         pad?.let { if (it.letterRatio != s.graffitiLetterRatio) it.letterRatio = s.graffitiLetterRatio }
-        if ((rowChanged || widthChanged) && ::root.isInitialized) {
+        // The root already has the shares of a place it was just put at: that coming back is no change (FR-CMN-15 ⑨).
+        val floatChanged = ::root.isInitialized && (s.portraitFloat != root.portraitFloat || s.landscapeFloat != root.landscapeFloat)
+        if ((rowChanged || widthChanged || floatChanged) && ::root.isInitialized) {
             root.rowHeightDp = s.rowHeightDp
             root.portraitWidth = s.portraitWidth   // FR-CMN-14 ⑩: placed again at once
             root.landscapeWidth = s.landscapeWidth
+            root.portraitFloat = s.portraitFloat   // FR-CMN-15 ⑬
+            root.landscapeFloat = s.landscapeFloat
             root.relayout()
         }
         applyEnabledModes(s.enabledModes)
@@ -278,6 +285,7 @@ class KeyboardService : InputMethodService(), SwipeHost {
      */
     private fun applyEnabledModes(on: Set<InputMode>) {
         val before = modes.current
+        if (before !in on) dispatcher.clearChord()   // an automatic mode change (FR-TAP-17 ① (다))
         if (before !in on && isInputViewShown) {
             dispatcher.finishAll()   // FR-CMN-03d
             dispatcher.resetParsers()
@@ -286,6 +294,14 @@ class KeyboardService : InputMethodService(), SwipeHost {
         if (modes.current == before || !isInputViewShown) return
         showModeView(modes.current, dispatcher.field)
         if (modes.current == InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
+    }
+
+    /** The floating keyboard was put somewhere (FR-CMN-15 ⑨): the shares given are stored, and kept here until they come back. */
+    private fun saveFloatPosition(landscape: Boolean, fx: Float?, fy: Float?) {
+        val old = if (landscape) settings.landscapeFloat else settings.portraitFloat
+        val new = old.copy(fx = fx ?: old.fx, fy = fy ?: old.fy)
+        settings = if (landscape) settings.copy(landscapeFloat = new) else settings.copy(portraitFloat = new)
+        scope.launch { settingsStore.setFloatPosition(landscape, fx, fy) }
     }
 
     private fun saveLastMode(m: InputMode) {
@@ -297,20 +313,6 @@ class KeyboardService : InputMethodService(), SwipeHost {
         errorLog.record(SITE_COMPOSER, InvalidComposerEvent())
     }
 
-    override fun onSwipeEvents(events: List<JamoEvent>, errorVibe: Boolean) = dispatcher.onJamoEvents(events, errorVibe)
-
-    override fun onSwipeText(text: String, errorVibe: Boolean) = dispatcher.onSwipeText(text, errorVibe)
-
-    override fun onFunctionKey(key: FunctionKey) = dispatcher.onFunctionDown(key)
-
-    override fun onFunctionKeyUp(key: FunctionKey) = dispatcher.onFunctionUp(key)
-
-    override fun onSettingsStroke() = dispatcher.onSettingsStroke()
-
-    override fun registerSwipeState(state: SwipeEngineState?) {
-        dispatcher.swipeState = state
-    }
-
     /** Marker for D-09 reports; only its class name reaches the log. */
     private class InvalidComposerEvent : Exception()
 
@@ -319,6 +321,5 @@ class KeyboardService : InputMethodService(), SwipeHost {
         const val SITE_COMPOSER = "HangulComposer.invalid"
         const val SITE_TEMPLATES = "TemplateLoader.load"
         const val TEMPLATES_RESOURCE = "/graffiti/templates.json"
-        const val SWIPE_ROWS = 6   // the double-consonant row (layout A, issue #168) fills the window
     }
 }

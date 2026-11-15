@@ -2,6 +2,8 @@
 <resources>
     <!-- Screen reader names of the tap keyboard function keys (LLD-05A §7, NFR-07). Other keys read their label. -->
     <string name="a11y_key_esc">이스케이프</string>
+    <string name="a11y_key_ctrl">Ctrl</string>
+    <string name="a11y_key_alt">Alt</string>
     <string name="a11y_key_tab">탭</string>
     <string name="a11y_key_left">왼쪽 화살표</string>
     <string name="a11y_key_up">위쪽 화살표</string>

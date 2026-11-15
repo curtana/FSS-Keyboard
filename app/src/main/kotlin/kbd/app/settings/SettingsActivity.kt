@@ -125,19 +125,14 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
                 stringResource(R.string.settings_modes_summary), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
+            // In the mode key's cycle order (FR-SET-08, FR-CMN-03 ②).
             CheckRow(R.string.settings_mode_dubeolsik, checked = true, onChange = null)
+            CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
             CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
-            CheckRow(R.string.settings_mode_swipe, settings.swipeEnabled) { v -> update { it.copy(swipeEnabled = v) } }
 
             Section(R.string.settings_section_input)
             ActionRow(R.string.settings_ime, R.string.settings_ime_summary, actions.openImeSettings)
 
-            Section(R.string.settings_section_display)   // every build has the swipe guides (issue #251)
-            SwitchRow(R.string.settings_direction_guide, settings.showDirectionGuide) { v -> update { it.copy(showDirectionGuide = v) } }
-            SwitchRow(R.string.settings_next_char, settings.showNextChar) { v -> update { it.copy(showNextChar = v) } }
-            SwitchRow(R.string.settings_current_char, settings.showCurrentChar) { v -> update { it.copy(showCurrentChar = v) } }   // FR-DSP-08, #135
-            SwitchRow(R.string.settings_stroke_trail, settings.showStrokeTrail) { v -> update { it.copy(showStrokeTrail = v) } }   // FR-DSP-09, FSS#57
 
             Section(R.string.settings_section_feedback)
             SwitchRow(R.string.settings_haptic, settings.haptic) { v -> update { it.copy(haptic = v) } }
@@ -224,10 +219,13 @@ private val ALIGNS = listOf(
  * Key size and alignment of the portrait and the landscape screen (FR-SET-09, LLD-07 §7, FSS#25), in two boxes:
  * "세로 화면" and "가로 화면", each with its key size and its alignment (owner decision, FSS#44). The box of the screen's
  * present orientation is marked "지금 화면"; both are always shown and can be changed. Each slider goes from
- * 32 dp in 1 dp steps to the first key size that fills about this screen's width in that orientation (its short or
+ * 32 dp in 1 dp steps to the first key size whose keyboard rectangle (11 cells: the keys and the two side margins,
+ * FSS#84) fills about this screen's width in that orientation (its short or
  * long side; the keyboard computes the exact width, FR-CMN-14 ④); that top stop is "꽉 채움": no key size on the
  * portrait screen, [KeyboardWidth.FULL] on the landscape one. Until it is moved the landscape slider sits at the
  * portrait key size (FR-CMN-14 ③). The alignment is greyed out when the keyboard fills (no rest to place).
+ * Under the alignment each box has its "띄우기" switch (FR-CMN-15, FSS#86, default off); the alignment can be chosen
+ * whether it is on or off.
  */
 @Composable
 internal fun KeyboardSizeBoxes(settings: Settings, update: ((Settings) -> Settings) -> Unit) {
@@ -244,22 +242,28 @@ internal fun KeyboardSizeBoxes(settings: Settings, update: ((Settings) -> Settin
     val pKey = stop(p.keyDp, pTop)
     val lKey = when {
         l.keyDp != null -> stop(l.keyDp, lTop)
-        p.keyDp == null || p.keyDp == KeyboardWidth.FULL -> (shortDp / KeyboardWidth.UNITS).roundToInt().coerceAtMost(lTop)
+        p.keyDp == null || p.keyDp == KeyboardWidth.FULL -> (shortDp / KeyboardWidth.RECT_UNITS).roundToInt().coerceIn(KeyboardWidth.MIN_KEY_DP.toInt(), lTop)
         else -> stop(p.keyDp, lTop)
     }
     OrientationBox(R.string.settings_box_portrait, now = !landscapeNow, BOX_PORTRAIT) {
         KeyRow(pKey, pTop, shortDp) { k -> update { it.copy(portraitWidth = it.portraitWidth.copy(keyDp = if (k >= pTop) null else k.toFloat())) } }
         AlignRow(p.align, enabled = pKey < pTop) { a -> update { it.copy(portraitWidth = it.portraitWidth.copy(align = a)) } }
+        FloatRow(settings.portraitFloat.on, FLOAT_PORTRAIT) { v -> update { it.copy(portraitFloat = it.portraitFloat.copy(on = v)) } }
     }
     OrientationBox(R.string.settings_box_landscape, now = landscapeNow, BOX_LANDSCAPE) {
         KeyRow(lKey, lTop, longDp) { k -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(keyDp = if (k >= lTop) KeyboardWidth.FULL else k.toFloat())) } }
         AlignRow(l.align, enabled = lKey < lTop) { a -> update { it.copy(landscapeWidth = it.landscapeWidth.copy(align = a)) } }
+        FloatRow(settings.landscapeFloat.on, FLOAT_LANDSCAPE) { v -> update { it.copy(landscapeFloat = it.landscapeFloat.copy(on = v)) } }
     }
 }
 
 /** Test tags of the two boxes (FSS#44). */
 internal const val BOX_PORTRAIT = "box_portrait"
 internal const val BOX_LANDSCAPE = "box_landscape"
+
+/** Test tags of the two "띄우기" switches (FSS#86). */
+internal const val FLOAT_PORTRAIT = "float_portrait"
+internal const val FLOAT_LANDSCAPE = "float_landscape"
 
 /** One orientation's box: its title, "지금 화면" at the right end when [now], then [content] (FSS#44). */
 @Composable
@@ -274,8 +278,9 @@ private fun OrientationBox(title: Int, now: Boolean, tag: String, content: @Comp
 }
 
 /**
- * A key size slider from 32 dp to [top] (= fills about [availDp]) with the keyboard width beside it: "키 36 dp · 전체
- * 360 dp", or at the top "꽉 채움 · 키 약 71 dp · 711 dp". Stored when the slider is released.
+ * A key size slider from 32 dp to [top] (= fills about [availDp]) with the width of the keyboard rectangle (side
+ * margins included, 11 × the key size) beside it: "키 36 dp · 전체 396 dp", or at the top "꽉 채움 · 키 약 65 dp · 711 dp".
+ * Stored when the slider is released.
  */
 @Composable
 private fun KeyRow(stored: Int, top: Int, availDp: Float, onChange: (Int) -> Unit) {
@@ -286,8 +291,8 @@ private fun KeyRow(stored: Int, top: Int, availDp: Float, onChange: (Int) -> Uni
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.settings_key), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
             Text(
-                if (shown >= top) stringResource(R.string.settings_key_full, (availDp / KeyboardWidth.UNITS).roundToInt(), availDp.roundToInt())
-                else stringResource(R.string.settings_key_value, shown, shown * KeyboardWidth.UNITS),
+                if (shown >= top) stringResource(R.string.settings_key_full, (availDp / KeyboardWidth.RECT_UNITS).roundToInt(), availDp.roundToInt())
+                else stringResource(R.string.settings_key_value, shown, shown * KeyboardWidth.RECT_UNITS),
             )
         }
         Slider(
@@ -324,6 +329,24 @@ private fun AlignRow(stored: KeyboardAlign, enabled: Boolean, onChange: (Keyboar
                 }
             }
         }
+    }
+}
+
+/**
+ * The "띄우기" switch of one orientation's box, under its alignment, with a line on how the keyboard is moved and what
+ * the alignment then means (FR-SET-09, FR-CMN-15 ①⑥, FSS#86). Only the switch is stored here: the place stays as it is.
+ */
+@Composable
+private fun FloatRow(checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().testTag(tag).selectable(checked, role = Role.Switch) { onChange(!checked) }
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.settings_float), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Switch(checked = checked, onCheckedChange = null)
+        }
+        Text(stringResource(R.string.settings_float_summary), style = MaterialTheme.typography.bodySmall)
     }
 }
 

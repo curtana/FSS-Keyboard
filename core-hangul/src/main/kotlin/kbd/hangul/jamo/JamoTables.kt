@@ -12,9 +12,9 @@ import kbd.hangul.jamo.Jamo.R
 import kbd.hangul.jamo.Jamo.S
 import kbd.hangul.jamo.Jamo.T
 
-/** Consonant tables (LLD-03 §3.1). */
+/** Consonant tables and the stroke steps of a compound vowel (LLD-03 §3.1). */
 object JamoTables {
-    /** Base consonant → double consonant (FR-HGL-05, FR-SWP-30). */
+    /** Base consonant → double consonant (FR-HGL-05). */
     val DOUBLE_OF: Map<Jamo, Jamo> = mapOf(
         G to Jamo.GG,
         D to Jamo.DD,
@@ -45,4 +45,20 @@ object JamoTables {
 
     /** Compound final → its two consonants (issue #242: one Dubeolsik stroke types a compound final). */
     val SPLIT_JONG: Map<Jamo, Pair<Jamo, Jamo>> = COMPOUND_JONG.entries.associate { (pair, c) -> c to pair }
+
+    /**
+     * Compound vowel → its stroke steps, the last one the vowel itself (FSS#110, SRS FR-HGL-04f ③): a Dubeolsik stroke
+     * types a compound vowel at once, and ⌫ takes it back the way the same keys typed would — ㅙ = ㅗ, ㅙ (keys ㅗ ㅐ),
+     * so 괘 ⌫ = 고, ⌫ = ㄱ (owner 2026-11-15: two steps, not ㅗ ㅘ ㅙ). Not the merge table: (ㅘ, ㅣ) is no merge there,
+     * so 과 + a ㅣ key stays 과ㅣ (FR-HGL-04f ②).
+     */
+    val VOWEL_STEPS: Map<Jamo, List<Jamo>> = mapOf(
+        Jamo.WA to listOf(Jamo.O, Jamo.WA),
+        Jamo.WAE to listOf(Jamo.O, Jamo.WAE),
+        Jamo.OE to listOf(Jamo.O, Jamo.OE),
+        Jamo.WEO to listOf(Jamo.U, Jamo.WEO),
+        Jamo.WE to listOf(Jamo.U, Jamo.WE),
+        Jamo.WI to listOf(Jamo.U, Jamo.WI),
+        Jamo.UI to listOf(Jamo.EU, Jamo.UI),
+    )
 }

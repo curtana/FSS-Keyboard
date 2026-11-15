@@ -4,7 +4,6 @@ import kbd.app.error.EngineGuard
 import kbd.app.feedback.FeedbackPort
 import kbd.stroke.geom.KeyGeom
 import kbd.stroke.geom.KeyHitTester
-import kbd.stroke.geom.RectDp
 import kbd.stroke.geom.StrokePoint
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
@@ -17,49 +16,49 @@ import kbd.stroke.tap.TapKeyResolver
 import kbd.stroke.tap.TapOutput
 
 /**
- * Key rectangles of a tap layout in view dp (LLD-05A §3.1): `x_dp = x / 360 × width`, row y =
- * `row × rowHeight`. The view is the whole 6-row key area, so its left, right and bottom borders are
- * the window's (LLD-08 §7); its top border never is (LLD-03 §3.3).
+ * Key rectangles of a tap layout in view dp (LLD-05A §3.1): `x_dp = x / 360 × width`, rows `row` to `row + rowSpan`
+ * times `rowHeight` ([TapKeyDef.rect]; ↵ is two rows high, FSS#105). The view is the whole 6-row key area, so its
+ * bottom border is the window's (LLD-08 §7); its top border never is (LLD-03 §3.3). The window's left and right borders
+ * are [sideDp] outside the view, the outer sides of the keyboard's side margins (SRS FR-CMN-14 ⑧, LLD-08 §7.2): an end
+ * key's outer edge is an ordinary edge.
  */
-class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float, val rowHeightDp: Float) {
+class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float, val rowHeightDp: Float, val sideDp: Float) {
     val keys: List<TapKeyDef> = layout.keys
     val heightDp: Float = layout.rows * rowHeightDp
     val geoms: List<KeyGeom>
-    private val blankRects: List<Pair<RectDp, Int>>
     private val hitTester: KeyHitTester
 
     init {
         val unit = widthDp / LAYOUT_WIDTH_DP
-        geoms = keys.map { k ->
-            val rect = RectDp(k.x * unit, k.row * rowHeightDp, (k.x + k.w) * unit, (k.row + 1) * rowHeightDp)
-            KeyGeom.build(k.id, rect, widthDp, heightDp)
-        }
-        blankRects = layout.blanks.map { b ->
-            val rect = RectDp(b.x * unit, b.row * rowHeightDp, (b.x + b.w) * unit, (b.row + 1) * rowHeightDp)
-            rect to keys.indexOfFirst { it.id == b.nearestKeyId }
-        }
+        geoms = keys.map { k -> KeyGeom.build(k.id, k.rect(unit, rowHeightDp), widthDp, heightDp, sideDp) }
         hitTester = KeyHitTester(geoms, widthDp, heightDp)
     }
 
     /**
-     * Index into [keys]/[geoms] of the key at (x, y) dp (LLD-05A §4 `hit`): ① inside an indent blank →
-     * its same-row key, even when the row above is nearer; ② otherwise [KeyHitTester]. −1 for no keys.
+     * Index into [keys]/[geoms] of the key at (x, y) dp (LLD-05A §4 `hit`): [KeyHitTester] — the key whose rectangle
+     * holds the point (no blanks since FSS#105, so every point of the view), else the nearest key. −1 for no keys.
      */
     fun indexAt(x: Float, y: Float): Int {
-        for ((r, i) in blankRects) {
-            if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return i
-        }
         val g = hitTester.hit(x, y) ?: return -1
         return geoms.indexOf(g)
+    }
+
+    /**
+     * The key a stroke was released over (FSS#109, SRS FR-TAP-02f ③): the press's hit test, but only inside the view —
+     * a release in the side margin or off the keyboard is over no key (the hit test would give the nearest one).
+     */
+    fun releasedKey(p: StrokePoint): TapKeyDef? {
+        if (p.x < 0f || p.x > widthDp || p.y < 0f || p.y > heightDp) return null
+        return indexAt(p.x, p.y).takeIf { it >= 0 }?.let { keys[it] }
     }
 
     companion object {
         /** Tap layout row width in dp units (LLD-05A §3.1). */
         const val LAYOUT_WIDTH_DP = 360f
 
-        fun build(layout: TapLayout, widthDp: Float, rowHeightDp: Float): TapGeometry {
+        fun build(layout: TapLayout, widthDp: Float, rowHeightDp: Float, sideDp: Float = 0f): TapGeometry {
             require(widthDp > 0f && rowHeightDp > 0f) { "empty tap view" }
-            return TapGeometry(layout, widthDp, rowHeightDp)
+            return TapGeometry(layout, widthDp, rowHeightDp, sideDp)
         }
     }
 }
@@ -74,7 +73,8 @@ interface TapKeyRepeat {
 /**
  * Multi-pointer touch handling of the tap keyboard, free of Android (LLD-05A §4 `onTouchEvent`).
  * The view turns `MotionEvent`s into dp points per pointer and calls [down], [move], [up] and
- * [cancel]. Function keys act on press, outside the queue (FR-CMN-11, 11a ①); character keys are
+ * [cancel]. Function keys act on press, outside the queue (FR-CMN-11, 11a ①), Ctrl and Alt too (FR-TAP-15 ①:
+ * they toggle on press and do not repeat); character keys are
  * resolved on release from the first-pressed key only and leave in press order ([MultiPointerQueue]).
  * The mode key is judged on release, also outside the queue (issue #205): a first crossed edge up opens the
  * settings ([TapSink.onSettingsStroke]), anything else is the mode change (`MODE` down then up).
@@ -88,12 +88,15 @@ class TapTouchLogic(
     /** Built by the view on layout; null before the first layout (touches are then ignored). */
     var geometry: TapGeometry? = null
 
-    /** Same threshold as the swipe keyboard (FR-TAP-02b). */
+    /** The minimum crossing distance (FR-TAP-02b). */
     var minCrossDp: Float = 0f
 
     private class Stroke(val index: Int, val key: TapKeyDef, val classifier: TapGestureClassifier)
 
-    private val queue = MultiPointerQueue()
+    /** A released key waiting in the queue: the judged [gesture] goes on to the sink with the output (FSS#98). */
+    private class Result(val key: TapKeyDef, val out: TapOutput, val gesture: TapGesture)
+
+    private val queue = MultiPointerQueue<Result>()
     private val strokes = HashMap<Int, Stroke>()
     /** [classifier]: the mode key's stroke, judged on release (issue #205); null for keys that act on press. */
     private class FnPress(val index: Int, val key: FunctionKey, val classifier: TapGestureClassifier? = null)
@@ -113,7 +116,7 @@ class TapTouchLogic(
         val i = g.indexAt(p.x, p.y)
         if (i < 0) return
         val key = g.keys[i]
-        feedback.key()   // on press, blanks included (FR-CMN-11a ②)
+        feedback.key()   // on press (FR-CMN-11a ②)
         if (key.kind == TapKeyKind.FUNCTION && key.function == FunctionKey.MODE) {
             val c = TapGestureClassifier(g.geoms[i], minCrossDp)
             c.begin(p)
@@ -124,7 +127,7 @@ class TapTouchLogic(
             guard.stroke(SITE_FN) { sink.onFunctionDown(fn) }   // on press, outside the queue (FR-CMN-11, 11a ①)
             if (fn in REPEATING) repeat.start(pointerId, fn)   // FR-CMN-07c, FR-TAP-10
         } else {
-            val c = TapGestureClassifier(g.geoms[i], minCrossDp)
+            val c = TapGestureClassifier(g.geoms[i], minCrossDp, eightWay = key.eightWay)   // diagonals in the data (FSS#109)
             c.begin(p)
             strokes[pointerId] = Stroke(i, key, c)
             queue.onDown(pointerId)
@@ -146,8 +149,16 @@ class TapTouchLogic(
             return
         }
         val s = strokes.remove(pointerId) ?: return
-        val r = guard.run(SITE_CLASSIFY) { TapKeyResolver.resolve(s.key, s.classifier.finish(p)) }
-        val outs = if (r == null) queue.onCancel(pointerId) else queue.onUp(pointerId, s.key, r)   // a failed slot only
+        val r = guard.run(SITE_CLASSIFY) {   // judged once; the result carries the gesture
+            val g = s.classifier.finish(p)
+            // Released over the pair key of a compound final after an exit (FSS#109, FR-TAP-02f): that compound,
+            // whatever the direction; the released key does nothing else. The gesture stays, so Ctrl·Alt send its key (⑤).
+            val released = if (g == TapGesture.Tap) null else geometry?.releasedKey(p)
+            val out = ReleaseKeyCompound.of(s.key, released)?.let { TapOutput(null, it, errorVibe = false) }
+                ?: TapKeyResolver.resolve(s.key, g)
+            Result(s.key, out, g)
+        }
+        val outs = if (r == null) queue.onCancel(pointerId) else queue.onUp(pointerId, r)   // a failed slot only
         emit(outs)
     }
 
@@ -183,7 +194,7 @@ class TapTouchLogic(
             return
         }
         val r = guard.run(SITE_CLASSIFY) { TapKeyResolver.resolve(key, TapGesture.Tap) } ?: return
-        emit(listOf(key to r))
+        emit(listOf(Result(key, r, TapGesture.Tap)))
     }
 
     /** Mode key release (issue #205): first edge up = the settings, else the mode change (FR-CMN-13); a failed judgement gives nothing (LLD-09 §2). */
@@ -204,8 +215,8 @@ class TapTouchLogic(
     }
 
     /** One output = one guarded unit (LLD-09 §2), in press order. */
-    private fun emit(outs: List<Pair<TapKeyDef, TapOutput>>) {
-        for ((k, o) in outs) guard.stroke(SITE_OUTPUT) { sink.onTapOutput(k, o) }
+    private fun emit(outs: List<Result>) {
+        for (r in outs) guard.stroke(SITE_OUTPUT) { sink.onTapResult(r.key, r.out, r.gesture) }
     }
 
     companion object {

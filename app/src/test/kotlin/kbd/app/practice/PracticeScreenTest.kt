@@ -1,6 +1,7 @@
 package kbd.app.practice
 
 import android.content.ComponentName
+import android.graphics.Rect
 import android.media.AudioManager
 import android.os.Looper
 import android.view.View
@@ -16,11 +17,16 @@ import kbd.app.graffiti.GraffitiGuidePanel
 import kbd.app.graffiti.GraffitiPadGeometry
 import kbd.app.graffiti.GraffitiPadView
 import kbd.app.store.ErrorLog
+import kbd.app.store.FloatSetting
 import kbd.app.store.KeyboardAlign
+import kbd.app.store.PxRect
 import kbd.app.store.Settings
 import kbd.app.store.WidthSetting
-import kbd.app.swipe.impl.SwipeGeometry
-import kbd.app.swipe.impl.SwipeKeyboardView
+import kbd.app.view.KeyboardRootView
+import kbd.app.view.PlateView
+import kbd.app.view.RectCanvas
+import kbd.app.view.TapGeometry
+import kbd.app.view.TapKeyboardView
 import kbd.app.view.Touches
 import kbd.app.view.ViewTestSdk
 import kbd.graffiti.guide.GuideCatalog
@@ -28,6 +34,7 @@ import kbd.graffiti.guide.GuideSection
 import kbd.graffiti.recognize.TemplateLoader
 import kbd.graffiti.recognize.TemplateSet
 import kbd.stroke.layout.FunctionKey
+import kbd.stroke.layout.TapLayouts
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -43,8 +50,8 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
- * LLD-11 PR-23 (FSS#54): the practice screen itself — the real topic list, explanation, item lines and swipe board —
- * with the owner's tablet strokes (key 42 dp, right aligned, 711 dp wide). 가 then the space is ✓: the solved item
+ * LLD-11 PR-23 (FSS#54): the practice screen itself — the real topic list, explanation, item lines and tap keyboard
+ * board — at the owner's tablet size (key 42 dp, right aligned, 711 dp wide). A (a key, up) is ✓: the solved item
  * stays on screen with its ✓ for [PracticeFlow.RIGHT_HOLD_MS], taking no input, then the next item's target is shown.
  * PR-28, PR-29 (FSS#72): the graffiti items on the real pad and stroke guide, written with touches.
  */
@@ -76,50 +83,208 @@ class PracticeScreenTest {
     }
 
     @Test
-    fun `PR-23 가 then the space is shown right, then the next target (FSS#54)`() {
+    fun `PR-23 a right item is shown right, then the next target (FSS#54)`() {
         val flow = PracticeFlow()
         compose.setContent {
             val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
             val boards = BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))
             PracticeScreen(flow, flowOf(settings), settings, boards) {}
         }
-        compose.onNodeWithText(PracticeTopics.SWIPE.title).performClick()
+        compose.onNodeWithText(PracticeTopics.UPPER.title).performClick()
         compose.onNodeWithText("시작").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("쓸 것: 가").assertExists()
+        compose.onNodeWithText("쓸 것: A").assertExists()
 
-        val sv = checkNotNull(find(compose.activity.window.decorView, SwipeKeyboardView::class.java))
+        val sv = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
         val frame = sv.parent as View
         val d = sv.resources.displayMetrics.density
-        val geo = SwipeGeometry.build(sv.width / d, settings.rowHeightDp)
+        val geo = TapGeometry.build(TapLayouts.QWERTY, sv.width / d, settings.rowHeightDp, sv.sideMarginPx / d)
         val t = Touches(frame)
         fun idle() {
             Shadows.shadowOf(Looper.getMainLooper()).idle()
             if (!compose.mainClock.autoAdvance) compose.mainClock.advanceTimeByFrame()   // one frame: the screen redraws
             compose.waitForIdle()
         }
-        fun stroke(x0: Float, y0: Float, x1: Float, y1: Float) {
-            t.down(0, sv.left + x0 * d, y0 * d); t.move(0, sv.left + x1 * d, y1 * d, steps = 8); t.up(0); idle()
-        }
-        fun tap(label: String) = geo.geoms[geo.keys.indexOfFirst { it.label == label }].rect.let {
+        fun rectOf(label: String) = geo.geoms[geo.keys.indexOfFirst { it.label == label }].rect
+        fun tap(label: String) = rectOf(label).let {
             t.tap(0, sv.left + (it.left + it.right) / 2 * d, (it.top + it.bottom) / 2 * d); idle()
         }
+        /** From the middle of the key straight up, 20 dp past its top edge. */
+        fun up(label: String) = rectOf(label).let {
+            val x = sv.left + (it.left + it.right) / 2 * d
+            t.down(0, x, (it.top + it.bottom) / 2 * d); t.move(0, x, (it.top - 20f) * d, steps = 8); t.up(0); idle()
+        }
         compose.mainClock.autoAdvance = false
-        tap("ㄱ")
-        stroke(250.7f, 67.6f, 262.2f, 152.4f)   // the tablet's ㅣ (FSSStroke, 2026-11-03 20:54:01)
-        stroke(264.9f, 105.8f, 302.2f, 95.1f)   // and its dot: 가
         assertEquals(null, flow.verdict)
-        tap("스페이스")
+        up("a")
         assertEquals(Verdict.RIGHT, flow.verdict)
-        compose.onNodeWithText("쓸 것: 가").assertExists()        // the solved item stays, with its ✓
+        compose.onNodeWithText("쓸 것: A").assertExists()         // the solved item stays, with its ✓
         compose.onNodeWithText("✓").assertExists()
-        tap("ㄱ")                                                    // no input while it is shown
+        tap("b")                                                     // no input while it is shown
         assertEquals(0, flow.index)
+        assertEquals("A", flow.echo)
         compose.mainClock.advanceTimeBy(PracticeFlow.RIGHT_HOLD_MS + 100)
         idle()
         assertEquals(1, flow.index)
-        compose.onNodeWithText("쓸 것: 고").assertExists()        // the next target is drawn (the bug: 가 stayed)
+        compose.onNodeWithText("쓸 것: Hi").assertExists()        // the next target is drawn (the bug: the solved one stayed)
         compose.onNodeWithText("✓").assertDoesNotExist()
+    }
+
+    /** FSS#105: the practice board is the real layout - ↵ two rows high, `/` in row 4 - and `?` (`/` ↑) is still right. */
+    @Test
+    fun `PR-37 the practice tap board has the two-row enter and the moved slash key, slash up is the question mark item`() {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            val boards = BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))
+            PracticeScreen(flow, flowOf(settings), settings, boards) {}
+        }
+        compose.onNodeWithText(PracticeTopics.SYMBOL.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("쓸 것: !").assertExists()
+
+        val sv = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+        val d = sv.resources.displayMetrics.density
+        val geo = TapGeometry.build(TapLayouts.QWERTY, sv.width / d, settings.rowHeightDp, sv.sideMarginPx / d)
+        // The board as shown: ↵ over rows 3 and 4, `/` in row 4 just left of it.
+        val enter = Rect().also { sv.keyBoundsPx(TapLayouts.QWERTY.keys.indexOfFirst { k -> k.function == FunctionKey.ENTER }, it) }
+        val slash = Rect().also { sv.keyBoundsPx(TapLayouts.QWERTY.keys.indexOfFirst { k -> k.id == "slash" }, it) }
+        assertEquals(Math.round(3 * settings.rowHeightDp * d), enter.top)
+        assertEquals(Math.round(5 * settings.rowHeightDp * d), enter.bottom)
+        assertEquals(Math.round(4 * settings.rowHeightDp * d), slash.top)
+        assertEquals(enter.left, slash.right)
+        fun idle() {
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            if (!compose.mainClock.autoAdvance) compose.mainClock.advanceTimeByFrame()
+            compose.waitForIdle()
+        }
+        /** From the middle of the key straight up, 20 dp past its top edge, on the board shown now (each item has its own). */
+        fun up(label: String) = geo.geoms[geo.keys.indexOfFirst { it.label == label }].rect.let {
+            val now = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+            val t = Touches(now.parent as View)
+            val x = now.left + (it.left + it.right) / 2 * d
+            t.down(0, x, (it.top + it.bottom) / 2 * d); t.move(0, x, (it.top - 20f) * d, steps = 8); t.up(0); idle()
+        }
+        compose.mainClock.autoAdvance = false
+        up("1")
+        assertEquals(Verdict.RIGHT, flow.verdict)
+        compose.mainClock.advanceTimeBy(PracticeFlow.RIGHT_HOLD_MS + 100)
+        idle()
+        assertEquals(1, flow.index)
+        compose.onNodeWithText("쓸 것: ?").assertExists()
+        up("/")
+        assertEquals(Verdict.RIGHT, flow.verdict)
+        assertEquals("?", flow.echo)
+    }
+
+    /** FSS#84: the practice board has the keyboard's side margins; a touch that begins on one is no action. */
+    @Test
+    fun `PR-31 the practice board sits on the keys of the keyboard rectangle, the side margins take touches with no action`() {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            PracticeScreen(flow, flowOf(settings), settings, BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+        }
+        compose.onNodeWithText(PracticeTopics.UPPER.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        val sv = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+        val frame = sv.parent as View
+        val d = sv.resources.displayMetrics.density
+        // 42 dp keys, right aligned: rectangle 462 dp at the right end, margins 21 dp, keys 420 dp.
+        val m = Math.round(21 * d)
+        assertEquals(Math.round(420 * d), sv.width)
+        assertEquals(frame.width - m, sv.right)
+        assertEquals(frame.width - Math.round(462 * d) + m, sv.left)
+        assertEquals(m, sv.sideMarginPx)
+        assertEquals(m / d, sv.geometrySideDp)
+        val t = Touches(frame)
+        val tries = flow.tryNo
+        for (x in listOf(sv.left - 1f, sv.left - m + 0f, sv.right + 0f, frame.width - 1f)) {
+            t.down(0, x, sv.height / 2f); t.move(0, sv.left + sv.width / 2f, sv.height / 2f); t.up(0)
+            assertTrue(t.lastHandled)
+        }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
+        assertEquals("", flow.echo)
+        assertEquals(null, flow.verdict)
+        assertEquals(tries, flow.tryNo)
+    }
+
+    /** FSS#85: the practice frame paints the keyboard rectangle only; a touch on the rest beside it is no action. */
+    @Test
+    fun `PR-33 the practice frame paints the keyboard rectangle only, the rest takes touches with no action`() {
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { settings })
+            PracticeScreen(flow, flowOf(settings), settings, BoardFactory(settings, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+        }
+        compose.onNodeWithText(PracticeTopics.UPPER.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        val sv = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+        val frame = sv.parent as View
+        val d = sv.resources.displayMetrics.density
+        // 42 dp keys, right aligned: the rectangle is the 462 dp at the right end, the rest is on its left.
+        val plate = (frame as PlateView).plate
+        assertEquals(PxRect(frame.width - Math.round(462 * d), 0, frame.width, frame.height), plate)
+        assertTrue(plate.left > 0)
+        assertEquals(null, frame.background)
+        assertTrue(!frame.willNotDraw())
+        val canvas = RectCanvas()
+        frame.draw(canvas)
+        // The first thing drawn is the frame's own: the plate (the board draws over it).
+        assertEquals(listOf(plate.left.toFloat(), 0f, plate.right.toFloat(), plate.bottom.toFloat()) to KeyboardRootView.BACKGROUND_COLOR, canvas.rects.first())
+        val t = Touches(frame)
+        val tries = flow.tryNo
+        for (x in listOf(0f, plate.left / 2f, plate.left - 1f)) {
+            t.down(0, x, sv.height / 2f); t.move(0, sv.left + sv.width / 2f, sv.height / 2f); t.up(0)
+            assertTrue(t.lastHandled)
+        }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        compose.waitForIdle()
+        assertEquals("", flow.echo)
+        assertEquals(null, flow.verdict)
+        assertEquals(tries, flow.tryNo)
+    }
+
+    /** FSS#86 (FR-CMN-15 ⑭): floating is not for the practice keyboard; with it on the frame is as with it off. */
+    @Test
+    fun `PR-34 floating on - the practice frame is as before, with no move handle`() {
+        fun frameOf(s: Settings): Triple<PxRect, Int, List<View>> {
+            val flow = PracticeFlow()
+            compose.setContent {
+                val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { s })
+                PracticeScreen(flow, flowOf(s), s, BoardFactory(s, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+            }
+            compose.onNodeWithText(PracticeTopics.UPPER.title).performClick()
+            compose.onNodeWithText("시작").performClick()
+            compose.waitForIdle()
+            val sv = checkNotNull(find(compose.activity.window.decorView, TapKeyboardView::class.java))
+            val frame = sv.parent as android.view.ViewGroup
+            return Triple((frame as PlateView).plate, frame.height, (0 until frame.childCount).map(frame::getChildAt))
+        }
+        val on = settings.copy(portraitFloat = FloatSetting(true, 0.1f, 0.1f), landscapeFloat = FloatSetting(true, 0.1f, 0.1f))
+        val (plate, height, children) = frameOf(on)
+        val d = compose.activity.resources.displayMetrics.density
+        // PR-33's frame: the 462 dp at the right end by the frame's whole height, and nothing but the board in it.
+        assertEquals(plate.bottom, height)
+        assertEquals(0, plate.top)
+        assertEquals(Math.round(462 * d), plate.right - plate.left)
+        assertEquals(Math.round(KeyboardRootView.WINDOW_ROWS * settings.rowHeightDp * d), height)
+        assertTrue(children.none { it.contentDescription == KeyboardRootView.HANDLE_NAME })
+        assertEquals(1, children.size)
+    }
+
+    /** FSS#84: the graffiti pad inside the practice column is told the side margin too. */
+    @Test
+    fun `PR-32 the graffiti practice pad gets the side margin`() {
+        openAt(PracticeTopics.GRAFFITI_EN, "a")
+        val pad = padNow()
+        val d = pad.resources.displayMetrics.density
+        assertEquals(Math.round(21 * d), pad.sideMarginPx)
+        assertEquals(Math.round(420 * d), pad.width)
     }
 
     private val templates: TemplateSet by lazy {
@@ -217,7 +382,7 @@ class PracticeScreenTest {
         val want = scrollFor(panelNow(), GuideSection.ENGLISH, "Q")
         assertTrue(want > 0f)
         assertEquals(want, panelNow().scrollDp, 0.01f)
-        assertEquals(emptySet<String>(), panelNow().highlight)            // unmarked before a ✗ (SWIPE 10.1 ③)
+        assertEquals(emptySet<String>(), panelNow().highlight)            // unmarked before a ✗ (SRS appendix A.2 ③)
         compose.mainClock.autoAdvance = false
         val tries = flow.tryNo
         drawTemplate("en_a")

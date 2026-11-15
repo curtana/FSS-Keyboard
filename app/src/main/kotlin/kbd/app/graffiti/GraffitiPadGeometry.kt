@@ -68,7 +68,7 @@ class GraffitiPadGeometry(val widthDp: Float, val heightDp: Float, val letterRat
     }
 
     companion object {
-        /** Pad and auxiliary bar together, as tall as the swipe keyboard (FR-GRF-01). */
+        /** Pad and auxiliary bar together (FR-GRF-01). */
         const val ROWS = 5
         const val PAD_ROWS = 4
 

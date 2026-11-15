@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * [ModeKeyGesture], shared by the tap, swipe and graffiti views (SRS FR-CMN-13, HLD 8.2, issue #205,
+ * [ModeKeyGesture], shared by the tap and graffiti views (SRS FR-CMN-13, HLD 8.2, issue #205,
  * LLD-11 MK-00): a first crossed edge up opens the settings, everything else is the tap's mode change.
  */
 class ModeKeyStrokeTest {
@@ -31,7 +31,7 @@ class ModeKeyStrokeTest {
     @Test
     fun `MK-00b the settings function key is gone`() {
         assertEquals(
-            listOf("BACKSPACE", "SPACE", "ENTER", "TAB", "MODE", "ARROW_LEFT", "ARROW_UP", "ARROW_DOWN", "ARROW_RIGHT", "ESC", "DELETE"),
+            listOf("BACKSPACE", "SPACE", "ENTER", "TAB", "MODE", "ARROW_LEFT", "ARROW_UP", "ARROW_DOWN", "ARROW_RIGHT", "ESC", "DELETE", "CTRL", "ALT"),   // CTRL, ALT: FSS#98
             FunctionKey.entries.map { it.name },
         )
     }

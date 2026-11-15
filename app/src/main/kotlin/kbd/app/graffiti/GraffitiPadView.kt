@@ -18,8 +18,10 @@ import kbd.app.store.Settings
 import kbd.app.view.KeyboardRootView
 import kbd.app.view.RepeatSchedule
 import kbd.app.view.RepeatTimer
+import kbd.app.view.SideMarginView
 import kbd.app.view.TapSink
 import kbd.graffiti.ink.GraffitiLang
+import kbd.graffiti.ink.InkStroke
 import kbd.graffiti.ink.RectF2
 import kbd.graffiti.state.GraffitiStateSnapshot
 import kbd.stroke.geom.KeyGeom
@@ -46,7 +48,7 @@ class GraffitiPadView(
     private val handler: GraffitiInputHandler,
     private val guard: EngineGuard,
     private val feedback: FeedbackPort,
-) : View(context) {
+) : View(context), SideMarginView {
 
     private val density = resources.displayMetrics.density
     private val looper = Handler(Looper.getMainLooper())
@@ -54,6 +56,12 @@ class GraffitiPadView(
     private val repeatTimer = RepeatTimer(looper, repeatSchedule()) { key ->
         guard.stroke(SITE_FN) { sink.onFunctionDown(key) }   // no feedback on repeats (FR-CMN-11a ②)
     }
+
+    /**
+     * When set, a pad stroke goes here instead of to [handler] (LLD-05 §8.3): the "my strokes" screen stores it and
+     * types nothing (LLD-07 §8.3). Null on the keyboard and in the practice topics.
+     */
+    var onInk: ((InkStroke) -> Unit)? = null
 
     /** Letter share of the pad width (FR-SET-05, `Settings.graffitiLetterRatio`). */
     var letterRatio: Float = Settings.DEFAULT.graffitiLetterRatio
@@ -63,6 +71,9 @@ class GraffitiPadView(
         }
 
     private var geometry: GraffitiPadGeometry? = null
+
+    /** The keyboard's side margin, set by the parent (FR-CMN-14 ⑧, LLD-08 §7.2): read when the mode key is pressed. */
+    override var sideMarginPx: Int = 0
 
     /** The mode key's exit threshold, the tap keyboards' (FR-TAP-02b); set by the service from the thresholds. */
     var minCrossDp: Float = ThresholdDefaults.VALUES.minCrossDp
@@ -220,7 +231,7 @@ class GraffitiPadView(
                     heldKey = k.key
                     feedback.key()   // key feedback on press (FR-CMN-11a ②)
                     val r = k.rect
-                    val geom = KeyGeom.build(k.key.name, RectDp(r.left, r.top, r.right, r.bottom), g.widthDp, g.heightDp)
+                    val geom = KeyGeom.build(k.key.name, RectDp(r.left, r.top, r.right, r.bottom), g.widthDp, g.heightDp, sideMarginPx / density)
                     modeStroke = TapGestureClassifier(geom, minCrossDp).also { it.begin(StrokePoint(x, y, e.eventTime)) }   // nothing on press (issue #205)
                 } else if (k != null) {
                     keyPointer = e.getPointerId(idx)
@@ -260,7 +271,9 @@ class GraffitiPadView(
                 } else {
                     val stroke = ink.onUp(e)
                     if (stroke != null) {
-                        guard.stroke(SITE_STROKE) { handler.onStroke(stroke) }   // on failure: rolled back, no input (LLD-09 §2)
+                        val taker = onInk
+                        if (taker != null) guard.stroke(SITE_INK) { taker(stroke) }
+                        else guard.stroke(SITE_STROKE) { handler.onStroke(stroke) }   // on failure: rolled back, no input (LLD-09 §2)
                     }
                 }
                 invalidate()
@@ -310,6 +323,7 @@ class GraffitiPadView(
 
         private const val SITE_FN = "Graffiti.fn"
         private const val SITE_STROKE = "Graffiti.onStroke"
+        private const val SITE_INK = "Graffiti.onInk"
         private const val NONE = -1
 
         private const val NUMBER_HINT = "123"
@@ -346,7 +360,7 @@ class GraffitiPadView(
         internal const val AREA_RADIUS_DP = 6f
         internal const val AREA_STROKE_DP = 1f
 
-        /** Platform repeat timing (D-16), as in the swipe keyboard; before API 28 the values were not public. */
+        /** Platform repeat timing (D-16), as on the tap keyboards; before API 28 the values were not public. */
         private fun repeatSchedule(): RepeatSchedule =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 RepeatSchedule(ViewConfiguration.getKeyRepeatTimeout().toLong(), ViewConfiguration.getKeyRepeatDelay().toLong())

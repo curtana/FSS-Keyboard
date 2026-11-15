@@ -25,7 +25,7 @@ import kotlin.math.sin
  * it on release inside the ✕ ([onClose]), with key feedback on press. Nothing is stored; drawn in password
  * fields too (FR-GRF-09d).
  *
- * The input practice (SWIPE 10.1 ③, LLD-07 §2.3) shows it always open above the pad, not over it: [groups] = only the
+ * The input practice (SRS appendix A.2 ③, LLD-07 §2.3) shows it always open above the pad, not over it: [groups] = only the
  * item's sections, [showClose] = false (no ✕), and [reveal] brings the target's cell into view and [highlight] marks the target's cells after a ✗.
  */
 class GraffitiGuidePanel(
@@ -44,7 +44,7 @@ class GraffitiGuidePanel(
     var scrollDp: Float = 0f
         private set
 
-    /** Labels of the cells drawn highlighted (the practice's ✗, SWIPE 10.1 ③); the first one is scrolled into view. */
+    /** Labels of the cells drawn highlighted (the practice's ✗, SRS appendix A.2 ③); the first one is scrolled into view. */
     var highlight: Set<String> = emptySet()
         set(v) {
             field = v
@@ -263,7 +263,7 @@ class GraffitiGuidePanel(
         /** Opaque cover (owner correction #189: "입력기 위에 불투명으로"). */
         const val BACKGROUND = 0xFF161616.toInt()
         const val INTERIM = "임시"
-        /** The practice's ✗ cell mark (SWIPE 10.1 ③): amber, readable on the dark panel. */
+        /** The practice's ✗ cell mark (SRS appendix A.2 ③): amber, readable on the dark panel. */
         private const val HIGHLIGHT = 0xFFFFB300.toInt()
         private const val CELL_MARGIN_DP = 2f
         private const val GLYPH_DP = 48f

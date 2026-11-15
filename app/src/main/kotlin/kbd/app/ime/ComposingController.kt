@@ -2,13 +2,15 @@ package kbd.app.ime
 
 import kbd.hangul.event.ComposeResult
 import kbd.stroke.geom.Dir
+import kbd.stroke.tap.ChordKey
+import kbd.stroke.tap.ChordModifier
 
 /** Cursor-move verdict for `onUpdateSelection` (LLD-08 §4.1). */
 enum class SelectionVerdict { OWN, USER_MOVED, OTHER_MOVED }
 
 /**
  * Writes composer output to the editor and judges cursor-move notifications (LLD-08 §4, §4.1).
- * Callers finish composing before [commitText], [arrow], [tab] and [enter].
+ * Callers finish composing before [commitText], [arrow], [tab], [enter] and [chordKey].
  * If a port call throws, an open batch is still closed and state changes only for the calls that returned (issue #89).
  */
 class ComposingController(private val port: EditorPort) {
@@ -20,7 +22,7 @@ class ComposingController(private val port: EditorPort) {
     /** Temporary glyph at the end of [composingShown] (HLD 5, FR-HGL-04e). */
     private var glyph = ""
 
-    /** [composingShown] without the glyph: the composer's text, restored when the glyph goes (SWIPE 0.36 3.4). */
+    /** [composingShown] without the glyph: the composer's text, restored when the glyph goes (FR-HGL-04e). */
     private var bare = ""
 
     /** Cursor expected after our last write, −1 = unknown. */
@@ -32,14 +34,10 @@ class ComposingController(private val port: EditorPort) {
     /** Expected cursors of our writes not yet confirmed by an update (D-29). */
     private val expected = ArrayDeque<Int>()
 
-    /**
-     * [replacesLast]: [pendingGlyph] is shown in place of the composition's last character (swipe bare ‥ states,
-     * SWIPE 0.36 3.4: "‥" stands where the first stroke's ㅣ / ㅡ was); finishing restores it, as dropping a
-     * glyph restores the text without it.
-     */
-    fun show(r: ComposeResult, pendingGlyph: String = "", replacesLast: Boolean = false) {
+    /** [pendingGlyph]: the graffiti cheonjiin's temporary ㆍ / ‥ after the composition (FR-HGL-04e); dropping it restores the text without it. */
+    fun show(r: ComposeResult, pendingGlyph: String = "") {
         val base = r.composing
-        val d = (if (replacesLast && pendingGlyph.isNotEmpty()) base.dropLast(1) else base) + pendingGlyph
+        val d = base + pendingGlyph
         batch {
             if (r.committed.isNotEmpty()) {
                 port.commitText(r.committed)
@@ -121,6 +119,15 @@ class ComposingController(private val port: EditorPort) {
     /** Esc or forward Del key event (issue #198); like an arrow, the resulting cursor is unknown. */
     fun editKey(k: EditorKey) {
         port.sendKey(k)
+        predictedSel = -1
+    }
+
+    /**
+     * One key with Ctrl / Alt (and Shift) as key events (FSS#98, FR-TAP-16); the caller finished composing. What the
+     * app does with it is unknown, so like an arrow the resulting cursor is unknown.
+     */
+    fun chordKey(key: ChordKey, mods: Set<ChordModifier>) {
+        port.sendChord(key, mods)
         predictedSel = -1
     }
 

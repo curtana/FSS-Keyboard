@@ -75,6 +75,14 @@ internal object TestStrokes {
         TestStrokes::class.java.getResourceAsStream("/graffiti/templates.json")!!.use { TemplateLoader.load(it) }
     }
 
+    /** The shipped model (LLD-05 7.1). */
+    val model: kbd.graffiti.nn.GraffitiModel by lazy {
+        TestStrokes::class.java.getResourceAsStream(kbd.graffiti.nn.GraffitiModelLoader.RESOURCE)!!.use { kbd.graffiti.nn.GraffitiModelLoader.load(it) }
+    }
+
+    /** The keyboard's recognizer: production templates and the shipped model (SRS FR-GRF-10). */
+    val productionRecognizer: Recognizer by lazy { Recognizer(production, model) }
+
     /** Rounded square |x|^p + |y|^p = 1 traced from [a0]° (screen angles) counter-clockwise on screen. */
     fun superellipse(p: Double, a0: Double, steps: Int = 48) = (0..steps).map { i ->
         val a = Math.toRadians(a0 - 360.0 * i / steps)
@@ -255,7 +263,8 @@ class RecognizerTest {
     private fun assertScribblesUnknown(expect: Expect) {
         var closest = "" to 0f
         for (templates in listOf(TestStrokes.templates, TestStrokes.production)) {
-            val r = Recognizer(templates)
+            // The test templates have no model (their letters are not the model's): they go by the template score alone.
+            val r = if (templates === TestStrokes.production) TestStrokes.productionRecognizer else Recognizer(templates)
             for ((name, shape) in TestStrokes.SCRIBBLES) for (lang in GraffitiLang.entries) for (area in PadArea.entries) {
                 val s = if (area == PadArea.LETTER) TestStrokes.letter(TestStrokes.points(shape))
                 else TestStrokes.number(TestStrokes.points(shape, ox = 330f))

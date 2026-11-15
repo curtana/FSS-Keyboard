@@ -252,24 +252,6 @@ class ComposingControllerTest {
         assertEquals(listOf("begin", "compose(가)", "finish", "sel(3,8)", "end"), port.calls)
     }
 
-    /** SWIPE 0.36 3.4 (#192, LLD D-64): the swipe bare ‥ is shown in place of the composer's ㅣ, which finishing restores. */
-    @Test
-    fun `CC-23 a glyph that replaces the last character - shown in its place, restored on finish and on a user move`() {
-        cc.show(res("", "ㅣ"), "‥", replacesLast = true)
-        assertEquals(listOf("begin", "compose(‥)", "end"), port.calls)
-        assertEquals("‥", cc.composingShown)
-        port.calls.clear()
-        cc.finishComposing()
-        assertEquals(listOf("compose(ㅣ)", "finish"), port.calls)
-        cc.onStart(5, 5)
-        cc.show(res("", "ㅣ"), "‥", replacesLast = true)
-        port.calls.clear()
-        cc.finishAfterUserMove(9, 9, 5, 6)
-        assertEquals(listOf("begin", "compose(ㅣ)", "finish", "sel(9,9)", "end"), port.calls)   // same length: no shift
-        cc.show(res("", "ㅣ"), "", replacesLast = true)                                         // no glyph: nothing replaced
-        assertEquals("ㅣ", cc.composingShown)
-    }
-
     @Test
     fun `CC-16 user moved without glyph only finishes`() {
         cc.show(res("", "가"))

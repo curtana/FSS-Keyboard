@@ -23,7 +23,7 @@ import org.junit.Test
 class GraffitiStrokeTest {
 
     private val templates = TestStrokes.production
-    private val rec = Recognizer(templates)
+    private val rec = TestStrokes.productionRecognizer
 
     private enum class Pending { EXT, PUNCT }
 

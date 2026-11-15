@@ -16,9 +16,9 @@ class MultiPointerQueueTest {
     private val b = key("b") to out("b")
     private val c = key("c") to out("c")
 
-    private val queue = MultiPointerQueue()
+    private val queue = MultiPointerQueue<Pair<TapKeyDef, TapOutput>>()
 
-    private fun up(id: Int, r: Pair<TapKeyDef, TapOutput>) = queue.onUp(id, r.first, r.second)
+    private fun up(id: Int, r: Pair<TapKeyDef, TapOutput>) = queue.onUp(id, r)
 
     @Test
     fun `MQ-01 later key released first waits for the earlier key`() {

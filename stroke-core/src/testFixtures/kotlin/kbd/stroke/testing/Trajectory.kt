@@ -21,8 +21,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 
 /**
- * Trajectory test data (LLD-11 §1.1), shared with gesture-engine tests through `testFixtures`.
- * Kept free of gesture-engine types: [kind], [expectOutcome] and [expectValue] stay strings.
+ * Trajectory test data (LLD-11 §1.1) of the edge-crossing tests, in `testFixtures`. [kind] is a plain name.
  */
 data class TrajectoryKey(val kind: String, val label: String?, val rect: RectDp, val outer: Set<Edge>) {
     fun geom(): KeyGeom = KeyGeom(label ?: kind, rect, outer)
@@ -33,8 +32,6 @@ data class Trajectory(
     val key: TrajectoryKey,
     val thresholds: Thresholds,
     val points: List<StrokePoint>,
-    val expectOutcome: String?,
-    val expectValue: String?,
     /** EC tests: `[["RIGHT","OUT"], …]` as (edge, dir) name pairs. */
     val expectCrossings: List<Pair<String, String>>?,
 )
@@ -91,8 +88,6 @@ object Trajectories {
             key = key,
             thresholds = thresholds,
             points = points,
-            expectOutcome = expect?.get("outcome")?.jsonPrimitive?.content,
-            expectValue = expect?.get("value")?.jsonPrimitive?.content,
             expectCrossings = expect?.get("crossings")?.jsonArray?.map {
                 val pair = it.jsonArray
                 pair[0].jsonPrimitive.content to pair[1].jsonPrimitive.content
@@ -151,13 +146,6 @@ object Trajectories {
             val n = v.num()
             t = when (name) {
                 "minCrossDp" -> t.copy(minCrossDp = n.toFloat())
-                "longDp" -> t.copy(longDp = n.toFloat())
-                "addIDp", "returnLongDp", "turnAngleDeg" -> t   // format 5 has none of these (issue #173)
-                "doubleTapWindowMs" -> t   // format 4 has no time threshold (issue #168)
-                "guideDelayMs" -> t.copy(guideDelayMs = n.toLong())
-                "posTolDp" -> t.copy(posTolDp = n.toFloat())
-                "keySizeWDp" -> t.copy(keySizeWDp = n.toFloat())
-                "keySizeHDp" -> t.copy(keySizeHDp = n.toFloat())
                 else -> error("unknown threshold field: $name")
             }
         }
