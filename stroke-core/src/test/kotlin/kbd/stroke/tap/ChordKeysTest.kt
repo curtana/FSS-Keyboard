@@ -1,10 +1,13 @@
 package kbd.stroke.tap
 
+import kbd.stroke.geom.Diag
 import kbd.stroke.geom.Dir
 import kbd.stroke.geom.Dir.DOWN
 import kbd.stroke.geom.Dir.LEFT
 import kbd.stroke.geom.Dir.RIGHT
 import kbd.stroke.geom.Dir.UP
+import kbd.stroke.geom.WAYS
+import kbd.stroke.geom.Way
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyKind
 import kbd.stroke.layout.TapLayouts
@@ -20,9 +23,9 @@ import org.junit.Test
 class ChordKeysTest {
 
     private val tap = TapGesture.Tap
-    private fun exit(d: Dir) = TapGesture.Exit(d)
-    private fun rub(d: Dir) = TapGesture.Rub(d)
-    private fun back(d: Dir) = TapGesture.ExitReturn(d)
+    private fun exit(d: Way) = TapGesture.Exit(d)
+    private fun rub(d: Way) = TapGesture.Rub(d)
+    private fun back(d: Way) = TapGesture.ExitReturn(d)
 
     private fun plain(k: ChordKey) = ChordStroke(k, shift = false)
     private fun shift(k: ChordKey) = ChordStroke(k, shift = true)
@@ -156,9 +159,9 @@ class ChordKeysTest {
         fun dub(jamo: Char) = d.single { it.jamo == jamo }.id
         assertEquals(plain(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), tap))
         assertEquals(shift(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), exit(UP)))             // ㅃ
-        assertEquals(plain(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), exit(DOWN)))           // ㅄ: QWERTY q ↓ has nothing
-        assertEquals(plain(ChordKey.F), ChordKeys.ofTap(dub('ㄹ'), exit(LEFT)))           // ㄺ: QWERTY f ← has nothing
-        assertEquals(shift(ChordKey.F), ChordKeys.ofTap(dub('ㄹ'), exit(UP)))             // ㅀ
+        assertEquals(plain(ChordKey.Q), ChordKeys.ofTap(dub('ㅂ'), exit(RIGHT)))          // ㅄ: QWERTY q → has nothing
+        assertEquals(plain(ChordKey.F), ChordKeys.ofTap(dub('ㄹ'), exit(LEFT)))           // ㄻ: QWERTY f ← has nothing
+        assertEquals(shift(ChordKey.F), ChordKeys.ofTap(dub('ㄹ'), exit(UP)))             // ㄺ (FSS#109; ㅀ until then)
         assertEquals(shift(ChordKey.M), ChordKeys.ofTap("m", exit(UP)))                   // ㅡ ↑ types ㅡ, still Shift + M
         assertEquals(shift(ChordKey.A), ChordKeys.ofTap(dub('ㅁ'), exit(UP)))             // ㅁ ↑ types ㅁ, still Shift + A
         assertEquals(plain(ChordKey.SEMICOLON), ChordKeys.ofTap(dub('ㅣ'), exit(LEFT)))
@@ -173,10 +176,28 @@ class ChordKeysTest {
         assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), exit(LEFT)))           // ㅕ: QWERTY j ← has nothing
         assertEquals(plain(ChordKey.K), ChordKeys.ofTap(dub('ㅏ'), exit(RIGHT)))          // ㅑ
         assertEquals(plain(ChordKey.N), ChordKeys.ofTap(dub('ㅜ'), exit(DOWN)))           // ㅠ
-        assertEquals(shift(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(UP)))             // ㄾ
+        assertEquals(shift(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(UP)))             // ㅌ since FSS#109 (ㄾ in FSS#107): still Shift + X
         assertEquals(plain(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(LEFT)))           // ㅌ
         assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), rub(LEFT)))
         assertEquals(shift(ChordKey.H), ChordKeys.ofTap(dub('ㅗ'), back(UP)))
+    }
+
+    @Test
+    fun `CM-14 the diagonals of ㄹ send F without Shift, its up sector Shift + F (FSS 109, SRS FR-TAP-02e ⑧)`() {
+        val f = TapLayouts.DUBEOLSIK.keys.single { it.jamo == 'ㄹ' }.id
+        assertEquals("f", f)
+        for (dg in Diag.entries) {
+            for (g in listOf(exit(dg), back(dg), rub(dg))) assertEquals("$g", plain(ChordKey.F), ChordKeys.ofTap(f, g))
+        }
+        assertEquals(shift(ChordKey.F), ChordKeys.ofTap(f, exit(UP)))     // ㄺ
+        assertEquals(shift(ChordKey.F), ChordKeys.ofTap(f, back(UP)))
+        for (d in listOf(LEFT, RIGHT, DOWN)) assertEquals("$d", plain(ChordKey.F), ChordKeys.ofTap(f, exit(d)))   // ㄻ ㅀ ㄿ
+        assertEquals(plain(ChordKey.F), ChordKeys.ofTap(f, rub(UP)))       // the superscript place: the tap's key (FR-TAP-16 ②)
+        assertEquals(plain(ChordKey.F), ChordKeys.ofTap(f, rub(DOWN)))
+        // Every key of the layout has a chord key for every one of the eight directions.
+        for (k in TapLayouts.DUBEOLSIK.keys.filter { it.kind != TapKeyKind.FUNCTION }) {
+            for (w in WAYS) for (g in listOf(exit(w), back(w), rub(w))) ChordKeys.ofTap(k.id, g)
+        }
     }
 
     @Test

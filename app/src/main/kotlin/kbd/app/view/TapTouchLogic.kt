@@ -118,7 +118,7 @@ class TapTouchLogic(
             guard.stroke(SITE_FN) { sink.onFunctionDown(fn) }   // on press, outside the queue (FR-CMN-11, 11a ①)
             if (fn in REPEATING) repeat.start(pointerId, fn)   // FR-CMN-07c, FR-TAP-10
         } else {
-            val c = TapGestureClassifier(g.geoms[i], minCrossDp)
+            val c = TapGestureClassifier(g.geoms[i], minCrossDp, eightWay = key.eightWay)   // diagonals in the data (FSS#109)
             c.begin(p)
             strokes[pointerId] = Stroke(i, key, c)
             queue.onDown(pointerId)

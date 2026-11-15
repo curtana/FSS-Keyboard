@@ -18,6 +18,7 @@ import kbd.app.error.EngineGuard
 import kbd.app.feedback.FeedbackPort
 import kbd.stroke.geom.StrokePoint
 import kbd.stroke.layout.FunctionKey
+import kbd.stroke.geom.Diag
 import kbd.stroke.geom.Dir
 import kbd.stroke.layout.TapKeyDef
 import kbd.stroke.layout.TapKeyKind
@@ -196,12 +197,15 @@ class TapKeyboardView(
 
     /**
      * Edge hints (LLD-05A §3.4, FR-TAP-03b, owner #198): what a stroke out of each edge types where it differs from
-     * the tap ([TapKeyResolver.edgeHints] — a letter's ↑ capital or shift jamo too), in the middle of that edge.
+     * the tap ([TapKeyResolver.edgeHints] — a letter's ↑ capital or shift jamo too), in the middle of that edge. A
+     * key with diagonal assignments (ㄹ, FSS#109) also has them in their corners (FR-TAP-02e ⑥); ↘ = ㄹ is not drawn
+     * because edgeHints leaves out what types the tap.
      */
     private fun drawHints(canvas: Canvas, k: TapKeyDef) {
         val h = kbd.stroke.tap.TapKeyResolver.edgeHints(k)
         val pad = HINT_PAD_DP * density
-        // Each direction's symbol in the middle of its edge (owner #208): ↑ top, ↓ bottom, ← left, → right; no corners.
+        // Each direction's symbol in the middle of its edge (owner #208): ↑ top, ↓ bottom, ← left, → right; the
+        // diagonals in the corners, only on keys that have them (FSS#109).
         val top = keyRect.top + pad - hintPaint.ascent()
         val bottom = keyRect.bottom - pad - hintPaint.descent()
         val mid = keyRect.centerY() - (hintPaint.ascent() + hintPaint.descent()) / 2
@@ -209,6 +213,10 @@ class TapKeyboardView(
         h[Dir.LEFT]?.let { drawHint(canvas, it, keyRect.left + pad, mid, Paint.Align.LEFT) }
         h[Dir.DOWN]?.let { drawHint(canvas, it, keyRect.centerX(), bottom, Paint.Align.CENTER) }
         h[Dir.RIGHT]?.let { drawHint(canvas, it, keyRect.right - pad, mid, Paint.Align.RIGHT) }
+        h[Diag.UP_LEFT]?.let { drawHint(canvas, it, keyRect.left + pad, top, Paint.Align.LEFT) }
+        h[Diag.UP_RIGHT]?.let { drawHint(canvas, it, keyRect.right - pad, top, Paint.Align.RIGHT) }
+        h[Diag.DOWN_LEFT]?.let { drawHint(canvas, it, keyRect.left + pad, bottom, Paint.Align.LEFT) }
+        h[Diag.DOWN_RIGHT]?.let { drawHint(canvas, it, keyRect.right - pad, bottom, Paint.Align.RIGHT) }
     }
 
     private fun drawHint(canvas: Canvas, s: String, x: Float, y: Float, align: Paint.Align) {

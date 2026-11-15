@@ -16,6 +16,7 @@ import kbd.stroke.layout.TapLayouts
 import kbd.stroke.tap.TapOutput
 import kbd.stroke.threshold.ThresholdDefaults
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -83,6 +84,8 @@ class TallEnterViewTest {
     private class Drawn : Canvas() {
         val rects = ArrayList<Pair<RectF, Int>>()
         val labels = ArrayList<Triple<String, Pair<Float, Float>, Float>>()
+        /** The alignment each label was drawn with, in the order of [labels]. */
+        val aligns = ArrayList<Paint.Align>()
 
         override fun drawRoundRect(rect: RectF, rx: Float, ry: Float, paint: Paint) {
             rects += RectF(rect) to paint.color
@@ -90,6 +93,7 @@ class TallEnterViewTest {
 
         override fun drawText(text: String, x: Float, y: Float, paint: Paint) {
             labels += Triple(text, x to y, paint.textSize)
+            aligns += paint.textAlign
         }
     }
 
@@ -161,6 +165,63 @@ class TallEnterViewTest {
         assertEquals(4 * ROW * density + inset, slash.top, 0.5f)
         val space = d.rects[index("space")].first
         assertEquals(216f * density - 2 * inset, space.width(), 0.5f)
+    }
+
+    @Test
+    fun `GJ-02 the diagonals of Dubeolsik ㄹ are drawn in its corners, down-right empty, no corners on other keys (FSS 109)`() {
+        show(TapLayouts.DUBEOLSIK)
+        val d = draw()
+        val inset = 2f * density
+        val pad = 2f * density
+        // ㄹ (f): x 108..144, row 3. What is drawn inside it: the label, four edge hints, three corner hints.
+        val left = 108f * density + inset
+        val right = 144f * density - inset
+        val top = 3 * ROW * density + inset
+        val bottom = 4 * ROW * density - inset
+        val inF = d.labels.indices.filter { i -> d.labels[i].second.let { (x, y) -> x in left..right && y in top..bottom } }
+        val drawn = inF.associate { d.labels[it].first to (d.labels[it].second to d.aligns[it]) }
+        assertEquals(setOf("ㄹ", "ㄺ", "ㄻ", "ㅀ", "ㄿ", "ㄼ", "ㄽ", "ㄾ"), drawn.keys)
+        assertEquals(8, inF.size)
+        val midY = (top + bottom) / 2
+        fun at(s: String) = drawn.getValue(s)
+        // ㄼ top-left, ㄽ top-right, ㄾ bottom-left (FR-TAP-02e ⑥).
+        assertEquals(Paint.Align.LEFT, at("ㄼ").second)
+        assertEquals(left + pad, at("ㄼ").first.first, 0.01f)
+        assertTrue(at("ㄼ").first.second < midY)
+        assertEquals(Paint.Align.RIGHT, at("ㄽ").second)
+        assertEquals(right - pad, at("ㄽ").first.first, 0.01f)
+        assertTrue(at("ㄽ").first.second < midY)
+        assertEquals(Paint.Align.LEFT, at("ㄾ").second)
+        assertEquals(left + pad, at("ㄾ").first.first, 0.01f)
+        assertTrue(at("ㄾ").first.second > midY)
+        // The corners share the rows of the edge hints: ㄼ ㄽ on ㄺ's line, ㄾ on ㄿ's.
+        assertEquals(at("ㄺ").first.second, at("ㄼ").first.second, 0.01f)
+        assertEquals(at("ㄺ").first.second, at("ㄽ").first.second, 0.01f)
+        assertEquals(at("ㄿ").first.second, at("ㄾ").first.second, 0.01f)
+        // Edge hints stay in the middle of their edges.
+        assertEquals(Paint.Align.CENTER, at("ㄺ").second)
+        assertEquals(Paint.Align.CENTER, at("ㄿ").second)
+        assertEquals(Paint.Align.LEFT, at("ㄻ").second)
+        assertEquals(Paint.Align.RIGHT, at("ㅀ").second)
+        // No other key has a corner hint: every LEFT/RIGHT hint off its row's middle line is one of ㄹ's three.
+        val hintSize = d.labels.first { it.first == "ㄼ" }.third
+        val hp = Paint().apply { textSize = hintSize }
+        val corners = d.labels.indices.filter { i ->
+            val (_, p, size) = d.labels[i]
+            val row = Math.floor((p.second / (ROW * density)).toDouble()).toInt()
+            val mid = (row + 0.5f) * ROW * density - (hp.ascent() + hp.descent()) / 2
+            size == hintSize && d.aligns[i] != Paint.Align.CENTER && Math.abs(p.second - mid) > 1f
+        }.map { d.labels[it].first }
+        assertEquals(listOf("ㄼ", "ㄽ", "ㄾ"), corners.sorted())
+        // ㅌ (x) and ㅍ (v) draw nothing but their labels now (ㄾ ㄿ moved to ㄹ).
+        for ((x0, label) in listOf(36f to "ㅌ", 108f to "ㅍ")) {
+            val l = x0 * density + inset
+            val r = (x0 + 36f) * density - inset
+            val t = 4 * ROW * density + inset
+            val b = 5 * ROW * density - inset
+            val inside = d.labels.filter { (_, p, _) -> p.first in l..r && p.second in t..b }.map { it.first }
+            assertEquals(label, listOf(label), inside)
+        }
     }
 
     private fun px(dp: Float): Int = Math.round(dp * density)

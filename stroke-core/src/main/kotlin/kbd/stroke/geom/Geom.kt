@@ -5,8 +5,30 @@ package kbd.stroke.geom
  * every time in ms (`MotionEvent.getEventTime()` base); the app converts px to dp (D-03).
  */
 
+/**
+ * One of the eight stroke directions of a tap-keyboard key (LLD-05A §2.1, SRS FR-TAP-02e, FSS#109): the four of [Dir]
+ * or a [Diag]. [dx], [dy] are the signs of the direction in screen coordinates (y grows downwards): UP = (0, −1).
+ * They are also the (sign of the column difference, sign of the row difference) of the compound-final rule
+ * (SRS FR-TAP-02c ①).
+ */
+sealed interface Way {
+    val dx: Int
+    val dy: Int
+}
+
 /** Screen direction; y grows downwards. */
-enum class Dir { UP, DOWN, LEFT, RIGHT }
+enum class Dir(override val dx: Int, override val dy: Int) : Way { UP(0, -1), DOWN(0, 1), LEFT(-1, 0), RIGHT(1, 0) }
+
+/** A diagonal stroke direction (FSS#109): only keys with a diagonal assignment are judged in eight directions. */
+enum class Diag(override val dx: Int, override val dy: Int) : Way {
+    UP_LEFT(-1, -1), UP_RIGHT(1, -1), DOWN_LEFT(-1, 1), DOWN_RIGHT(1, 1)
+}
+
+/** All eight directions: the four of [Dir], then the four of [Diag]. */
+val WAYS: List<Way> = Dir.entries + Diag.entries
+
+/** The direction whose signs are ([dx], [dy]), or null for (0, 0). */
+fun wayOfSigns(dx: Int, dy: Int): Way? = WAYS.firstOrNull { it.dx == dx && it.dy == dy }
 
 enum class Axis { HORIZONTAL, VERTICAL }
 

@@ -199,11 +199,39 @@ class TallEnterTouchTest {
         stroke(l, "h", 0f, -ROW)         // ↑ from ㅗ onto ㅛ (y)
         stroke(l, "j", -36f, 0f)         // ← from ㅓ onto ㅗ (h)
         stroke(l, "k", 36f, 0f)          // → from ㅏ onto ㅣ (l)
-        stroke(l, "x", 0f, -ROW)         // ↑ from ㅌ onto ㄴ (s): ㄾ (FSS#107)
+        stroke(l, "x", 0f, -ROW)         // ↑ from ㅌ onto ㄴ (s): ㅌ (FSS#109; ㄾ in FSS#107)
         assertEquals(
-            listOf("n:ㅠ:Exit(dir=DOWN)", "h:ㅛ:Exit(dir=UP)", "j:ㅕ:Exit(dir=LEFT)", "k:ㅑ:Exit(dir=RIGHT)", "x:ㄾ:Exit(dir=UP)"),
+            listOf("n:ㅠ:Exit(dir=DOWN)", "h:ㅛ:Exit(dir=UP)", "j:ㅕ:Exit(dir=LEFT)", "k:ㅑ:Exit(dir=RIGHT)", "x:ㅌ:Exit(dir=UP)"),
             sink.events,
         )
+    }
+
+    @Test
+    fun `GJ-01 Dubeolsik ㄹ is judged in eight ways from its data, the first-pressed key decides, other keys stay 4-way (FSS 109)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        stroke(l, "f", -60f, -60f)      // ↖ from ㄹ across ㅇ onto ㅈ (w): still ㄹ's ㄼ
+        stroke(l, "f", 36f, -ROW)        // ↗ onto ㅅ (t): ㄽ
+        stroke(l, "f", -36f, ROW)        // ↙ onto ㅋ/ㅌ: ㄾ
+        stroke(l, "f", 36f, ROW)         // ↘: nothing, the tap's ㄹ
+        stroke(l, "f", 0f, -ROW)         // ↑ onto ㄱ (r): ㄺ
+        stroke(l, "f", -36f, 0f)         // ← onto ㅇ (d): ㄻ
+        stroke(l, "f", 36f, 0f)          // → onto ㅎ (g): ㅀ
+        stroke(l, "f", 0f, ROW)          // ↓ onto ㅍ (v): ㄿ
+        stroke(l, "r", -36f, -36f)       // a diagonal on ㄱ, a 4-way key: the edge crossed first (←), the tap's ㄱ
+        stroke(l, "r", 36f, 0f)          // → onto ㅅ: ㄳ
+        assertEquals(
+            listOf(
+                "f:ㄼ:Exit(dir=UP_LEFT)", "f:ㄽ:Exit(dir=UP_RIGHT)", "f:ㄾ:Exit(dir=DOWN_LEFT)", "f:ㄹ:Exit(dir=DOWN_RIGHT)",
+                "f:ㄺ:Exit(dir=UP)", "f:ㄻ:Exit(dir=LEFT)", "f:ㅀ:Exit(dir=RIGHT)", "f:ㄿ:Exit(dir=DOWN)",
+                "r:ㄱ:Exit(dir=LEFT)", "r:ㄳ:Exit(dir=RIGHT)",
+            ),
+            sink.events,
+        )
+        // QWERTY f is a 4-way key: the same diagonal is the edge crossed first.
+        sink.events.clear()
+        val q = logic(TapLayouts.QWERTY)
+        stroke(q, "f", -36f, -36f)
+        assertEquals(listOf("f:f:Exit(dir=LEFT)"), sink.events)
     }
 
     private companion object {
