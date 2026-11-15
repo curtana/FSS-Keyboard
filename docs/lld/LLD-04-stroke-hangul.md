@@ -1,7 +1,8 @@
 # LLD-04 방향 긋기 판정과 한글 조합
 
 - 대응 HLD 절: 4장(4.2 변 통과 판정, 4.4 HangulComposer)
-- 버전 **0.37** (2026-11-15)
+- 버전 **0.38** (2026-11-15)
+- 0.38(FSS#110 오너 결정 ⌫ "한 단계씩", SRS 0.92 FR-HGL-04f·FR-CMN-07·TBD-39 ②③, HLD 0.85 4.4 "겹모음 자모 한 번에"): 7절 — 두벌식 정책에서 겹모음 `Vowel` 이벤트(ㅘ ㅙ ㅚ ㅝ ㅞ ㅟ ㅢ — 한 번 긋기로 온 것)를 **획 단계 단위**로 쌓는다: 첫 단계 `Vowel`, 이어지는 단계마다 `ReplaceVowel`(ㅙ = `Vowel(ㅗ)`, `ReplaceVowel(ㅘ)`, `ReplaceVowel(ㅙ)`). 단계 표 `JamoTables.VOWEL_STEPS`(LLD-03 3.1), 정책 칸 `ComposePolicy.splitCompoundVowel`(두벌식 참, 그래피티 거짓), `StepOut.then`을 목록으로(겹받침 두 자음도 같은 칸). 새 7.4. 보이는 글자·상태 전이·다음 모음 병합은 그대로이고 `MergeTables.DUBEOLSIK`도 그대로다((ㅘ, ㅣ)·(ㅝ, ㅣ)를 더하지 않음). 그래피티 정책·`ReplaceVowel` 단계·`backspace`·`undoLast`·`snapshot`·`restore`는 코드 그대로다(D-77). 시험 HC-70~HC-75. 7.2의 `ReplaceVowel` 줄에 0.16 이전 문구("모음 단위를 `Vowel(v)` 하나로 바꾼다")가 남아 있던 것을 7.1과 맞게 고쳤다(동작 변화 없음)
 - 0.37(FSS#105, SRS 0.89 FR-TAP-03d, HLD 0.82 5A): 2절 `KeyHitTester` 근거 문구만 고쳤다 — 탭 자판에 들여쓰기 빈칸이 없어져(LLD-05A 0.21 3.2) 탭 자판 안의 점은 모두 처리 1(사각형 포함)로 정해진다. 처리 2(가장 가까운 키)는 그대로 둔다(키 영역 밖 좌표·부동소수 경계용). 함수 동작은 바뀌지 않았다.
 - 0.36(FSS#95, SRS 0.86·HLD 0.79: 긋기 입력 모드 삭제): 파일 이름을 `LLD-04-swipe.md`에서 바꾸고, 탭 자판·모드 키·그래피티가 쓰는 **2절(키 찾기)·3절(변 통과 추적)·7절(조합기)만 남긴다. 절 번호는 그대로**라 다른 문서·코드의 "LLD-04 §2·§3·§7" 참조는 그대로 맞다. 4절(`StrokeClassifier`)·5절(`ProgressState`)·6절(`SwipeInputMapper`·`VowelStrokeAssembler`)·8절(긋기 자판 배치 데이터)·9절(긋기 자판 뷰·획 자국·가운데 글자)·10절(시퀀스)은 그 코드(`gesture-engine` 모듈, `kbd.app.swipe`, `kbd.hangul.stroke`)와 함께 지웠다(번호 재사용 없음). 7절: `ComposePolicy.SWIPE`와 `lastConsonant()`(쓰는 곳이 긋기 자판뿐)를 지웠다(정책은 두벌식·그래피티 둘, 두 정책의 표·동작은 그대로). `JamoEvent.DoubleConsonant`·`UndoLast`와 `EdgeCrossingTracker.copy()`·`nthCrossingOf`는 모듈의 공용 형식으로 남긴다. 0.35까지의 긋기 쪽 변경 이력은 git 이력에 있다.
 - 0.35(FSS#84, SRS 0.82 FR-CMN-14 ⑧·FR-SWP-45, HLD 0.75 4.2·5A): `KeyGeom.build`에 `sideDp`(테두리의 왼쪽·오른쪽이 자판에서 여유 칸만큼 밖, 2절). 양 끝 열의 바깥쪽 획은 보통 변 통과다. `EdgeCrossingTracker`는 그대로.
@@ -122,9 +123,10 @@ class EdgeCrossingTracker(val key: KeyGeom, val minCrossDp: Float) {
 ### 7.1 타입
 
 ```kotlin
-data class ComposePolicy(val name: String, val merge: VowelMergeTable, val mergeConsecutiveVowel: Boolean) {
+data class ComposePolicy(val name: String, val merge: VowelMergeTable, val mergeConsecutiveVowel: Boolean,
+                         val splitCompoundVowel: Boolean = false) {   // 0.38: 겹모음 Vowel 이벤트를 획 단계로 쌓음(7.4)
     companion object {
-        val DUBEOLSIK = ComposePolicy("dubeolsik", MergeTables.DUBEOLSIK, true)
+        val DUBEOLSIK = ComposePolicy("dubeolsik", MergeTables.DUBEOLSIK, true, splitCompoundVowel = true)
         val GRAFFITI  = ComposePolicy("graffiti",  MergeTables.NONE,      false)
     }
 }
@@ -159,7 +161,7 @@ class HangulComposer(val policy: ComposePolicy,
 - 그래피티 정책은 같은 표를 쓰고 모음 병합만 없다(`MergeTables.NONE`, `mergeConsecutiveVowel` = false): `Vowel` 뒤 `Vowel`은 늘 "확정, 새 중성만 v"다. 그래피티의 모음은 천지인 조립 결과라 첫 요소가 `Vowel`, 이어지는 요소가 `ReplaceVowel`로 온다(LLD-05 4절). 받침 뒤 모음은 도깨비불이다(각 + ㅣ = 가기, 닭 + ㅣ = 달기).
 - 쌍자음은 `Consonant(ㄲ)`처럼 자음 이벤트 하나로 온다(두벌식 ↑, 그래피티 쌍자음 획). 쌍받침 ㄲ·ㅆ은 받침이 되고, ㄸ·ㅃ·ㅉ(받침 불가)은 앞 글자를 확정하고 새 초성이 된다(아ㅃ). 받침 ㄱ 뒤 `Consonant(ㄱ)`은 겹받침이 아니라(COMPOUND_JONG에 없음) 확정, 새 초성이다(곡 + ㄱ = 곡ㄱ).
 - `DoubleConsonant(b)` = `Consonant(DOUBLE_OF[b])`로 처리하고 단위에는 그대로 쌓는다. `DOUBLE_OF[b]`가 없으면 무시하고 오류를 보고한다(D-09, G9). 앱에는 이 이벤트와 `UndoLast` 이벤트를 내는 곳이 없다(core-hangul 이벤트 형식으로 남김, HC 시험 그대로. 그래피티는 `undoLast()` 함수를 직접 부른다).
-- `ReplaceVowel(v)`: 중성이 있고 받침이 없으면 중성을 v로 바꾸고 모음 단위를 `Vowel(v)` 하나로 바꾼다. 아니면 무시하고 오류 기록(D-09).
+- `ReplaceVowel(v)`: 중성이 있고 받침이 없으면 중성을 v로 바꾸고 자기 자신을 단위로 쌓는다(7.1, 0.16). 병합 표는 보지 않는다. 아니면 무시하고 오류 기록(D-09). 두벌식에서는 앱이 이 이벤트를 보내지 않고 조합기가 겹모음의 획 단계를 쌓을 때만 생긴다(7.4).
 - 오류 기록(D-09)은 생성자의 `onInvalid(메시지)`로 한 번 보고한다. core-hangul은 `ErrorLog`(app)를 볼 수 없어서 앱이 조합기를 만들 때 오류 기록 함수를 넘긴다(G5).
 - 글자 문자열(`render`): 초성·중성이 있으면 U+AC00 공식, 초성만·중성만이면 호환 자모(`Jamo.compat`), 빔이면 "". 겹받침은 `COMPOUND_JONG`의 결과 자모로 종성 인덱스를 얻는다.
 
@@ -194,6 +196,37 @@ class HangulComposer(val policy: ComposePolicy,
 - `snapshot()` / `restore(s)`: `units` 복사(LLD-09). 시험: HC-53.
 
 - 앱에는 조합기가 하나다. 모드가 바뀌면 확정 뒤 새 정책으로 다시 만든다(HLD 2장 "조합 상태는 앱이 가진 조합기 하나", D-10).
+
+### 7.4 겹모음 자모 한 번에 — 획 단계 단위 (0.38, SRS FR-HGL-04f, HLD 4.4, FSS#110)
+
+두벌식 탭 자판은 ㅗ·ㅜ·ㅡ 키를 덧붙는 획의 방향으로 한 번 그으면 겹모음 자모 하나(`Vowel(ㅘ)` 등)를 보낸다(LLD-05A 3.3 겹모음 배정표, SRS FR-TAP-02g). **모음은 덧붙는 획이 뻗는 방향, 자음 겹받침은 뒤 자음 키의 위치**가 배정 원리이고(LLD-05A 3.3), ⌫는 그 획을 하나씩 되돌린다(오너 결정 "한 단계씩").
+
+```kotlin
+// JamoTables (LLD-03 3.1)
+val VOWEL_STEPS: Map<Jamo, List<Jamo>>   // ㅘ [ㅗ, ㅘ], ㅙ [ㅗ, ㅘ, ㅙ], ㅚ [ㅗ, ㅚ], ㅝ [ㅜ, ㅝ], ㅞ [ㅜ, ㅝ, ㅞ], ㅟ [ㅜ, ㅟ], ㅢ [ㅡ, ㅢ]
+// HangulComposer (private)
+private fun vowelUnits(v: Jamo, unit: JamoEvent): List<JamoEvent>
+private class StepOut(…, val then: List<JamoEvent> = emptyList())   // 0.38: 0.37까지 JamoEvent?(겹받침 둘째 자음)
+```
+
+- **`vowelUnits(v, unit)`:** `policy.splitCompoundVowel`이고 `VOWEL_STEPS[v]`가 있으면 `[Vowel(단계 1), ReplaceVowel(단계 2), …]`, 아니면 `[unit]`(지금까지와 같음). 단계는 SRS FR-HGL-04f ③(덧붙는 획 ㅏ·ㅓ 다음 ㅣ)과 같고 마지막 단계가 그 겹모음이다.
+- **`vowel(s, v, unit)`이 쌓는 것**(상태 전이 `next`·`commit`은 0.37과 같음 — 7.2 표):
+
+| 지금 상태 | 0.37까지 단위 | 0.38 단위(겹모음, 두벌식) | 보이는 글자 |
+|---|---|---|---|
+| 빔 | `[Vowel(ㅘ)]` | `[Vowel ㅗ, Replace ㅘ]` | ㅘ |
+| 초성만(ㄱ) | `+ Vowel(ㅘ)` | `+ Vowel ㅗ, Replace ㅘ` | 과 |
+| 낱자 겹받침(ㄺ) | 확정 ㄹ, `[ㄱ, Vowel ㅘ]` | 확정 ㄹ, `[ㄱ, Vowel ㅗ, Replace ㅘ]` | ㄹ과 |
+| 중성 있음·받침 없음(고), 병합 없음 | 확정 고, `[Vowel ㅘ]` | 확정 고, `[Vowel ㅗ, Replace ㅘ]` | 고ㅘ |
+| 받침 하나(각) | 확정 가, `[ㄱ, Vowel ㅘ]` | 확정 가, `[ㄱ, Vowel ㅗ, Replace ㅘ]` | 가과 |
+| 겹받침(갉) | 확정 갈, `[ㄱ, Vowel ㅘ]` | 확정 갈, `[ㄱ, Vowel ㅗ, Replace ㅘ]` | 갈과 |
+
+- 병합이 일어나는 칸(중성 u + v, merge(u, v) = m)은 겹모음 v에서 생기지 않는다(두벌식 표의 둘째 모음은 모두 홑모음). 생겨도 단위는 `unit` 그대로다.
+- **왜 `ReplaceVowel`인가(D-77):** 이어지는 단계를 `Vowel`로 쌓으면 접을 때 병합 표를 보므로 (ㅗ, ㅘ)·(ㅘ, ㅙ)가 표에 없어 확정이 일어나(고ㅘ) 불변식(접을 때 확정 없음, 7.1)이 깨진다. 표에 그 줄을 더하면 키로 친 과 + ㅣ가 괘가 된다(SRS FR-HGL-04f ②). `ReplaceVowel`은 중성을 표 없이 바꾸고 자기 자신이 단위라(7.1, 0.16) 새 이벤트 없이 단계를 나타낸다. 단계의 앞(초성 + `Vowel`)은 중성이 있고 받침이 없으므로 `ReplaceVowel`의 조건이 늘 맞다(오류 기록 없음, 시험 HC-70~HC-75의 `reports` 비어 있음).
+- **⌫·되돌림:** `backspace()`·`undoLast()`는 그대로(목록 끝 하나를 빼고 접음)라 한 단계씩이다 — 괘 → 과 → 고 → ㄱ, 궤 → 궈 → 구 → ㄱ, 괴 → 고, 귀 → 구, 의 → 으, 홀로 ㅘ → ㅗ → 빔, 가과 → 가고 → 가ㄱ(넘어간 ㄱ 뒤부터), 고ㅘ → 고ㅗ, 곽 → 과 → 고. `snapshot`·`restore`(LLD-09)는 같은 목록을 복사하므로 오류 복구도 같은 단계다.
+- **되돌린 뒤 이어 치기:** 남은 목록의 상태는 그 글자를 키로 친 상태와 같다 — 괘 ⌫(= `[ㄱ, Vowel ㅗ, Replace ㅘ]`, 중성 ㅘ) + ㅣ 키 = (ㅘ, ㅣ) 병합 없음 → 과ㅣ, 과 ⌫(= `[ㄱ, Vowel ㅗ]`) + ㅏ 키 = 과, + ㅐ = 괘.
+- **바뀌지 않는 것:** 다음 모음과의 병합(과 + ㅣ = 과ㅣ, 지금 동작을 HC-71이 고정), 키로 친 겹모음(ㄱ ㅗ ㅏ, ㄱ ㅗ ㅐ — 키 하나가 단위 하나, ⌫ = 고), 짝 모음 ㅛ·ㅕ·ㅑ·ㅠ와 시프트 자모 ㅒ·ㅖ(`VOWEL_STEPS`에 없음), **그래피티 정책**(`splitCompoundVowel` 거짓 — 천지인 조립기가 `Vowel`·`ReplaceVowel`을 보내는 지금 길, `Vowel(ㅘ)`도 단위 하나, BS-20·HC-75), 쿼티(조합기 없음), 확정 경계.
+- 근거: SRS FR-HGL-04f ①~④, FR-CMN-07, FR-HGL-04d 시험 사례, HLD 4.4. 시험: HC-70(보이는 글자 고정), HC-71(다음 모음 고정), HC-72(⌫ 단계), HC-73(되돌린 뒤 이어 치기), HC-74(`undoLast`·`snapshot`), HC-75(키 입력·그래피티·한 키 모음 그대로), ID-43(앱 길).
 
 ## 8. ~~긋기 자판 배치 데이터~~ — 삭제 (FSS#95)
 
