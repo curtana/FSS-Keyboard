@@ -14,8 +14,8 @@ android {
         applicationId = "kbd.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 3
-        versionName = "0.1.0-alpha.3"
+        versionCode = 4
+        versionName = "0.1.0-alpha.4"
     }
 
     // One edition (owner, issue #251): no product flavors.
