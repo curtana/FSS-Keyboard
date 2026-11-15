@@ -431,4 +431,126 @@ class HangulComposerTest {
         c.type(ev("ㄺ"))
         assertEquals("", c.bs().composing)                  // ⌫ takes the lone compound away
     }
+
+    // --- A compound vowel typed at once (FSS#110, SRS FR-HGL-04f, LLD-04 §7.4) ----------------------------
+
+    /** Feeds [events]; returns the editor text and the composer. */
+    private fun at(s: String, policy: ComposePolicy = ComposePolicy.DUBEOLSIK): Pair<StringBuilder, HangulComposer> {
+        val c = composer(policy)
+        val shown = StringBuilder()
+        for (e in ev(s)) shown.append(c.apply(e).committed)
+        return shown to c
+    }
+
+    /** The editor text after one ⌫ each time: committed text + composing text. */
+    private fun Pair<StringBuilder, HangulComposer>.backs(n: Int): List<String> =
+        (1..n).map { first.toString() + second.bs().composing }
+
+    @Test
+    fun `HC-70 a compound vowel event shows the same text as before - initial, alone, after a syllable, dokkaebibul (FSS 110)`() {
+        // Pinned on the code before FSS#110 (develop 0c648fb); the unit split must not change any of it.
+        val one = mapOf("ㄱㅘ" to "과", "ㄱㅙ" to "괘", "ㄱㅚ" to "괴", "ㄱㅝ" to "궈", "ㄱㅞ" to "궤", "ㄱㅟ" to "귀", "ㅇㅢ" to "의")
+        for ((s, want) in one) assertEquals(s, want, typed(s))
+        // The same as the keys typed one after the other (ㄱ ㅗ ㅏ = 과, ㄱ ㅗ ㅐ = 괘 …).
+        val keys = mapOf("ㄱㅘ" to "ㄱㅗㅏ", "ㄱㅙ" to "ㄱㅗㅐ", "ㄱㅚ" to "ㄱㅗㅣ", "ㄱㅝ" to "ㄱㅜㅓ",
+            "ㄱㅞ" to "ㄱㅜㅔ", "ㄱㅟ" to "ㄱㅜㅣ", "ㅇㅢ" to "ㅇㅡㅣ")
+        for ((s, k) in keys) assertEquals(s, typed(k), typed(s))
+        assertEquals("ㅘ", typed("ㅘ"))                 // alone
+        assertEquals("ㅙ", typed("ㅙ"))
+        assertEquals("가과", typed("ㄱㅏㄱㅘ"))         // dokkaebibul
+        assertEquals("갈과", typed("ㄱㅏㄹㄱㅘ"))       // after a compound final
+        assertEquals("ㄹ과", typed("ㄺㅘ"))             // after a lone compound final
+        assertEquals("고ㅘ", typed("ㄱㅗㅘ"))           // (ㅗ, ㅘ) is not in the table: 고 is committed
+        assertEquals("ㅗㅘ", typed("ㅗㅘ"))
+        assertEquals("곽", typed("ㄱㅘㄱ"))             // a final after it
+        assertEquals("과가", typed("ㄱㅘㄱㅏ"))
+        assertTrue(reports.isEmpty())
+    }
+
+    @Test
+    fun `HC-71 a vowel after a compound vowel event never merges, as after the keys (FSS 110, FR-HGL-04f ②)`() {
+        // Pinned before FSS#110: 과 + ㅣ = 과ㅣ (no (ㅘ, ㅣ) in the table), the same as ㄱ ㅗ ㅏ ㅣ.
+        assertEquals("과ㅣ", typed("ㄱㅘㅣ"))
+        assertEquals(typed("ㄱㅗㅏㅣ"), typed("ㄱㅘㅣ"))
+        assertEquals("궈ㅣ", typed("ㄱㅝㅣ"))
+        assertEquals("과ㅏ", typed("ㄱㅘㅏ"))
+        assertEquals("의ㅣ", typed("ㅇㅢㅣ"))
+        assertEquals("괘ㅣ", typed("ㄱㅙㅣ"))
+        assertEquals("ㅘㅣ", typed("ㅘㅣ"))
+    }
+
+    @Test
+    fun `HC-72 backspace takes a compound vowel event back one stroke step at a time (FSS 110, FR-HGL-04f ③)`() {
+        assertEquals(listOf("고", "ㄱ", ""), at("ㄱㅘ").backs(3))
+        assertEquals(listOf("과", "고", "ㄱ", ""), at("ㄱㅙ").backs(4))      // ㅙ = ㅗ · ㅏ · ㅣ
+        assertEquals(listOf("궈", "구", "ㄱ", ""), at("ㄱㅞ").backs(4))      // ㅞ = ㅜ · ㅓ · ㅣ
+        assertEquals(listOf("고"), at("ㄱㅚ").backs(1))
+        assertEquals(listOf("구"), at("ㄱㅝ").backs(1))
+        assertEquals(listOf("구"), at("ㄱㅟ").backs(1))
+        assertEquals(listOf("으"), at("ㅇㅢ").backs(1))
+        assertEquals(listOf("ㅗ", ""), at("ㅘ").backs(2))                    // alone too
+        assertEquals(listOf("ㅝ", "ㅜ", ""), at("ㅞ").backs(3))
+        assertEquals(listOf("가고", "가ㄱ"), at("ㄱㅏㄱㅘ").backs(2))        // dokkaebibul: from the moved ㄱ on
+        assertEquals(listOf("갈고"), at("ㄱㅏㄹㄱㅘ").backs(1))
+        assertEquals(listOf("ㄹ고", "ㄹㄱ"), at("ㄺㅘ").backs(2))
+        assertEquals(listOf("고ㅗ", "고"), at("ㄱㅗㅘ").backs(2))           // after a committed syllable
+        assertEquals(listOf("과", "고"), at("ㄱㅘㄱ").backs(2))              // 곽: the final first
+        val c = at("ㄱㅙ").second
+        assertEquals(BackspaceResult.Handled(ComposeResult("", "과")), c.backspace())
+        assertTrue(reports.isEmpty())
+    }
+
+    @Test
+    fun `HC-73 after backspace the syllable goes on as if those keys were typed (FSS 110, FR-HGL-04f ③)`() {
+        fun after(s: String, back: Int, next: String): String {
+            val (shown, c) = at(s)
+            repeat(back) { c.bs() }
+            for (e in ev(next)) shown.append(c.apply(e).committed)
+            return shown.toString() + c.composingText()
+        }
+        assertEquals("과ㅣ", after("ㄱㅙ", 1, "ㅣ"))        // 괘 ⌫ = 과, then ㅣ: 과ㅣ (FR-HGL-04d)
+        assertEquals("과", after("ㄱㅘ", 1, "ㅏ"))          // 과 ⌫ = 고, then ㅏ: 과
+        assertEquals("괘", after("ㄱㅘ", 1, "ㅐ"))          // 고 + ㅐ = 괘
+        assertEquals("괴", after("ㄱㅙ", 2, "ㅣ"))          // 고 + ㅣ = 괴
+        assertEquals("곽", after("ㄱㅙ", 1, "ㄱ"))          // 과 + ㄱ = 곽
+        assertEquals("가과", after("ㄱㅏㄱㅘ", 1, "ㅏ"))
+        assertEquals("ㅘ", after("ㅘ", 1, "ㅏ"))            // alone: ㅗ + ㅏ
+        assertTrue(reports.isEmpty())
+    }
+
+    @Test
+    fun `HC-74 undoLast and snapshot use the same stroke steps (FSS 110, FR-HGL-04f ④, LLD-09)`() {
+        val c = at("ㄱㅙ").second
+        val snap = c.snapshot()
+        assertEquals("과", c.undoLast().composing)
+        assertEquals("고", c.apply(UndoLast).composing)
+        c.restore(snap)
+        assertEquals("괘", c.composingText())
+        assertEquals("과", c.bs().composing)
+        assertEquals(Jamo.WA, c.currentVowel())
+        assertFalse(c.hasJong())
+        assertTrue(reports.isEmpty())
+    }
+
+    @Test
+    fun `HC-75 keys typed one by one, the graffiti policy and one-key vowels stay one unit each (FSS 110, FR-HGL-04f ④)`() {
+        assertEquals(listOf("고"), at("ㄱㅗㅏ").backs(1))      // keys: ㅏ is one unit
+        assertEquals(listOf("고"), at("ㄱㅗㅐ").backs(1))      // 괘 by keys: ⌫ = 고
+        assertEquals(listOf("구"), at("ㄱㅜㅔ").backs(1))
+        assertEquals(listOf("ㅗ"), at("ㅗㅏ").backs(1))
+        assertEquals(listOf("ㄱ"), at("ㄱㅛ").backs(1))        // paired vowel: one key
+        assertEquals(listOf("ㄱ"), at("ㄱㅒ").backs(1))        // shift jamo: one key
+        assertEquals(listOf("ㄱ"), at("ㄱㅐ").backs(1))
+        // Graffiti: no split, the vowel event is one unit (BS-20 too).
+        for (v in "ㅘㅙㅚㅝㅞㅟㅢ") {
+            assertEquals("$v", listOf("ㄱ"), at("ㄱ$v", ComposePolicy.GRAFFITI).backs(1))
+            assertEquals("$v alone", listOf(""), at("$v", ComposePolicy.GRAFFITI).backs(1))
+            assertEquals("$v dokkaebibul", listOf("가ㄱ"), at("ㄱㅏㄱ$v", ComposePolicy.GRAFFITI).backs(1))
+        }
+        val g = at("ㄱ", ComposePolicy.GRAFFITI).second
+        g.apply(Vowel(Jamo.O)); g.apply(ReplaceVowel(Jamo.WA))
+        assertEquals("과", g.composingText())
+        assertEquals("고", g.bs().composing)                    // a cheonjiin step is its own unit, as before
+        assertTrue(reports.isEmpty())
+    }
 }

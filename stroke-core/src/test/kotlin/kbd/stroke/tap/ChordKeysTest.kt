@@ -245,4 +245,19 @@ class ChordKeysTest {
         }
         assertEquals(listOf(ChordModifier.CTRL, ChordModifier.ALT, ChordModifier.SHIFT), ChordModifier.entries.toList())
     }
+
+    @Test
+    fun `CM-15 the compound-vowel places of ㅗ ㅜ ㅡ send H N M, the up sector with Shift (FSS 110, SRS FR-TAP-02g ⑦)`() {
+        val keys = mapOf('ㅗ' to ChordKey.H, 'ㅜ' to ChordKey.N, 'ㅡ' to ChordKey.M)
+        for ((jamo, ck) in keys) {
+            val id = TapLayouts.DUBEOLSIK.keys.single { it.jamo == jamo }.id
+            assertEquals(shift(ck), ChordKeys.ofTap(id, exit(UP)))            // ㅛ ㅟ, and ㅡ's empty ↑
+            assertEquals(shift(ck), ChordKeys.ofTap(id, back(UP)))
+            assertEquals(plain(ck), ChordKeys.ofTap(id, tap))
+            for (w in WAYS.filter { it != UP }) {
+                for (g in listOf(exit(w), back(w), rub(w))) assertEquals("$jamo $g", plain(ck), ChordKeys.ofTap(id, g))
+            }
+            assertEquals(plain(ck), ChordKeys.ofTap(id, rub(UP)))
+        }
+    }
 }

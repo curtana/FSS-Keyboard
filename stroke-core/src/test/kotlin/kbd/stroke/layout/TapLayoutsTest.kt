@@ -254,19 +254,20 @@ class TapLayoutsTest {
                 assertTrue("${k.id} $d $placed", placed.size <= 1)
             }
         }
-        // 11 compound finals and 4 paired vowels, each once.
-        assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅑㅕㅛㅠ".toList(), letters.flatMap { it.dirJamo.values }.sorted())
+        // 11 compound finals, 4 paired vowels and 7 compound vowels (FSS#110), each once.
+        assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅑㅕㅛㅠㅘㅙㅚㅝㅞㅟㅢ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
         assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
     }
     @Test
-    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik f only (FSS 109)`() {
-        assertEquals(listOf("f"), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id })
+    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik f h n (FSS 109, 110)`() {
+        assertEquals(listOf("f", "h", "n"), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id })   // ㄹ ㅗ ㅜ
         assertTrue(TapLayouts.QWERTY.keys.none { it.eightWay })
         for (k in TapLayouts.DUBEOLSIK.keys) assertEquals(k.id, k.dirJamo.keys.any { it is kbd.stroke.geom.Diag }, k.eightWay)
         // A key gets eight directions by its data alone: the same key with one diagonal added is an 8-way key.
-        val o = TapLayouts.DUBEOLSIK.key("h")
-        assertEquals(false, o.eightWay)
-        assertEquals(true, o.copy(dirJamo = o.dirJamo + (kbd.stroke.geom.Diag.DOWN_RIGHT to 'ㅘ')).eightWay)
+        val a = TapLayouts.DUBEOLSIK.key("k")
+        assertEquals(false, a.eightWay)
+        assertEquals(true, a.copy(dirJamo = a.dirJamo + (kbd.stroke.geom.Diag.DOWN_RIGHT to 'ㅘ')).eightWay)
+        assertEquals(false, TapLayouts.DUBEOLSIK.key("m").eightWay)   // ㅡ: ㅢ is ↓, no diagonal (FSS#110)
     }
 
     @Test
@@ -293,5 +294,42 @@ class TapLayoutsTest {
         }
         // No two compound finals of one key share a direction (the rule could give that; this layout does not).
         assertEquals(11, computed.values.sumOf { it.size })
+    }
+
+    @Test
+    fun `TL-12 the compound-vowel table is the stroke-direction rule - vowels by their strokes, not by key positions (FSS 110, SRS FR-TAP-02g ①)`() {
+        // Each compound vowel: the key's vowel and the strokes added to it (Unicode, not the assignment).
+        val parts = mapOf(
+            'ㅘ' to ('ㅗ' to "ㅏ"), 'ㅚ' to ('ㅗ' to "ㅣ"), 'ㅙ' to ('ㅗ' to "ㅏㅣ"),
+            'ㅝ' to ('ㅜ' to "ㅓ"), 'ㅟ' to ('ㅜ' to "ㅣ"), 'ㅞ' to ('ㅜ' to "ㅓㅣ"),
+            'ㅢ' to ('ㅡ' to "ㅣ"),
+        )
+        // The way each added stroke goes: ㅏ right, ㅓ left, ㅣ down (x right +, y down +, as FR-TAP-02c ①).
+        val stroke = mapOf('ㅏ' to (1 to 0), 'ㅓ' to (-1 to 0), 'ㅣ' to (0 to 1))
+        val computed = HashMap<Char, MutableMap<kbd.stroke.geom.Way, Char>>()
+        for ((cv, kv) in parts) {
+            val (key, added) = kv
+            val sx = Integer.signum(added.sumOf { stroke.getValue(it).first })
+            var sy = Integer.signum(added.sumOf { stroke.getValue(it).second })
+            // Where the key's paired vowel is, the vertical flips (ㅜ + ㅣ = ↓ is ㅠ's: ㅟ is ↑).
+            val pairWays = TapLayouts.PAIR_VOWEL[key].orEmpty().keys
+            if (kbd.stroke.geom.wayOfSigns(sx, sy) in pairWays) sy = -sy
+            val way = checkNotNull(kbd.stroke.geom.wayOfSigns(sx, sy)) { "$cv" }
+            computed.getOrPut(key) { LinkedHashMap() }[way] = cv
+        }
+        assertEquals(TapLayouts.COMPOUND_VOWEL, computed)
+        // On the keys: each compound vowel exactly once, on its vowel's key, in the computed direction.
+        for ((cv, kv) in parts) {
+            val at = TapLayouts.DUBEOLSIK.keys.flatMap { k -> k.dirJamo.filterValues { it == cv }.keys.map { k.jamo to it } }
+            assertEquals("$cv", listOf(kv.first to computed.getValue(kv.first).entries.single { it.value == cv }.key), at)
+        }
+        assertEquals(7, computed.values.sumOf { it.size })
+        // Not the consonant rule (key positions, TL-11): from ㅜ (n) the ㅓ key (j) is up-right, yet ㅝ is left.
+        val byJamo = TapLayouts.DUBEOLSIK.keys.filter { it.kind == TapKeyKind.DUBEOLSIK_LETTER }.associateBy { it.jamo!! }
+        fun col(k: TapKeyDef) = (k.x / 36f).toInt()
+        val u = byJamo.getValue('ㅜ')
+        val eo = byJamo.getValue('ㅓ')
+        assertEquals(kbd.stroke.geom.Diag.UP_RIGHT, kbd.stroke.geom.wayOfSigns(Integer.signum(col(eo) - col(u)), Integer.signum(eo.row - u.row)))
+        assertEquals('ㅝ', TapLayouts.COMPOUND_VOWEL.getValue('ㅜ')[kbd.stroke.geom.Dir.LEFT])
     }
 }

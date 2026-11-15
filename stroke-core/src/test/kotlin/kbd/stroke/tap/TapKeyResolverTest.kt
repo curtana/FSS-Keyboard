@@ -284,9 +284,9 @@ class TapKeyResolverTest {
         assertRow(TapLayouts.DUBEOLSIK, "x", j('ㅌ'), j('ㅌ'), j('ㅌ'), j('ㅌ'), j('ㅌ'))
         assertRow(TapLayouts.DUBEOLSIK, "v", j('ㅍ'), j('ㅍ'), j('ㅍ'), j('ㅍ'), j('ㅍ'))
         // Each of the 11 compound finals is on exactly one key and one direction, on the four keys r s f q.
-        val placed = TapLayouts.DUBEOLSIK.keys.filter { it.jamo !in PAIR_KEYS }.flatMap { it.dirJamo.values }
+        val placed = TapLayouts.DUBEOLSIK.keys.filter { it.jamo !in VOWEL_KEYS }.flatMap { it.dirJamo.values }
         assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ".toList(), placed.sorted())
-        val carriers = TapLayouts.DUBEOLSIK.keys.filter { it.dirJamo.isNotEmpty() && it.jamo !in PAIR_KEYS }
+        val carriers = TapLayouts.DUBEOLSIK.keys.filter { it.dirJamo.isNotEmpty() && it.jamo !in VOWEL_KEYS }
         assertEquals(setOf("r", "s", "f", "q"), carriers.map { it.id }.toSet())
         // Exit-and-return is the exit; an up/down rub is the plain jamo (SRS tap action table rows 5, 6, 8).
         for (key in carriers) {
@@ -311,11 +311,12 @@ class TapKeyResolverTest {
 
     @Test
     fun `TA-22 Dubeolsik paired vowels - ㅗ up ㅛ, ㅓ left ㅕ, ㅏ right ㅑ, ㅜ down ㅠ, everything else unchanged (FSS 104)`() {
-        // The whole table (SRS FR-TAP-02d): tap / ↑ / ← / → / ↓ of the four keys; the other directions type the vowel.
-        assertRow(TapLayouts.DUBEOLSIK, "h", j('ㅗ'), j('ㅛ'), j('ㅗ'), j('ㅗ'), j('ㅗ'))
+        // The whole table (SRS FR-TAP-02d): tap / ↑ / ← / → / ↓ of the four keys; the other directions type the vowel,
+        // except the compound vowels of ㅗ and ㅜ since FSS#110 (ㅗ ↓ ㅚ → ㅘ, ㅜ ← ㅝ ↑ ㅟ, TA-25).
+        assertRow(TapLayouts.DUBEOLSIK, "h", j('ㅗ'), j('ㅛ'), j('ㅗ'), j('ㅘ'), j('ㅚ'))
         assertRow(TapLayouts.DUBEOLSIK, "j", j('ㅓ'), j('ㅓ'), j('ㅕ'), j('ㅓ'), j('ㅓ'))
         assertRow(TapLayouts.DUBEOLSIK, "k", j('ㅏ'), j('ㅏ'), j('ㅏ'), j('ㅑ'), j('ㅏ'))
-        assertRow(TapLayouts.DUBEOLSIK, "n", j('ㅜ'), j('ㅜ'), j('ㅜ'), j('ㅜ'), j('ㅠ'))
+        assertRow(TapLayouts.DUBEOLSIK, "n", j('ㅜ'), j('ㅟ'), j('ㅝ'), j('ㅜ'), j('ㅠ'))
         // Exit-and-return is the exit; a left/right rub is the exit (ㅓ ← rub = ㅕ); an up/down rub is the plain vowel.
         for (id in listOf("h", "j", "k", "n")) {
             val key = TapLayouts.DUBEOLSIK.keys.single { it.id == id }
@@ -333,16 +334,17 @@ class TapKeyResolverTest {
         assertRow(TapLayouts.DUBEOLSIK, "i", j('ㅑ'), j('ㅑ'), t("["), t("]"), j('ㅑ'))
         assertRow(TapLayouts.DUBEOLSIK, "b", j('ㅠ'), j('ㅠ'), j('ㅠ'), j('ㅠ'), j('ㅠ'))
         // Only the four keys carry paired vowels, one each.
-        val vowels = TapLayouts.DUBEOLSIK.keys.filter { it.jamo in PAIR_KEYS }.associate { it.jamo!! to it.dirJamo }
+        val vowels = TapLayouts.DUBEOLSIK.keys.filter { it.jamo in PAIR_KEYS }
+            .associate { k -> k.jamo!! to k.dirJamo.filterValues { it in "ㅛㅕㅑㅠ" } }
         assertEquals(mapOf('ㅗ' to mapOf(UP to 'ㅛ'), 'ㅓ' to mapOf(LEFT to 'ㅕ'), 'ㅏ' to mapOf(RIGHT to 'ㅑ'), 'ㅜ' to mapOf(DOWN to 'ㅠ')), vowels)
         // QWERTY h j k n unchanged.
         for (id in listOf("h", "j", "k", "n")) assertRow(TapLayouts.QWERTY, id, t(id), t(id.uppercase()), t(id), t(id), t(id))
         // Edge hints: the pair on its own edge, nothing on the others (owner #198).
         fun h(id: String) = TapKeyResolver.edgeHints(TapLayouts.DUBEOLSIK.keys.single { it.id == id })
-        assertEquals(mapOf(UP to "ㅛ"), h("h"))
+        assertEquals(mapOf(UP to "ㅛ", RIGHT to "ㅘ", DOWN to "ㅚ", Diag.DOWN_RIGHT to "ㅙ"), h("h"))   // + compound vowels (FSS#110)
         assertEquals(mapOf(LEFT to "ㅕ"), h("j"))
         assertEquals(mapOf(RIGHT to "ㅑ"), h("k"))
-        assertEquals(mapOf(DOWN to "ㅠ"), h("n"))
+        assertEquals(mapOf(UP to "ㅟ", LEFT to "ㅝ", DOWN to "ㅠ", Diag.DOWN_LEFT to "ㅞ"), h("n"))
         assertEquals(mapOf(LEFT to "[", RIGHT to "]"), h("i"))
         for (id in listOf("y", "u", "b")) assertEquals(id, emptyMap<Dir, String>(), h(id))
     }
@@ -405,8 +407,49 @@ class TapKeyResolverTest {
         for (id in listOf("x", "v")) assertEquals(id, d(id, tap), d(id, exit(UP)))
     }
 
+    @Test
+    fun `TA-25 Dubeolsik compound vowels - ㅗ → ㅘ ↓ ㅚ ↘ ㅙ, ㅜ ← ㅝ ↑ ㅟ ↙ ㅞ, ㅡ ↓ ㅢ, every other way the vowel (FSS 110)`() {
+        // The whole table (SRS FR-TAP-02g), all eight directions: exit, exit-and-return and rub.
+        val table = mapOf(
+            "h" to mapOf<Way, Char>(UP to 'ㅛ', RIGHT to 'ㅘ', DOWN to 'ㅚ', Diag.DOWN_RIGHT to 'ㅙ'),
+            "n" to mapOf<Way, Char>(UP to 'ㅟ', LEFT to 'ㅝ', DOWN to 'ㅠ', Diag.DOWN_LEFT to 'ㅞ'),
+            "m" to mapOf<Way, Char>(DOWN to 'ㅢ'),
+        )
+        for ((id, ways) in table) {
+            val base = TapLayouts.DUBEOLSIK.keys.single { it.id == id }.jamo!!
+            assertEquals(j(base), d(id, tap))
+            for (w in WAYS) {
+                val want = j(ways[w] ?: base)                                // an empty way is the tap (FR-TAP-02g ③)
+                assertEquals("$id $w", want, d(id, exit(w)))
+                assertEquals("$id back $w", want, d(id, back(w)))
+                assertFalse(d(id, exit(w)).errorVibe)
+                // Rubs as on every key (FR-TAP-02g ④): left/right and diagonals the exit, up/down the plain vowel.
+                val rubWant = if (w == UP || w == DOWN) j(base) else want
+                assertEquals("$id rub $w", rubWant, d(id, rub(w)))
+            }
+        }
+        assertEquals(j('ㅘ'), d("h", rub(RIGHT)))
+        assertEquals(j('ㅝ'), d("n", rub(LEFT)))
+        assertEquals(j('ㅙ'), d("h", rub(Diag.DOWN_RIGHT)))
+        assertEquals(j('ㅞ'), d("n", rub(Diag.DOWN_LEFT)))
+        assertEquals(j('ㅡ'), d("m", rub(DOWN)))
+        // Edge hints: the middle of the edges and the corners (FR-TAP-02g ⑧); ㅡ only its bottom edge.
+        fun h(id: String) = TapKeyResolver.edgeHints(TapLayouts.DUBEOLSIK.keys.single { it.id == id })
+        assertEquals(mapOf(UP to "ㅛ", RIGHT to "ㅘ", DOWN to "ㅚ", Diag.DOWN_RIGHT to "ㅙ"), h("h"))
+        assertEquals(mapOf(UP to "ㅟ", LEFT to "ㅝ", DOWN to "ㅠ", Diag.DOWN_LEFT to "ㅞ"), h("n"))
+        assertEquals(mapOf(DOWN to "ㅢ"), h("m"))
+        // QWERTY h n m unchanged.
+        for (id in listOf("h", "n", "m")) {
+            assertRow(TapLayouts.QWERTY, id, t(id), t(id.uppercase()), t(id), t(id), t(id))
+            for (dg in Diag.entries) assertEquals(t(id), q(id, exit(dg)))
+        }
+    }
+
     private companion object {
         /** The four Dubeolsik vowel keys with a paired vowel (FSS#104). */
         val PAIR_KEYS = setOf('ㅗ', 'ㅓ', 'ㅏ', 'ㅜ')
+
+        /** The Dubeolsik vowel keys with a direction jamo: the paired vowels and the compound vowels (FSS#110). */
+        val VOWEL_KEYS = PAIR_KEYS + 'ㅡ'
     }
 }

@@ -319,4 +319,68 @@ class TallEnterTouchTest {
         const val SIDE = 16f
         val MIN = ThresholdDefaults.MIN_CROSS_DP
     }
+
+    /** From the centre of [id] at [deg] degrees (0 = right, 90 = up) for [len] dp, released there. */
+    private fun strokeAt(l: TapTouchLogic, id: String, deg: Double, len: Float = 40f) {
+        val r = Math.toRadians(deg)
+        stroke(l, id, (len * Math.cos(r)).toFloat(), (-len * Math.sin(r)).toFloat())
+    }
+
+    @Test
+    fun `GV-01 Dubeolsik ㅗ ㅜ are judged in eight ways from their data, ㅡ in four, sector edges as ㄹ (FSS 110, FR-TAP-02g ②③)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        fun out(id: String, deg: Double): String {
+            sink.events.clear()
+            strokeAt(l, id, deg)
+            return sink.events.single()
+        }
+        // One point in each sector (→ 0, ↗ 45, ↑ 90, ↖ 135, ← 180, ↙ 225, ↓ 270, ↘ 315).
+        val o = listOf("h:ㅘ:Exit(dir=RIGHT)", "h:ㅗ:Exit(dir=UP_RIGHT)", "h:ㅛ:Exit(dir=UP)", "h:ㅗ:Exit(dir=UP_LEFT)",
+            "h:ㅗ:Exit(dir=LEFT)", "h:ㅗ:Exit(dir=DOWN_LEFT)", "h:ㅚ:Exit(dir=DOWN)", "h:ㅙ:Exit(dir=DOWN_RIGHT)")
+        val u = listOf("n:ㅜ:Exit(dir=RIGHT)", "n:ㅜ:Exit(dir=UP_RIGHT)", "n:ㅟ:Exit(dir=UP)", "n:ㅜ:Exit(dir=UP_LEFT)",
+            "n:ㅝ:Exit(dir=LEFT)", "n:ㅞ:Exit(dir=DOWN_LEFT)", "n:ㅠ:Exit(dir=DOWN)", "n:ㅜ:Exit(dir=DOWN_RIGHT)")
+        for (i in 0 until 8) {
+            assertEquals(o[i], out("h", i * 45.0))
+            assertEquals(u[i], out("n", i * 45.0))
+        }
+        // Sector edges: → and ↓ are 60° wide, the diagonals 30° (FR-TAP-02e ②), just inside and outside each edge.
+        assertEquals("h:ㅘ:Exit(dir=RIGHT)", out("h", -29.0))
+        assertEquals("h:ㅙ:Exit(dir=DOWN_RIGHT)", out("h", -31.0))
+        assertEquals("h:ㅙ:Exit(dir=DOWN_RIGHT)", out("h", -59.0))
+        assertEquals("h:ㅚ:Exit(dir=DOWN)", out("h", -61.0))
+        assertEquals("h:ㅛ:Exit(dir=UP)", out("h", 61.0))
+        assertEquals("h:ㅗ:Exit(dir=UP_RIGHT)", out("h", 59.0))
+        assertEquals("n:ㅝ:Exit(dir=LEFT)", out("n", 209.0))
+        assertEquals("n:ㅞ:Exit(dir=DOWN_LEFT)", out("n", 211.0))
+        assertEquals("n:ㅞ:Exit(dir=DOWN_LEFT)", out("n", 239.0))
+        assertEquals("n:ㅠ:Exit(dir=DOWN)", out("n", 241.0))
+        assertEquals("n:ㅟ:Exit(dir=UP)", out("n", 119.0))
+        // ㅡ is a 4-way key: a diagonal is the edge crossed first, ↓ ㅢ, the rest the plain ㅡ.
+        assertEquals("m:ㅢ:Exit(dir=DOWN)", out("m", 270.0))
+        assertEquals("m:ㅡ:Exit(dir=UP)", out("m", 90.0))
+        assertEquals("m:ㅡ:Exit(dir=LEFT)", out("m", 180.0))
+        sink.events.clear()
+        stroke(l, "m", 20f, 40f)                                       // a diagonal crossing the bottom edge first
+        assertEquals(listOf("m:ㅢ:Exit(dir=DOWN)"), sink.events)
+        assertEquals(listOf("f", "h", "n"), geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay }.map { it.id })
+    }
+
+    @Test
+    fun `GV-02 a vowel key has no release-key rule - the stroke's direction decides wherever it is released (FSS 110, FR-TAP-02g ⑤)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        fun out(from: String, to: String): String {
+            sink.events.clear()
+            strokeTo(l, from, to)
+            return sink.events.single()
+        }
+        assertEquals("h:ㅘ:Exit(dir=RIGHT)", out("h", "k"))    // ㅗ → released over ㅏ: the direction's ㅘ
+        assertEquals("h:ㅘ:Exit(dir=RIGHT)", out("h", "j"))    // over ㅓ
+        assertEquals("h:ㅗ:Exit(dir=LEFT)", out("h", "g"))     // ← over the consonant ㅎ: the empty way, ㅗ
+        assertEquals("h:ㅛ:Exit(dir=UP)", out("h", "y"))       // ↑ over the ㅛ key
+        assertEquals("n:ㅝ:Exit(dir=LEFT)", out("n", "b"))     // ㅜ ← over ㅠ
+        sink.events.clear()
+        stroke(l, "m", 0f, ROW)                               // ㅡ ↓ into the space bar: ㅢ, not a space
+        assertEquals(listOf("m:ㅢ:Exit(dir=DOWN)"), sink.events)
+        assertEquals("n:ㅟ:Exit(dir=UP)", out("n", "h"))       // ㅜ ↑ onto ㅗ: no (ㅜ, ㅗ) anything, the direction
+    }
 }

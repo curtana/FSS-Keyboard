@@ -39,7 +39,7 @@ class HangulComposer(
         return ComposeResult("", composingText())
     }
 
-    /** Removes the last input unit (FR-CMN-07, 07a): one key, one jamo or one cheonjiin element. */
+    /** Removes the last input unit (FR-CMN-07, 07a): one key, one jamo, one cheonjiin element or one stroke step (FSS#110). */
     fun backspace(): BackspaceResult {
         if (units.isEmpty()) return BackspaceResult.NothingComposing
         units.removeAt(units.lastIndex)
@@ -78,7 +78,7 @@ class HangulComposer(
             return out.commit.render()
         }
         if (out.unit != null) units += out.unit
-        out.then?.let { units += it }
+        units += out.then
         return ""
     }
 
@@ -92,8 +92,11 @@ class HangulComposer(
         val newUnits: List<JamoEvent>? = null,
         val unit: JamoEvent? = null,
         val invalid: String? = null,
-        /** A second unit stored after [unit] (a compound final typed at once is its two consonants, issue #242). */
-        val then: JamoEvent? = null,
+        /**
+         * Units stored after [unit]: a compound final typed at once is its two consonants (issue #242), a compound vowel
+         * typed at once its stroke steps (FSS#110).
+         */
+        val then: List<JamoEvent> = emptyList(),
     )
 
     private fun fold(): Syllable = units.fold(Syllable.EMPTY) { s, u -> step(s, u).next }
@@ -126,7 +129,7 @@ class HangulComposer(
         val alone = Syllable(c, null, null, null)
         return when {
             s.cho != null && s.jung != null && s.jong1 == null ->
-                StepOut(s.copy(jong1 = a, jong2 = b), unit = JamoEvent.Consonant(a), then = JamoEvent.Consonant(b))
+                StepOut(s.copy(jong1 = a, jong2 = b), unit = JamoEvent.Consonant(a), then = listOf(JamoEvent.Consonant(b)))
             s.isEmpty -> StepOut(alone, unit = unit)
             else -> StepOut(alone, commit = s, unit = unit)
         }
@@ -146,31 +149,45 @@ class HangulComposer(
         }
     }
 
+    /**
+     * The units a vowel event stores: the event itself, or under a policy that splits them (Dubeolsik, FSS#110, SRS
+     * FR-HGL-04f ③) a compound vowel's stroke steps — `Vowel` of the first step then a `ReplaceVowel` per further step
+     * (ㅙ = Vowel ㅗ, ReplaceVowel ㅘ, ReplaceVowel ㅙ), so ⌫ takes back one step. A further step replaces the medial
+     * without the merge table (no (ㅘ, ㅣ) there). Folding them gives the same syllable as the one event.
+     */
+    private fun vowelUnits(v: Jamo, unit: JamoEvent): List<JamoEvent> {
+        val steps = if (policy.splitCompoundVowel) JamoTables.VOWEL_STEPS[v] else null
+        return steps?.mapIndexed { i, w -> if (i == 0) JamoEvent.Vowel(w) else JamoEvent.ReplaceVowel(w) } ?: listOf(unit)
+    }
+
     private fun vowel(s: Syllable, v: Jamo, unit: JamoEvent): StepOut {
         val fresh = Syllable(null, v, null, null)
         val jung = s.jung
+        val units = vowelUnits(v, unit)
+        val first = units.first()
+        val rest = units.drop(1)
         return when {
-            s.isEmpty -> StepOut(fresh, unit = unit)
+            s.isEmpty -> StepOut(fresh, unit = first, then = rest)
             // A compound final standing alone (issue #242): its second consonant takes the vowel, as dokkaebibul.
             jung == null && s.cho in JamoTables.SPLIT_JONG -> {
                 val (a, b) = JamoTables.SPLIT_JONG.getValue(checkNotNull(s.cho))
                 StepOut(Syllable(b, v, null, null), commit = Syllable(a, null, null, null),
-                    newUnits = listOf(JamoEvent.Consonant(b), JamoEvent.Vowel(v)))
+                    newUnits = listOf(JamoEvent.Consonant(b)) + units)
             }
-            jung == null -> StepOut(s.copy(jung = v), unit = unit)
+            jung == null -> StepOut(s.copy(jung = v), unit = first, then = rest)
             s.jong1 == null -> {
                 val m = if (policy.mergeConsecutiveVowel) policy.merge.merge(jung, v) else null
                 if (m != null) StepOut(s.copy(jung = m), unit = unit)
-                else StepOut(fresh, commit = s, unit = unit)
+                else StepOut(fresh, commit = s, newUnits = units)
             }
             // Dokkaebibul (FR-HGL-03): the last final moves to the next syllable.
             s.jong2 == null -> StepOut(
                 Syllable(s.jong1, v, null, null), commit = s.copy(jong1 = null),
-                newUnits = listOf(JamoEvent.Consonant(s.jong1), JamoEvent.Vowel(v)),
+                newUnits = listOf(JamoEvent.Consonant(s.jong1)) + units,
             )
             else -> StepOut(
                 Syllable(s.jong2, v, null, null), commit = s.copy(jong2 = null),
-                newUnits = listOf(JamoEvent.Consonant(s.jong2), JamoEvent.Vowel(v)),
+                newUnits = listOf(JamoEvent.Consonant(s.jong2)) + units,
             )
         }
     }
