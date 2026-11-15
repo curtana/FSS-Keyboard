@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.36** (2026-11-15)
+- 버전 **0.37** (2026-11-15)
+- 0.37(FSS#110 후속, SRS 0.93 FR-HGL-04f ③): 3.1 `VOWEL_STEPS`의 ㅙ·ㅞ를 두 단계로(ㅙ [ㅗ, ㅙ], ㅞ [ㅜ, ㅞ] — 키로 친 것과 같음, LLD-04 7.4 0.39). 형식 변화 없음
 - 0.36(FSS#110, SRS 0.92 FR-HGL-04f): 3.1 `JamoTables` 표에 `SPLIT_JONG`(0.29부터 있던 표, 적지 않았던 것)과 새 `VOWEL_STEPS`(겹모음 → 획 단계, LLD-04 7.4)를 적었다. 형식 변화는 이 표 하나다
 - 0.35(FSS#109, SRS 0.91 FR-TAP-02c·02e·02f, HLD 0.84 4.2·5A): 3.3에 대각선 방향 — **`sealed interface Way { val dx: Int; val dy: Int }`**를 `Dir`과 새 **`enum class Diag { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT }`**가 구현한다. `Dir`은 네 값과 순서·이름·확장 속성이 그대로이고 부호 `dx`·`dy`만 더했다(그래서 `Dir`을 쓰는 변 통과·모드 키·그래피티 코드는 바뀌지 않음, D-75). `WAYS`(Dir 넷 + Diag 넷), `wayOfSigns(dx, dy)`. `TapKeyDef.dirJamo`는 `Map<Way, Char>`(LLD-05A 3.1). 손 뗀 키 우선의 짝 판정은 app이 `core-hangul`의 `JamoTables.COMPOUND_JONG`으로 한다 — stroke-core → core-hangul 의존은 만들지 않았다(1.2 그대로, LLD-05A 4.1, D-76).
 - 0.34(FSS#104·#107, SRS 0.90 FR-TAP-02c·02d, HLD 0.83 5A): `TapKeyDef.compoundJamo` → **`dirJamo`**(두벌식 글자 키의 방향별 자모 = 겹받침 + 짝 모음, LLD-05A 3.1·3.3, D-74). 형은 그대로 `Map<Dir, Char>`(기본 빈 맵). 0.26의 `compoundJamo` 줄은 그때의 기록이다.
@@ -133,7 +134,7 @@ enum class Jamo(val compat: Char, val kind: JamoKind,
 | `JONG_CAPABLE` | 받침이 될 수 있는 자음: ㄸ ㅃ ㅉ를 뺀 16개(ㄲ ㅆ 포함, FR-HGL-05) |
 | `COMPOUND_JONG` | (ㄱ,ㅅ)ㄳ (ㄴ,ㅈ)ㄵ (ㄴ,ㅎ)ㄶ (ㄹ,ㄱ)ㄺ (ㄹ,ㅁ)ㄻ (ㄹ,ㅂ)ㄼ (ㄹ,ㅅ)ㄽ (ㄹ,ㅌ)ㄾ (ㄹ,ㅍ)ㄿ (ㄹ,ㅎ)ㅀ (ㅂ,ㅅ)ㅄ (FR-HGL-02) |
 | `SPLIT_JONG` | `COMPOUND_JONG`을 거꾸로: 겹받침 → (앞 자음, 뒤 자음)(이슈 #242, LLD-04 7절) |
-| `VOWEL_STEPS` | (0.36, FSS#110) 겹모음 → 획 단계(마지막이 그 겹모음): ㅘ [ㅗ, ㅘ], ㅙ [ㅗ, ㅘ, ㅙ], ㅚ [ㅗ, ㅚ], ㅝ [ㅜ, ㅝ], ㅞ [ㅜ, ㅝ, ㅞ], ㅟ [ㅜ, ㅟ], ㅢ [ㅡ, ㅢ](SRS FR-HGL-04f ③). 두벌식 정책이 한 번에 받은 겹모음을 이 단계로 쌓는다(LLD-04 7.4). 병합 표가 아니다 — (ㅘ, ㅣ)는 병합하지 않는다 |
+| `VOWEL_STEPS` | (0.36, FSS#110) 겹모음 → 획 단계(마지막이 그 겹모음, 0.37부터 모두 두 단계 — 키로 친 것과 같음): ㅘ [ㅗ, ㅘ], ㅙ [ㅗ, ㅙ], ㅚ [ㅗ, ㅚ], ㅝ [ㅜ, ㅝ], ㅞ [ㅜ, ㅞ], ㅟ [ㅜ, ㅟ], ㅢ [ㅡ, ㅢ](SRS FR-HGL-04f ③). 두벌식 정책이 한 번에 받은 겹모음을 이 단계로 쌓는다(LLD-04 7.4). 병합 표가 아니다 — (ㅘ, ㅣ)는 병합하지 않는다 |
 
 ```kotlin
 fun interface VowelMergeTable { fun merge(prev: Jamo, next: Jamo): Jamo? }   // 없으면 null
