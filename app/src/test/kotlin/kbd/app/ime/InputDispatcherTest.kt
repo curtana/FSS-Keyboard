@@ -593,4 +593,27 @@ class InputDispatcherTest {
         d.error()
         assertEquals(1, feedback.errors)
     }
+
+    @Test
+    fun `ID-43 a compound vowel in one stroke composes as its keys typed and backspace takes one stroke step (FSS 110)`() {
+        // SRS FR-TAP-02g table and FR-HGL-04f: the visible text is the keys typed one after the other.
+        val same = listOf(
+            "ㄱㅗ→" to "과", "ㄱㅗ↓" to "괴", "ㄱㅗ↘" to "괘", "ㄱㅜ←" to "궈", "ㄱㅜ↑" to "귀", "ㄱㅜ↙" to "궤", "ㅇㅡ↓" to "의",
+            "ㄱㅗ←" to "고", "ㄱㅗ↖" to "고", "ㄱㅜ→" to "구", "ㄱㅜ↘" to "구", "ㅇㅡ↑" to "으",   // empty ways: the tap
+            "ㄱㅏㄱㅗ→" to "가과", "ㄱㅗ→ㅣ" to "과ㅣ", "ㅗ→" to "ㅘ", "ㄱㅗ→⌫" to "고", "ㄱㅜ↑⌫" to "구", "ㅇㅡ↓⌫" to "으",
+        )
+        val taps = mapOf("ㅗ→" to "ㅗㅏ", "ㅗ↓" to "ㅗㅣ", "ㅗ↘" to "ㅗㅐ", "ㅜ←" to "ㅜㅓ", "ㅜ↑" to "ㅜㅣ", "ㅜ↙" to "ㅜㅔ",
+            "ㅡ↓" to "ㅡㅣ", "ㅗ←" to "ㅗ", "ㅗ↖" to "ㅗ", "ㅜ→" to "ㅜ", "ㅜ↘" to "ㅜ", "ㅡ↑" to "ㅡ")
+        for ((keys, expected) in same) {
+            assertEquals(keys, expected, shownAfter(keys))
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+        // ⌫ one stroke step: ㅙ ㅞ have three (owner "한 단계씩"), unlike 괘 typed by keys (ㄱ ㅗ ㅐ ⌫ = 고).
+        val steps = listOf(
+            "ㄱㅗ↘⌫" to "과", "ㄱㅗ↘⌫⌫" to "고", "ㄱㅗ↘⌫⌫⌫" to "ㄱ", "ㄱㅜ↙⌫" to "궈", "ㄱㅜ↙⌫⌫⌫" to "ㄱ",
+            "ㄱㅏㄱㅗ→⌫" to "가고", "ㅗ→⌫" to "ㅗ", "ㄱㅗ↘⌫ㅣ" to "과ㅣ", "ㄱㅗ→⌫ㅏ" to "과", "ㄱㅗㅐ⌫" to "고",
+        )
+        for ((keys, expected) in steps) assertEquals(keys, expected, shownAfter(keys))
+    }
 }

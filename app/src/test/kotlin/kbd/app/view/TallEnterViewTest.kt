@@ -203,7 +203,8 @@ class TallEnterViewTest {
         assertEquals(Paint.Align.CENTER, at("ㄿ").second)
         assertEquals(Paint.Align.LEFT, at("ㄻ").second)
         assertEquals(Paint.Align.RIGHT, at("ㅀ").second)
-        // No other key has a corner hint: every LEFT/RIGHT hint off its row's middle line is one of ㄹ's three.
+        // No other key has a corner hint: every LEFT/RIGHT hint off its row's middle line is one of ㄹ's three or
+        // ㅗ ㅜ's compound vowel (FSS#110, GV-03).
         val hintSize = d.labels.first { it.first == "ㄼ" }.third
         val hp = Paint().apply { textSize = hintSize }
         val corners = d.labels.indices.filter { i ->
@@ -212,7 +213,7 @@ class TallEnterViewTest {
             val mid = (row + 0.5f) * ROW * density - (hp.ascent() + hp.descent()) / 2
             size == hintSize && d.aligns[i] != Paint.Align.CENTER && Math.abs(p.second - mid) > 1f
         }.map { d.labels[it].first }
-        assertEquals(listOf("ㄼ", "ㄽ", "ㄾ"), corners.sorted())
+        assertEquals(listOf("ㄼ", "ㄽ", "ㄾ", "ㅙ", "ㅞ").sorted(), corners.sorted())
         // ㅌ (x) and ㅍ (v) draw nothing but their labels now (ㄾ ㄿ moved to ㄹ).
         for ((x0, label) in listOf(36f to "ㅌ", 108f to "ㅍ")) {
             val l = x0 * density + inset
@@ -222,6 +223,41 @@ class TallEnterViewTest {
             val inside = d.labels.filter { (_, p, _) -> p.first in l..r && p.second in t..b }.map { it.first }
             assertEquals(label, listOf(label), inside)
         }
+    }
+
+    @Test
+    fun `GV-03 ㅗ ㅜ ㅡ draw their compound vowels mid-edge and ㅙ ㅞ in the bottom corners (FSS 110, FR-TAP-02g ⑧)`() {
+        show(TapLayouts.DUBEOLSIK)
+        val d = draw()
+        val inset = 2f * density
+        val pad = 2f * density
+        fun inside(x0: Float, row: Int): Map<String, Pair<Pair<Float, Float>, Paint.Align>> {
+            val l = x0 * density + inset
+            val r = (x0 + 36f) * density - inset
+            val t = row * ROW * density + inset
+            val b = (row + 1) * ROW * density - inset
+            return d.labels.indices.filter { i -> d.labels[i].second.let { (x, y) -> x in l..r && y in t..b } }
+                .associate { d.labels[it].first to (d.labels[it].second to d.aligns[it]) }
+        }
+        // ㅗ (h): x 180..216, row 3. ㅜ (n): x 180..216, row 4. ㅡ (m): x 216..252, row 4.
+        val o = inside(180f, 3)
+        assertEquals(setOf("ㅗ", "ㅛ", "ㅚ", "ㅘ", "ㅙ"), o.keys)
+        val u = inside(180f, 4)
+        assertEquals(setOf("ㅜ", "ㅟ", "ㅝ", "ㅠ", "ㅞ"), u.keys)
+        assertEquals(setOf("ㅡ", "ㅢ"), inside(216f, 4).keys)
+        // ㅙ bottom-right of ㅗ on ㅚ's line, ㅞ bottom-left of ㅜ on ㅠ's line; the others mid-edge.
+        assertEquals(Paint.Align.RIGHT, o.getValue("ㅙ").second)
+        assertEquals(216f * density - inset - pad, o.getValue("ㅙ").first.first, 0.01f)
+        assertEquals(o.getValue("ㅚ").first.second, o.getValue("ㅙ").first.second, 0.01f)
+        assertEquals(Paint.Align.LEFT, u.getValue("ㅞ").second)
+        assertEquals(180f * density + inset + pad, u.getValue("ㅞ").first.first, 0.01f)
+        assertEquals(u.getValue("ㅠ").first.second, u.getValue("ㅞ").first.second, 0.01f)
+        assertEquals(Paint.Align.CENTER, o.getValue("ㅛ").second)
+        assertEquals(Paint.Align.CENTER, o.getValue("ㅚ").second)
+        assertEquals(Paint.Align.RIGHT, o.getValue("ㅘ").second)
+        assertEquals(Paint.Align.CENTER, u.getValue("ㅟ").second)
+        assertEquals(Paint.Align.LEFT, u.getValue("ㅝ").second)
+        assertEquals(Paint.Align.CENTER, u.getValue("ㅠ").second)
     }
 
     private fun px(dp: Float): Int = Math.round(dp * density)

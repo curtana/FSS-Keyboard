@@ -13,9 +13,11 @@ data class ComposePolicy(
     val name: String,
     val merge: VowelMergeTable,
     val mergeConsecutiveVowel: Boolean,  // two plain `Vowel` events may merge (dubeolsik only)
+    /** A compound vowel `Vowel` event is stored as its stroke steps, so ⌫ takes one step (dubeolsik only, FSS#110). */
+    val splitCompoundVowel: Boolean = false,
 ) {
     companion object {
-        val DUBEOLSIK = ComposePolicy("dubeolsik", MergeTables.DUBEOLSIK, true)
+        val DUBEOLSIK = ComposePolicy("dubeolsik", MergeTables.DUBEOLSIK, true, splitCompoundVowel = true)
         /** No vowel merge: the cheonjiin assembler sends the vowel and its `ReplaceVowel` steps (FR-HGL-04c). */
         val GRAFFITI = ComposePolicy("graffiti", MergeTables.NONE, false)
     }
