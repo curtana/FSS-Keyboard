@@ -1,5 +1,9 @@
 package kbd.stroke.layout
 
+import kbd.stroke.geom.Diag
+import kbd.stroke.geom.Dir
+import kbd.stroke.geom.Way
+
 /**
  * QWERTY and Dubeolsik tap layouts: six rows filling the window, 360 dp of keys per row, no
  * blanks, ↵ two rows high (LLD-05A §3.2, SRS 3.3, FSS#105). Both layouts share key positions, key ids and symbol
@@ -15,39 +19,38 @@ object TapLayouts {
     private val SHIFT_JAMO = mapOf('ㅂ' to 'ㅃ', 'ㅈ' to 'ㅉ', 'ㄷ' to 'ㄸ', 'ㄱ' to 'ㄲ', 'ㅅ' to 'ㅆ', 'ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ')
 
     /**
-     * Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each. QWERTY has none.
-     * FSS#97 (owner) moved six of them: ㄳ ㄶ ㅄ ㄽ to ↓ and ㄵ ㄿ to ↑, FSS#107 (owner) ㄾ to ↑; the directions they
-     * left type the plain jamo.
+     * Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each, on the key of the
+     * first consonant only. QWERTY has none. The direction is one rule (owner, FSS#109, SRS FR-TAP-02c ①): (sign of
+     * the second consonant key's column − the first's, sign of its row − the first's), column = x ÷ 36, row = row
+     * number; this table is its result, and TL-11 computes the rule from these coordinates again. ㄹ points to seven
+     * keys around it, so it has diagonals and is judged in eight directions (SRS FR-TAP-02e). A direction without a
+     * jamo types the plain jamo, like the tap (FR-TAP-02c ④: ㄹ ↘, ㄱ ↓, ㅂ ↓ …). FSS#97 and FSS#107 had other
+     * directions, and ㅅ ㅌ ㅍ keys of their own for ㄽ ㄾ ㄿ.
      */
-    private val COMPOUND_JAMO: Map<Char, Map<kbd.stroke.geom.Dir, Char>> = run {
-        val up = kbd.stroke.geom.Dir.UP
-        val left = kbd.stroke.geom.Dir.LEFT
-        val right = kbd.stroke.geom.Dir.RIGHT
-        val down = kbd.stroke.geom.Dir.DOWN
-        mapOf(
-            'ㄱ' to mapOf(down to 'ㄳ'),
-            'ㄴ' to mapOf(up to 'ㄵ', down to 'ㄶ'),
-            'ㄹ' to mapOf(up to 'ㅀ', left to 'ㄺ', right to 'ㄻ', down to 'ㄼ'),
-            'ㅂ' to mapOf(down to 'ㅄ'),   // ↓ (FSS#97); it was ← (#242), then → (#246)
-            'ㅅ' to mapOf(down to 'ㄽ'),
-            'ㅌ' to mapOf(up to 'ㄾ'),     // ↑ (FSS#107); it was ← (#242)
-            'ㅍ' to mapOf(up to 'ㄿ'),
-        )
-    }
+    internal val COMPOUND_JAMO: Map<Char, Map<Way, Char>> = mapOf(
+        'ㄱ' to mapOf(Dir.RIGHT to 'ㄳ'),                                      // ㅅ (t) is right of ㄱ (r)
+        'ㄴ' to mapOf(Dir.UP to 'ㄵ', Dir.RIGHT to 'ㄶ'),                      // ㅈ (w) above, ㅎ (g) right
+        'ㄹ' to mapOf(
+            Diag.UP_LEFT to 'ㄼ', Dir.UP to 'ㄺ', Diag.UP_RIGHT to 'ㄽ',       // ㅂ (q), ㄱ (r), ㅅ (t)
+            Dir.LEFT to 'ㄻ', Dir.RIGHT to 'ㅀ',                                // ㅁ (a), ㅎ (g)
+            Diag.DOWN_LEFT to 'ㄾ', Dir.DOWN to 'ㄿ',                           // ㅌ (x), ㅍ (v); ↘ has none
+        ),
+        'ㅂ' to mapOf(Dir.RIGHT to 'ㅄ'),                                      // ㅅ (t) is right of ㅂ (q)
+    )
 
     /**
      * Paired vowels on four Dubeolsik vowel keys (owner, FSS#104): a stroke towards the pair's direction types it. The
      * ㅛ ㅕ ㅑ ㅠ keys stay. Kept apart from [COMPOUND_JAMO]; both go into [TapKeyDef.dirJamo].
      */
-    private val PAIR_VOWEL: Map<Char, Map<kbd.stroke.geom.Dir, Char>> = mapOf(
-        'ㅗ' to mapOf(kbd.stroke.geom.Dir.UP to 'ㅛ'),
-        'ㅓ' to mapOf(kbd.stroke.geom.Dir.LEFT to 'ㅕ'),
-        'ㅏ' to mapOf(kbd.stroke.geom.Dir.RIGHT to 'ㅑ'),
-        'ㅜ' to mapOf(kbd.stroke.geom.Dir.DOWN to 'ㅠ'),
+    internal val PAIR_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
+        'ㅗ' to mapOf(Dir.UP to 'ㅛ'),
+        'ㅓ' to mapOf(Dir.LEFT to 'ㅕ'),
+        'ㅏ' to mapOf(Dir.RIGHT to 'ㅑ'),
+        'ㅜ' to mapOf(Dir.DOWN to 'ㅠ'),
     )
 
     /** The direction jamo of [jamo]'s key: its compound finals and paired vowels, never two in one direction. */
-    private fun dirJamo(jamo: Char): Map<kbd.stroke.geom.Dir, Char> {
+    private fun dirJamo(jamo: Char): Map<Way, Char> {
         val compound = COMPOUND_JAMO[jamo].orEmpty()
         val pair = PAIR_VOWEL[jamo].orEmpty()
         require(compound.keys.none { it in pair }) { "$jamo: a compound final and a paired vowel in one direction" }

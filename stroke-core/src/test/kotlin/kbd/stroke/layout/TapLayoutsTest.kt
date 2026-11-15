@@ -242,12 +242,13 @@ class TapLayoutsTest {
         val letters = TapLayouts.DUBEOLSIK.keys.filter { it.kind == TapKeyKind.DUBEOLSIK_LETTER }
         assertEquals(26, letters.size)
         for (k in letters) {
-            for (d in kbd.stroke.geom.Dir.entries) {
+            for (d in kbd.stroke.geom.WAYS) {   // all eight directions since FSS#109
                 val symbol = when (d) {
                     kbd.stroke.geom.Dir.UP -> k.assign?.up
                     kbd.stroke.geom.Dir.LEFT -> k.assign?.left
                     kbd.stroke.geom.Dir.RIGHT -> k.assign?.right
                     kbd.stroke.geom.Dir.DOWN -> k.assign?.down
+                    is kbd.stroke.geom.Diag -> null
                 }
                 val placed = listOfNotNull(if (d == kbd.stroke.geom.Dir.UP) k.shiftJamo else null, k.dirJamo[d], symbol)
                 assertTrue("${k.id} $d $placed", placed.size <= 1)
@@ -256,5 +257,41 @@ class TapLayoutsTest {
         // 11 compound finals and 4 paired vowels, each once.
         assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅑㅕㅛㅠ".toList(), letters.flatMap { it.dirJamo.values }.sorted())
         assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
+    }
+    @Test
+    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik f only (FSS 109)`() {
+        assertEquals(listOf("f"), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id })
+        assertTrue(TapLayouts.QWERTY.keys.none { it.eightWay })
+        for (k in TapLayouts.DUBEOLSIK.keys) assertEquals(k.id, k.dirJamo.keys.any { it is kbd.stroke.geom.Diag }, k.eightWay)
+        // A key gets eight directions by its data alone: the same key with one diagonal added is an 8-way key.
+        val o = TapLayouts.DUBEOLSIK.key("h")
+        assertEquals(false, o.eightWay)
+        assertEquals(true, o.copy(dirJamo = o.dirJamo + (kbd.stroke.geom.Diag.DOWN_RIGHT to 'ㅘ')).eightWay)
+    }
+
+    @Test
+    fun `TL-11 the compound-final table is the direction rule computed from the layout coordinates (FSS 109, SRS FR-TAP-02c ①)`() {
+        // The two consonants of each compound final (Unicode, not the assignment): the rule decides where it goes.
+        val parts = mapOf(
+            'ㄳ' to "ㄱㅅ", 'ㄵ' to "ㄴㅈ", 'ㄶ' to "ㄴㅎ", 'ㄺ' to "ㄹㄱ", 'ㄻ' to "ㄹㅁ", 'ㄼ' to "ㄹㅂ",
+            'ㄽ' to "ㄹㅅ", 'ㄾ' to "ㄹㅌ", 'ㄿ' to "ㄹㅍ", 'ㅀ' to "ㄹㅎ", 'ㅄ' to "ㅂㅅ",
+        )
+        val byJamo = TapLayouts.DUBEOLSIK.keys.filter { it.kind == TapKeyKind.DUBEOLSIK_LETTER }.associateBy { it.jamo!! }
+        fun col(k: TapKeyDef) = (k.x / 36f).toInt()
+        val computed = HashMap<Char, MutableMap<kbd.stroke.geom.Way, Char>>()
+        for ((cf, two) in parts) {
+            val first = byJamo.getValue(two[0])
+            val second = byJamo.getValue(two[1])
+            val way = kbd.stroke.geom.wayOfSigns(Integer.signum(col(second) - col(first)), Integer.signum(second.row - first.row))
+            computed.getOrPut(two[0]) { LinkedHashMap() }[checkNotNull(way) { "$cf" }] = cf
+        }
+        assertEquals(TapLayouts.COMPOUND_JAMO, computed)
+        // On the keys: each compound final once, on its first consonant's key, nowhere else.
+        for ((cf, two) in parts) {
+            val at = TapLayouts.DUBEOLSIK.keys.flatMap { k -> k.dirJamo.filterValues { it == cf }.keys.map { k.jamo to it } }
+            assertEquals("$cf", listOf(two[0] to computed.getValue(two[0]).entries.single { it.value == cf }.key), at)
+        }
+        // No two compound finals of one key share a direction (the rule could give that; this layout does not).
+        assertEquals(11, computed.values.sumOf { it.size })
     }
 }

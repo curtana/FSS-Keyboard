@@ -452,4 +452,40 @@ class InputDispatcherChordTest {
             assertEquals(emptySet<ChordModifier>(), d.chord)
         }
     }
+    @Test
+    fun `CD-20 a release over the pair key gives the compound final, but with Ctrl on the direction's key (FSS 109, FR-TAP-02f ⑤)`() {
+        val guard = EngineGuard(ErrorLog(tmp.newFile("err20.log")), d)
+        val noRepeat = object : kbd.app.view.TapKeyRepeat {
+            override fun start(pointerId: Int, key: FunctionKey) = Unit
+            override fun stop(pointerId: Int) = Unit
+            override fun stopAll() = Unit
+        }
+        val logic = kbd.app.view.TapTouchLogic(d, guard, feedback, noRepeat).also {
+            it.geometry = kbd.app.view.TapGeometry.build(dub, 360f, 48f, 16f)
+            it.minCrossDp = 8f
+        }
+        fun centre(id: String): kbd.stroke.geom.StrokePoint {
+            val k = key(dub, id)
+            return kbd.stroke.geom.StrokePoint(k.x + k.w / 2, (k.row + 0.5f) * 48f, 0)   // the side margin is outside the view
+        }
+        fun strokeTo(from: String, to: String) {
+            val a = centre(from)
+            val b = centre(to)
+            logic.down(0, a.copy(t = 100))
+            logic.move(0, (1..8).map { kbd.stroke.geom.StrokePoint(a.x + (b.x - a.x) * it / 8, a.y + (b.y - a.y) * it / 8, 100L + it) })
+            logic.up(0, b.copy(t = 120))
+        }
+        // Ctrl off: ㄹ (f) released over ㅂ (q) is ㄼ, though the stroke goes ← (ㄻ by direction).
+        dubeolsik()
+        type("ㄱㅏ")
+        strokeTo("f", "q")
+        assertEquals("갋", cc.composingShown)
+        // Ctrl on: the same stroke sends the direction's key, QWERTY f ← = F (no release-key rule).
+        port.calls.clear()
+        logic.down(0, centre("ctrl"))
+        logic.up(0, centre("ctrl").copy(t = 10))
+        assertEquals(setOf(CTRL), d.chord)
+        strokeTo("f", "q")
+        assertEquals(listOf("finish", "chord(F,[CTRL])"), port.calls)
+    }
 }
