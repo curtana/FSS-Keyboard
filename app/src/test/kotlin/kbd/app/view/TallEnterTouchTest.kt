@@ -234,6 +234,85 @@ class TallEnterTouchTest {
         assertEquals(listOf("f:f:Exit(dir=LEFT)"), sink.events)
     }
 
+    /** From the centre of [from] straight to the centre of [to], released there. */
+    private fun strokeTo(l: TapTouchLogic, from: String, to: String) {
+        val a = centre(from)
+        val b = centre(to)
+        stroke(l, from, b.x - a.x, b.y - a.y)
+    }
+
+    @Test
+    fun `GJ-03 a release over the pair key gives the compound final whatever the direction, else the direction rule (FSS 109, FR-TAP-02f)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        // All 11: first consonant's key centre to second consonant's key centre (ㄹ to ㅂ is ← by direction, ㄹ to ㅌ ↓).
+        val pairs = listOf(
+            "r" to "t" to "ㄳ", "s" to "w" to "ㄵ", "s" to "g" to "ㄶ", "f" to "r" to "ㄺ", "f" to "a" to "ㄻ",
+            "f" to "q" to "ㄼ", "f" to "t" to "ㄽ", "f" to "x" to "ㄾ", "f" to "v" to "ㄿ", "f" to "g" to "ㅀ", "q" to "t" to "ㅄ",
+        )
+        for ((ft, cf) in pairs) {
+            sink.events.clear()
+            strokeTo(l, ft.first, ft.second)
+            assertEquals("${ft.first} to ${ft.second}", cf, sink.events.single().split(":")[1])
+        }
+        // Not a pair: the direction rule of the pressed key.
+        fun out(from: String, to: String): String {
+            sink.events.clear()
+            strokeTo(l, from, to)
+            return sink.events.single()
+        }
+        assertEquals("f:ㄻ:Exit(dir=LEFT)", out("f", "d"))            // ㄹ ← released on ㅇ
+        assertEquals("f:ㄼ:Exit(dir=UP_LEFT)", out("f", "e"))         // ㄹ ↖ released on ㄷ
+        assertEquals("f:ㅀ:Exit(dir=RIGHT)", out("f", "h"))           // released on the vowel ㅗ
+        assertEquals("t:ㅅ:Exit(dir=DOWN)", out("t", "f"))            // the reverse order ㅅ then ㄹ is no pair
+        assertEquals("q:ㅄ:Exit(dir=RIGHT)", out("q", "f"))           // ㅂ then ㄹ: no pair, ㅂ → is ㅄ by direction
+        // Out and back: released on the pressed key itself, the direction rule (ㄹ ↖ back = ㄼ).
+        sink.events.clear()
+        val c = centre("f")
+        l.down(0, c)
+        l.move(0, (1..8).map { StrokePoint(c.x - 40f * it / 8, c.y - 40f * it / 8, it.toLong()) } +
+            (1..8).map { StrokePoint(c.x - 40f + 40f * it / 8, c.y - 40f + 40f * it / 8, 8L + it) })
+        l.up(0, c.copy(t = 20))
+        assertEquals(listOf("f:ㄼ:ExitReturn(dir=UP_LEFT)"), sink.events)
+        // A rub released over the pair key: the compound final (the rub up alone would be ㄹ).
+        sink.events.clear()
+        val up = centre("r").y - c.y
+        l.down(0, c)
+        l.move(0, listOf(StrokePoint(c.x, c.y + up, 1), StrokePoint(c.x, c.y, 2), StrokePoint(c.x, c.y + up, 3)))
+        l.up(0, StrokePoint(c.x, c.y + up, 4))
+        assertEquals(listOf("f:ㄺ:Rub(dir=UP)"), sink.events)
+        // Released in the side margin (no key): the direction rule.
+        sink.events.clear()
+        val qc = centre("q")
+        l.down(0, qc)
+        l.move(0, (1..8).map { StrokePoint(qc.x - (qc.x + 10f) * it / 8, qc.y, it.toLong()) })
+        l.up(0, StrokePoint(-10f, qc.y, 9))                             // left of the view: in the side margin
+        assertEquals(listOf("q:ㅂ:Exit(dir=LEFT)"), sink.events)
+        // ㄹ released in the left margin of row 2: no key (not the nearest ㅂ), so ← = ㄻ, not ㄼ.
+        sink.events.clear()
+        l.down(0, c)
+        l.move(0, (1..8).map { StrokePoint(c.x - (c.x + 10f) * it / 8, c.y - 48f * it / 8, it.toLong()) })
+        l.up(0, StrokePoint(-10f, c.y - 48f, 9))
+        assertEquals(listOf("f:ㄻ:Exit(dir=LEFT)"), sink.events)
+        // A tap near the edge released over the pair key, no exit counted: the tap (no release-key rule).
+        sink.events.clear()
+        val fr = geometry(TapLayouts.DUBEOLSIK).geoms.first { it.id == "f" }.rect
+        l.down(0, StrokePoint(fr.left + 1f, c.y, 0))
+        l.move(0, listOf(StrokePoint(fr.left - 3f, c.y, 1)))            // onto ㅇ (d), less than the crossing distance
+        l.up(0, StrokePoint(fr.left - 3f, c.y, 2))
+        assertEquals(listOf("f:ㄹ:Tap"), sink.events)
+        sink.events.clear()
+        val fx = geometry(TapLayouts.DUBEOLSIK).geoms.first { it.id == "f" }.rect
+        l.down(0, StrokePoint(fx.left + 1f, fx.top + 1f, 0))
+        l.move(0, listOf(StrokePoint(fx.left + 1f, fx.top - 3f, 1)))     // onto ㄱ (r), its pair key, still a tap
+        l.up(0, StrokePoint(fx.left + 1f, fx.top - 3f, 2))
+        assertEquals(listOf("f:ㄹ:Tap"), sink.events)
+        // QWERTY: no release-key rule.
+        val ql = logic(TapLayouts.QWERTY)
+        sink.events.clear()
+        strokeTo(ql, "f", "q")
+        assertEquals(listOf("f:f:Exit(dir=LEFT)"), sink.events)
+    }
+
     private companion object {
         const val WIDTH = 360f
         const val ROW = 48f
