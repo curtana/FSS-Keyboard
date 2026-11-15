@@ -2,7 +2,7 @@
 
 - 대응 HLD 절: 5A장(탭 자판)
 - 버전 **0.23** (2026-11-15)
-- 0.23(FSS#109 오너 결정 "8방향으로 해"·"만드는 원리가 일정해야지"·"비어있는 방향으로 긋는 것은 그냥 키를 누른 것과 같은 효과", PM 결정(문지르기), SRS 0.91 FR-TAP-02c ①~⑤·02e·03b·16 ③·TBD-38, HLD 0.84 4.2·5A "겹받침 방향 규칙과 8방향 키"): **겹받침 방향 규칙 하나와 8방향 키** — 방향 타입에 대각선을 더했다: `sealed interface Way { dx; dy }`를 `Dir`(그대로 네 값, 부호 `dx`·`dy`만 더함)과 새 `Diag`(↖ ↗ ↙ ↘)가 구현한다(LLD-03 3.3, D-75). `TapGesture`의 방향은 `Way`(2.1). `TapGestureClassifier(key, minCrossDp, eightWay)`는 `eightWay`이면 처음 나감 순간의 점과 누른 점의 각도로 8방향을 정한다(위아래좌우 60°·대각선 30°, 경계는 위아래좌우 쪽 — `wayOfAngle`·`wayOfVector`, 2.1). 나감·나갔다 돌아옴·문지르기는 처음 나간 변의 통과 횟수 그대로. `TapKeyResolver`는 대각선 나감·나갔다 돌아옴·문지르기를 그 대각선의 `dirJamo`로, 없으면 탭 결과로 낸다(2.2 1·2번). `TapKeyDef.dirJamo`는 `Map<Way, Char>`, **`TapKeyDef.eightWay` = 대각선 배정이 있는가**(데이터로 정함, 키 이름 갈래 없음 — 3.1). 겹받침 표 `COMPOUND_JAMO`(3.3)는 규칙 (sign 열 차, sign 줄 차)의 결과: ㄹ ↖ ㄼ ↑ ㄺ ↗ ㄽ ← ㄻ → ㅀ ↙ ㄾ ↓ ㄿ, ㄱ → ㄳ, ㄴ ↑ ㄵ → ㄶ, ㅂ → ㅄ(ㅅ·ㅌ·ㅍ 키의 겹받침은 없앰). 빈 방향 = 탭(2.2). `edgeHints`가 대각선도 내고 `TapKeyboardView`가 모서리에 그린다(3.4, 4절). `ChordKeys`는 고치지 않았다 — 쿼티 f에 대각선이 없어 F(2.4). 시험 TG-11~14, TA-23·24, TL-10·11, CM-14, ID-42, GJ-01·02(LLD-11 0.64).
+- 0.23(FSS#109 오너 결정 "8방향으로 해"·"만드는 원리가 일정해야지"·"비어있는 방향으로 긋는 것은 그냥 키를 누른 것과 같은 효과", PM 결정(문지르기), SRS 0.91 FR-TAP-02c ①~⑤·02e·03b·16 ③·TBD-38, HLD 0.84 4.2·5A "겹받침 방향 규칙과 8방향 키"): **겹받침 방향 규칙 하나와 8방향 키** — 방향 타입에 대각선을 더했다: `sealed interface Way { dx; dy }`를 `Dir`(그대로 네 값, 부호 `dx`·`dy`만 더함)과 새 `Diag`(↖ ↗ ↙ ↘)가 구현한다(LLD-03 3.3, D-75). `TapGesture`의 방향은 `Way`(2.1). `TapGestureClassifier(key, minCrossDp, eightWay)`는 `eightWay`이면 처음 나감 순간의 점과 누른 점의 각도로 8방향을 정한다(위아래좌우 60°·대각선 30°, 경계는 위아래좌우 쪽 — `wayOfAngle`·`wayOfVector`, 2.1). 나감·나갔다 돌아옴·문지르기는 처음 나간 변의 통과 횟수 그대로. `TapKeyResolver`는 대각선 나감·나갔다 돌아옴·문지르기를 그 대각선의 `dirJamo`로, 없으면 탭 결과로 낸다(2.2 1·2번). `TapKeyDef.dirJamo`는 `Map<Way, Char>`, **`TapKeyDef.eightWay` = 대각선 배정이 있는가**(데이터로 정함, 키 이름 갈래 없음 — 3.1). 겹받침 표 `COMPOUND_JAMO`(3.3)는 규칙 (sign 열 차, sign 줄 차)의 결과: ㄹ ↖ ㄼ ↑ ㄺ ↗ ㄽ ← ㄻ → ㅀ ↙ ㄾ ↓ ㄿ, ㄱ → ㄳ, ㄴ ↑ ㄵ → ㄶ, ㅂ → ㅄ(ㅅ·ㅌ·ㅍ 키의 겹받침은 없앰). 빈 방향 = 탭(2.2). `edgeHints`가 대각선도 내고 `TapKeyboardView`가 모서리에 그린다(3.4, 4절). `ChordKeys`는 고치지 않았다 — 쿼티 f에 대각선이 없어 F(2.4). **같은 판 덧붙임(SRS FR-TAP-02f, 오너 결정 "더해줘"): 손 뗀 키 우선** — 두벌식 자음 키에서 나감이 세어진 획을 겹받침 짝 자음 키 위에서 떼면 방향과 관계없이 그 겹받침(4.1). 뗀 점의 키는 `TapGeometry.releasedKey(p)`(뷰 안이면 누름과 같은 키 찾기, 뷰 밖·여유 칸은 없음), 짝 판정은 app의 순수 함수 `ReleaseKeyCompound.of(누른 키, 뗀 키)`가 `core-hangul`의 `JamoTables.COMPOUND_JONG`(조합기가 겹받침을 나누는 표와 같은 표)으로 한다 — stroke-core는 core-hangul에 의존하지 않으므로(LLD-03 1.2) 이 단계는 `TapTouchLogic.up`에 있고 `TapGestureClassifier`·`TapKeyResolver`는 뗀 키를 모른다(D-76). 동작(`TapGesture`)은 그대로 실어 Ctrl·Alt가 켜져 있으면 방향 규칙의 키 입력이 나간다. 시험 TG-11~14, TA-23·24, TL-10·11, CM-14, ID-42, GJ-01~03, CD-20(LLD-11 0.64).
 - 0.22(FSS#104 오너 결정·FSS#107 오너 지시, SRS 0.90 FR-TAP-02c·02d·두벌식 짝 모음 배정표·TBD-37, HLD 0.83 5A): **두벌식 짝 모음 긋기와 ㅌ ↑ ㄾ** — `TapLayouts.PAIR_VOWEL`(ㅗ ↑ ㅛ, ㅓ ← ㅕ, ㅏ → ㅑ, ㅜ ↓ ㅠ)을 겹받침 표 `COMPOUND_JAMO`와 나란히 두고, 두 표를 키 정의의 방향별 자모 **`TapKeyDef.dirJamo`**(0.21까지 `compoundJamo`, 이름만 바꿈 — D-74)로 합친다(3.1·3.3). 겹받침 표의 ㅌ(x)를 ← ㄾ에서 ↑ ㄾ으로(←는 기본 자모 ㅌ). `TapKeyResolver`의 찾는 순서는 그대로이고(2.2, 짝 모음은 겹받침 자리), `edgeHints`(3.4)·`ChordKeys`(2.4)·`HangulComposer`도 고치지 않았다. 한 키·한 방향에 시프트 자모·방향별 자모·배정 기호가 둘 이상 없음을 배치 시험 TL-09로 지킨다.
 - 0.21(FSS#105 오너 요청·추가 지시, SRS 0.89 FR-TAP-03·03d·NFR-06·TBD-36, HLD 0.82 5A "두 줄 높이 키 — ↵"): **두 줄 높이 ↵와 빈칸 없는 글자 줄** — `TapKeyDef.rowSpan`(차지하는 줄 수, 기본 1)·`inRow(r)`·`rect(unit, rowHeight)`(키 사각형 식 하나, 3.1), 배치(3.2): 3줄 a~l 0부터 + ↵(x 324 · 폭 36 · 줄 3부터 두 줄, 키 목록에서 l 다음), 4줄 z~m 0부터 · `=` 252 · `/` 288(배정 그대로), 5줄 한/영 72 · 스페이스 216 · `,` 288 · `.` 324. **빈칸 형 `BlankDef`·`TapLayout.blanks`와 `hit`의 빈칸 단계를 지웠다**(D-73, 4절). 그리기·접근성·조합 키·연습 화면은 키 사각형 하나를 그대로 쓰므로 식만 바뀌었다(4·7절). 판정·배정표·`TapKeyResolver`·`TapGestureClassifier`는 고치지 않았다.
 - 0.20(FSS#98 오너 지시 "제일위 라인 esc 키 옆에 Ctrl, Alt키를 넣어줘", SRS 0.87 FR-TAP-03·03c·04·13·15~18·조합 키 대응표·NFR-06, HLD 0.80 5A "조합 키 Ctrl·Alt"): **편집 줄 10키**(Esc · Ctrl · Alt · ⇥ · ← · ↑ · ↓ · → · Del · ⌫, 각 36 — 0.19까지 8 × 45. 3.2), 기능키 `FunctionKey.CTRL`·`ALT`(반복 없음, 4·6절), 새 2.4 **조합 키 대응**(`ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`: 글자 94자 → (키, Shift), 키 id + 판정된 동작 → 같은 자리 쿼티 키의 결과, 기능키 → 키), `TapSink.onTapResult(key, out, gesture)`·`TapSink.chord`(4절), `MultiPointerQueue<R>`(판정된 동작을 결과와 함께 실음, 5절), `TapKeyboardView`의 켜짐 바탕·낱말 글자 크기 `WordLabelFit`·`chordChanged()`(4절), 접근성 노드의 켜고 끄는 항목(7절), 시퀀스 8.2. 조합 키 상태와 보내기는 LLD-08 4절·6.3. Ctrl·Alt가 꺼져 있으면 0.19와 모든 길이 같다(`TapKeyResolver`·`TapGestureClassifier`·배정표는 고치지 않았다).
@@ -326,7 +326,7 @@ DOWN / POINTER_DOWN (index i, id):
       if key.function ∈ {BACKSPACE, ARROW_*, DELETE}: repeat.start(id, key.function)   // FR-CMN-07c, FR-TAP-10, DELETE 0.10(#198)
       fnPointers[id] = key
   else:
-      cls[id] = TapGestureClassifier(key.geom, th.minCrossDp); cls[id].begin(p)
+      cls[id] = TapGestureClassifier(key.geom, th.minCrossDp, eightWay = key.eightWay); cls[id].begin(p)   // 0.23: 8방향은 키 데이터로(2.1·3.1)
       queue.onDown(id)                                      // 5절
 MOVE: 각 포인터의 히스토리 점을 cls[id].add (모드 키 포인터면 그 분류기에)
 UP / POINTER_UP (id):
@@ -334,7 +334,11 @@ UP / POINTER_UP (id):
         s == true  → guard.stroke("Tap.fn") { sink.onSettingsStroke() }                      // 위로 나감 = 설정(#205)
         s == false → guard.stroke("Tap.fn") { sink.onFunctionDown(MODE) }; guard.stroke("Tap.fn") { sink.onFunctionUp(MODE) }   // 탭 = 모드 전환
   else if id ∈ fnPointers: repeat.stop(id); sink.onFunctionUp(fn); remove
-  else: r = guard.run("Tap.classify") { g = cls[id].finish(p); Result(key, TapKeyResolver.resolve(key, g), g) }   // 순수 계산, 상태 없음. 판정은 한 번(0.20: 동작 g를 결과에 실음)
+  else: r = guard.run("Tap.classify") {                    // 순수 계산, 상태 없음. 판정은 한 번(0.20: 동작 g를 결과에 실음)
+            g = cls[id].finish(p)
+            rel = if g == Tap then null else geometry.releasedKey(p)                       // 0.23: 손 뗀 키(4.1)
+            out = ReleaseKeyCompound.of(key, rel)?.let { TapOutput(null, it, false) } ?: TapKeyResolver.resolve(key, g)
+            Result(key, out, g) }
         outs = if r == null then queue.onCancel(id) else queue.onUp(id, r)                 // 실패한 칸만 비우고 뒤 결과는 흘려보냄
         for r in outs: guard.stroke("Tap.output") { sink.onTapResult(r.key, r.out, r.gesture) }   // 출력 하나 = 보호 단위 하나(LLD-09 2절), 누른 순서대로
 CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 않은 모드 키 빼고) sink.onFunctionUp(fn); fnPointers.clear(); cls.clear()
@@ -345,6 +349,22 @@ CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 �
 - Esc·탭 키(⇥)·방향키·Del·⌫·스페이스·↵·모드 키 처리 내용은 `InputDispatcher`(LLD-08 6절)에 있다.
 - **두 줄 높이 ↵(0.21, FSS#105, SRS FR-TAP-03d ②~⑥, HLD 5A):** 코드 길은 0.20과 같고 키 사각형만 두 줄이다. ① 누름: ↵ 사각형 어디든 `onFunctionDown(ENTER)` 한 번(기능키 길, 누를 때). `REPEATING`에 없어 반복하지 않는다. 기능키 포인터의 이동은 보지 않으므로 ↵ 안에서 3줄 ↔ 4줄로 움직여도, ↵ 밖으로 나가도 아무 일 없고 뗄 때 `onFunctionUp(ENTER)`(입력 없는 알림)뿐이다. ② 이웃 획: p·l·`/`·`.`의 분류기는 자기 키 사각형만 보므로 ↵ 쪽으로 나간 획은 그 키의 그 방향 결과다 — p ↓ `|`, l → l, `/` → `/`, `.` ↑ `>`(처음 누른 키로만). `/`의 아랫변은 5줄 `,`의 윗변이라 테두리가 아니고 ↓는 보통 변 통과 `Exit(DOWN)` = `/`(↓ 배정 없음). ↵의 네 변은 여유 칸이 있으면 어느 것도 테두리 변이 아니다(`KeyGeom.build` 그대로). ③ 그리기(`onDraw`): 키마다 `geoms`의 사각형 하나에 바탕·글자를 그리므로 ↵는 두 줄 높이 사각형 하나(안쪽 여백 `KEY_INSET_DP`, 모서리, 기능 키 바탕, 눌림 바탕 모두 사각형 전체)이고 두 줄 사이에 선이 없다. 글자는 `keyRect.centerX()`·`centerY()` = 사각형 가운데(세로는 두 줄 경계). 글자 크기는 `rebuildGeometry`가 **줄 높이** × `LABEL_SCALE`(0.4)로 정하므로 ↵ 글자도 다른 키와 같다(키 높이에서 정하지 않음). 기능키라 변 가운데 표시(`drawHints`)가 없다. 줄 단위로 키를 걸러 그리는 곳은 없다. ④ 조합 키: ↵는 키가 하나라 Ctrl·Alt가 켜진 채 어느 줄을 눌러도 조합 키를 실은 `ENTER` 하나다(LLD-08 6.3 그대로). 시험 BE-01~BE-07, BV-01~BV-04, CD-19(LLD-11).
 - **모드 키 ↑ = 설정(0.12, 이슈 #205):** 모드 키만 누를 때가 아니라 뗄 때 처리한다(다른 기능키는 그대로 누를 때). 판정은 글자 키와 같은 변 넘음(`TapGestureClassifier`, `minCrossDp`)이고 `ModeKeyGesture.of(g)` = 처음 통과한 변이 위면(`Exit`·`ExitReturn`·`Rub` 모두, 되돌아옴·문지르기는 보지 않음 — SRS FR-CMN-13 "처음 통과한 변만") `OPEN_SETTINGS`, 그 밖(탭, 첫 변 ←·→)은 `MODE_KEY_TAP` = 모드 전환. 맨 아랫줄이라 아래 나감은 바깥 변(기록 없음 = 탭). 대기열 밖이라 잡고 있는 글자 키를 기다리지 않고, 글자 키도 모드 키를 기다리지 않는다. 떼기 전 `ACTION_CANCEL`이면 입력 없음(모드 전환도 설정도 아님). 접근성 클릭(7절)은 그대로 탭 = 모드 전환이고 설명 문구에 "위로 밀면 설정"을 붙였다(`a11y_key_mode`).
+
+#### 4.1 손 뗀 키 우선 (0.23, SRS FR-TAP-02f, HLD 5A "손 뗀 키 우선", FSS#109)
+
+```kotlin
+// kbd.app.view
+class TapGeometry { fun releasedKey(p: StrokePoint): TapKeyDef? }      // 뗀 점의 키, 뷰 밖이면 null
+internal object ReleaseKeyCompound { fun of(pressed: TapKeyDef, released: TapKeyDef?): Char? }   // 겹받침 호환 자모 또는 null
+```
+
+- **`releasedKey(p)`:** `p`가 뷰 안(0 ≤ x ≤ 폭, 0 ≤ y ≤ 높이)이면 누를 때와 같은 키 찾기(`indexAt` → `KeyHitTester.hit`, 사각형 경계도 탭과 같음, FR-TAP-02f ③)의 키, 뷰 밖이면 null이다. `KeyHitTester`는 뷰 밖 점에 가장 가까운 키를 주므로(LLD-04 2절) 그대로 쓰면 왼쪽 여유 칸에서 뗀 ㄹ 획이 ㅂ(가장 가까운 키)과 짝이 되어 버린다 — 여유 칸·자판 밖은 "키 없음"이다(FR-TAP-02f ②, 시험 GJ-03).
+- **`ReleaseKeyCompound.of(pressed, released)`:** 다음이 모두 참일 때만 겹받침이다 — `released`가 있고, `released.id ≠ pressed.id`, 두 키 모두 `DUBEOLSIK_LETTER`, `JamoTables.COMPOUND_JONG[(Jamo.ofCompat(pressed.jamo), Jamo.ofCompat(released.jamo))]`가 있음(앞 = 누른 키, 뒤 = 뗀 키의 **탭 기본 자모** — 시프트 자모가 아님, 차례 그대로라 ㅂ → ㄹ 키는 짝이 아님, FR-TAP-02f ①). 표는 조합기가 겹받침을 두 자음으로 나누는 것(`SPLIT_JONG`)과 같은 표 하나다(HLD 5A — 새 표를 두지 않음). 모음 키는 표에 없어 늘 null이고(⑥), 쿼티·숫자·기호·기능 키는 종류에서 걸린다. 순수 함수다.
+- **어디서:** `TapTouchLogic.up`(4절 의사 코드)이 분류(`finish`) 뒤, `TapKeyResolver` 앞에서 부른다 — 결과 해석의 맨 앞 단계(HLD 5A). **나감이 세어진 획에만:** `g == Tap`이면 부르지 않는다 — 키 가장자리를 눌러 최소 통과 거리 안에서 짝 키 위로 조금 밀려 떼어도 탭이다(SRS 0.91 검수 반영 8fe0e99, 시험 GJ-03). 나감·나갔다 돌아옴·문지르기는 통과 횟수와 관계없이 뗀 곳으로 정한다(④ — 나갔다 돌아옴은 누른 키 안에서 떼므로 `released.id == pressed.id`로 방향 규칙). 짝이면 `TapOutput(text = null, jamo = 겹받침, errorVibe = false)`이고 `Result`의 `gesture`는 분류 결과 그대로다.
+- **Ctrl·Alt(⑤):** 이 단계는 조합 키 상태를 보지 않는다. 켜져 있으면 `InputDispatcher.onTapResult`가 `out`을 버리고 `ChordKeys.ofTap(key.id, gesture)`(2.4)를 보내므로 방향 규칙의 키 입력이 된다(ㄹ → ㅂ 키에서 뗌 = 쿼티 f ← = F, 시험 CD-20). 뷰 쪽에 조합 키 갈래를 두지 않으려는 것이다.
+- **뗀 키는 동작하지 않는다:** 결과의 키는 처음 누른 키(`Result.key = key`)이고 뗀 키에는 아무것도 보내지 않는다(FR-SWP-01). 표시(`edgeHints`)·입력 연습(쿼티뿐)·그래피티는 바뀌지 않는다.
+- **왜 stroke-core가 아닌가:** 짝 표가 `core-hangul`에 있고 stroke-core는 core-hangul에 의존하지 않는다(LLD-03 1.2). stroke-core에 같은 표를 하나 더 두면 HLD 5A의 "표 하나"에 어긋난다. 그래서 `TapGestureClassifier.finish(p)`·`TapKeyResolver.resolve(key, g)`의 모양은 그대로이고, 뗀 점은 `TapTouchLogic`이 이미 가진 `p`다(D-76).
+- 근거: SRS FR-TAP-02f ①~⑥, 탭 자판 동작 표 "다른 키 위에서 뗌" 줄, FR-SWP-01. 시험: GJ-03(11개 곧은 획, 짝 아닌 키·거꾸로 차례·나갔다 돌아옴·문지르기·여유 칸·가장자리 탭·쿼티), CD-20(Ctrl 켜짐), 실기 DV-43 ⑤.
 
 #### 조합 키 Ctrl·Alt (0.20, FSS#98)
 

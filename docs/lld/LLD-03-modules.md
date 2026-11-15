@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.34** (2026-11-15)
+- 버전 **0.35** (2026-11-15)
+- 0.35(FSS#109, SRS 0.91 FR-TAP-02c·02e·02f, HLD 0.84 4.2·5A): 3.3에 대각선 방향 — **`sealed interface Way { val dx: Int; val dy: Int }`**를 `Dir`과 새 **`enum class Diag { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT }`**가 구현한다. `Dir`은 네 값과 순서·이름·확장 속성이 그대로이고 부호 `dx`·`dy`만 더했다(그래서 `Dir`을 쓰는 변 통과·모드 키·그래피티 코드는 바뀌지 않음, D-75). `WAYS`(Dir 넷 + Diag 넷), `wayOfSigns(dx, dy)`. `TapKeyDef.dirJamo`는 `Map<Way, Char>`(LLD-05A 3.1). 손 뗀 키 우선의 짝 판정은 app이 `core-hangul`의 `JamoTables.COMPOUND_JONG`으로 한다 — stroke-core → core-hangul 의존은 만들지 않았다(1.2 그대로, LLD-05A 4.1, D-76).
 - 0.34(FSS#104·#107, SRS 0.90 FR-TAP-02c·02d, HLD 0.83 5A): `TapKeyDef.compoundJamo` → **`dirJamo`**(두벌식 글자 키의 방향별 자모 = 겹받침 + 짝 모음, LLD-05A 3.1·3.3, D-74). 형은 그대로 `Map<Dir, Char>`(기본 빈 맵). 0.26의 `compoundJamo` 줄은 그때의 기록이다.
 - 0.33(FSS#105, SRS 0.89 FR-TAP-03d, HLD 0.82 5A): 3.3 바깥 변 문단에서 빈칸 문장을 고쳤다(탭 자판에 빈칸이 없음, 두 줄 높이 ↵의 변). `TapKeyDef.rowSpan`·`rect`와 `BlankDef` 삭제는 LLD-05A 0.21 3.1.
 - 0.32(FSS#98, SRS 0.87 FR-TAP-15~18, HLD 0.80 5A "조합 키 Ctrl·Alt"): `FunctionKey.CTRL`·`ALT`(탭 자판 편집 줄의 조합 키, LLD-05A 3.2), stroke-core `kbd.stroke.tap`에 `ChordModifier`·`ChordKey`·`ChordStroke`·`ChordKeys`(조합 키 대응, 안드로이드 없음, LLD-05A 2.4). 새 모듈·의존·라이브러리는 없다.
@@ -169,7 +170,11 @@ data class ComposeResult(val committed: String,   // 이번 호출로 새로 확
 모든 엔진 좌표·거리는 **dp**, 시각은 **ms(`Long`, `MotionEvent.getEventTime()` 기준)**다. 앱이 px를 dp로 바꿔 넘긴다(D-03).
 
 ```kotlin
-enum class Dir { UP, DOWN, LEFT, RIGHT }               // 화면 기준, y는 아래로 증가
+sealed interface Way { val dx: Int; val dy: Int }     // 0.35: 여덟 방향 중 하나. dx·dy = 화면 기준 부호(UP = (0, −1))
+enum class Dir(dx, dy) : Way { UP(0,−1), DOWN(0,1), LEFT(−1,0), RIGHT(1,0) }   // 화면 기준, y는 아래로 증가
+enum class Diag(dx, dy) : Way { UP_LEFT(−1,−1), UP_RIGHT(1,−1), DOWN_LEFT(−1,1), DOWN_RIGHT(1,1) }   // 0.35, FSS#109
+val WAYS: List<Way>                                    // Dir.entries + Diag.entries
+fun wayOfSigns(dx: Int, dy: Int): Way?                 // 부호 쌍 → 방향, (0, 0)이면 null
 enum class Axis { HORIZONTAL, VERTICAL }
 enum class Edge(val dir: Dir) { TOP(UP), BOTTOM(DOWN), LEFT(LEFT), RIGHT(RIGHT) }   // 변 = 그 변으로 나가는 방향
 data class RectDp(val left: Float, val top: Float, val right: Float, val bottom: Float)
@@ -177,6 +182,7 @@ data class StrokePoint(val x: Float, val y: Float, val t: Long)
 data class KeyGeom(val id: String, val rect: RectDp, val outerEdges: Set<Edge>)
 ```
 
+- **`Way`·`Diag`(0.35, FSS#109):** 대각선은 탭 자판의 8방향 키(대각선 배정이 있는 키, LLD-05A 2.1·3.1)의 판정 결과와 배정에만 쓴다. 변·변 통과 기록·모드 키는 `Dir`(네 방향)뿐이다. `dx`·`dy`는 겹받침 방향 규칙의 (sign 열 차, sign 줄 차)와 같은 값이라(SRS FR-TAP-02c ①) 시험 TL-11이 `wayOfSigns`로 규칙을 계산한다.
 - `Dir.axis`: LEFT·RIGHT = HORIZONTAL, UP·DOWN = VERTICAL. `Dir.opposite`, `Dir.unit`(UP = (0,−1) 등)을 확장 속성으로 둔다.
 - **바깥 변(`outerEdges`):** 키의 변이 창의 왼쪽(x = 0), 오른쪽(x = 창 폭), 아래쪽(y = 창 높이) 경계와 겹치면 바깥 변이다. 창의 **위쪽 경계는 바깥 변이 아니다**(탭 자판은 6줄이 창을 채우고 위는 앱 화면으로 이어진다, SRS 3.3 창 높이 규칙). 0.33(FSS#105): 탭 자판에는 빈칸이 없어 각 줄의 끝 키(a·z 포함)가 테두리 쪽에 바로 닿는다(여유 칸이 있으면 그 변도 보통 변, 0.30). 두 줄 높이 ↵의 변은 사각형 하나의 네 변이고 두 줄의 경계는 변이 아니다(LLD-05A 3.1). 계산은 배치 데이터를 만들 때 한 번 한다(`KeyGeom` 생성 함수, LLD-04 2절).
   - **0.30(FSS#84):** 위 문장의 "창"은 입력기 테두리이고, 그 왼쪽·오른쪽 변은 자판(키 10칸, 모드 뷰)의 끝이 아니라 **자판 사각형의 바깥 변**이다 — 모드 뷰 좌표로 x = −m과 x = 폭 + m(m = 여유 칸 폭, SRS FR-CMN-14 ⑧, LLD-08 7.2). 그래서 실제 자판에서는 끝 키의 왼쪽·오른쪽 변이 바깥 변이 아니고(변 너머 최소 통과 거리에서 나감, 다른 변과 같음), 바깥 변은 맨 아랫줄의 아래 변뿐이다. 맨 윗줄의 위 변(`topAtWindow`, 0.25)은 그대로다. m = 0으로 만들면(순수 함수 시험) 0.29와 같다.
