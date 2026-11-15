@@ -152,8 +152,8 @@ class HangulComposer(
     /**
      * The units a vowel event stores: the event itself, or under a policy that splits them (Dubeolsik, FSS#110, SRS
      * FR-HGL-04f ③) a compound vowel's stroke steps — `Vowel` of the first step then a `ReplaceVowel` per further step
-     * (ㅙ = Vowel ㅗ, ReplaceVowel ㅘ, ReplaceVowel ㅙ), so ⌫ takes back one step. A further step replaces the medial
-     * without the merge table (no (ㅘ, ㅣ) there). Folding them gives the same syllable as the one event.
+     * (ㅙ = Vowel ㅗ, ReplaceVowel ㅙ — as the keys ㅗ ㅐ), so ⌫ takes back one step. A further step replaces the medial
+     * without the merge table (no (ㅗ, ㅙ) there). Folding them gives the same syllable as the one event.
      */
     private fun vowelUnits(v: Jamo, unit: JamoEvent): List<JamoEvent> {
         val steps = if (policy.splitCompoundVowel) JamoTables.VOWEL_STEPS[v] else null

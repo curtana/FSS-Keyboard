@@ -446,6 +446,15 @@ class HangulComposerTest {
     private fun Pair<StringBuilder, HangulComposer>.backs(n: Int): List<String> =
         (1..n).map { first.toString() + second.bs().composing }
 
+    /** The editor text after each ⌫ until nothing is composing (⌫ does not cross the commit boundary). */
+    private fun Pair<StringBuilder, HangulComposer>.drain(): List<String> {
+        val out = mutableListOf<String>()
+        while (true) {
+            val r = second.backspace() as? BackspaceResult.Handled ?: return out
+            out += first.toString() + r.result.composing
+        }
+    }
+
     @Test
     fun `HC-70 a compound vowel event shows the same text as before - initial, alone, after a syllable, dokkaebibul (FSS 110)`() {
         // Pinned on the code before FSS#110 (develop 0c648fb); the unit split must not change any of it.
@@ -482,21 +491,21 @@ class HangulComposerTest {
     @Test
     fun `HC-72 backspace takes a compound vowel event back one stroke step at a time (FSS 110, FR-HGL-04f ③)`() {
         assertEquals(listOf("고", "ㄱ", ""), at("ㄱㅘ").backs(3))
-        assertEquals(listOf("과", "고", "ㄱ", ""), at("ㄱㅙ").backs(4))      // ㅙ = ㅗ · ㅏ · ㅣ
-        assertEquals(listOf("궈", "구", "ㄱ", ""), at("ㄱㅞ").backs(4))      // ㅞ = ㅜ · ㅓ · ㅣ
+        assertEquals(listOf("고", "ㄱ", ""), at("ㄱㅙ").backs(3))            // ㅙ = ㅗ · ㅐ (keys ㅗ ㅐ)
+        assertEquals(listOf("구", "ㄱ", ""), at("ㄱㅞ").backs(3))            // ㅞ = ㅜ · ㅔ
         assertEquals(listOf("고"), at("ㄱㅚ").backs(1))
         assertEquals(listOf("구"), at("ㄱㅝ").backs(1))
         assertEquals(listOf("구"), at("ㄱㅟ").backs(1))
         assertEquals(listOf("으"), at("ㅇㅢ").backs(1))
         assertEquals(listOf("ㅗ", ""), at("ㅘ").backs(2))                    // alone too
-        assertEquals(listOf("ㅝ", "ㅜ", ""), at("ㅞ").backs(3))
+        assertEquals(listOf("ㅜ", ""), at("ㅞ").backs(2))
         assertEquals(listOf("가고", "가ㄱ"), at("ㄱㅏㄱㅘ").backs(2))        // dokkaebibul: from the moved ㄱ on
         assertEquals(listOf("갈고"), at("ㄱㅏㄹㄱㅘ").backs(1))
         assertEquals(listOf("ㄹ고", "ㄹㄱ"), at("ㄺㅘ").backs(2))
         assertEquals(listOf("고ㅗ", "고"), at("ㄱㅗㅘ").backs(2))           // after a committed syllable
         assertEquals(listOf("과", "고"), at("ㄱㅘㄱ").backs(2))              // 곽: the final first
         val c = at("ㄱㅙ").second
-        assertEquals(BackspaceResult.Handled(ComposeResult("", "과")), c.backspace())
+        assertEquals(BackspaceResult.Handled(ComposeResult("", "고")), c.backspace())
         assertTrue(reports.isEmpty())
     }
 
@@ -508,11 +517,12 @@ class HangulComposerTest {
             for (e in ev(next)) shown.append(c.apply(e).committed)
             return shown.toString() + c.composingText()
         }
-        assertEquals("과ㅣ", after("ㄱㅙ", 1, "ㅣ"))        // 괘 ⌫ = 과, then ㅣ: 과ㅣ (FR-HGL-04d)
+        assertEquals("괘", after("ㄱㅙ", 1, "ㅐ"))          // 괘 ⌫ = 고, then ㅐ: 괘 (FR-HGL-04d)
+        assertEquals("괴", after("ㄱㅙ", 1, "ㅣ"))          // 고 + ㅣ = 괴
         assertEquals("과", after("ㄱㅘ", 1, "ㅏ"))          // 과 ⌫ = 고, then ㅏ: 과
         assertEquals("괘", after("ㄱㅘ", 1, "ㅐ"))          // 고 + ㅐ = 괘
-        assertEquals("괴", after("ㄱㅙ", 2, "ㅣ"))          // 고 + ㅣ = 괴
-        assertEquals("곽", after("ㄱㅙ", 1, "ㄱ"))          // 과 + ㄱ = 곽
+        assertEquals("궤", after("ㄱㅞ", 1, "ㅔ"))          // 궤 ⌫ = 구, then ㅔ: 궤
+        assertEquals("곡", after("ㄱㅙ", 1, "ㄱ"))          // 고 + ㄱ = 곡
         assertEquals("가과", after("ㄱㅏㄱㅘ", 1, "ㅏ"))
         assertEquals("ㅘ", after("ㅘ", 1, "ㅏ"))            // alone: ㅗ + ㅏ
         assertTrue(reports.isEmpty())
@@ -522,12 +532,12 @@ class HangulComposerTest {
     fun `HC-74 undoLast and snapshot use the same stroke steps (FSS 110, FR-HGL-04f ④, LLD-09)`() {
         val c = at("ㄱㅙ").second
         val snap = c.snapshot()
-        assertEquals("과", c.undoLast().composing)
-        assertEquals("고", c.apply(UndoLast).composing)
+        assertEquals("고", c.undoLast().composing)
+        assertEquals("ㄱ", c.apply(UndoLast).composing)
         c.restore(snap)
         assertEquals("괘", c.composingText())
-        assertEquals("과", c.bs().composing)
-        assertEquals(Jamo.WA, c.currentVowel())
+        assertEquals("고", c.bs().composing)
+        assertEquals(Jamo.O, c.currentVowel())
         assertFalse(c.hasJong())
         assertTrue(reports.isEmpty())
     }
@@ -551,6 +561,26 @@ class HangulComposerTest {
         g.apply(Vowel(Jamo.O)); g.apply(ReplaceVowel(Jamo.WA))
         assertEquals("과", g.composingText())
         assertEquals("고", g.bs().composing)                    // a cheonjiin step is its own unit, as before
+        assertTrue(reports.isEmpty())
+    }
+
+    @Test
+    fun `HC-76 a stroked compound vowel backspaces step by step as the same keys typed (FSS 110 follow-up, FR-HGL-04f ③)`() {
+        // Owner 2026-11-15: "괘는 지우면 고가 되어야해" — ㅙ = ㅗ + ㅐ, ㅞ = ㅜ + ㅔ (two units, not three).
+        val keys = mapOf('ㅘ' to "ㅗㅏ", 'ㅙ' to "ㅗㅐ", 'ㅚ' to "ㅗㅣ", 'ㅝ' to "ㅜㅓ", 'ㅞ' to "ㅜㅔ", 'ㅟ' to "ㅜㅣ", 'ㅢ' to "ㅡㅣ")
+        for ((v, k) in keys) {
+            for ((before, after) in listOf("ㄱ" to "", "ㄱ" to "ㄱ", "ㄱㅏㄱ" to "", "ㄱㅏㄹㄱ" to "", "" to "", "ㄱㅗ" to "")) {
+                val stroked = "$before$v$after"
+                val typedKeys = "$before$k$after"
+                assertEquals(stroked, at(typedKeys).drain(), at(stroked).drain())
+            }
+        }
+        assertEquals(listOf("고", "ㄱ", ""), at("ㄱㅙ").backs(3))          // 괘 → 고 → ㄱ
+        assertEquals(listOf("구", "ㄱ", ""), at("ㄱㅞ").backs(3))          // 궤 → 구 → ㄱ
+        assertEquals(listOf("괘", "고", "ㄱ"), at("ㄱㅙㄱ").backs(3))       // 괙 → 괘 → 고
+        assertEquals("가괘", typed("ㄱㅏㄱㅙ"))                             // dokkaebibul: 각 + ㅙ
+        assertEquals(listOf("가고", "가ㄱ", "가"), at("ㄱㅏㄱㅙ").backs(3))
+        assertEquals(listOf("ㅗ", ""), at("ㅙ").backs(2))                   // alone
         assertTrue(reports.isEmpty())
     }
 }
