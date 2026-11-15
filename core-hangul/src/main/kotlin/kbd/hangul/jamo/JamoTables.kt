@@ -48,15 +48,16 @@ object JamoTables {
 
     /**
      * Compound vowel → its stroke steps, the last one the vowel itself (FSS#110, SRS FR-HGL-04f ③): a Dubeolsik stroke
-     * types a compound vowel at once, and ⌫ takes it back one step at a time — ㅙ = ㅗ, ㅘ, ㅙ (the strokes ㅏ then ㅣ),
-     * so 괘 ⌫ = 과, ⌫ = 고. Not the merge table: (ㅘ, ㅣ) is no merge there, so 과 + a ㅣ key stays 과ㅣ (FR-HGL-04f ②).
+     * types a compound vowel at once, and ⌫ takes it back the way the same keys typed would — ㅙ = ㅗ, ㅙ (keys ㅗ ㅐ),
+     * so 괘 ⌫ = 고, ⌫ = ㄱ (owner 2026-11-15: two steps, not ㅗ ㅘ ㅙ). Not the merge table: (ㅘ, ㅣ) is no merge there,
+     * so 과 + a ㅣ key stays 과ㅣ (FR-HGL-04f ②).
      */
     val VOWEL_STEPS: Map<Jamo, List<Jamo>> = mapOf(
         Jamo.WA to listOf(Jamo.O, Jamo.WA),
-        Jamo.WAE to listOf(Jamo.O, Jamo.WA, Jamo.WAE),
+        Jamo.WAE to listOf(Jamo.O, Jamo.WAE),
         Jamo.OE to listOf(Jamo.O, Jamo.OE),
         Jamo.WEO to listOf(Jamo.U, Jamo.WEO),
-        Jamo.WE to listOf(Jamo.U, Jamo.WEO, Jamo.WE),
+        Jamo.WE to listOf(Jamo.U, Jamo.WE),
         Jamo.WI to listOf(Jamo.U, Jamo.WI),
         Jamo.UI to listOf(Jamo.EU, Jamo.UI),
     )

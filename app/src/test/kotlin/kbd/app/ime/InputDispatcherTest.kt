@@ -601,6 +601,11 @@ class InputDispatcherTest {
             "ㄱㅗ→" to "과", "ㄱㅗ↓" to "괴", "ㄱㅗ↘" to "괘", "ㄱㅜ←" to "궈", "ㄱㅜ↑" to "귀", "ㄱㅜ↙" to "궤", "ㅇㅡ↓" to "의",
             "ㄱㅗ←" to "고", "ㄱㅗ↖" to "고", "ㄱㅜ→" to "구", "ㄱㅜ↘" to "구", "ㅇㅡ↑" to "으",   // empty ways: the tap
             "ㄱㅏㄱㅗ→" to "가과", "ㄱㅗ→ㅣ" to "과ㅣ", "ㅗ→" to "ㅘ", "ㄱㅗ→⌫" to "고", "ㄱㅜ↑⌫" to "구", "ㅇㅡ↓⌫" to "으",
+            // ㅙ ㅞ backspace as their keys (owner 2026-11-15 "괘는 지우면 고가 되어야해"): 괘 → 고 → ㄱ, 궤 → 구 → ㄱ.
+            "ㄱㅗ↘⌫" to "고", "ㄱㅗ↘⌫⌫" to "ㄱ", "ㄱㅜ↙⌫" to "구", "ㄱㅜ↙⌫⌫" to "ㄱ",
+            "ㄱㅗ↘ㄱ⌫" to "괘", "ㄱㅗ↘ㄱ⌫⌫" to "고",                                         // 괙 → 괘 → 고
+            "ㄱㅏㄱㅗ↘" to "가괘", "ㄱㅏㄱㅗ↘⌫" to "가고", "ㄱㅏㄱㅜ↙⌫" to "가구",            // dokkaebibul
+            "ㄱㅗ↘⌫ㅐ" to "괘", "ㅗ↘⌫" to "ㅗ",
         )
         val taps = mapOf("ㅗ→" to "ㅗㅏ", "ㅗ↓" to "ㅗㅣ", "ㅗ↘" to "ㅗㅐ", "ㅜ←" to "ㅜㅓ", "ㅜ↑" to "ㅜㅣ", "ㅜ↙" to "ㅜㅔ",
             "ㅡ↓" to "ㅡㅣ", "ㅗ←" to "ㅗ", "ㅗ↖" to "ㅗ", "ㅜ→" to "ㅜ", "ㅜ↘" to "ㅜ", "ㅡ↑" to "ㅡ")
@@ -609,10 +614,9 @@ class InputDispatcherTest {
             val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
             assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
         }
-        // ⌫ one stroke step: ㅙ ㅞ have three (owner "한 단계씩"), unlike 괘 typed by keys (ㄱ ㅗ ㅐ ⌫ = 고).
+        // ⌫ one step at a time (owner "한 단계씩").
         val steps = listOf(
-            "ㄱㅗ↘⌫" to "과", "ㄱㅗ↘⌫⌫" to "고", "ㄱㅗ↘⌫⌫⌫" to "ㄱ", "ㄱㅜ↙⌫" to "궈", "ㄱㅜ↙⌫⌫⌫" to "ㄱ",
-            "ㄱㅏㄱㅗ→⌫" to "가고", "ㅗ→⌫" to "ㅗ", "ㄱㅗ↘⌫ㅣ" to "과ㅣ", "ㄱㅗ→⌫ㅏ" to "과", "ㄱㅗㅐ⌫" to "고",
+            "ㄱㅏㄱㅗ→⌫" to "가고", "ㅗ→⌫" to "ㅗ", "ㄱㅗ↘⌫ㅣ" to "괴", "ㄱㅗ→⌫ㅏ" to "과", "ㄱㅗㅐ⌫" to "고",
         )
         for ((keys, expected) in steps) assertEquals(keys, expected, shownAfter(keys))
     }
