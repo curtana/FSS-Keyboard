@@ -37,9 +37,11 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 
 /**
- * LLD-11 §7.5 CV-01..CV-09: Ctrl and Alt on `TapKeyboardView` (LLD-05A §4, §7; SRS FR-TAP-03c, 15, 18; FSS#98) —
- * the touch path, the lit keys, the word labels and the accessibility nodes. The sink stands in for
- * `InputDispatcher`: it toggles its chord as the dispatcher does and tells the view.
+ * LLD-11 §7.5 CV-01..CV-14: Ctrl and Alt on `TapKeyboardView` (LLD-05A §4, §7; SRS FR-TAP-03c, 15, 18; FSS#98) —
+ * the touch path, the lit keys, the word labels and the accessibility nodes; CV-10..CV-14 Dubeolsik drawn as QWERTY
+ * while either is on (FR-TAP-15 ⑥, FSS#117). The sink stands in for `InputDispatcher`: it toggles its chord as the
+ * dispatcher does and tells the view; with [ridesOff] a key result also takes the chord off, as the dispatcher's
+ * chord path does (FR-TAP-15 ②).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [ViewTestSdk.SDK])
@@ -51,6 +53,7 @@ class TapKeyboardChordViewTest {
 
     private val events = ArrayList<String>()
     private lateinit var view: TapKeyboardView
+    private var ridesOff = false
 
     private val sink = object : TapSink {
         override var chord: Set<ChordModifier> = emptySet()
@@ -61,6 +64,10 @@ class TapKeyboardChordViewTest {
 
         override fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) {
             events += "result:${key.id}:" + (out.text ?: out.jamo.toString()) + ":$gesture"
+            if (ridesOff && chord.isNotEmpty()) {
+                chord = emptySet()
+                view.chordChanged()
+            }
         }
 
         override fun onFunctionDown(key: FunctionKey) {
@@ -115,6 +122,8 @@ class TapKeyboardChordViewTest {
     private class Drawn : Canvas() {
         val colors = ArrayList<Int>()
         val textSizes = LinkedHashMap<String, Float>()
+        /** Every text drawn, labels and edge hints, with its place, in drawing order. */
+        val texts = ArrayList<Triple<String, Float, Float>>()
 
         override fun drawRoundRect(rect: RectF, rx: Float, ry: Float, paint: Paint) {
             colors += paint.color
@@ -122,6 +131,7 @@ class TapKeyboardChordViewTest {
 
         override fun drawText(text: String, x: Float, y: Float, paint: Paint) {
             textSizes.putIfAbsent(text, paint.textSize)
+            texts += Triple(text, x, y)
         }
     }
 
@@ -293,5 +303,144 @@ class TapKeyboardChordViewTest {
         val c = draw().colors
         assertEquals(c[index("esc")], c[index("ctrl")])
         assertFalse(node("ctrl").isChecked)
+    }
+
+    // CV-10..CV-14: Dubeolsik drawn as QWERTY while Ctrl or Alt is on (SRS FR-TAP-15 ⑥, FSS#117).
+
+    /** What a QWERTY view draws and names with [chord] on: the reference the Dubeolsik view must match. */
+    private fun qwertyDrawing(chord: Set<ChordModifier>): Pair<List<Triple<String, Float, Float>>, List<String>> {
+        val saved = sink.chord
+        sink.chord = chord
+        show(TapLayouts.QWERTY)
+        val drawn = draw().texts.toList()
+        val names = TapLayouts.QWERTY.keys.map { node(it.id).contentDescription.toString() }
+        sink.chord = saved
+        events.clear()
+        return drawn to names
+    }
+
+    private fun names() = TapLayouts.DUBEOLSIK.keys.map { node(it.id).contentDescription.toString() }
+
+    private fun hangulDrawn(d: Drawn) = d.texts.any { (t, _, _) -> t.any { it in '\u3131'..'\u318E' } }
+
+    private fun bounds(): List<android.graphics.Rect> =
+        (0 until view.keyCount).map { android.graphics.Rect().also { r -> view.keyBoundsPx(it, r) } }
+
+    @Test
+    fun `CV-10 Ctrl on draws and names Dubeolsik as QWERTY in the same places, a key still resolves Dubeolsik`() {
+        val (qwerty, qwertyNames) = qwertyDrawing(setOf(ChordModifier.CTRL))
+        show(TapLayouts.DUBEOLSIK)
+        val off = draw()
+        val offNames = names()
+        val offBounds = bounds()
+        assertTrue(hangulDrawn(off))
+        assertEquals("ㅊ", node("c").contentDescription.toString())
+
+        touch.tap(0, cx("ctrl"), cy("ctrl"))
+        val on = draw()
+        assertEquals(qwerty, on.texts)                    // labels and edge hints, place for place (FR-TAP-15 ⑥)
+        assertFalse(hangulDrawn(on))
+        assertEquals(qwertyNames, names())                // screen reader names too
+        assertEquals("c", node("c").contentDescription.toString())
+        assertEquals("Ctrl", node("ctrl").contentDescription.toString())
+        assertEquals(offBounds, bounds())                 // nothing moves (FSS#105)
+        assertEquals(off.colors.size, on.colors.size)
+
+        events.clear()
+        touch.tap(0, cx("c"), cy("c"))                    // touch is the set layout's: the sink gets the ㅊ key
+        assertEquals(listOf("result:c:ㅊ:${TapGesture.Tap}"), events.filter { it.startsWith("result") })
+        assertEquals(TapLayouts.DUBEOLSIK.keys[index("c")], view.keyAt(index("c")))
+        assertEquals(TapLayouts.QWERTY.keys[index("c")], view.shownKeyAt(index("c")))
+
+        touch.tap(0, cx("ctrl"), cy("ctrl"))              // pressed again: off, Dubeolsik again
+        assertEquals(off.texts, draw().texts)
+        assertEquals(offNames, names())
+    }
+
+    @Test
+    fun `CV-11 Alt on alone draws QWERTY too`() {
+        val (qwerty, qwertyNames) = qwertyDrawing(setOf(ChordModifier.ALT))
+        show(TapLayouts.DUBEOLSIK)
+        val off = draw().texts
+        touch.tap(0, cx("alt"), cy("alt"))
+        assertEquals(setOf(ChordModifier.ALT), sink.chord)
+        assertEquals(qwerty, draw().texts)
+        assertEquals(qwertyNames, names())
+        touch.tap(0, cx("alt"), cy("alt"))
+        assertEquals(off, draw().texts)
+    }
+
+    @Test
+    fun `CV-12 both on, then one off - QWERTY at every step until both are off`() {
+        val (qwerty, qwertyNames) = qwertyDrawing(setOf(ChordModifier.CTRL))
+        show(TapLayouts.DUBEOLSIK)
+        val off = draw().texts
+        val offNames = names()
+        val steps = listOf(
+            "ctrl" to setOf(ChordModifier.CTRL),
+            "alt" to setOf(ChordModifier.CTRL, ChordModifier.ALT),
+            "ctrl" to setOf(ChordModifier.ALT),           // Ctrl off, Alt left: no flicker back to Dubeolsik
+        )
+        for ((id, chord) in steps) {
+            touch.tap(0, cx(id), cy(id))
+            assertEquals(chord, sink.chord)
+            assertEquals("$chord", qwerty, draw().texts)  // the edit row words are the same on both layouts
+            assertEquals("$chord", qwertyNames, names())
+        }
+        // Alt on then Ctrl on, then Alt off first: the same.
+        touch.tap(0, cx("ctrl"), cy("ctrl"))
+        touch.tap(0, cx("alt"), cy("alt"))
+        assertEquals(setOf(ChordModifier.CTRL), sink.chord)
+        assertEquals(qwerty, draw().texts)
+        touch.tap(0, cx("ctrl"), cy("ctrl"))              // both off
+        assertEquals(emptySet<ChordModifier>(), sink.chord)
+        assertEquals(off, draw().texts)
+        assertEquals(offNames, names())
+    }
+
+    @Test
+    fun `CV-13 a key that both ride on turns them off and Dubeolsik comes back`() {
+        show(TapLayouts.DUBEOLSIK)
+        val off = draw().texts
+        val offNames = names()
+        ridesOff = true
+        touch.tap(0, cx("ctrl"), cy("ctrl"))
+        touch.tap(0, cx("alt"), cy("alt"))
+        assertFalse(hangulDrawn(draw()))
+        touch.tap(0, cx("c"), cy("c"))                    // Ctrl + Alt + C: both rode on it
+        assertEquals("result:c:ㅊ:${TapGesture.Tap}", events.last { it.startsWith("result") })
+        assertEquals(emptySet<ChordModifier>(), sink.chord)
+        assertEquals(off, draw().texts)
+        assertEquals(offNames, names())
+        // A mode key or a new field turns them off the same way: the sink empties its chord and tells the view.
+        touch.tap(0, cx("ctrl"), cy("ctrl"))
+        sink.chord = emptySet()
+        view.chordChanged()
+        assertEquals(off, draw().texts)
+    }
+
+    @Test
+    fun `CV-14 the QWERTY view draws the same with or without Ctrl, and a sink without chords keeps Dubeolsik`() {
+        show(TapLayouts.QWERTY)
+        val off = draw().texts
+        touch.tap(0, cx("ctrl"), cy("ctrl"))
+        touch.tap(0, cx("alt"), cy("alt"))
+        assertEquals(off, draw().texts)
+        assertEquals(TapLayouts.QWERTY, TapLayouts.shown(TapLayouts.QWERTY, chordOn = true))
+        assertEquals(TapLayouts.DUBEOLSIK, TapLayouts.shown(TapLayouts.DUBEOLSIK, chordOn = false))
+        assertEquals(TapLayouts.QWERTY, TapLayouts.shown(TapLayouts.DUBEOLSIK, chordOn = true))
+
+        val plain = object : TapSink {                    // the practice keyboard: Ctrl never turns on
+            override fun onTapOutput(key: TapKeyDef, out: TapOutput) = Unit
+            override fun onFunctionDown(key: FunctionKey) = Unit
+            override fun onFunctionUp(key: FunctionKey) = Unit
+        }
+        val guard = EngineGuard(ErrorLog(File(tmp.root, "errors2.log")), NoState)
+        view = TapKeyboardView(RuntimeEnvironment.getApplication(), plain, guard, feedback)
+        view.setLayout(TapLayouts.DUBEOLSIK, ThresholdDefaults.VALUES, 48f)
+        layoutExactly(view, Math.round(360f * density), Math.round(288f * density))
+        Touches(view).tap(0, cx("ctrl"), cy("ctrl"))
+        assertTrue(hangulDrawn(draw()))
+        assertEquals("ㅊ", node("c").contentDescription.toString())
     }
 }

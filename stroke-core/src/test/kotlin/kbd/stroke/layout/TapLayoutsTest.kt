@@ -4,6 +4,7 @@ import kbd.stroke.geom.Edge
 import kbd.stroke.geom.KeyGeom
 import kbd.stroke.geom.RectDp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -331,5 +332,21 @@ class TapLayoutsTest {
         val eo = byJamo.getValue('ㅓ')
         assertEquals(kbd.stroke.geom.Diag.UP_RIGHT, kbd.stroke.geom.wayOfSigns(Integer.signum(col(eo) - col(u)), Integer.signum(eo.row - u.row)))
         assertEquals('ㅝ', TapLayouts.COMPOUND_VOWEL.getValue('ㅜ')[kbd.stroke.geom.Dir.LEFT])
+    }
+
+    @Test
+    fun `TL-13 the two layouts line up key for key, so QWERTY can be drawn over Dubeolsik (FSS 117, SRS FR-TAP-15 ⑥)`() {
+        val q = TapLayouts.QWERTY.keys
+        val d = TapLayouts.DUBEOLSIK.keys
+        assertEquals(q.size, d.size)
+        for (i in q.indices) {
+            assertEquals("$i", listOf(q[i].id, q[i].row, q[i].x, q[i].w, q[i].rowSpan, q[i].function),
+                listOf(d[i].id, d[i].row, d[i].x, d[i].w, d[i].rowSpan, d[i].function))
+        }
+        assertEquals(TapLayouts.DUBEOLSIK.rows, TapLayouts.QWERTY.rows)
+        assertSame(TapLayouts.QWERTY, TapLayouts.shown(TapLayouts.DUBEOLSIK, chordOn = true))
+        assertSame(TapLayouts.DUBEOLSIK, TapLayouts.shown(TapLayouts.DUBEOLSIK, chordOn = false))
+        assertSame(TapLayouts.QWERTY, TapLayouts.shown(TapLayouts.QWERTY, chordOn = true))
+        assertSame(TapLayouts.QWERTY, TapLayouts.shown(TapLayouts.QWERTY, chordOn = false))
     }
 }
