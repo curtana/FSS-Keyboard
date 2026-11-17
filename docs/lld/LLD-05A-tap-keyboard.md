@@ -1,7 +1,8 @@
 # LLD-05A 탭 자판 (쿼티·두벌식)
 
 - 대응 HLD 절: 5A장(탭 자판)
-- 버전 **0.25** (2026-11-15)
+- 버전 **0.26** (2026-11-17)
+- 0.26(FSS#122 오너 결정 "좌는 ㅓ 우는 ㅏ 상은 ㅗ 하는 ㅜ"·"그냥 기능만 넣어줘", SRS 0.95 FR-TAP-02h, HLD 0.88 5A "두벌식 자음 키 빈 방향 = 자음 + 모음"): `TapOutput.vowel`(2.2), `TapKeyDef.dirVowel`(3.1), `TapLayouts.STROKE_VOWEL`과 3.3 "자음 + 모음" 표, 2.2 찾는 순서 끝의 `syllable` 단계. 조합은 `InputDispatcher`가 `applyAll`로 자모 둘(LLD-08 6절). 표시 없음
 - 0.25(FSS#117 오너 결정 "차라리 ctrl, alt가 눌리면 순간 자반을 영문으로 바꾸자 키 선택이되면 다시 한글로 돌아오고"·보탬, SRS 0.94 FR-TAP-15 ⑥, HLD 0.87 5A "켜진 동안 두벌식을 쿼티로 그림"): **Ctrl·Alt가 켜진 동안 두벌식을 쿼티로 그림** — `TapLayouts.shown(layout, chordOn)`(3.1), `TapKeyboardView`의 `onDraw`·`chordChanged()`·`shownKeyAt`(4절), 접근성 이름(7절). 시험 TL-13, CV-10~CV-14
 - 0.24(FSS#110 오너 결정 "모음은 획의 방향으로 해야지"·"좋아 대각선 써보자"·⌫ "한 단계씩", SRS 0.92 FR-TAP-02g·FR-HGL-04f·TBD-39, HLD 0.85 4.2·5A "두벌식 겹모음 한 번 긋기"): **두벌식 겹모음 한 번 긋기** — `TapLayouts.COMPOUND_VOWEL`(ㅗ → ㅘ · ↓ ㅚ · ↘ ㅙ, ㅜ ← ㅝ · ↑ ㅟ · ↙ ㅞ, ㅡ ↓ ㅢ)을 겹받침 표·짝 모음 표와 따로 두고 셋을 `TapKeyDef.dirJamo`로 합친다(3.3 "두벌식 겹모음 배정표"). **원리 둘을 나란히 적는다: 모음은 덧붙는 획이 뻗는 방향, 자음 겹받침은 뒤 자음 키의 위치.** ㅙ·ㅞ가 대각선이라 ㅗ(h)·ㅜ(n)는 데이터만으로 8방향 키가 되고(3.1 `eightWay`, 2.1 판정 그대로), ㅡ(m)는 4방향 그대로다. **판정·결과(`TapKeyResolver`)·표시(`edgeHints`·`drawHints`)·Ctrl·Alt(`ChordKeys`)·손 뗀 키 우선(`ReleaseKeyCompound`) 코드는 바꾸지 않았다** — 모두 데이터로 정해지고, 손 뗀 키 우선은 모음 키가 `COMPOUND_JONG`에 없어 이미 건너뛴다(4.1). 바뀐 코드는 `TapLayouts`의 표 하나와 `dirJamo` 합치기(셋, 한 방향에 둘이면 `require` 실패)다. 입력 단위를 획 단계로 나누는 것은 조합기 일이다(LLD-04 7.4). 꺾기(키를 벗어난 뒤 꺾음)는 SRS에서 폐기돼 분류기에 더하지 않았다. 시험 TL-09·TL-10(새 기대)·TL-12, TA-21·TA-22(새 기대)·TA-25, CM-15, GJ-02(새 기대), GV-01~GV-03, ID-43(LLD-11 0.65)
 - 0.23(FSS#109 오너 결정 "8방향으로 해"·"만드는 원리가 일정해야지"·"비어있는 방향으로 긋는 것은 그냥 키를 누른 것과 같은 효과", PM 결정(문지르기), SRS 0.91 FR-TAP-02c ①~⑤·02e·03b·16 ③·TBD-38, HLD 0.84 4.2·5A "겹받침 방향 규칙과 8방향 키"): **겹받침 방향 규칙 하나와 8방향 키** — 방향 타입에 대각선을 더했다: `sealed interface Way { dx; dy }`를 `Dir`(그대로 네 값, 부호 `dx`·`dy`만 더함)과 새 `Diag`(↖ ↗ ↙ ↘)가 구현한다(LLD-03 3.3, D-75). `TapGesture`의 방향은 `Way`(2.1). `TapGestureClassifier(key, minCrossDp, eightWay)`는 `eightWay`이면 처음 나감 순간의 점과 누른 점의 각도로 8방향을 정한다(위아래좌우 60°·대각선 30°, 경계는 위아래좌우 쪽 — `wayOfAngle`·`wayOfVector`, 2.1). 나감·나갔다 돌아옴·문지르기는 처음 나간 변의 통과 횟수 그대로. `TapKeyResolver`는 대각선 나감·나갔다 돌아옴·문지르기를 그 대각선의 `dirJamo`로, 없으면 탭 결과로 낸다(2.2 1·2번). `TapKeyDef.dirJamo`는 `Map<Way, Char>`, **`TapKeyDef.eightWay` = 대각선 배정이 있는가**(데이터로 정함, 키 이름 갈래 없음 — 3.1). 겹받침 표 `COMPOUND_JAMO`(3.3)는 규칙 (sign 열 차, sign 줄 차)의 결과: ㄹ ↖ ㄼ ↑ ㄺ ↗ ㄽ ← ㄻ → ㅀ ↙ ㄾ ↓ ㄿ, ㄱ → ㄳ, ㄴ ↑ ㄵ → ㄶ, ㅂ → ㅄ(ㅅ·ㅌ·ㅍ 키의 겹받침은 없앰). 빈 방향 = 탭(2.2). `edgeHints`가 대각선도 내고 `TapKeyboardView`가 모서리에 그린다(3.4, 4절). `ChordKeys`는 고치지 않았다 — 쿼티 f에 대각선이 없어 F(2.4). **같은 판 덧붙임(SRS FR-TAP-02f, 오너 결정 "더해줘"): 손 뗀 키 우선** — 두벌식 자음 키에서 나감이 세어진 획을 겹받침 짝 자음 키 위에서 떼면 방향과 관계없이 그 겹받침(4.1). 뗀 점의 키는 `TapGeometry.releasedKey(p)`(뷰 안이면 누름과 같은 키 찾기, 뷰 밖·여유 칸은 없음), 짝 판정은 app의 순수 함수 `ReleaseKeyCompound.of(누른 키, 뗀 키)`가 `core-hangul`의 `JamoTables.COMPOUND_JONG`(조합기가 겹받침을 나누는 표와 같은 표)으로 한다 — stroke-core는 core-hangul에 의존하지 않으므로(LLD-03 1.2) 이 단계는 `TapTouchLogic.up`에 있고 `TapGestureClassifier`·`TapKeyResolver`는 뗀 키를 모른다(D-76). 동작(`TapGesture`)은 그대로 실어 Ctrl·Alt가 켜져 있으면 방향 규칙의 키 입력이 나간다. 시험 TG-11~14, TA-23·24, TL-10·11, CM-14, ID-42, GJ-01~03, CD-20(LLD-11 0.64).
@@ -66,7 +67,8 @@ class TapGestureClassifier(key: KeyGeom, minCrossDp: Float, eightWay: Boolean = 
 
 ```kotlin
 data class TapOutput(val text: String?, val jamo: Char?,        // jamo: 두벌식 호환 자모(stroke-core는 core-hangul에 의존하지 않음, LLD-03 1.2)
-                     val errorVibe: Boolean)
+                     val errorVibe: Boolean,
+                     val vowel: Char? = null)                    // 0.26: jamo 뒤에 이어 넣는 모음(자음 + 모음 긋기, 3.3·FR-TAP-02h)
 object TapKeyResolver {
     fun resolve(key: TapKeyDef, g: TapGesture): TapOutput
 }
@@ -85,7 +87,7 @@ object TapKeyResolver {
 | 키 종류 \ 동작 | Tap | Exit(UP) | Exit(DOWN) | Exit(LEFT/RIGHT) | Rub(UP) | Rub(DOWN) |
 |---|---|---|---|---|---|---|
 | `QWERTY_LETTER` | 소문자 | 대문자 | `a.down` ?: 소문자 | `a.left/right` ?: 소문자 | 윗첨자 | 아래첨자 |
-| `DUBEOLSIK_LETTER` | 기본 자모 | 시프트 자모(ㄲ ㄸ ㅃ ㅆ ㅉ ㅒ ㅖ) ?: `dirJamo[UP]`(ㄵ ㄺ, ㅛ) ?: 기본 | `dirJamo[DOWN]`(ㄿ, ㅠ) ?: `a.down` ?: 기본 | `dirJamo[LEFT/RIGHT]`(← ㄻ · → ㄳ ㄶ ㅀ ㅄ, ㅕ ㅑ) ?: `a.left/right` ?: 기본 | 기본 | 기본 |
+| `DUBEOLSIK_LETTER` | 기본 자모 | 시프트 자모(ㄲ ㄸ ㅃ ㅆ ㅉ ㅒ ㅖ) ?: `dirJamo[UP]`(ㄵ ㄺ, ㅛ) ?: 기본 + `dirVowel[UP]` | `dirJamo[DOWN]`(ㄿ, ㅠ) ?: `a.down` ?: 기본 + `dirVowel[DOWN]` | `dirJamo[LEFT/RIGHT]`(← ㄻ · → ㄳ ㄶ ㅀ ㅄ, ㅕ ㅑ) ?: `a.left/right` ?: 기본 + `dirVowel[LEFT/RIGHT]` | 기본 | 기본 |
 | `NUMBER_ROW`, `SYMBOL` | `a.tap` | `a.up` | `a.down` ?: `a.tap` | `a.left/right` ?: `a.tap` | `a.tap` | `a.tap` |
 
 - 윗첨자·아래첨자가 유니코드에 없으면 일반 글자 + `errorVibe = true`(FR-TAP-01b).
@@ -93,6 +95,7 @@ object TapKeyResolver {
 - **대각선(0.23, FSS#109):** 대각선 방향은 8방향 키(`eightWay`, 지금은 두벌식 f·h·n — 0.24에 ㅗ·ㅜ, FSS#110)의 획에서만 나온다. 2번 단계는 키 종류를 보지 않는다 — 대각선 `dirJamo`가 있으면 그 자모, 없으면 탭과 같은 결과다(ㄹ ↘ = ㄹ). 그래서 대각선을 받은 4방향 키(Ctrl·Alt가 쿼티 f에 넘기는 ㄹ의 대각선, 2.4)도 탭 결과(f)다. 대각선 문지르기는 1번에서 대각선 나감이 된다(대각선 문지르기를 따로 두지 않음, SRS FR-TAP-02e ④).
 - **빈 방향 = 탭(0.23, SRS FR-TAP-02c ④):** 배정이 없는 방향의 나감·나갔다 돌아옴은 모든 탭 자판 글자 키에서 탭과 같은 출력이고 `errorVibe = false`다(위 표의 "?: 기본"·"?: 소문자"·"?: `a.tap`", 2번 단계). 0.22까지도 네 방향은 그랬고(동작 표 "배정 없음 = 탭과 같음") 0.23은 대각선에도 같게 했다. 오류 진동은 없는 윗첨자·아래첨자(FR-TAP-01b)에만 있다. 시험 TA-24. 짝 모음(0.22, FSS#104)도 같은 판정 길이다: ㅗ ↑ ㅛ · ㅓ ← ㅕ · ㅏ → ㅑ · ㅜ ↓ ㅠ는 나감·나갔다 돌아옴에서 나오고, ㅓ ← · ㅏ → 문지르기는 1번 정규화로 그 방향 나감이라 ㅕ · ㅑ, ㅗ ↑ · ㅜ ↓ 문지르기는 기본 모음 ㅗ · ㅜ다(SRS TBD-37 ① 잠정). 짝 모음 키 h·j·k·n에는 시프트 자모·겹받침·`assign`이 없다. 그래서 찾는 순서(↑ = 시프트 자모 → `dirJamo` → 기본, 그 밖 = `dirJamo` → 배정 기호 → 기본)는 지금 데이터에서 결과를 바꾸지 않는다(시험 TL-09).
 - 1번 정규화는 SRS 동작 표의 "← · → 문지르기"·"나갔다 돌아옴(같은 변 2번 통과)" 행이다(SRS 3.3 탭 자판 동작 표, DCR-02 결정). 예: a ↑ 나갔다 돌아옴 = A, i ← 문지르기 = `[`, i → 나갔다 돌아옴 = i(→ 배정 없음). 그래서 모든 획이 출력을 하나 낸다(입력 없는 결과가 없다).
+- **자음 + 모음(0.26, SRS FR-TAP-02h, FSS#122):** 두벌식 줄의 "기본 + `dirVowel[d]`"는 `syllable(key, base, d) = TapOutput(null, base, false, vowel = key.dirVowel[d])`다. 자음 키의 빈 위아래좌우는 `vowel`이 있고(ㄱ ← = ㄱ + ㅓ), 모음 키는 `dirVowel`이 비어 `vowel = null` — 0.25까지의 "빈 방향 = 탭"과 같은 값이다. 그래서 ↑·↓ 문지르기(기본 자모), 대각선(2번 단계), 쿼티·기호는 바뀌지 않는다. `vowel`이 있으면 `InputDispatcher.onTapResult`가 `composer.applyAll([자음, 모음])`으로 두 자모 이벤트를 보내고 화면은 한 번 바꾼다(키 두 번과 같은 단위 둘, LLD-08 6절). Ctrl·Alt가 켜져 있으면 출력을 보지 않고 동작으로 쿼티 키를 보낸다(2.4). `edgeHints`는 `text ?: jamo`만 보아 탭과 같은 자음이라 그리지 않는다(표시 없음, 오너 지시). 시험 TA-26·ID-44.
 - `TapGestureClassifier`는 물리 동작을 그대로 구분하고(시험 TG), 결과 규칙은 이 함수에만 둔다.
 - 배정 기호(`text`)를 넣는 경로와 자모(`jamo`)를 넣는 경로는 호출자(`InputDispatcher`, LLD-08 6절)가 나눈다. 두벌식 조합 중 기호·숫자면 먼저 확정한다(FR-TAP-11a).
 - 근거: FR-TAP-01a, 01b, 02a, 02c, 02e, 02g, 03a, 11, FR-SWP-44, SRS 탭 자판 동작 표. 시험: TK-01~TK-24(표의 칸마다 하나), TA-01~TA-12, TA-21~TA-25.
@@ -185,6 +188,7 @@ data class TapKeyDef(val id: String, val row: Int, val x: Float, val w: Float,  
                      val jamo: Char? = null, val shiftJamo: Char? = null,      // 두벌식 글자 키(호환 자모 문자)
                      val function: FunctionKey? = null,
                      val dirJamo: Map<Way, Char> = emptyMap(),                 // 두벌식 글자 키: 방향별 자모 = 겹받침 + 짝 모음 + 겹모음(3.3, 0.22. 0.21까지 compoundJamo. 0.24: 겹모음). 0.23: 대각선도(Way)
+                     val dirVowel: Map<Dir, Char> = emptyMap(),                // 0.26: 두벌식 자음 키의 빈 위아래좌우 → 뒤 모음(3.3 "자음 + 모음")
                      val rowSpan: Int = 1) {                                   // 0.21: 차지하는 줄 수(↵ 2, 그 밖 1). 1 미만이면 require 실패
     val eightWay: Boolean get() = dirJamo.keys.any { it is Diag }              // 0.23: 대각선 배정이 있는 키 = 8방향 판정(2.1)
     fun inRow(r: Int): Boolean = r >= row && r < row + rowSpan                 // 줄 r에 드는가
@@ -296,6 +300,18 @@ object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 - **처음 누른 키, 손 뗀 키 우선 없음:** ㅗ에서 →로 그어 ㅓ·ㅏ 위에서 떼도 ㅘ, ㅜ·ㅡ를 ↓로 그어 스페이스 위로 넘어가도 ㅠ·ㅢ다(4.1, 시험 GV-02).
 - **출력:** 자모 하나(`TapOutput.jamo` = ㅘ 등)다. 뷰·판정은 자모 하나만 넘기고, 입력 단위를 획 단계로 나누는 것은 조합기의 두벌식 정책이다(LLD-04 7.4, SRS FR-HGL-04f). 시험 ID-43.
 - **Ctrl·Alt:** `ChordKeys.ofTap(id, gesture)`(2.4)가 같은 id의 쿼티 키(h·n·m)로 판정하므로 바꿀 것이 없다 — ↑ 구간 나감·돌아옴 = Shift + `H`·`N`·`M`, 나머지 방향·대각선·문지르기 = `H`·`N`·`M`(SRS FR-TAP-02g ⑦). 시험 CM-15.
+
+**자음 + 모음 (0.26, FSS#122, SRS FR-TAP-02h)** — `TapLayouts.STROKE_VOWEL: Map<Dir, Char>` = {← ㅓ, → ㅏ, ↑ ㅗ, ↓ ㅜ}(모음 획 방향). 두벌식 글자 키를 만들 때 자음(호환 자모 ㄱ..ㅎ)이면 `dirVowel = STROKE_VOWEL`에서 `dirJamo`에 있는 방향과, 시프트 자모가 있으면 ↑를 뺀 것이다. 모음 키는 빈 맵이다. 결과(시험 TA-26):
+
+| 키 | ← ㅓ | → ㅏ | ↑ ㅗ | ↓ ㅜ |
+|---|---|---|---|---|
+| ㅁ ㅇ ㅎ ㅋ ㅌ ㅊ ㅍ | 넣음 | 넣음 | 넣음 | 넣음 |
+| ㅈ ㄷ ㅅ | 넣음 | 넣음 | (ㅉ ㄸ ㅆ) | 넣음 |
+| ㄱ ㅂ | 넣음 | (ㄳ ㅄ) | (ㄲ ㅃ) | 넣음 |
+| ㄴ | 넣음 | (ㄶ) | (ㄵ) | 넣음 |
+| ㄹ | (ㄻ) | (ㅀ) | (ㄺ) | (ㄿ) |
+
+- 자음 키에는 `assign`(기호)이 없다 — 배치를 만들 때 `require`로 지킨다(기호 키 i·o·p·l은 모음 ㅑ ㅐ ㅔ ㅣ). `dirVowel`에 대각선은 없어 `eightWay`는 바뀌지 않는다.
 
 ### 3.4 모서리 표시 (FR-TAP-03b)
 
