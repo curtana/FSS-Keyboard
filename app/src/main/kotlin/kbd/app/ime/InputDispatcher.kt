@@ -85,7 +85,11 @@ class InputDispatcher(
             val j = Jamo.ofCompat(jamo)
             val c = composer
             if (j != null && c != null) {
-                this.out.show(c.apply(if (j.kind == JamoKind.CONSONANT) JamoEvent.Consonant(j) else JamoEvent.Vowel(j)))
+                // A consonant key's free direction (FSS#122, FR-TAP-02h): the consonant, then the vowel as its own
+                // event, as if the two keys were tapped — two input units, one screen update.
+                val v = out.vowel?.let(Jamo::ofCompat)
+                val first = if (j.kind == JamoKind.CONSONANT) JamoEvent.Consonant(j) else JamoEvent.Vowel(j)
+                this.out.show(if (v == null) c.apply(first) else c.applyAll(listOf(first, JamoEvent.Vowel(v))))
             }
         } else if (text != null) {
             finishAll()   // FR-TAP-11a

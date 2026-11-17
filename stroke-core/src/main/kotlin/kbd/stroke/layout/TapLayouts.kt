@@ -64,6 +64,22 @@ object TapLayouts {
     )
 
     /**
+     * The vowel of each up/down/left/right direction on the Dubeolsik consonant keys (owner, FSS#122, SRS FR-TAP-02h): a
+     * stroke where the key has nothing else types the consonant and then this vowel, like tapping the two keys (ㄱ ←
+     * = 거, ㅁ ↑ = 모). The direction is the way the vowel's stroke goes, as for the paired vowels (FSS#104, #110).
+     */
+    val STROKE_VOWEL: Map<Dir, Char> = mapOf(Dir.LEFT to 'ㅓ', Dir.RIGHT to 'ㅏ', Dir.UP to 'ㅗ', Dir.DOWN to 'ㅜ')
+
+    /**
+     * The [STROKE_VOWEL] of [jamo]'s key: consonant keys only (compatibility jamo ㄱ..ㅎ), less the directions that
+     * already type something — ↑ with a shift jamo (ㄲ ㄸ ㅃ ㅆ ㅉ) and the [dirJamo] compound finals (ㄱ → ㄳ, all four of ㄹ).
+     */
+    private fun dirVowel(jamo: Char, taken: Map<Way, Char>): Map<Dir, Char> {
+        if (jamo !in 'ㄱ'..'ㅎ') return emptyMap()
+        return STROKE_VOWEL.filterKeys { d -> d !in taken && !(d == Dir.UP && SHIFT_JAMO[jamo] != null) }
+    }
+
+    /**
      * The direction jamo of [jamo]'s key: its compound finals, paired vowels and compound vowels, never two in one
      * direction.
      */
@@ -145,10 +161,12 @@ object TapLayouts {
                 val symbols = LETTER_SYMBOLS[id]
                 keys += if (dubeolsik) {
                     val jamo = DUBEOLSIK_ROWS[r][i]
+                    val dirs = dirJamo(jamo)
+                    require(symbols == null || jamo !in 'ㄱ'..'ㅎ') { "$id: symbols on a consonant key" }   // FR-TAP-02h
                     TapKeyDef(
                         id.toString(), row, x, KEY_W, TapKeyKind.DUBEOLSIK_LETTER, jamo.toString(),
                         assign = symbols?.assign(jamo.toString()),
-                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirJamo(jamo),
+                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirs, dirVowel = dirVowel(jamo, dirs),
                     )
                 } else {
                     TapKeyDef(

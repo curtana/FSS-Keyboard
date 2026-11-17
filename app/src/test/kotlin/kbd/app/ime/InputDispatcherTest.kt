@@ -196,13 +196,13 @@ class InputDispatcherTest {
             "ㄱㅜ↓ㄹ" to "귤",
             "ㄱㅜㅓ←" to "구ㅕ",     // ㅜ + ㅕ does not merge
             "ㄱㅜㅓ" to "궈",        // the tap still merges
-            "ㄱㅏㅌ↑" to "같",       // ㅌ ↑ is ㅌ again (FSS#109; ㄾ in FSS#107)
-            "ㄱㅏㅌ←" to "같",
+            "ㄱㅏㅌ↑" to "가토",     // ㅌ ↑ is ㅌ + ㅗ (FSS#122; ㅌ in FSS#109, ㄾ in FSS#107)
+            "ㄱㅏㅌ←" to "가터",
             "ㄱㅏㅌ" to "같",
             "ㄱㅗ↑⌫" to "ㄱ",        // ⌫ takes the vowel, one unit
-            "ㄱㅏㅌ↑⌫" to "가",      // ⌫ takes the final ㅌ (FSS#109; 갈 while ㅌ ↑ was ㄾ)
+            "ㄱㅏㅌ↑⌫" to "가ㅌ",    // ⌫ takes the ㅗ, as 가토 typed (FSS#122; 가 in FSS#109, 갈 while ㅌ ↑ was ㄾ)
         )
-        val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㅌ", "ㅌ←" to "ㅌ")
+        val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㅌㅗ", "ㅌ←" to "ㅌㅓ")
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
             // The same as the keys typed by taps (ㄾ as ㄹ ㅌ).
@@ -218,14 +218,14 @@ class InputDispatcherTest {
             "ㄱㅏㄹ↑" to "갉", "ㄱㅏㄹ↖" to "갋", "ㄱㅏㄹ↗" to "갌", "ㄱㅏㄹ←" to "갊", "ㄱㅏㄹ→" to "갏",
             "ㄱㅏㄹ↙" to "갍", "ㄱㅏㄹ↓" to "갎", "ㄱㅏㄱ→" to "갃", "ㄱㅏㄴ↑" to "갅", "ㄱㅏㄴ→" to "갆", "ㄱㅏㅂ→" to "값",
             "ㄱㅏㄹ↘" to "갈",       // nothing down-right: the tap
-            "ㄱㅏㄱ↓" to "각", "ㄱㅏㅂ↓" to "갑", "ㄱㅏㅅ↓" to "갓", "ㄱㅏㅍ↑" to "갚",   // directions with nothing (FR-TAP-02c ④)
+            "ㄱㅏㄱ↓" to "가구", "ㄱㅏㅂ↓" to "가부", "ㄱㅏㅅ↓" to "가수", "ㄱㅏㅍ↑" to "가포",   // consonant + vowel (FSS#122)
             "ㄱㅏㄹ↖ㅏ" to "갈바",    // dokkaebibul: ㅂ of ㄼ goes on
             "ㄱㅏㄹ↙⌫" to "갈", "ㄱㅏㅂ→⌫" to "갑",
         )
         val taps = mapOf(
             "ㄹ↑" to "ㄹㄱ", "ㄹ↖" to "ㄹㅂ", "ㄹ↗" to "ㄹㅅ", "ㄹ←" to "ㄹㅁ", "ㄹ→" to "ㄹㅎ", "ㄹ↙" to "ㄹㅌ", "ㄹ↓" to "ㄹㅍ",
             "ㄹ↘" to "ㄹ", "ㄱ→" to "ㄱㅅ", "ㄴ↑" to "ㄴㅈ", "ㄴ→" to "ㄴㅎ", "ㅂ→" to "ㅂㅅ",
-            "ㄱ↓" to "ㄱ", "ㅂ↓" to "ㅂ", "ㅅ↓" to "ㅅ", "ㅍ↑" to "ㅍ",
+            "ㄱ↓" to "ㄱㅜ", "ㅂ↓" to "ㅂㅜ", "ㅅ↓" to "ㅅㅜ", "ㅍ↑" to "ㅍㅗ",
         )
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
@@ -619,5 +619,34 @@ class InputDispatcherTest {
             "ㄱㅏㄱㅗ→⌫" to "가고", "ㅗ→⌫" to "ㅗ", "ㄱㅗ↘⌫ㅣ" to "괴", "ㄱㅗ→⌫ㅏ" to "과", "ㄱㅗㅐ⌫" to "고",
         )
         for ((keys, expected) in steps) assertEquals(keys, expected, shownAfter(keys))
+    }
+
+    @Test
+    fun `ID-44 a consonant key's free way composes as the consonant then the vowel tapped, two backspace units (FSS 122)`() {
+        // SRS FR-TAP-02h ②: 거 ⌫ = ㄱ, ⌫ = nothing; after a final as the keys would (각거, 갈거).
+        val cases = listOf(
+            "ㄱ←" to "거", "ㄱ→" to "ㄳ", "ㄱ↑" to "ㄲ", "ㄱ↓" to "구", "ㅁ↑" to "모", "ㅁ→" to "마", "ㅇ←" to "어", "ㅎ↓" to "후",
+            "ㄷ→" to "다", "ㄷ↑" to "ㄸ", "ㅅ←" to "서", "ㅈ↓" to "주", "ㄴ←" to "너", "ㅂ↓" to "부", "ㅋ→" to "카",
+            "ㄱ←⌫" to "ㄱ", "ㄱ←⌫⌫" to "", "ㅁ↑⌫" to "ㅁ",
+            "ㄱㅏㄱㄱ←" to "각거", "ㄱㅏㄹㄱ←" to "갈거",
+            "ㄱ←ㄴ" to "건", "ㄱ←ㄴㅁ↑" to "건모", "ㄱ←ㄹ↑" to "걹", "ㄱ←ㅏ" to "거ㅏ", "ㅗㄱ←" to "ㅗ거",
+            "ㄱㅗㅁ→" to "고마", "ㄱㅏㅁ→" to "가마",
+        )
+        // Each stroke as its two keys tapped (FR-TAP-02h ②); strokes that type one jamo (ㄳ ㄲ ㄸ ㄺ) have no such keys.
+        val taps = mapOf(
+            "ㄱ←" to "ㄱㅓ", "ㄱ↓" to "ㄱㅜ", "ㅁ↑" to "ㅁㅗ", "ㅁ→" to "ㅁㅏ", "ㅇ←" to "ㅇㅓ", "ㅎ↓" to "ㅎㅜ", "ㄷ→" to "ㄷㅏ",
+            "ㅅ←" to "ㅅㅓ", "ㅈ↓" to "ㅈㅜ", "ㄴ←" to "ㄴㅓ", "ㅂ↓" to "ㅂㅜ", "ㅋ→" to "ㅋㅏ",
+        )
+        val arrows = "↑←→↓"
+        fun sameAsTaps(keys: String) {
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            if (tapped.none { it in arrows }) assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+        for ((keys, expected) in cases) {
+            assertEquals(keys, expected, shownAfter(keys))
+            sameAsTaps(keys)
+        }
+        // ⌫ after a final and dokkaebibul: unit by unit as the keys typed (no literal: the composer's own rule).
+        for (keys in listOf("ㄱㅏㄹㄱ←⌫", "ㄱㅏㄹㄱ←⌫⌫", "ㄱㅏㄱㄱ←⌫", "ㄱㅏㄱㄱ←⌫⌫", "ㄱㅏㅁ→⌫", "ㄱㅏㅁ→⌫⌫⌫")) sameAsTaps(keys)
     }
 }

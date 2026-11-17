@@ -74,13 +74,23 @@ object TapKeyResolver {
         val base = requireNotNull(key.jamo) { key.id }
         return when (g) {
             is TapGesture.Exit -> when (g.dir) {
-                Dir.UP -> jamo(key.shiftJamo ?: key.dirJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㄹ ↑ ㄺ, ㅗ ↑ ㅛ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
-                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)   // ㄹ ← ㄻ, ㄱ → ㄳ, ㅓ ← ㅕ; ㄱ ↓ = ㄱ
+                Dir.UP -> key.shiftJamo?.let(::jamo) ?: key.dirJamo[Dir.UP]?.let(::jamo)   // ㄴ ↑ ㄵ, ㄹ ↑ ㄺ, ㅗ ↑ ㅛ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
+                    ?: syllable(key, base, Dir.UP)
+                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text)   // ㄹ ← ㄻ, ㄱ → ㄳ, ㅓ ← ㅕ
+                    ?: syllable(key, base, g.dir)
             }
             // Tap and up/down rubs: no super/subscripts for jamo, and no compound final or paired vowel either (FSS#97, FSS#104).
             else -> jamo(base)
         }
     }
+
+    /**
+     * A Dubeolsik up/down/left/right exit with nothing else assigned: on a consonant key its jamo then the direction's
+     * vowel (FSS#122, SRS FR-TAP-02h: ㄱ ↓ = 구, ㅁ ↑ = 모), else the tap (vowel keys, FR-TAP-02c ④). A diagonal never
+     * gets here.
+     */
+    private fun syllable(key: TapKeyDef, base: Char, dir: Way): TapOutput =
+        TapOutput(null, base, errorVibe = false, vowel = key.dirVowel[dir])
 
     private fun symbol(a: KeyAssign, g: TapGesture): TapOutput = when (g) {
         is TapGesture.Exit -> text(if (g.dir == Dir.UP) a.up ?: a.tap else assigned(a, g.dir) ?: a.tap)

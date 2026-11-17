@@ -40,6 +40,12 @@ data class TapKeyDef(
      * (FSS#104, e.g. ㅗ ↑ ㅛ). Since FSS#109 a direction may be a diagonal ([kbd.stroke.geom.Diag], e.g. ㄹ ↖ ㄼ).
      */
     val dirJamo: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
+    /**
+     * Dubeolsik consonant keys only (FSS#122, SRS FR-TAP-02h): the vowel a stroke in each up/down/left/right direction
+     * types after the key's jamo (ㄱ ← = 거), only where the direction has nothing else — no shift jamo, no
+     * [dirJamo]. From [TapLayouts.STROKE_VOWEL]; never a diagonal, so it does not make a key [eightWay].
+     */
+    val dirVowel: Map<kbd.stroke.geom.Dir, Char> = emptyMap(),
     /** Rows the key takes from [row] down (FSS#105): 2 for ↵, 1 for every other key. */
     val rowSpan: Int = 1,
 ) {
