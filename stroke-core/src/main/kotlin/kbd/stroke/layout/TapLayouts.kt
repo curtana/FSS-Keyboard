@@ -98,6 +98,13 @@ object TapLayouts {
     val DIAG_STROKE_VOWEL: Map<Diag, Char> = mapOf(Diag.DOWN_LEFT to 'ㅡ', Diag.UP_RIGHT to 'ㅣ')
 
     /**
+     * The vowel of a diagonal exit-and-return on the Dubeolsik consonant keys (owner, FSS#136, SRS FR-TAP-02h ④): ㅢ on
+     * both ↙ and ↗ — ㅡ + ㅣ, the two [DIAG_STROKE_VOWEL] vowels together (ㄱ ↙ and back = 긔, ↗ and back = 긔). The
+     * exit alone stays ㅡ or ㅣ. ↖ and ↘ have none: they are judged by the edge ([TapKeyDef.edgeDiagonals]).
+     */
+    val DIAG_RETURN_VOWEL: Map<Diag, Char> = mapOf(Diag.DOWN_LEFT to 'ㅢ', Diag.UP_RIGHT to 'ㅢ')
+
+    /**
      * The consonant + vowel ways of [jamo]'s key: [STROKE_VOWEL] and [DIAG_STROKE_VOWEL] on consonant keys
      * (compatibility jamo ㄱ..ㅎ), none on vowel keys. A way the key already has a direction jamo on keeps that jamo
      * (FSS#134; no consonant key has one today).
@@ -105,8 +112,12 @@ object TapLayouts {
     private fun dirVowel(jamo: Char): Map<Way, Char> =
         if (jamo in 'ㄱ'..'ㅎ') (STROKE_VOWEL + DIAG_STROKE_VOWEL).filterKeys { it !in dirJamo(jamo) } else emptyMap()
 
-    /** The [RETURN_VOWEL] of [jamo]'s key: all four on consonant keys, none on vowel keys (FSS#128). */
-    private fun returnVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') RETURN_VOWEL else emptyMap()
+    /**
+     * The [RETURN_VOWEL] and [DIAG_RETURN_VOWEL] of [jamo]'s key: all six on consonant keys, none on vowel keys
+     * (FSS#128, #136).
+     */
+    private fun returnVowel(jamo: Char): Map<Way, Char> =
+        if (jamo in 'ㄱ'..'ㅎ') RETURN_VOWEL + DIAG_RETURN_VOWEL else emptyMap()
 
     /** The direction jamo of [jamo]'s key: its paired, compound, diagonal and ↓ vowels, never two in one direction. */
     private fun dirJamo(jamo: Char): Map<Way, Char> {

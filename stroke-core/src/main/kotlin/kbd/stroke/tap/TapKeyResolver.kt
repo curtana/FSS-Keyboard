@@ -47,7 +47,7 @@ object TapKeyResolver {
 
     /**
      * Step 1: exit-and-return is an exit in that direction (table row 8) — except on a Dubeolsik consonant key, which
-     * [resolve] handles first (FSS#128, [returnSyllable]) — and a left/right rub
+     * [resolve] handles first (FSS#128, #136, [returnSyllable]; its ↖ ↘ have none) — and a left/right rub
      * is an exit in that direction (row 7). A diagonal rub (only on an 8-way key) is the diagonal's exit too: the
      * first exit's direction decides, as on every key (SRS FR-TAP-02e ④, FSS#109). Only Tap, Exit and Rub(UP/DOWN)
      * remain.
@@ -100,8 +100,10 @@ object TapKeyResolver {
         TapOutput(null, base, errorVibe = false, vowel = key.dirVowel[dir])
 
     /**
-     * A Dubeolsik consonant key's exit-and-return (FSS#128, SRS FR-TAP-02h ③): its jamo then the paired vowel of
-     * that direction ([TapKeyDef.returnVowel]: ㄱ ↑ and back = 교, ↓ 규, ← 겨, → 갸). Two jamo, two units, as the exit.
+     * A Dubeolsik consonant key's exit-and-return (FSS#128, #136, SRS FR-TAP-02h ③ ④): its jamo then the vowel of
+     * that direction ([TapKeyDef.returnVowel]: ㄱ ↑ and back = 교, ↓ 규, ← 겨, → 갸, ↙ and ↗ 긔). Two jamo, as the exit;
+     * ㅢ backspaces one step at a time as the ㅡ key ↓ does (FR-HGL-04f). A diagonal rub is not here: it stays the
+     * diagonal's exit ([normalize]: ㄱ ↙ rub = 그).
      */
     private fun returnSyllable(key: TapKeyDef, vowel: Char): TapOutput =
         TapOutput(null, requireNotNull(key.jamo) { key.id }, errorVibe = false, vowel = vowel)

@@ -363,6 +363,34 @@ class TallEnterTouchTest {
     }
 
     @Test
+    fun `GJ-05 Dubeolsik consonant keys - out ↙ or ↗ and back is a diagonal exit-and-return, out ↖ ↘ and back the edge's (FSS 136)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        /** Out of [id] at [deg] for 40 dp, then back to the centre and released there. */
+        fun backAt(id: String, deg: Double): String {
+            sink.events.clear()
+            val c = centre(id)
+            val r = Math.toRadians(deg)
+            val dx = (40f * Math.cos(r)).toFloat()
+            val dy = (-40f * Math.sin(r)).toFloat()
+            l.down(0, c)
+            l.move(0, (1..8).map { StrokePoint(c.x + dx * it / 8, c.y + dy * it / 8, it * 5L) } +
+                (7 downTo 0).map { StrokePoint(c.x + dx * it / 8, c.y + dy * it / 8, 80 - it * 5L) })
+            l.up(0, StrokePoint(c.x, c.y, 90))
+            return sink.events.single()
+        }
+        for (id in listOf("r", "a", "g", "f", "v")) {   // ㄱ ㅁ ㅎ ㄹ ㅍ
+            val c = geometry(TapLayouts.DUBEOLSIK).keys.single { it.id == id }.jamo
+            assertEquals("$id:$c:ExitReturn(dir=DOWN_LEFT)", backAt(id, 225.0))   // + ㅢ
+            assertEquals("$id:$c:ExitReturn(dir=UP_RIGHT)", backAt(id, 45.0))     // + ㅢ
+            // Up/down/left/right unchanged (+ ㅛ ㅠ ㅕ ㅑ, FSS#128); ↖ ↘ the edge crossed first, as before.
+            assertEquals("$id:$c:ExitReturn(dir=UP)", backAt(id, 90.0))
+            assertEquals("$id:$c:ExitReturn(dir=RIGHT)", backAt(id, 0.0))
+            assertEquals("$id:$c:ExitReturn(dir=LEFT)", backAt(id, 135.0))
+            assertEquals("$id:$c:ExitReturn(dir=RIGHT)", backAt(id, 315.0))
+        }
+    }
+
+    @Test
     fun `GV-04 Dubeolsik ㅓ ㅏ are judged in eight ways from their data, sector edges as ㅗ ㅜ (FSS 126, FR-TAP-02j)`() {
         val l = logic(TapLayouts.DUBEOLSIK)
         fun out(id: String, deg: Double): String {
