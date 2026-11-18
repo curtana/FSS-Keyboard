@@ -205,10 +205,10 @@ class InputDispatcherChordTest {
             return port.calls.single()
         }
         assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), TapGesture.Tap))
-        assertEquals("chord(Q,[CTRL, SHIFT])", chord(jamoKey('ㅂ'), exit(Dir.UP)))      // ㅃ
-        assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), exit(Dir.DOWN)))           // ㅄ: nothing on QWERTY q ↓
-        assertEquals("chord(F,[CTRL])", chord(jamoKey('ㄹ'), exit(Dir.LEFT)))           // ㄺ
-        assertEquals("chord(A,[CTRL, SHIFT])", chord(jamoKey('ㅁ'), exit(Dir.UP)))      // ㅁ ↑ types ㅁ; still Shift + A
+        assertEquals("chord(Q,[CTRL, SHIFT])", chord(jamoKey('ㅂ'), exit(Dir.UP)))      // 보 (ㅃ until FSS#124)
+        assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), exit(Dir.DOWN)))           // 부: nothing on QWERTY q ↓
+        assertEquals("chord(F,[CTRL])", chord(jamoKey('ㄹ'), exit(Dir.LEFT)))           // 러
+        assertEquals("chord(A,[CTRL, SHIFT])", chord(jamoKey('ㅁ'), exit(Dir.UP)))      // ㅁ ↑ types 모; still Shift + A
         assertEquals("chord(SEMICOLON,[CTRL])", chord(jamoKey('ㅣ'), exit(Dir.LEFT)))
         assertEquals("chord(D5,[CTRL, SHIFT])", chord(key(dub, "5"), exit(Dir.UP)))
         assertFalse(d.composer!!.isComposing())   // no jamo reached the composer
@@ -453,7 +453,7 @@ class InputDispatcherChordTest {
         }
     }
     @Test
-    fun `CD-20 a release over the pair key gives the compound final, but with Ctrl on the direction's key (FSS 109, FR-TAP-02f ⑤)`() {
+    fun `CD-20 a release over another key is the stroke's own direction, Ctrl on or off (FSS 124 removed FR-TAP-02f)`() {
         val guard = EngineGuard(ErrorLog(tmp.newFile("err20.log")), d)
         val noRepeat = object : kbd.app.view.TapKeyRepeat {
             override fun start(pointerId: Int, key: FunctionKey) = Unit
@@ -475,12 +475,12 @@ class InputDispatcherChordTest {
             logic.move(0, (1..8).map { kbd.stroke.geom.StrokePoint(a.x + (b.x - a.x) * it / 8, a.y + (b.y - a.y) * it / 8, 100L + it) })
             logic.up(0, b.copy(t = 120))
         }
-        // Ctrl off: ㄹ (f) released over ㅂ (q) is ㄼ, though the stroke goes ← (ㄻ by direction).
+        // Ctrl off: ㄹ (f) released over ㅂ (q) is ㄹ ← = ㄹ + ㅓ (FR-TAP-02h); ㄼ by the release key in FSS#109..#122.
         dubeolsik()
         type("ㄱㅏ")
         strokeTo("f", "q")
-        assertEquals("갋", cc.composingShown)
-        // Ctrl on: the same stroke sends the direction's key, QWERTY f ← = F (no release-key rule).
+        assertEquals("러", cc.composingShown)   // 가 then 러: the ㄹ the ㅓ took
+        // Ctrl on: the same stroke sends the direction's key, QWERTY f ← = F.
         port.calls.clear()
         logic.down(0, centre("ctrl"))
         logic.up(0, centre("ctrl").copy(t = 10))
