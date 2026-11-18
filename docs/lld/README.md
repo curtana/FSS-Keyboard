@@ -1,6 +1,7 @@
 # 상세 설계 (LLD)
 
-- 문서: LLD, 버전 **0.64** (2026-11-18)
+- 문서: LLD, 버전 **0.65** (2026-11-18)
+- 0.65(FSS#129 오너 결정 "모음 조합을 넓히는 거야"·보탬 "ㅘ + ㅣ= ㅙ, ㅝ + ㅣ = ㅞ까지 넣어야지", SRS 0.99 FR-HGL-04a·04d·04f ②, HLD 0.92 4.4·11장): **두벌식 모음 병합 넓히기** — LLD-03 0.38(3.1 `MergeTables.DUBEOLSIK` 열일곱 줄), LLD-04 0.40(7.2 그대로·7.4 D-77 근거 고침, 과 + ㅣ = 괘), LLD-05A 0.30(짝 모음 뒤 병합 문장), LLD-11 0.72(HC-77~HC-80 신설, HC-01·02·14·21·71, ID-43 기대값). 형식·모듈 변화 없음
 - 0.64(FSS#128 오너 결정 "자음에서 나가면 방향으로 ㅗ ㅜ ㅓ ㅏ를 결정하는데 나갔다가 다시 돌아오면 ㅛㅠㅕㅑ를 입력해줘", SRS 0.98 FR-TAP-02h ③, HLD 0.91 5A): 두벌식 자음 키 나갔다 돌아옴 = 자음 + ㅛ·ㅠ·ㅕ·ㅑ — LLD-05A 0.29(`RETURN_VOWEL`·`returnVowel`·`resolve` 0번), LLD-11 0.71(TA-29, ID-47, TK-23·TA-26·TL-11 기대 바뀜)
 - 0.63(FSS#126 오너 결정 "ㅓ에서 좌측 아래는 ㅔ로 좌측위는 ㅖ로 ㅏ에서 우측아래는 ㅐ로 우측 위는 ㅒ 추가해줘", SRS 0.97 FR-TAP-02j, HLD 0.90 5A): 두벌식 ㅓ·ㅏ 대각선 — LLD-05A 0.28(3.3 `DIAG_VOWEL` 표, ㅓ·ㅏ 8방향은 데이터로, 3.4 모서리 표시), LLD-11 0.70(TL-15·TA-28·GV-04·GV-05·ID-46·DV-47, 기대값 갱신 TL-09·TL-10·TA-22·GJ-02·GV-01). 보탬 ㅕ ↓ ㅖ · ㅑ ↓ ㅒ(LLD-05A `DOWN_VOWEL`, 시험 TA-05·TA-20 갱신). 검수 반영: 8방향 키 목록
 - 0.62(FSS#124 오너 결정 "1 번키의 아래 ~을 좌측으로 옮기고 1,2,3,4,5 아래 긋기에 ㅃㅉㄸㄲㅆ을 각각 넣어줘 겹받침을 모두 제거하고 … 모든 자음키에 기능을 넣어주고", SRS 0.96 FR-TAP-02h·02i, FR-TAP-02c 겹받침 한 번 긋기·FR-TAP-02e ⑤~⑨·FR-TAP-02f 삭제, HLD 0.89 5A): 두벌식 자음 키 위아래좌우 모두 자음 + 모음, 된소리는 숫자 1~5 ↓(`TENSE_JAMO`), 겹받침 한 번 긋기(`COMPOUND_JAMO`)·ㄹ 8방향·손 뗀 키 우선(`ReleaseKeyCompound`·`TapGeometry.releasedKey`) 삭제, 1 키 ~ ← — LLD-05A 0.27, LLD-08 0.36, LLD-11 0.69. 3절 추적표 FR-TAP-02c·02e·02f·02h·02i, 5절 D-74·D-76
@@ -103,11 +104,11 @@ LLD-03(공통 타입) → LLD-04(변 통과 판정·조합기) → LLD-05A·05 �
 | FR-CMN-14 (0.36, FSS#25; 0.47, FSS#84 여유 칸; 0.48, FSS#85 ⑫ 자판 판) | LLD-08 7.2 `KeyboardWidth.place`(`KeyboardSpan` 사각형·여유 칸)·`KeyboardRootView` `onMeasure`·`onLayout`·`SideMarginView`·`OffKeyboardPointers`, LLD-08 7.3 `KeyboardPlate.rect`·`KeyboardRootView.plate`·`PlatePainter`·`KeyboardInsets.compute`(⑫), LLD-04 2절 `KeyGeom.build`의 `sideDp`, LLD-07 2.3 `BoardFrame` | KW-01~KW-05, KW-07, KW-09, KW-10, SM-01~SM-03, SM-05, KH-07, EC-16, KR-01~KR-06, KR-08~KR-11, MK-09, PR-31, PR-32, DV-30, DV-35, KP-01~KP-07, PL-01~PL-08, KI-01~KI-04, PR-33, DV-36(⑫) |
 | FR-CMN-15 (0.49, FSS#86 띄운 자판) | LLD-08 7.4 `FloatingKeyboard.place`·`drag`·`ratios`, `PlateMover`, `KeyboardRootView`의 `portraitFloat`·`landscapeFloat`·`MoveHandle`·`movePlate`·`onMeasure`·`onLayout`·이동 영역의 위, `KeyboardInsets.compute`(⑫), LLD-08 3절 `saveFloatPosition`·설정 흐름, 8절 `Feedback.grab`, LLD-07 6.1 `FloatSetting`·`setFloatPosition`, 2.3 `BoardFrame`(⑭) | FK-01~FK-08, PM-01~PM-12, FL-01~FL-20, KI-05, KI-06, FB-05, SS-12~SS-14, PR-34, DV-37 |
 | FR-HGL-01~03 | LLD-04 7.2 `step`, 7.3 `apply` | HC-06~HC-20 |
-| FR-HGL-04, 04a | LLD-03 3.1 `MergeTables`, LLD-04 7.1 `ComposePolicy`(두벌식·그래피티) | HC-01, HC-02, HC-05, HC-12~HC-14, HC-21, HC-22 |
+| FR-HGL-04, 04a | LLD-03 3.1 `MergeTables`, LLD-04 7.1 `ComposePolicy`(두벌식·그래피티) | HC-01, HC-02, HC-05, HC-12~HC-14, HC-21, HC-22, HC-77~HC-80(0.65, FSS#129) |
 | FR-HGL-04c | LLD-05 4절 `CheonjiinAssembler`(이어질 수 없는 요소 무시 포함), 6절 `onStroke`(무시 요소 flash 없음), LLD-04 7.2 `ReplaceVowel` | CJ-01~CJ-24, CJ-26, CJ-41, HC-24, GH-27~GH-29, GH-36 |
 | FR-HGL-04d | LLD-04 7절, LLD-05 6절 | HC-12~HC-14, HC-21, HC-22, GH-01~GH-07, GH-26~GH-29 |
 | FR-HGL-04e | LLD-05 4.2 `push`·`pendingGlyph`, 6절 `handle`·`finishAll`(모든 확정에서 버림), LLD-08 4절 `finishComposing` | CJ-25, CJ-28, GH-02, GH-03, GH-06~GH-12, GH-20, GH-26, GH-30, GH-32, CC-15, CC-16, CC-21, CC-22 |
-| FR-HGL-04f (0.58, FSS#110) | LLD-04 7.4 `vowelUnits`·`ComposePolicy.splitCompoundVowel`·`StepOut.then`, LLD-03 3.1 `JamoTables.VOWEL_STEPS` | HC-70~HC-76, ID-43, DV-44 ③ |
+| FR-HGL-04f (0.58, FSS#110) | LLD-04 7.4 `vowelUnits`·`ComposePolicy.splitCompoundVowel`·`StepOut.then`, LLD-03 3.1 `JamoTables.VOWEL_STEPS` | HC-70~HC-76, HC-80(0.65), ID-43, DV-44 ③ |
 | FR-HGL-05 | LLD-03 3.1 `DOUBLE_OF`·`JONG_CAPABLE` | HC-18~HC-20, HC-28 |
 | FR-HGL-06 | LLD-03 1절(core-hangul JVM 모듈) | HC 전체 |
 | FR-TAP-01, 01a | LLD-05A 2.2 `TapKeyResolver` | TK-01~TK-24, ID-07, ID-14 |
@@ -825,3 +826,4 @@ T27(PR #78)·T30(PR #84) 구현 중 찾은 LLD 0.4의 빈틈이다. 두 PR이 �
 | 0.60 | 2026-11-15 | 켜진 동안 두벌식을 쿼티로 그림(FSS#117): 근거 판 SRS 0.94·HLD 0.87. LLD-05A 0.25(3.1·4·7절), LLD-11 0.67. 3절 추적표 TL-13·CV-10~CV-14 |
 | 0.61 | 2026-11-17 | 두벌식 자음 키 빈 방향 = 자음 + 모음(FSS#122): 근거 판 SRS 0.95·HLD 0.88. LLD-05A 0.26, LLD-08 0.35, LLD-11 0.68 |
 | 0.62 | 2026-11-18 | 두벌식 자음 키 위아래좌우 모두 자음 + 모음, 된소리 숫자 1~5 ↓, 겹받침 한 번 긋기·ㄹ 8방향·손 뗀 키 우선 삭제, 1 키 ~ ←(FSS#124): 근거 판 SRS 0.96·HLD 0.89. LLD-05A 0.27(2.2 `numberJamo`·2.4·3.1·3.2·3.3 숫자 줄 된소리·겹받침 표 삭제·자음 + 모음·3.4·4절·4.1 삭제·8.2), LLD-08 0.36(6.1 설명만), LLD-11 0.69(TL-14·TA-27·ID-45·DV-46, 새 기대 다수). 3절 추적표 FR-TAP-02c·02e·02f·02h·02i, 5절 D-74·D-76 |
+| 0.65 | 2026-11-18 | 두벌식 모음 병합 넓히기(FSS#129): 근거 판 SRS 0.99·HLD 0.92. LLD-03 0.38, LLD-04 0.40, LLD-05A 0.30, LLD-11 0.72. 3절 추적표 FR-HGL-04a·04f |
