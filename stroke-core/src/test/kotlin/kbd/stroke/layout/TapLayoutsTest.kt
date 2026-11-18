@@ -263,11 +263,15 @@ class TapLayoutsTest {
         assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
     }
     @Test
-    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik h j k n (FSS 109, 110, 124, 126)`() {
-        // ㅗ ㅜ (FSS#110), ㅓ ㅏ (FSS#126); ㄹ 4-way since FSS#124.
-        assertEquals(listOf("h", "j", "k", "n"), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id })
+    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik h j k n and the 14 consonant keys (FSS 109, 110, 124, 126, 134)`() {
+        // ㅗ ㅜ (FSS#110), ㅓ ㅏ (FSS#126); the consonant keys by ↙ ㅡ ↗ ㅣ (FSS#134).
+        val consonants = TapLayouts.DUBEOLSIK.keys.filter { it.jamo != null && it.jamo in 'ㄱ'..'ㅎ' }.map { it.id }
+        assertEquals(14, consonants.size)
+        assertEquals((listOf("h", "j", "k", "n") + consonants).sorted(), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id }.sorted())
         assertTrue(TapLayouts.QWERTY.keys.none { it.eightWay })
-        for (k in TapLayouts.DUBEOLSIK.keys) assertEquals(k.id, k.dirJamo.keys.any { it is kbd.stroke.geom.Diag }, k.eightWay)
+        for (k in TapLayouts.DUBEOLSIK.keys) {
+            assertEquals(k.id, (k.dirJamo.keys + k.dirVowel.keys).any { it is kbd.stroke.geom.Diag }, k.eightWay)
+        }
         // A key gets eight directions by its data alone: the same key with one diagonal added is an 8-way key
         // (ㅕ (u) since FSS#126 made ㅏ (k) 8-way).
         val a = TapLayouts.DUBEOLSIK.key("u")
@@ -285,9 +289,9 @@ class TapLayoutsTest {
         for (k in consonants) {
             assertEquals("${k.jamo}", emptyMap<kbd.stroke.geom.Way, Char>(), k.dirJamo)
             assertNull("${k.jamo}", k.shiftJamo)
-            assertEquals("${k.jamo}", TapLayouts.STROKE_VOWEL, k.dirVowel)
+            assertEquals("${k.jamo}", TapLayouts.STROKE_VOWEL + TapLayouts.DIAG_STROKE_VOWEL, k.dirVowel)   // FSS#134
             assertEquals("${k.jamo}", TapLayouts.RETURN_VOWEL, k.returnVowel)   // FSS#128
-            assertFalse("${k.jamo}", k.eightWay)
+            assertTrue("${k.jamo}", k.eightWay)   // ↙ ㅡ ↗ ㅣ (FSS#134)
         }
         val all = TapLayouts.DUBEOLSIK.keys.flatMap { it.dirJamo.values + listOfNotNull(it.shiftJamo) }
         assertTrue(all.none { it in "ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ" })

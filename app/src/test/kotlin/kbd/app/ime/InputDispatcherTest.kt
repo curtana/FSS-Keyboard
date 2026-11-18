@@ -748,4 +748,24 @@ class InputDispatcherTest {
             assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
         }
     }
+
+    @Test
+    fun `ID-48 a consonant key's ↙ ↗ compose as the consonant then ㅡ ㅣ tapped, two backspace units as ↑ (FSS 134)`() {
+        // SRS FR-TAP-02h ④: 그 ⌫ = ㄱ, ⌫ = nothing, as 고 (ID-44); merge and dokkaebibul as the keys.
+        val cases = listOf(
+            "ㄱ↙" to "그", "ㄱ↗" to "기", "ㅎ↙" to "흐", "ㅁ↗" to "미", "ㅇ↙" to "으", "ㅇ↗" to "이", "ㄹ↙" to "르", "ㅅ↗" to "시",
+            "ㄱ↙⌫" to "ㄱ", "ㄱ↙⌫⌫" to "", "ㄱ↗⌫" to "ㄱ", "ㄱ↗⌫⌫" to "",
+            "ㄱ↙ㄹ" to "글", "ㄱ↗ㄴ" to "긴", "ㄱ↙ㅣ" to "긔", "ㅇ↙ㅣ" to "의", "ㄱㅏㄱㄱ↗" to "각기", "ㄱㅏㄹㄱ↙" to "갈그",
+            "ㄱ↙ㄹ⌫" to "그", "ㄱ↙ㄱ↗" to "그기",
+        )
+        val vowel = mapOf('↙' to 'ㅡ', '↗' to 'ㅣ')
+        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> vowel.map { (a, v) -> "$c$a" to "$c$v" } }.toMap()
+        for ((keys, expected) in cases) {
+            assertEquals(keys, expected, shownAfter(keys))
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+        // ⌫ as the ↑ stroke: the same steps after the same keys (ID-44's ㄱ↑⌫ = ㄱ).
+        assertEquals(shownAfter("ㄱ↑⌫"), shownAfter("ㄱ↙⌫"))
+    }
 }

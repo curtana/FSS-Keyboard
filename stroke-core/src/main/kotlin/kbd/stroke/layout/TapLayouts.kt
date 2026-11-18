@@ -43,7 +43,8 @@ object TapLayouts {
      * (0, 1), summed and taken by sign as the 3 × 3 direction, the vertical flipped where the key's paired vowel is
      * (ㅜ + ㅣ = ↓ is ㅠ's, so ㅟ is ↑). This table is its result, and TL-12 computes the rule again. ㅙ and ㅞ are
      * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e) — with ㅓ ㅏ
-     * ([DIAG_VOWEL], FSS#126) the only 8-way keys since FSS#124 took the compound finals off ㄹ; ㅡ stays 4-way. A
+     * ([DIAG_VOWEL], FSS#126) the only 8-way vowel keys; the consonant keys are 8-way by [DIAG_STROKE_VOWEL] (FSS#134);
+     * ㅡ stays 4-way. A
      * direction without a jamo types the plain vowel, like the tap. Kept apart from [PAIR_VOWEL].
      */
     internal val COMPOUND_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
@@ -88,8 +89,21 @@ object TapLayouts {
      */
     val RETURN_VOWEL: Map<Dir, Char> = mapOf(Dir.LEFT to 'ㅕ', Dir.RIGHT to 'ㅑ', Dir.UP to 'ㅛ', Dir.DOWN to 'ㅠ')
 
-    /** The [STROKE_VOWEL] of [jamo]'s key: all four on consonant keys (compatibility jamo ㄱ..ㅎ), none on vowel keys. */
-    private fun dirVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') STROKE_VOWEL else emptyMap()
+    /**
+     * The diagonal vowels of the Dubeolsik consonant keys (owner, FSS#134, SRS FR-TAP-02h ④): ↙ ㅡ, ↗ ㅣ — a stroke
+     * that way types the consonant and then this vowel, as [STROKE_VOWEL] does (ㄱ ↙ = 그, ㄱ ↗ = 기). They make every
+     * consonant key 8-way by this data alone (FR-TAP-02e); ↖ and ↘ have nothing and keep the edge crossed first
+     * ([TapKeyDef.edgeDiagonals]).
+     */
+    val DIAG_STROKE_VOWEL: Map<Diag, Char> = mapOf(Diag.DOWN_LEFT to 'ㅡ', Diag.UP_RIGHT to 'ㅣ')
+
+    /**
+     * The consonant + vowel ways of [jamo]'s key: [STROKE_VOWEL] and [DIAG_STROKE_VOWEL] on consonant keys
+     * (compatibility jamo ㄱ..ㅎ), none on vowel keys. A way the key already has a direction jamo on keeps that jamo
+     * (FSS#134; no consonant key has one today).
+     */
+    private fun dirVowel(jamo: Char): Map<Way, Char> =
+        if (jamo in 'ㄱ'..'ㅎ') (STROKE_VOWEL + DIAG_STROKE_VOWEL).filterKeys { it !in dirJamo(jamo) } else emptyMap()
 
     /** The [RETURN_VOWEL] of [jamo]'s key: all four on consonant keys, none on vowel keys (FSS#128). */
     private fun returnVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') RETURN_VOWEL else emptyMap()

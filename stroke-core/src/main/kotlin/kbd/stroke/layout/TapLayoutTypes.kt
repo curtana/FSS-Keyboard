@@ -42,11 +42,12 @@ data class TapKeyDef(
      */
     val dirJamo: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /**
-     * Dubeolsik consonant keys only (FSS#122, #124, SRS FR-TAP-02h): the vowel a stroke in each up/down/left/right
-     * direction types after the key's jamo (ㄱ ← = 거, ㄱ ↑ = 고), all four on every consonant key. From
-     * [TapLayouts.STROKE_VOWEL]; never a diagonal, so it does not make a key [eightWay].
+     * Dubeolsik consonant keys only (FSS#122, #124, #134, SRS FR-TAP-02h): the vowel a stroke in each direction types
+     * after the key's jamo — up/down/left/right from [TapLayouts.STROKE_VOWEL] (ㄱ ← = 거, ㄱ ↑ = 고) and the ↙ ↗
+     * diagonals from [TapLayouts.DIAG_STROKE_VOWEL] (ㄱ ↙ = 그, ㄱ ↗ = 기), on every consonant key. The diagonals make
+     * the key [eightWay]; its other diagonals are [edgeDiagonals].
      */
-    val dirVowel: Map<kbd.stroke.geom.Dir, Char> = emptyMap(),
+    val dirVowel: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /**
      * Dubeolsik consonant keys only (FSS#128, SRS FR-TAP-02h ③): the vowel an exit-and-return in each
      * up/down/left/right direction types after the key's jamo (ㄱ ↑ and back = 교, ← and back = 겨). From
@@ -65,7 +66,17 @@ data class TapKeyDef(
      * assignment. Decided by the data only — no key is named in code — so a diagonal added to the tables needs no
      * code change.
      */
-    val eightWay: Boolean get() = dirJamo.keys.any { it is kbd.stroke.geom.Diag }
+    val eightWay: Boolean get() = (dirJamo.keys + dirVowel.keys).any { it is kbd.stroke.geom.Diag }
+
+    /**
+     * The diagonals of a consonant key ([dirVowel] not empty) with nothing on them (FSS#134: ↖ ↘): a stroke whose angle
+     * falls in one is judged by the edge crossed first, as on a 4-way key, so it keeps the up/down/left/right
+     * consonant + vowel it typed before the key had diagonals. Empty on every other key: there an empty diagonal is
+     * the tap (SRS FR-TAP-02c ④).
+     */
+    val edgeDiagonals: Set<kbd.stroke.geom.Diag>
+        get() = if (dirVowel.isEmpty()) emptySet()
+        else kbd.stroke.geom.Diag.entries.filter { it !in dirJamo && it !in dirVowel }.toSet()
 
     /** Whether the key takes row [r]: `row ≤ r < row + rowSpan`. */
     fun inRow(r: Int): Boolean = r >= row && r < row + rowSpan
