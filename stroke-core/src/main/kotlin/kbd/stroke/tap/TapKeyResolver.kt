@@ -16,7 +16,7 @@ import kbd.stroke.layout.TapKeyKind
 object TapKeyResolver {
     /**
      * What a stroke out of each edge types, where it differs from the tap (owner #198: every stroked character is shown
-     * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, compound final or paired vowel, the
+     * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, compound final or compound vowel, the
      * assigned symbols. Function keys have none. The view draws these; it never decides anything with them.
      * A diagonal ([Diag], FSS#109) is there only where the key has a diagonal assignment, and the view draws it in
      * that corner (FR-TAP-02e ⑥); a direction that types the tap, like ㄹ ↘, is not there.
@@ -74,10 +74,10 @@ object TapKeyResolver {
         val base = requireNotNull(key.jamo) { key.id }
         return when (g) {
             is TapGesture.Exit -> when (g.dir) {
-                Dir.UP -> jamo(key.shiftJamo ?: key.dirJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㄹ ↑ ㄺ, ㅗ ↑ ㅛ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
-                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)   // ㄹ ← ㄻ, ㄱ → ㄳ, ㅓ ← ㅕ; ㄱ ↓ = ㄱ
+                Dir.UP -> jamo(key.shiftJamo ?: key.dirJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㄹ ↑ ㄺ, ㅜ ↑ ㅟ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
+                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)   // ㄹ ← ㄻ, ㄱ → ㄳ, ㅗ → ㅘ; ㄱ ↓ = ㄱ, ㅓ ← = ㅓ
             }
-            // Tap and up/down rubs: no super/subscripts for jamo, and no compound final or paired vowel either (FSS#97, FSS#104).
+            // Tap and up/down rubs: no super/subscripts for jamo, and no compound final or compound vowel either (FSS#97, FSS#110).
             else -> jamo(base)
         }
     }
