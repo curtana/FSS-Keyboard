@@ -21,7 +21,7 @@ import org.junit.rules.TemporaryFolder
 
 /**
  * LLD-11 §5.7 BE-01..BE-07: the two-row ↵ and the rows without blanks (FSS#105, SRS FR-TAP-03d, LLD-05A §3.2), and
- * §5.8 PV-01: strokes of the Dubeolsik paired vowels onto their neighbours (FSS#104), on
+ * §5.8 PV-01: strokes from the former Dubeolsik paired-vowel places onto their neighbours (FSS#104, FSS#141), on
  * [TapGeometry] and [TapTouchLogic], on the JVM with fakes. The geometry is 360 dp wide, 48 dp rows, 16 dp side margins.
  */
 class TallEnterTouchTest {
@@ -192,16 +192,16 @@ class TallEnterTouchTest {
     }
 
     @Test
-    fun `PV-01 Dubeolsik ㅜ down onto the space bar is ㅠ, the paired vowels of the first-pressed key (FSS#104)`() {
+    fun `PV-01 Dubeolsik ㅜ down onto the space bar is ㅜ, the first-pressed key decides, no paired vowels (FSS#104, FSS#141)`() {
         val l = logic(TapLayouts.DUBEOLSIK)
         assertEquals("space", idAt(198f, 4.5f * ROW + ROW, TapLayouts.DUBEOLSIK))   // where the stroke ends
-        stroke(l, "n", 0f, ROW)          // ↓ from ㅜ into the space bar
-        stroke(l, "h", 0f, -ROW)         // ↑ from ㅗ onto ㅛ (y)
-        stroke(l, "j", -36f, 0f)         // ← from ㅓ onto ㅗ (h)
-        stroke(l, "k", 36f, 0f)          // → from ㅏ onto ㅣ (l)
+        stroke(l, "n", 0f, ROW)          // ↓ from ㅜ into the space bar: ㅜ, not a space (ㅠ until FSS#141)
+        stroke(l, "h", 0f, -ROW)         // ↑ from ㅗ onto ㅛ (y): ㅗ
+        stroke(l, "j", -36f, 0f)         // ← from ㅓ onto ㅗ (h): ㅓ
+        stroke(l, "k", 36f, 0f)          // → from ㅏ onto ㅣ (l): ㅏ
         stroke(l, "x", 0f, -ROW)         // ↑ from ㅌ onto ㄴ (s): ㅌ (FSS#109; ㄾ in FSS#107)
         assertEquals(
-            listOf("n:ㅠ:Exit(dir=DOWN)", "h:ㅛ:Exit(dir=UP)", "j:ㅕ:Exit(dir=LEFT)", "k:ㅑ:Exit(dir=RIGHT)", "x:ㅌ:Exit(dir=UP)"),
+            listOf("n:ㅜ:Exit(dir=DOWN)", "h:ㅗ:Exit(dir=UP)", "j:ㅓ:Exit(dir=LEFT)", "k:ㅏ:Exit(dir=RIGHT)", "x:ㅌ:Exit(dir=UP)"),
             sink.events,
         )
     }
@@ -334,11 +334,12 @@ class TallEnterTouchTest {
             strokeAt(l, id, deg)
             return sink.events.single()
         }
-        // One point in each sector (→ 0, ↗ 45, ↑ 90, ↖ 135, ← 180, ↙ 225, ↓ 270, ↘ 315).
-        val o = listOf("h:ㅘ:Exit(dir=RIGHT)", "h:ㅗ:Exit(dir=UP_RIGHT)", "h:ㅛ:Exit(dir=UP)", "h:ㅗ:Exit(dir=UP_LEFT)",
+        // One point in each sector (→ 0, ↗ 45, ↑ 90, ↖ 135, ← 180, ↙ 225, ↓ 270, ↘ 315). ㅗ ↑ and ㅜ ↓ are the plain
+        // vowel since FSS#141 (ㅛ ㅠ before), still in the 60° sectors: the keys stay 8-way by their diagonals.
+        val o = listOf("h:ㅘ:Exit(dir=RIGHT)", "h:ㅗ:Exit(dir=UP_RIGHT)", "h:ㅗ:Exit(dir=UP)", "h:ㅗ:Exit(dir=UP_LEFT)",
             "h:ㅗ:Exit(dir=LEFT)", "h:ㅗ:Exit(dir=DOWN_LEFT)", "h:ㅚ:Exit(dir=DOWN)", "h:ㅙ:Exit(dir=DOWN_RIGHT)")
         val u = listOf("n:ㅜ:Exit(dir=RIGHT)", "n:ㅜ:Exit(dir=UP_RIGHT)", "n:ㅟ:Exit(dir=UP)", "n:ㅜ:Exit(dir=UP_LEFT)",
-            "n:ㅝ:Exit(dir=LEFT)", "n:ㅞ:Exit(dir=DOWN_LEFT)", "n:ㅠ:Exit(dir=DOWN)", "n:ㅜ:Exit(dir=DOWN_RIGHT)")
+            "n:ㅝ:Exit(dir=LEFT)", "n:ㅞ:Exit(dir=DOWN_LEFT)", "n:ㅜ:Exit(dir=DOWN)", "n:ㅜ:Exit(dir=DOWN_RIGHT)")
         for (i in 0 until 8) {
             assertEquals(o[i], out("h", i * 45.0))
             assertEquals(u[i], out("n", i * 45.0))
@@ -348,12 +349,12 @@ class TallEnterTouchTest {
         assertEquals("h:ㅙ:Exit(dir=DOWN_RIGHT)", out("h", -31.0))
         assertEquals("h:ㅙ:Exit(dir=DOWN_RIGHT)", out("h", -59.0))
         assertEquals("h:ㅚ:Exit(dir=DOWN)", out("h", -61.0))
-        assertEquals("h:ㅛ:Exit(dir=UP)", out("h", 61.0))
+        assertEquals("h:ㅗ:Exit(dir=UP)", out("h", 61.0))
         assertEquals("h:ㅗ:Exit(dir=UP_RIGHT)", out("h", 59.0))
         assertEquals("n:ㅝ:Exit(dir=LEFT)", out("n", 209.0))
         assertEquals("n:ㅞ:Exit(dir=DOWN_LEFT)", out("n", 211.0))
         assertEquals("n:ㅞ:Exit(dir=DOWN_LEFT)", out("n", 239.0))
-        assertEquals("n:ㅠ:Exit(dir=DOWN)", out("n", 241.0))
+        assertEquals("n:ㅜ:Exit(dir=DOWN)", out("n", 241.0))
         assertEquals("n:ㅟ:Exit(dir=UP)", out("n", 119.0))
         // ㅡ is a 4-way key: a diagonal is the edge crossed first, ↓ ㅢ, the rest the plain ㅡ.
         assertEquals("m:ㅢ:Exit(dir=DOWN)", out("m", 270.0))
@@ -376,7 +377,7 @@ class TallEnterTouchTest {
         assertEquals("h:ㅘ:Exit(dir=RIGHT)", out("h", "k"))    // ㅗ → released over ㅏ: the direction's ㅘ
         assertEquals("h:ㅘ:Exit(dir=RIGHT)", out("h", "j"))    // over ㅓ
         assertEquals("h:ㅗ:Exit(dir=LEFT)", out("h", "g"))     // ← over the consonant ㅎ: the empty way, ㅗ
-        assertEquals("h:ㅛ:Exit(dir=UP)", out("h", "y"))       // ↑ over the ㅛ key
+        assertEquals("h:ㅗ:Exit(dir=UP)", out("h", "y"))       // ↑ over the ㅛ key: the empty way, ㅗ (FSS#141)
         assertEquals("n:ㅝ:Exit(dir=LEFT)", out("n", "b"))     // ㅜ ← over ㅠ
         sink.events.clear()
         stroke(l, "m", 0f, ROW)                               // ㅡ ↓ into the space bar: ㅢ, not a space

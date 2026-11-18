@@ -188,21 +188,21 @@ class InputDispatcherTest {
     }
 
     @Test
-    fun `ID-41 a paired vowel stroke composes as its key would - no vowel merge, dokkaebibul, ⌫ unit (FSS 104, FSS 107)`() {
+    fun `ID-41 the former paired-vowel strokes compose as the plain vowel tapped - merge, dokkaebibul, ⌫ unit (FSS 104, FSS 107, FSS 141)`() {
         val cases = listOf(
-            "ㄱㅗ↑" to "교", "ㄱㅓ←" to "겨", "ㄱㅏ→" to "갸", "ㄱㅜ↓" to "규",
-            "ㄱㅗ↑ㅏ" to "교ㅏ",     // ㅛ + ㅏ does not merge, as ㅛ typed on its key
-            "ㄱㅏㄱㅓ←" to "가겨",   // dokkaebibul: the final ㄱ goes to the next syllable
-            "ㄱㅜ↓ㄹ" to "귤",
-            "ㄱㅜㅓ←" to "구ㅕ",     // ㅜ + ㅕ does not merge
-            "ㄱㅜㅓ" to "궈",        // the tap still merges
+            "ㄱㅗ↑" to "고", "ㄱㅓ←" to "거", "ㄱㅏ→" to "가", "ㄱㅜ↓" to "구",   // 교 겨 갸 규 until FSS#141
+            "ㄱㅗ↑ㅏ" to "과",       // the plain ㅗ merges with ㅏ, as tapped
+            "ㄱㅏㄱㅓ←" to "가거",   // dokkaebibul: the final ㄱ goes to the next syllable
+            "ㄱㅜ↓ㄹ" to "굴",
+            "ㄱㅜㅓ←" to "궈",       // ㅜ + ㅓ merges
+            "ㄱㅜㅓ" to "궈",        // the tap
             "ㄱㅏㅌ↑" to "같",       // ㅌ ↑ is ㅌ again (FSS#109; ㄾ in FSS#107)
             "ㄱㅏㅌ←" to "같",
             "ㄱㅏㅌ" to "같",
             "ㄱㅗ↑⌫" to "ㄱ",        // ⌫ takes the vowel, one unit
             "ㄱㅏㅌ↑⌫" to "가",      // ⌫ takes the final ㅌ (FSS#109; 갈 while ㅌ ↑ was ㄾ)
         )
-        val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㅌ", "ㅌ←" to "ㅌ")
+        val taps = mapOf("ㅗ↑" to "ㅗ", "ㅓ←" to "ㅓ", "ㅏ→" to "ㅏ", "ㅜ↓" to "ㅜ", "ㅌ↑" to "ㅌ", "ㅌ←" to "ㅌ")
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
             // The same as the keys typed by taps (ㄾ as ㄹ ㅌ).

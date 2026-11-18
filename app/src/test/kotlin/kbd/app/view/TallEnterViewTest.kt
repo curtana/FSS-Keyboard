@@ -241,23 +241,21 @@ class TallEnterViewTest {
         }
         // ㅗ (h): x 180..216, row 3. ㅜ (n): x 180..216, row 4. ㅡ (m): x 216..252, row 4.
         val o = inside(180f, 3)
-        assertEquals(setOf("ㅗ", "ㅛ", "ㅚ", "ㅘ", "ㅙ"), o.keys)
+        assertEquals(setOf("ㅗ", "ㅚ", "ㅘ", "ㅙ"), o.keys)                 // no ㅛ on the top edge (FSS#141)
         val u = inside(180f, 4)
-        assertEquals(setOf("ㅜ", "ㅟ", "ㅝ", "ㅠ", "ㅞ"), u.keys)
+        assertEquals(setOf("ㅜ", "ㅟ", "ㅝ", "ㅞ"), u.keys)                 // no ㅠ on the bottom edge (FSS#141)
         assertEquals(setOf("ㅡ", "ㅢ"), inside(216f, 4).keys)
-        // ㅙ bottom-right of ㅗ on ㅚ's line, ㅞ bottom-left of ㅜ on ㅠ's line; the others mid-edge.
+        // ㅙ bottom-right of ㅗ on ㅚ's line, ㅞ bottom-left of ㅜ on the same line of its row; the others mid-edge.
         assertEquals(Paint.Align.RIGHT, o.getValue("ㅙ").second)
         assertEquals(216f * density - inset - pad, o.getValue("ㅙ").first.first, 0.01f)
         assertEquals(o.getValue("ㅚ").first.second, o.getValue("ㅙ").first.second, 0.01f)
         assertEquals(Paint.Align.LEFT, u.getValue("ㅞ").second)
         assertEquals(180f * density + inset + pad, u.getValue("ㅞ").first.first, 0.01f)
-        assertEquals(u.getValue("ㅠ").first.second, u.getValue("ㅞ").first.second, 0.01f)
-        assertEquals(Paint.Align.CENTER, o.getValue("ㅛ").second)
+        assertEquals(o.getValue("ㅙ").first.second + ROW * density, u.getValue("ㅞ").first.second, 0.01f)
         assertEquals(Paint.Align.CENTER, o.getValue("ㅚ").second)
         assertEquals(Paint.Align.RIGHT, o.getValue("ㅘ").second)
         assertEquals(Paint.Align.CENTER, u.getValue("ㅟ").second)
         assertEquals(Paint.Align.LEFT, u.getValue("ㅝ").second)
-        assertEquals(Paint.Align.CENTER, u.getValue("ㅠ").second)
     }
 
     private fun px(dp: Float): Int = Math.round(dp * density)

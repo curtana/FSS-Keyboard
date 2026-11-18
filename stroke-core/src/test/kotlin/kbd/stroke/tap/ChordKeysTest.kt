@@ -169,13 +169,13 @@ class ChordKeysTest {
     }
 
     @Test
-    fun `CM-13 a paired vowel and ㅌ up ㄾ send the English key of their place (FSS#104, FSS#107)`() {
+    fun `CM-13 the former paired-vowel and ㅌ up ㄾ strokes send the English key of their place (FSS#104, FSS#107, FSS#141)`() {
         val d = TapLayouts.DUBEOLSIK.keys
         fun dub(jamo: Char) = d.single { it.jamo == jamo }.id
-        assertEquals(shift(ChordKey.H), ChordKeys.ofTap(dub('ㅗ'), exit(UP)))             // ㅛ
-        assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), exit(LEFT)))           // ㅕ: QWERTY j ← has nothing
-        assertEquals(plain(ChordKey.K), ChordKeys.ofTap(dub('ㅏ'), exit(RIGHT)))          // ㅑ
-        assertEquals(plain(ChordKey.N), ChordKeys.ofTap(dub('ㅜ'), exit(DOWN)))           // ㅠ
+        assertEquals(shift(ChordKey.H), ChordKeys.ofTap(dub('ㅗ'), exit(UP)))             // ㅗ since FSS#141 (ㅛ in FSS#104)
+        assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), exit(LEFT)))           // ㅓ: QWERTY j ← has nothing
+        assertEquals(plain(ChordKey.K), ChordKeys.ofTap(dub('ㅏ'), exit(RIGHT)))          // ㅏ
+        assertEquals(plain(ChordKey.N), ChordKeys.ofTap(dub('ㅜ'), exit(DOWN)))           // ㅜ
         assertEquals(shift(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(UP)))             // ㅌ since FSS#109 (ㄾ in FSS#107): still Shift + X
         assertEquals(plain(ChordKey.X), ChordKeys.ofTap(dub('ㅌ'), exit(LEFT)))           // ㅌ
         assertEquals(plain(ChordKey.J), ChordKeys.ofTap(dub('ㅓ'), rub(LEFT)))
@@ -251,7 +251,7 @@ class ChordKeysTest {
         val keys = mapOf('ㅗ' to ChordKey.H, 'ㅜ' to ChordKey.N, 'ㅡ' to ChordKey.M)
         for ((jamo, ck) in keys) {
             val id = TapLayouts.DUBEOLSIK.keys.single { it.jamo == jamo }.id
-            assertEquals(shift(ck), ChordKeys.ofTap(id, exit(UP)))            // ㅛ ㅟ, and ㅡ's empty ↑
+            assertEquals(shift(ck), ChordKeys.ofTap(id, exit(UP)))            // ㅟ, and the empty ↑ of ㅗ (FSS#141) and ㅡ
             assertEquals(shift(ck), ChordKeys.ofTap(id, back(UP)))
             assertEquals(plain(ck), ChordKeys.ofTap(id, tap))
             for (w in WAYS.filter { it != UP }) {

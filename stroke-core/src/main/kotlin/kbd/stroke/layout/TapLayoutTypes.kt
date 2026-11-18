@@ -36,8 +36,8 @@ data class TapKeyDef(
     val function: FunctionKey? = null,
     /**
      * Dubeolsik letter keys only: the jamo each direction types, from two tables in [TapLayouts] (HLD 5A, LLD-05A §3.3):
-     * the compound finals of the consonant keys (issue #242, e.g. ㄹ ← ㄻ) and the paired vowels of the vowel keys
-     * (FSS#104, e.g. ㅗ ↑ ㅛ). Since FSS#109 a direction may be a diagonal ([kbd.stroke.geom.Diag], e.g. ㄹ ↖ ㄼ).
+     * the compound finals of the consonant keys (issue #242, e.g. ㄹ ← ㄻ) and the compound vowels of the ㅗ ㅜ ㅡ keys
+     * (FSS#110, e.g. ㅗ → ㅘ). Since FSS#109 a direction may be a diagonal ([kbd.stroke.geom.Diag], e.g. ㄹ ↖ ㄼ).
      */
     val dirJamo: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /** Rows the key takes from [row] down (FSS#105): 2 for ↵, 1 for every other key. */
