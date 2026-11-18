@@ -32,6 +32,8 @@ class AndroidEditorPort(private val service: InputMethodService) : EditorPort {
     /** `KEYCODE_DEL` down and up: one character, or the selection (FR-CMN-07). */
     override fun deleteBefore() = sendDownUp(KeyEvent.KEYCODE_DEL)
 
+    override fun textBeforeCursor(n: Int): String? = ic?.getTextBeforeCursor(n, 0)?.toString()
+
     override fun sendKey(key: EditorKey) = sendDownUp(
         when (key) {
             EditorKey.DPAD_LEFT -> KeyEvent.KEYCODE_DPAD_LEFT

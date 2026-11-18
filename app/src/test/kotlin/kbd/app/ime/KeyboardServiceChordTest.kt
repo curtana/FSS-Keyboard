@@ -4,11 +4,17 @@ import android.content.res.Configuration
 import android.text.InputType
 import android.view.inputmethod.EditorInfo
 import kbd.app.view.ViewTestSdk
+import kbd.stroke.geom.Dir
 import kbd.stroke.layout.FunctionKey
+import kbd.stroke.layout.TapLayouts
 import kbd.stroke.tap.ChordModifier
 import kbd.stroke.tap.ChordModifier.ALT
 import kbd.stroke.tap.ChordModifier.CTRL
+import kbd.stroke.tap.TapGesture
+import kbd.stroke.tap.TapKeyResolver
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,8 +23,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * LLD-11 §7.5 CL-01..CL-05: `KeyboardService` turns Ctrl and Alt off at its lifecycle points and not on a cursor
- * move (LLD-08 §3, SRS FR-TAP-17 ①②, FSS#98). The real service, created by Robolectric; no input view is needed.
+ * LLD-11 §7.5 CL-01..CL-06: `KeyboardService` turns Ctrl and Alt off at its lifecycle points and not on a cursor
+ * move (LLD-08 §3, SRS FR-TAP-17 ①②, FSS#98); CL-06 does the same for Caps Lock (LLD-08 §6.4, FR-TAP-19 ③, FSS#131).
+ * The real service, created by Robolectric; no input view is needed.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [ViewTestSdk.SDK])
@@ -92,5 +99,34 @@ class KeyboardServiceChordTest {
         turnOn()
         service.dispatcher.onFunctionDown(FunctionKey.MODE)
         assertOff()
+    }
+
+    /** Caps Lock on with two quick ↑ on QWERTY letters, as the view sends them (no editor here: nothing to take back). */
+    private fun capsOn() {
+        val up = TapGesture.Exit(Dir.UP)
+        for (id in listOf("a", "s")) {
+            val k = TapLayouts.QWERTY.keys.single { it.id == id }
+            service.dispatcher.onTapResult(k, TapKeyResolver.resolve(k, up), up)
+        }
+        assertTrue(service.dispatcher.capsLock)
+    }
+
+    @Test
+    fun `CL-06 Caps Lock goes off with a new field, the keyboard going down and the end of input, not with a rotation`() {
+        service.onStartInputView(textField(), false)
+        capsOn()
+        service.onStartInputView(textField(), true)   // the same field shown again
+        assertFalse(service.dispatcher.capsLock)
+        capsOn()
+        service.onFinishInputView(false)
+        assertFalse(service.dispatcher.capsLock)
+        capsOn()
+        service.onFinishInput()
+        assertFalse(service.dispatcher.capsLock)
+        capsOn()
+        service.onConfigurationChanged(Configuration(service.resources.configuration).apply { orientation = Configuration.ORIENTATION_LANDSCAPE })
+        assertTrue(service.dispatcher.capsLock)
+        service.onUpdateSelection(0, 0, 3, 3, -1, -1)   // a cursor move neither
+        assertTrue(service.dispatcher.capsLock)
     }
 }
