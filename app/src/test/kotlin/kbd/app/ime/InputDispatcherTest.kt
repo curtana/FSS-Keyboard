@@ -210,7 +210,7 @@ class InputDispatcherTest {
         val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㅌㅗ", "ㅌ←" to "ㅌㅓ")
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
-            // The same as the keys typed by taps (ㄾ as ㄹ ㅌ).
+            // The same as the keys typed by taps (ㅌ ↑ as ㅌ ㅗ).
             val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
             assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
         }

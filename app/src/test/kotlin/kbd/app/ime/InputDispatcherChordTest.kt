@@ -205,10 +205,10 @@ class InputDispatcherChordTest {
             return port.calls.single()
         }
         assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), TapGesture.Tap))
-        assertEquals("chord(Q,[CTRL, SHIFT])", chord(jamoKey('ㅂ'), exit(Dir.UP)))      // ㅃ
-        assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), exit(Dir.DOWN)))           // ㅄ: nothing on QWERTY q ↓
-        assertEquals("chord(F,[CTRL])", chord(jamoKey('ㄹ'), exit(Dir.LEFT)))           // ㄺ
-        assertEquals("chord(A,[CTRL, SHIFT])", chord(jamoKey('ㅁ'), exit(Dir.UP)))      // ㅁ ↑ types ㅁ; still Shift + A
+        assertEquals("chord(Q,[CTRL, SHIFT])", chord(jamoKey('ㅂ'), exit(Dir.UP)))      // 보 (ㅃ until FSS#124)
+        assertEquals("chord(Q,[CTRL])", chord(jamoKey('ㅂ'), exit(Dir.DOWN)))           // 부: nothing on QWERTY q ↓
+        assertEquals("chord(F,[CTRL])", chord(jamoKey('ㄹ'), exit(Dir.LEFT)))           // 러
+        assertEquals("chord(A,[CTRL, SHIFT])", chord(jamoKey('ㅁ'), exit(Dir.UP)))      // ㅁ ↑ types 모; still Shift + A
         assertEquals("chord(SEMICOLON,[CTRL])", chord(jamoKey('ㅣ'), exit(Dir.LEFT)))
         assertEquals("chord(D5,[CTRL, SHIFT])", chord(key(dub, "5"), exit(Dir.UP)))
         assertFalse(d.composer!!.isComposing())   // no jamo reached the composer
