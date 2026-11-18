@@ -109,7 +109,7 @@ class TapKeyboardCapsViewTest {
         val texts = drawn()
         for (c in 'a'..'z') {
             assertTrue("$c", c.uppercase() in texts)
-            assertFalse("$c", c.toString() in texts)   // no lower-case label and no lower-case hint is left
+            assertEquals("$c", 1, texts.count { it == c.toString() })   // only the ↑ hint is lower case
         }
         caps(false)
         assertEquals(offNames, names(q))
@@ -117,17 +117,18 @@ class TapKeyboardCapsViewTest {
     }
 
     @Test
-    fun `CK-02 on - the up hint of a letter is gone, its other hints and the digit hints stay`() {
+    fun `CK-02 on - the up hint of a letter is its lower case, its other hints and the digit hints stay`() {
         show()
         val q = TapLayouts.QWERTY
         val i = q.keys.single { it.id == "i" }
         val one = q.keys.single { it.id == "1" }
         assertEquals("I", view.hintsOf(i)[Dir.UP])
         caps(true)
-        assertEquals(null, view.hintsOf(i)[Dir.UP])   // that ↑ turns Caps Lock off (FR-TAP-19 ③)
-        assertEquals(TapKeyResolver.edgeHints(i) - Dir.UP, view.hintsOf(i))   // [ and ] stay
+        assertEquals("i", view.hintsOf(i)[Dir.UP])   // that ↑ types the lower case (FR-TAP-19 ②)
+        assertEquals(TapKeyResolver.edgeHints(i) + (Dir.UP to "i"), view.hintsOf(i))   // [ and ] stay
         assertEquals(TapKeyResolver.edgeHints(one), view.hintsOf(one))
         assertEquals(1, drawn().count { it == "I" })   // drawn once, as the label
+        assertEquals(1, drawn().count { it == "i" })   // and once as the ↑ hint
     }
 
     @Test

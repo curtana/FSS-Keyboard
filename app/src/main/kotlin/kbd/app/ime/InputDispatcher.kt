@@ -65,8 +65,8 @@ class InputDispatcher(
     private val heldChords = HashMap<FunctionKey, Set<ChordModifier>>()
 
     /**
-     * Caps Lock of the QWERTY letter keys (FSS#131, SRS FR-TAP-19, LLD-08 §6.4): on with two quick ↑ exits, off with
-     * one ↑ or any reason in [clearCaps]. Like [chord], kept here and never stored.
+     * Caps Lock of the QWERTY letter keys (FSS#131, SRS FR-TAP-19, LLD-08 §6.4): two quick letter ↑ exits turn it on,
+     * and off again; [clearCaps] turns it off too. Like [chord], kept here and never stored.
      */
     override var capsLock: Boolean = false
         private set
@@ -77,7 +77,7 @@ class InputDispatcher(
     /** Milliseconds of a steady clock; the time between two ↑ exits is measured with it (FR-TAP-19 ①). Tests set it. */
     var clock: () -> Long = { System.nanoTime() / NANOS_PER_MS }
 
-    /** The last ↑ capital typed with Caps Lock off, when the next key may still be its second ↑ (FR-TAP-19 ①). */
+    /** The letter the last QWERTY letter ↑ typed, while the next key may still be its second ↑ (FR-TAP-19 ①). */
     private var lastUp: LastUp? = null
 
     /** A resolved key without its gesture (the practice sink, an accessibility click): a tap. */
@@ -86,7 +86,7 @@ class InputDispatcher(
     /**
      * One letter, digit or symbol key as it leaves the view's queue. With Ctrl or Alt on, the key of that gesture
      * goes out as a chord instead of the character (FR-TAP-16 ②③), and no error vibration for a missing script.
-     * A QWERTY letter's ↑ exit may turn Caps Lock on or off instead of typing ([capsStroke], FR-TAP-19).
+     * A QWERTY letter's second quick ↑ exit turns Caps Lock on or off instead of typing ([capsStroke], FR-TAP-19).
      */
     override fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) {
         if (chord.isNotEmpty()) {
@@ -122,32 +122,31 @@ class InputDispatcher(
     }
 
     /**
-     * A QWERTY letter's ↑ exit, before it types (FR-TAP-19): true when it was a Caps Lock stroke and types nothing.
-     * With Caps Lock on, it turns it off. With it off, a ↑ within [CAPS_DOUBLE_MS] of the last ↑ capital takes that
-     * capital back ([ComposingController.retract], which deletes nothing unless the capital is there) and turns it
-     * on. Not input (FR-CMN-03a), like Ctrl and Alt; the first ↑ already was.
+     * A QWERTY letter's ↑ exit, before it types (FR-TAP-19 ①③): true when it is the second of two quick ↑ — within
+     * [CAPS_DOUBLE_MS] of the last letter ↑ — and so toggles Caps Lock, on or off alike, typing nothing. The first ↑'s
+     * letter is taken back ([ComposingController.retract], which deletes nothing unless that letter is there). Not
+     * input (FR-CMN-03a), like Ctrl and Alt; the first ↑ already was. False: an ordinary ↑, which types.
      */
     private fun capsStroke(): Boolean {
         val prev = lastUp
         lastUp = null
-        if (capsLock) {
-            setCaps(false)
-            return true
-        }
         if (prev == null || clock() - prev.at > CAPS_DOUBLE_MS) return false
         out.retract(prev.text)
-        setCaps(true)
+        setCaps(!capsLock)
         return true
     }
 
     /**
-     * The text of a resolved key, with Caps Lock applied (FR-TAP-19 ②): on a QWERTY letter key, the lower-case letter
-     * itself — the tap, and an exit with nothing assigned — is upper case. Symbols and the ↑/↓ rubs' super- and
-     * subscripts stay as they are.
+     * The text of a resolved key, with Caps Lock applied (FR-TAP-19 ②, owner: "as Shift with Caps Lock on"): on a QWERTY
+     * letter key, the ↑ (Shift) gives the lower case, and the letter itself — the tap, an exit with nothing assigned —
+     * the upper case. Digit and symbol keys (their ↑ is the US Shift character either way), assigned symbols and the
+     * ↑/↓ rubs' super- and subscripts stay as they are.
      */
     private fun capsText(key: TapKeyDef, out: TapOutput, g: TapGesture): String? {
         val t = out.text
-        if (!capsLock || key.kind != TapKeyKind.QWERTY_LETTER || t != key.label) return t
+        if (!capsLock || key.kind != TapKeyKind.QWERTY_LETTER || t == null) return t
+        if (isUpExit(g)) return if (t == key.label.uppercase()) key.label else t
+        if (t != key.label) return t
         if (g is TapGesture.Rub && (g.dir == Dir.UP || g.dir == Dir.DOWN)) return t   // a missing script: the plain letter (FR-TAP-01b)
         return t.uppercase()
     }

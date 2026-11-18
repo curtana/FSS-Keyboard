@@ -246,12 +246,12 @@ class TapKeyboardView(
     }
 
     /**
-     * The edge hints drawn on [k]: [kbd.stroke.tap.TapKeyResolver.edgeHints], but no ↑ capital on a QWERTY letter while
-     * Caps Lock is on — that ↑ turns Caps Lock off and types nothing (FR-TAP-19 ②).
+     * The edge hints drawn on [k]: [kbd.stroke.tap.TapKeyResolver.edgeHints], but while Caps Lock is on a QWERTY
+     * letter's ↑ shows the lower case, which that ↑ types then (FR-TAP-19 ②, Shift with Caps Lock on).
      */
     internal fun hintsOf(k: TapKeyDef): Map<Way, String> {
         val h = kbd.stroke.tap.TapKeyResolver.edgeHints(k)
-        return if (sink.capsLock && k.kind == TapKeyKind.QWERTY_LETTER) h - Dir.UP else h
+        return if (sink.capsLock && k.kind == TapKeyKind.QWERTY_LETTER) h + (Dir.UP to k.label) else h
     }
 
     private fun drawHint(canvas: Canvas, s: String, x: Float, y: Float, align: Paint.Align) {

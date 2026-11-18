@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * LLD-11 §7.4b CS-01..CS-16: Caps Lock of the QWERTY letter keys in `InputDispatcher` (LLD-08 §6.4, SRS FR-TAP-19,
+ * LLD-11 §7.4b CS-01..CS-18: Caps Lock of the QWERTY letter keys in `InputDispatcher` (LLD-08 §6.4, SRS FR-TAP-19,
  * FSS#131). The editor is a text buffer, so a take-back that deletes the wrong character shows in [FakePort.text].
  */
 class InputDispatcherCapsTest {
@@ -138,29 +138,48 @@ class InputDispatcherCapsTest {
     }
 
     @Test
-    fun `CS-06 Caps Lock on - one up exit turns it off and types nothing`() {
-        capsOn()
-        val before = port.calls.size
-        now += 5_000
-        hit("z", up)
+    fun `CS-17 a digit or symbol key's up is its US Shift character with Caps Lock on or off, and never counts`() {
+        val shifted = linkedMapOf("1" to "!", "2" to "@", "0" to ")", "comma" to "<", "period" to ">", "minus" to "_", "slash" to "?")
+        for (id in shifted.keys) hit(id, up)   // off, all quick: no toggle
         assertFalse(d.capsLock)
-        assertEquals(before, port.calls.size)
-        assertEquals(2, capsChanges)
-        hit("a")
-        assertEquals("a", port.text.toString())
+        val all = shifted.values.joinToString("")
+        assertEquals(all, port.text.toString())
+        capsOn()   // a, s: nothing left
+        for (id in shifted.keys) hit(id, up)   // on: the same characters, and quick ups on them never turn it off
+        assertTrue(d.capsLock)
+        assertEquals(all + all, port.text.toString())
+        assertEquals(1, capsChanges)
     }
 
     @Test
-    fun `CS-07 three quick up exits - on, then off, and nothing typed`() {
+    fun `CS-06 Caps Lock on - one up types the lower case, two quick ups turn it off and leave nothing`() {
+        capsOn()
+        now += 5_000
+        hit("z", up)   // Shift with Caps Lock on
+        assertEquals("z", port.text.toString())
+        assertTrue(d.capsLock)
+        now += 5_000
+        hit("x", up)
+        now += win
+        hit("c", up)   // the second quick up: off, x taken back
+        assertFalse(d.capsLock)
+        assertEquals("z", port.text.toString())
+        assertEquals(2, capsChanges)
+        hit("a")
+        hit("b", up)
+        assertEquals("zaB", port.text.toString())
+    }
+
+    @Test
+    fun `CS-07 quick ups go in pairs - the third types, the fourth turns it off`() {
         hit("a", up)
-        hit("s", up)
-        hit("d", up)
+        hit("s", up)   // pair 1: on
+        hit("d", up)   // the toggling up starts no pair: a lower-case d
+        assertTrue(d.capsLock)
+        assertEquals("d", port.text.toString())
+        hit("f", up)   // pair 2: off, d taken back
         assertFalse(d.capsLock)
         assertEquals("", port.text.toString())
-        now += 10
-        hit("f", up)   // the off stroke does not start a new pair: a capital
-        assertEquals("F", port.text.toString())
-        assertFalse(d.capsLock)
     }
 
     @Test
@@ -288,5 +307,21 @@ class InputDispatcherCapsTest {
         d.onTapOutput(key(q, "a"), TapKeyResolver.resolve(key(q, "a"), TapGesture.Tap))
         assertEquals("A", port.text.toString())
         assertTrue(d.capsLock)
+    }
+
+    @Test
+    fun `CS-18 a selection reported between the two ups - nothing is deleted, the toggle still happens`() {
+        port.text.append("xyz")
+        hit("a", up)
+        cc.onUpdateSelection(1, 3, -1, -1)   // the user selected "yz" (⌫ would delete it all)
+        hit("s", up)
+        assertTrue(d.capsLock)
+        assertEquals("xyzA", port.text.toString())
+        assertFalse("del" in port.calls)
+        cc.onUpdateSelection(4, 4, -1, -1)   // a cursor again: the next pair takes back as before
+        hit("d", up)
+        hit("f", up)
+        assertFalse(d.capsLock)
+        assertEquals("xyzA", port.text.toString())   // d typed and taken back
     }
 }
