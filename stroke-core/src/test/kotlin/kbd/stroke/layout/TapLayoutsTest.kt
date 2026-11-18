@@ -257,9 +257,9 @@ class TapLayoutsTest {
                 assertTrue("${k.id} $d $placed", placed.size <= 1)
             }
         }
-        // 4 paired vowels, 7 compound vowels (FSS#110) and 4 diagonal vowels (FSS#126), each once; no compound finals
-        // since FSS#124.
-        assertEquals("ㅑㅕㅛㅠㅘㅙㅚㅝㅞㅟㅢㅐㅒㅔㅖ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
+        // 4 paired vowels, 7 compound vowels (FSS#110), 4 diagonal vowels and ㅕ ↓ ㅖ · ㅑ ↓ ㅒ (FSS#126) — ㅖ ㅒ twice,
+        // the rest once; no compound finals since FSS#124.
+        assertEquals("ㅑㅕㅛㅠㅘㅙㅚㅝㅞㅟㅢㅐㅒㅔㅖㅖㅒ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
         assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
     }
     @Test
@@ -386,5 +386,18 @@ class TapLayoutsTest {
         assertEquals('ㅒ', ae.shiftJamo)
         assertTrue(TapLayouts.QWERTY.key("j").dirJamo.isEmpty())
         assertTrue(TapLayouts.QWERTY.key("k").dirJamo.isEmpty())
+        // ㅕ ↓ ㅖ, ㅑ ↓ ㅒ (owner, FSS#126 addition): no diagonal, so both stay 4-way; ㅑ keeps [ ].
+        val yeo = d.key("u")
+        val ya = d.key("i")
+        assertEquals('ㅕ', yeo.jamo)
+        assertEquals('ㅑ', ya.jamo)
+        assertEquals(mapOf<kbd.stroke.geom.Way, Char>(kbd.stroke.geom.Dir.DOWN to e.shiftJamo!!), yeo.dirJamo)
+        assertEquals(mapOf<kbd.stroke.geom.Way, Char>(kbd.stroke.geom.Dir.DOWN to ae.shiftJamo!!), ya.dirJamo)
+        assertFalse(yeo.eightWay)
+        assertFalse(ya.eightWay)
+        assertEquals("[", ya.assign?.left)
+        assertEquals("]", ya.assign?.right)
+        assertTrue(TapLayouts.QWERTY.key("u").dirJamo.isEmpty())
+        assertTrue(TapLayouts.QWERTY.key("i").dirJamo.isEmpty())
     }
 }

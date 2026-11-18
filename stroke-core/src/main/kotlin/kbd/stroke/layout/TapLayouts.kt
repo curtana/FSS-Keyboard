@@ -43,8 +43,8 @@ object TapLayouts {
      * (0, 1), summed and taken by sign as the 3 × 3 direction, the vertical flipped where the key's paired vowel is
      * (ㅜ + ㅣ = ↓ is ㅠ's, so ㅟ is ↑). This table is its result, and TL-12 computes the rule again. ㅙ and ㅞ are
      * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e) — with ㅓ ㅏ
-     * ([DIAG_VOWEL], FSS#126) the only 8-way keys since FSS#124 took the compound finals off ㄹ; ㅡ stays 4-way. A direction without a jamo types the plain vowel,
-     * like the tap. Kept apart from [PAIR_VOWEL].
+     * ([DIAG_VOWEL], FSS#126) the only 8-way keys since FSS#124 took the compound finals off ㄹ; ㅡ stays 4-way. A
+     * direction without a jamo types the plain vowel, like the tap. Kept apart from [PAIR_VOWEL].
      */
     internal val COMPOUND_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
         'ㅗ' to mapOf(Dir.RIGHT to 'ㅘ', Dir.DOWN to 'ㅚ', Diag.DOWN_RIGHT to 'ㅙ'),   // + ㅏ, + ㅣ, + ㅏ ㅣ
@@ -65,6 +65,16 @@ object TapLayouts {
     )
 
     /**
+     * ㅖ ㅒ on the Dubeolsik ㅕ ㅑ keys (owner, FSS#126 addition, SRS FR-TAP-02j ⑩): ㅕ ↓ ㅖ, ㅑ ↓ ㅒ — ㅕ + ㅣ and ㅑ + ㅣ,
+     * the ㅣ stroke going down. The same single jamo as the ㅔ ㅐ keys' ↑. No diagonal, so both keys stay 4-way; ㅑ's
+     * ← `[` → `]` stay. Kept apart from [DIAG_VOWEL].
+     */
+    internal val DOWN_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
+        'ㅕ' to mapOf(Dir.DOWN to 'ㅖ'),
+        'ㅑ' to mapOf(Dir.DOWN to 'ㅒ'),
+    )
+
+    /**
      * The vowel of each up/down/left/right direction on the Dubeolsik consonant keys (owner, FSS#122 and FSS#124, SRS
      * FR-TAP-02h): a stroke out of any of the four sides types the consonant and then this vowel, like tapping the two
      * keys (ㄱ ← = 거, ㅁ ↑ = 모, ㄱ ↑ = 고). The direction is the way the vowel's stroke goes, as for the paired vowels
@@ -75,9 +85,9 @@ object TapLayouts {
     /** The [STROKE_VOWEL] of [jamo]'s key: all four on consonant keys (compatibility jamo ㄱ..ㅎ), none on vowel keys. */
     private fun dirVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') STROKE_VOWEL else emptyMap()
 
-    /** The direction jamo of [jamo]'s key: its paired, compound and diagonal vowels, never two in one direction. */
+    /** The direction jamo of [jamo]'s key: its paired, compound, diagonal and ↓ vowels, never two in one direction. */
     private fun dirJamo(jamo: Char): Map<Way, Char> {
-        val tables = listOf(PAIR_VOWEL, COMPOUND_VOWEL, DIAG_VOWEL).map { it[jamo].orEmpty() }
+        val tables = listOf(PAIR_VOWEL, COMPOUND_VOWEL, DIAG_VOWEL, DOWN_VOWEL).map { it[jamo].orEmpty() }
         val ways = tables.flatMap { it.keys }
         require(ways.size == ways.toSet().size) { "$jamo: two direction jamo in one direction" }
         return tables.fold(emptyMap()) { all, t -> all + t }

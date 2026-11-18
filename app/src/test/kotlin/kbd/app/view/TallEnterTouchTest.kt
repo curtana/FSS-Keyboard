@@ -351,6 +351,13 @@ class TallEnterTouchTest {
         assertEquals("k:ㅐ:Exit(dir=DOWN_RIGHT)", out("k", -31.0))
         assertEquals("k:ㅐ:Exit(dir=DOWN_RIGHT)", out("k", -59.0))
         assertEquals("k:ㅏ:Exit(dir=DOWN)", out("k", -61.0))
+        // ㅕ ㅑ stay 4-way (↓ ㅖ ㅒ, no diagonal): a diagonal is the edge crossed first (FSS#126 addition).
+        assertEquals("u:ㅖ:Exit(dir=DOWN)", out("u", 270.0))
+        assertEquals("i:ㅒ:Exit(dir=DOWN)", out("i", 270.0))
+        sink.events.clear()
+        stroke(l, "u", 20f, 40f)                                       // crossing the bottom edge first
+        assertEquals(listOf("u:ㅖ:Exit(dir=DOWN)"), sink.events)
+        assertEquals("i:[:Exit(dir=LEFT)", out("i", 180.0))
     }
 
     @Test

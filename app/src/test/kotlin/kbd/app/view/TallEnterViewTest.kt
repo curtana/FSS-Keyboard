@@ -293,6 +293,16 @@ class TallEnterViewTest {
         for (c in listOf("ㅔ", "ㅖ")) assertEquals(c, hintSize, size(c, eo.getValue(c).first), 0.01f)
         for (c in listOf("ㅐ", "ㅒ")) assertEquals(c, hintSize, size(c, a.getValue(c).first), 0.01f)
         assertTrue(size("ㅓ", eo.getValue("ㅓ").first) > hintSize)
+        // ㅕ (u, x 216..252, row 2) ↓ ㅖ, ㅑ (i, x 252..288, row 2) ↓ ㅒ: bottom edge, centred, small (FSS#126 addition).
+        val yeo = inside(216f, 2)
+        assertEquals(setOf("ㅕ", "ㅖ"), yeo.keys)
+        val ya = inside(252f, 2)
+        assertEquals(setOf("ㅑ", "[", "]", "ㅒ"), ya.keys)
+        for ((m, c) in listOf(yeo to "ㅖ", ya to "ㅒ")) {
+            assertEquals(c, Paint.Align.CENTER, m.getValue(c).second)
+            assertEquals(c, o.getValue("ㅚ").first.second - 3 * ROW * density + 2 * ROW * density, m.getValue(c).first.second, 0.01f)
+            assertEquals(c, hintSize, size(c, m.getValue(c).first), 0.01f)
+        }
     }
 
     private fun px(dp: Float): Int = Math.round(dp * density)

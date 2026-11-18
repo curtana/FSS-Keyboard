@@ -705,8 +705,10 @@ class InputDispatcherTest {
             "ㄱㅗㅏ↗" to "고ㅒ", "ㄱㅜㅓ↖" to "구ㅖ",                               // no (ㅗ, ㅒ) or (ㅜ, ㅖ) merge
             "ㄱㅏㄱㅏ↘" to "가개", "ㅏ↘" to "ㅐ", "ㄱㅓ↙ㄴ" to "겐",
             "ㄱㅓ↙⌫" to "ㄱ", "ㄱㅏ↗⌫" to "ㄱ", "ㄱㅗㅏ↘⌫" to "고", "ㄱㅗㅏ↘⌫⌫" to "ㄱ", "ㄱㅏㄱㅏ↘⌫" to "가ㄱ",
+            // ㅕ ↓ ㅖ, ㅑ ↓ ㅒ (FSS#126 addition).
+            "ㄱㅕ↓" to "계", "ㄱㅑ↓" to "걔", "ㅇㅕ↓" to "예", "ㄱㅕ↓⌫" to "ㄱ", "ㄱㅏㄱㅑ↓" to "가걔", "ㄱㅗㅑ↓" to "고ㅒ",
         )
-        val taps = mapOf("ㅓ↙" to "ㅔ", "ㅓ↖" to "ㅔ↑", "ㅏ↘" to "ㅐ", "ㅏ↗" to "ㅐ↑",
+        val taps = mapOf("ㅕ↓" to "ㅔ↑", "ㅑ↓" to "ㅐ↑", "ㅓ↙" to "ㅔ", "ㅓ↖" to "ㅔ↑", "ㅏ↘" to "ㅐ", "ㅏ↗" to "ㅐ↑",
             "ㅓ↗" to "ㅓ", "ㅓ↘" to "ㅓ", "ㅏ↖" to "ㅏ", "ㅏ↙" to "ㅏ")
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
