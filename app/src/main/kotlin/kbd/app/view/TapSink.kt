@@ -20,9 +20,6 @@ interface TapSink {
     /** The modifiers turned on and waiting for a key, Ctrl and Alt (FR-TAP-15); the view only reads it to draw. */
     val chord: Set<ChordModifier> get() = emptySet()
 
-    /** Caps Lock of the QWERTY letters is on (FR-TAP-19, FSS#131); the view only reads it to draw and name the keys. */
-    val capsLock: Boolean get() = false
-
     /** Function key pressed; also called once per repeat (LLD-05A §6). */
     fun onFunctionDown(key: FunctionKey)
 

@@ -81,7 +81,7 @@ class HangulComposerTest {
     fun `HC-13 dubeolsik merges u e into we`() = assertEquals("뒈", typed("ㄷㅜㅔ"))
 
     @Test
-    fun `HC-14 dubeolsik merges a i into ae (FSS 129)`() = assertEquals("개", typed("ㄱㅏㅣ"))
+    fun `HC-14 dubeolsik does not merge a i`() = assertEquals("가ㅣ", typed("ㄱㅏㅣ"))
 
     @Test
     fun `HC-15 vowel alone`() = assertEquals("ㅏ", typed("ㅏ"))
@@ -123,7 +123,7 @@ class HangulComposerTest {
         assertEquals("가ㅣ", typed("ㄱㅏㅣ", ComposePolicy.GRAFFITI))    // no merge table: 가 + ㅣ
         assertEquals("가ㅏ", typed("ㄱㅏㅏ", ComposePolicy.GRAFFITI))
         assertEquals("고ㅜ", typed("ㄱㅗㅜ", ComposePolicy.GRAFFITI))    // no merge, a new syllable
-        assertEquals("개", typed("ㄱㅏㅣ"))                            // dubeolsik: ㅏ + ㅣ = ㅐ (FSS#129)
+        assertEquals("가ㅣ", typed("ㄱㅏㅣ"))                          // dubeolsik table has no ㅏ + ㅣ
         assertTrue(reports.isEmpty())
     }
 
@@ -477,19 +477,15 @@ class HangulComposerTest {
     }
 
     @Test
-    fun `HC-71 a vowel after a compound vowel event merges by the table, as after the keys (FSS 110, FSS 129, FR-HGL-04f ②)`() {
-        // FSS#129: (ㅘ, ㅣ) = ㅙ and (ㅝ, ㅣ) = ㅞ are in the table now (pinned before FSS#110 as 과ㅣ, 궈ㅣ); still the same as
-        // ㄱ ㅗ ㅏ ㅣ. No row starts with ㅙ ㅞ ㅚ ㅟ ㅢ, so a vowel after those still starts a new syllable.
-        assertEquals("괘", typed("ㄱㅘㅣ"))
+    fun `HC-71 a vowel after a compound vowel event never merges, as after the keys (FSS 110, FR-HGL-04f ②)`() {
+        // Pinned before FSS#110: 과 + ㅣ = 과ㅣ (no (ㅘ, ㅣ) in the table), the same as ㄱ ㅗ ㅏ ㅣ.
+        assertEquals("과ㅣ", typed("ㄱㅘㅣ"))
         assertEquals(typed("ㄱㅗㅏㅣ"), typed("ㄱㅘㅣ"))
-        assertEquals("궤", typed("ㄱㅝㅣ"))
+        assertEquals("궈ㅣ", typed("ㄱㅝㅣ"))
         assertEquals("과ㅏ", typed("ㄱㅘㅏ"))
         assertEquals("의ㅣ", typed("ㅇㅢㅣ"))
         assertEquals("괘ㅣ", typed("ㄱㅙㅣ"))
-        assertEquals("ㅙ", typed("ㅘㅣ"))
-        assertEquals("궤ㅣ", typed("ㄱㅝㅣㅣ"))
-        assertEquals(listOf("과", "고", "ㄱ"), at("ㄱㅘㅣ").backs(3))   // the ㅣ key, then the stroke's two steps
-        assertEquals(listOf("궈", "구", "ㄱ"), at("ㄱㅝㅣ").backs(3))
+        assertEquals("ㅘㅣ", typed("ㅘㅣ"))
     }
 
     @Test
@@ -585,67 +581,6 @@ class HangulComposerTest {
         assertEquals("가괘", typed("ㄱㅏㄱㅙ"))                             // dokkaebibul: 각 + ㅙ
         assertEquals(listOf("가고", "가ㄱ", "가"), at("ㄱㅏㄱㅙ").backs(3))
         assertEquals(listOf("ㅗ", ""), at("ㅙ").backs(2))                   // alone
-        assertTrue(reports.isEmpty())
-    }
-    // --- Wider vowel merge (FSS#129, SRS FR-HGL-04a) ----------------------------------
-
-    @Test
-    fun `HC-77 the ten new pairs merge after an initial, alone and in a chain (FSS 129)`() {
-        val one = mapOf("ㄱㅣㅓ" to "겨", "ㄱㅣㅏ" to "갸", "ㄱㅣㅜ" to "규", "ㄱㅣㅗ" to "교", "ㄱㅓㅣ" to "게", "ㄱㅏㅣ" to "개",
-            "ㄱㅕㅣ" to "계", "ㄱㅑㅣ" to "걔", "ㄱㅗㅏㅣ" to "괘", "ㄱㅜㅓㅣ" to "궤")
-        for ((s, want) in one) assertEquals(s, want, typed(s))
-        assertEquals("걔", typed("ㄱㅣㅏㅣ"))          // ㅣ ㅏ = ㅑ, then ㅑ ㅣ = ㅒ
-        assertEquals("계", typed("ㄱㅣㅓㅣ"))
-        assertEquals("ㅒ", typed("ㅣㅏㅣ"))            // alone
-        assertEquals("ㅙ", typed("ㅗㅏㅣ"))
-        assertEquals("가겨", typed("ㄱㅏㄱㅣㅓ"))      // dokkaebibul first, then the merge in the new syllable
-        assertEquals("겯", typed("ㄱㅣㅓㄷ"))          // a final after a merged medial
-        assertEquals("겨겨", typed("ㄱㅣㅓㄱㅣㅓ"))
-        assertTrue(reports.isEmpty())
-    }
-
-    @Test
-    fun `HC-78 backspace takes a merged vowel back one key at a time (FSS 129)`() {
-        assertEquals(listOf("기", "ㄱ", ""), at("ㄱㅣㅓ").backs(3))         // 겨 ⌫ = 기
-        assertEquals(listOf("가", "ㄱ"), at("ㄱㅏㅣ").backs(2))              // 개 (ㄱ ㅏ ㅣ) ⌫ = 가
-        assertEquals(listOf("갸", "기", "ㄱ"), at("ㄱㅣㅏㅣ").backs(3))      // 걔 → 갸 → 기
-        assertEquals(listOf("과", "고", "ㄱ"), at("ㄱㅗㅏㅣ").backs(3))      // 괘 → 과 → 고
-        assertEquals(listOf("궈", "구"), at("ㄱㅜㅓㅣ").backs(2))
-        assertEquals(listOf("겨"), at("ㄱㅕㅣ").backs(1))                    // 계 (ㅕ key) ⌫ = 겨
-        assertEquals(listOf("ㅑ", "ㅣ", ""), at("ㅣㅏㅣ").backs(3))
-        assertEquals(listOf("겨", "기"), at("ㄱㅣㅓㄷ").backs(2))            // the final first
-        // After ⌫ the syllable goes on as the keys typed it.
-        val (shown, c) = at("ㄱㅏㅣ")
-        c.bs()
-        for (e in ev("ㅣ")) shown.append(c.apply(e).committed)
-        assertEquals("개", shown.toString() + c.composingText())
-        assertTrue(reports.isEmpty())
-    }
-
-    @Test
-    fun `HC-79 what does not merge stays as before (FSS 129)`() {
-        val none = mapOf("ㄱㅛㅏ" to "교ㅏ", "ㄱㅠㅓ" to "규ㅓ", "ㄱㅐㅣ" to "개ㅣ", "ㄱㅔㅣ" to "게ㅣ", "ㄱㅖㅣ" to "계ㅣ",
-            "ㄱㅒㅣ" to "걔ㅣ", "ㄱㅣㅣ" to "기ㅣ", "ㄱㅙㅣ" to "괘ㅣ", "ㄱㅞㅣ" to "궤ㅣ", "ㄱㅚㅣ" to "괴ㅣ", "ㄱㅢㅣ" to "긔ㅣ",
-            "ㄱㅣㅗㅏ" to "교ㅏ", "ㄱㅣㅗㅣ" to "교ㅣ", "ㄱㅣㅜㅣ" to "규ㅣ", "ㄱㅏㅣㅣ" to "개ㅣ")
-        for ((s, want) in none) assertEquals(s, want, typed(s))
-        // The existing pairs keep their order: (ㅗ, ㅣ) = ㅚ and (ㅣ, ㅗ) = ㅛ are different rows.
-        assertEquals("괴", typed("ㄱㅗㅣ"))
-        assertEquals("교", typed("ㄱㅣㅗ"))
-        // Graffiti has no merge table: its vowels come from the cheonjiin assembler (FR-HGL-04c).
-        assertEquals("기ㅓ", typed("ㄱㅣㅓ", ComposePolicy.GRAFFITI))
-        assertEquals("거ㅣ", typed("ㄱㅓㅣ", ComposePolicy.GRAFFITI))
-        assertTrue(reports.isEmpty())
-    }
-
-    @Test
-    fun `HC-80 one-key and stroked vowels merge with the next key the same way (FSS 129)`() {
-        // A one-key ㅕ ㅑ (a key, a stroke or a consonant key's exit-return) is one unit; the ㅣ after it merges.
-        assertEquals(listOf("겨", "ㄱ"), at("ㄱㅕㅣ").backs(2))
-        assertEquals(listOf("갸", "ㄱ"), at("ㄱㅑㅣ").backs(2))
-        // A stroked ㅘ then a ㅣ key = the keys ㅗ ㅏ ㅣ step by step; a stroked ㅙ keeps its two steps (ㅗ → ㅙ).
-        assertEquals(at("ㄱㅗㅏㅣ").drain(), at("ㄱㅘㅣ").drain())
-        assertEquals(at("ㄱㅜㅓㅣ").drain(), at("ㄱㅝㅣ").drain())
-        assertEquals(listOf("고", "ㄱ", ""), at("ㄱㅙ").backs(3))
         assertTrue(reports.isEmpty())
     }
 }

@@ -43,6 +43,15 @@ class TapGeometry private constructor(val layout: TapLayout, val widthDp: Float,
         return geoms.indexOf(g)
     }
 
+    /**
+     * The key a stroke was released over (FSS#109, SRS FR-TAP-02f ③): the press's hit test, but only inside the view —
+     * a release in the side margin or off the keyboard is over no key (the hit test would give the nearest one).
+     */
+    fun releasedKey(p: StrokePoint): TapKeyDef? {
+        if (p.x < 0f || p.x > widthDp || p.y < 0f || p.y > heightDp) return null
+        return indexAt(p.x, p.y).takeIf { it >= 0 }?.let { keys[it] }
+    }
+
     companion object {
         /** Tap layout row width in dp units (LLD-05A §3.1). */
         const val LAYOUT_WIDTH_DP = 360f
@@ -118,8 +127,7 @@ class TapTouchLogic(
             guard.stroke(SITE_FN) { sink.onFunctionDown(fn) }   // on press, outside the queue (FR-CMN-11, 11a ①)
             if (fn in REPEATING) repeat.start(pointerId, fn)   // FR-CMN-07c, FR-TAP-10
         } else {
-            // Diagonals in the data (FSS#109); a consonant key's empty ↖ ↘ keep the edge crossed first (FSS#134).
-            val c = TapGestureClassifier(g.geoms[i], minCrossDp, eightWay = key.eightWay, edgeDiagonals = key.edgeDiagonals)
+            val c = TapGestureClassifier(g.geoms[i], minCrossDp, eightWay = key.eightWay)   // diagonals in the data (FSS#109)
             c.begin(p)
             strokes[pointerId] = Stroke(i, key, c)
             queue.onDown(pointerId)
@@ -143,8 +151,12 @@ class TapTouchLogic(
         val s = strokes.remove(pointerId) ?: return
         val r = guard.run(SITE_CLASSIFY) {   // judged once; the result carries the gesture
             val g = s.classifier.finish(p)
-            // Only the pressed key decides; the key under the release does not (FSS#124 removed FR-TAP-02f).
-            Result(s.key, TapKeyResolver.resolve(s.key, g), g)
+            // Released over the pair key of a compound final after an exit (FSS#109, FR-TAP-02f): that compound,
+            // whatever the direction; the released key does nothing else. The gesture stays, so Ctrl·Alt send its key (⑤).
+            val released = if (g == TapGesture.Tap) null else geometry?.releasedKey(p)
+            val out = ReleaseKeyCompound.of(s.key, released)?.let { TapOutput(null, it, errorVibe = false) }
+                ?: TapKeyResolver.resolve(s.key, g)
+            Result(s.key, out, g)
         }
         val outs = if (r == null) queue.onCancel(pointerId) else queue.onUp(pointerId, r)   // a failed slot only
         emit(outs)

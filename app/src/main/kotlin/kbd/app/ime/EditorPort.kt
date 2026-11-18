@@ -16,12 +16,6 @@ interface EditorPort {
 
     /** `KEYCODE_DEL` down and up. */
     fun deleteBefore()
-
-    /**
-     * Up to [n] characters right before the cursor, or null when the editor does not tell (FSS#131: Caps Lock's ↑↑
-     * checks that the capital it takes back is still there). An editor that cannot be read keeps this default.
-     */
-    fun textBeforeCursor(n: Int): String? = null
     fun sendKey(key: EditorKey)
 
     /**

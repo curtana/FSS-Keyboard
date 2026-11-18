@@ -16,11 +16,10 @@ import kbd.stroke.layout.TapKeyKind
 object TapKeyResolver {
     /**
      * What a stroke out of each edge types, where it differs from the tap (owner #198: every stroked character is shown
-     * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, paired or compound vowel, a
-     * number key's tense consonant (FSS#124), the assigned symbols. Function keys have none. A consonant + vowel
-     * (FR-TAP-02h) shows the tap's jamo, so it is not there (owner: nothing drawn for it). The view draws these; it
-     * never decides anything with them. A diagonal ([Diag], FSS#109) is there only where the key has a diagonal
-     * assignment (ㅗ ㅙ, ㅜ ㅞ), and the view draws it in that corner (FR-TAP-02e ⑥).
+     * in the middle of its edge): a QWERTY letter's ↑ capital, a Dubeolsik shift jamo, compound final or paired vowel, the
+     * assigned symbols. Function keys have none. The view draws these; it never decides anything with them.
+     * A diagonal ([Diag], FSS#109) is there only where the key has a diagonal assignment, and the view draws it in
+     * that corner (FR-TAP-02e ⑥); a direction that types the tap, like ㄹ ↘, is not there.
      */
     fun edgeHints(key: TapKeyDef): Map<Way, String> {
         if (key.kind == TapKeyKind.FUNCTION) return emptyMap()
@@ -34,20 +33,18 @@ object TapKeyResolver {
 
     fun resolve(key: TapKeyDef, g: TapGesture): TapOutput {
         val a = key.assign
-        if (g is TapGesture.ExitReturn) key.returnVowel[g.dir]?.let { return returnSyllable(key, it) }
         val n = normalize(g)
         if (n is TapGesture.Exit && n.dir is Diag) return diagonal(key, n.dir)
         return when (key.kind) {
             TapKeyKind.QWERTY_LETTER -> qwerty(key.label, a, n)
             TapKeyKind.DUBEOLSIK_LETTER -> dubeolsik(key, a, n)
-            TapKeyKind.NUMBER_ROW, TapKeyKind.SYMBOL -> numberJamo(key, n) ?: symbol(requireNotNull(a) { key.id }, n)
+            TapKeyKind.NUMBER_ROW, TapKeyKind.SYMBOL -> symbol(requireNotNull(a) { key.id }, n)
             TapKeyKind.FUNCTION -> throw IllegalArgumentException("function key ${key.id} has no tap output")
         }
     }
 
     /**
-     * Step 1: exit-and-return is an exit in that direction (table row 8) — except on a Dubeolsik consonant key, which
-     * [resolve] handles first (FSS#128, #136, [returnSyllable]; its ↖ ↘ have none) — and a left/right rub
+     * Step 1: exit-and-return is an exit in that direction (table row 8), and a left/right rub
      * is an exit in that direction (row 7). A diagonal rub (only on an 8-way key) is the diagonal's exit too: the
      * first exit's direction decides, as on every key (SRS FR-TAP-02e ④, FSS#109). Only Tap, Exit and Rub(UP/DOWN)
      * remain.
@@ -59,16 +56,12 @@ object TapKeyResolver {
     }
 
     /**
-     * A diagonal exit (FSS#109): the key's diagonal jamo, else a consonant key's diagonal consonant + vowel (FSS#134:
-     * ㄱ ↙ = 그, ↗ = 기, the same output as ㄱ ↑ = 고), else the tap's output — a direction with nothing is the tap
-     * (SRS FR-TAP-02c ④: ㅗ ↙ = ㅗ, no error vibration). Keys without diagonals are never judged diagonally, and a
-     * consonant key's ↖ ↘ are judged by the edge ([TapKeyDef.edgeDiagonals]), but a caller passing one gets the tap
-     * as well (FR-TAP-02e ⑧).
+     * A diagonal exit (FSS#109): the key's diagonal jamo, else the tap's output — a direction with nothing is the tap
+     * (SRS FR-TAP-02c ④: ㄹ ↘ = ㄹ, no error vibration). Keys without diagonals are never judged diagonally, but a
+     * caller passing one (Ctrl·Alt with QWERTY f for ㄹ, FR-TAP-02e ⑧) gets the tap as well.
      */
     private fun diagonal(key: TapKeyDef, d: Diag): TapOutput =
-        key.dirJamo[d]?.let(::jamo)
-            ?: key.dirVowel[d]?.let { syllable(key, requireNotNull(key.jamo) { key.id }, d) }
-            ?: resolve(key, TapGesture.Tap)
+        key.dirJamo[d]?.let(::jamo) ?: resolve(key, TapGesture.Tap)
 
     private fun qwerty(letter: String, a: KeyAssign?, g: TapGesture): TapOutput = when (g) {
         TapGesture.Tap -> text(letter)
@@ -81,40 +74,13 @@ object TapKeyResolver {
         val base = requireNotNull(key.jamo) { key.id }
         return when (g) {
             is TapGesture.Exit -> when (g.dir) {
-                Dir.UP -> key.shiftJamo?.let(::jamo) ?: key.dirJamo[Dir.UP]?.let(::jamo)   // ㅐ ↑ ㅒ, ㅗ ↑ ㅛ, ㅜ ↑ ㅟ
-                    ?: syllable(key, base, Dir.UP)                                          // ㄱ ↑ 고 (FSS#124)
-                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text)   // ㅓ ← ㅕ, ㅗ → ㅘ, ㅣ ← ;
-                    ?: syllable(key, base, g.dir)
+                Dir.UP -> jamo(key.shiftJamo ?: key.dirJamo[Dir.UP] ?: base)   // ㄴ ↑ ㄵ, ㄹ ↑ ㄺ, ㅗ ↑ ㅛ; ㄱ·ㅂ·ㅅ keep ㄲ·ㅃ·ㅆ
+                else -> key.dirJamo[g.dir]?.let(::jamo) ?: assigned(a, g.dir)?.let(::text) ?: jamo(base)   // ㄹ ← ㄻ, ㄱ → ㄳ, ㅓ ← ㅕ; ㄱ ↓ = ㄱ
             }
-            // Tap and up/down rubs: no super/subscripts for jamo, and no paired vowel or consonant + vowel either (FSS#104, #122).
+            // Tap and up/down rubs: no super/subscripts for jamo, and no compound final or paired vowel either (FSS#97, FSS#104).
             else -> jamo(base)
         }
     }
-
-    /**
-     * A Dubeolsik up/down/left/right exit with nothing else assigned: on a consonant key — every direction since
-     * FSS#124 — its jamo then the direction's vowel (SRS FR-TAP-02h: ㄱ ↓ = 구, ㅁ ↑ = 모), else the tap (vowel keys,
-     * FR-TAP-02c ④). [diagonal] also uses it for a consonant key's ↙ ㅡ ↗ ㅣ (FSS#134).
-     */
-    private fun syllable(key: TapKeyDef, base: Char, dir: Way): TapOutput =
-        TapOutput(null, base, errorVibe = false, vowel = key.dirVowel[dir])
-
-    /**
-     * A Dubeolsik consonant key's exit-and-return (FSS#128, #136, SRS FR-TAP-02h ③ ④): its jamo then the vowel of
-     * that direction ([TapKeyDef.returnVowel]: ㄱ ↑ and back = 교, ↓ 규, ← 겨, → 갸, ↙ and ↗ 긔). Two jamo, as the exit;
-     * ㅢ backspaces one step at a time as the ㅡ key ↓ does (FR-HGL-04f). A diagonal rub is not here: it stays the
-     * diagonal's exit ([normalize]: ㄱ ↙ rub = 그).
-     */
-    private fun returnSyllable(key: TapKeyDef, vowel: Char): TapOutput =
-        TapOutput(null, requireNotNull(key.jamo) { key.id }, errorVibe = false, vowel = vowel)
-
-    /**
-     * A Dubeolsik number key's tense consonant (FSS#124, SRS FR-TAP-02i): an exit — or exit-and-return, already
-     * normalized — towards a direction with a [TapKeyDef.dirJamo] (1..5 ↓ ㅃ ㅉ ㄸ ㄲ ㅆ) types that jamo; null for
-     * every other gesture, so the key's symbols decide. QWERTY number keys have no direction jamo.
-     */
-    private fun numberJamo(key: TapKeyDef, g: TapGesture): TapOutput? =
-        (g as? TapGesture.Exit)?.let { key.dirJamo[it.dir] }?.let(::jamo)
 
     private fun symbol(a: KeyAssign, g: TapGesture): TapOutput = when (g) {
         is TapGesture.Exit -> text(if (g.dir == Dir.UP) a.up ?: a.tap else assigned(a, g.dir) ?: a.tap)

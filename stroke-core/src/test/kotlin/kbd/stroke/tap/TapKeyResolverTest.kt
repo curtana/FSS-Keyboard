@@ -34,8 +34,6 @@ class TapKeyResolverTest {
 
     private fun t(s: String) = TapOutput(s, null, errorVibe = false)
     private fun j(c: Char) = TapOutput(null, c, errorVibe = false)
-    /** A consonant then a vowel, one stroke up/down/left/right on a consonant key (FSS#122, #124). */
-    private fun cv(c: Char, v: Char) = TapOutput(null, c, errorVibe = false, vowel = v)
 
     // --- §5.2 action table: rows 1..8 × QWERTY / Dubeolsik / number row and symbol ---
 
@@ -53,12 +51,12 @@ class TapKeyResolverTest {
         assertEquals(t("A"), q("a", exit(UP)))
     }
 
-    @Test fun `TK-05 up exit Dubeolsik is shift jamo, paired vowel or consonant + ㅗ`() {
-        assertEquals(cv('ㄱ', 'ㅗ'), d("r", exit(UP)))            // 고 (FSS#124; ㄲ until then, now 4 ↓)
+    @Test fun `TK-05 up exit Dubeolsik is shift jamo, compound final or base`() {
+        assertEquals(j('ㄲ'), d("r", exit(UP)))
         assertEquals(j('ㅒ'), d("o", exit(UP)))
-        assertEquals(cv('ㅁ', 'ㅗ'), d("a", exit(UP)))            // 모 (FSS#122; the tap until then)
-        assertEquals(cv('ㄴ', 'ㅗ'), d("s", exit(UP)))            // FSS#124; ㄵ in FSS#97..#122
-        assertEquals(cv('ㄹ', 'ㅗ'), d("f", exit(UP)))            // FSS#124; ㄺ in FSS#109..#122
+        assertEquals(j('ㅁ'), d("a", exit(UP)))
+        assertEquals(j('ㄵ'), d("s", exit(UP)))                  // a compound final (FSS#97)
+        assertEquals(j('ㄺ'), d("f", exit(UP)))                  // ㄱ (r) is above ㄹ (FSS#109; ㅀ until then)
     }
 
     @Test fun `TK-06 up exit number row and symbol is the up symbol`() {
@@ -72,10 +70,10 @@ class TapKeyResolverTest {
         assertEquals(t("|"), q("p", exit(DOWN)))
     }
 
-    @Test fun `TK-08 down exit Dubeolsik is consonant + ㅜ, paired vowel, down symbol or base jamo`() {
-        assertEquals(cv('ㄱ', 'ㅜ'), d("r", exit(DOWN)))          // 구 (FSS#122; the tap in FSS#109, ㄳ in FSS#97)
-        assertEquals(cv('ㄹ', 'ㅜ'), d("f", exit(DOWN)))          // FSS#124; ㄿ in FSS#109..#122
-        assertEquals(cv('ㅁ', 'ㅜ'), d("a", exit(DOWN)))
+    @Test fun `TK-08 down exit Dubeolsik is compound final, down symbol or base jamo`() {
+        assertEquals(j('ㄱ'), d("r", exit(DOWN)))                // nothing below ㄱ: the tap (FSS#109; ㄳ in FSS#97)
+        assertEquals(j('ㄿ'), d("f", exit(DOWN)))                // ㅍ (v) is below ㄹ (FSS#109; ㄼ until then)
+        assertEquals(j('ㅁ'), d("a", exit(DOWN)))
         assertEquals(j('ㅐ'), d("o", exit(DOWN)))   // o has no down symbol (#198)
         assertEquals(t(":"), d("l", exit(DOWN)))
     }
@@ -84,9 +82,6 @@ class TapKeyResolverTest {
         assertEquals(t("3"), q("3", exit(DOWN)))
         assertEquals(t("+"), q("minus", exit(DOWN)))
         assertEquals(t("."), q("period", exit(DOWN)))
-        assertEquals(j('ㄸ'), d("3", exit(DOWN)))                // Dubeolsik 1..5: the tense consonant (FSS#124)
-        assertEquals(t("7"), d("7", exit(DOWN)))
-        assertEquals(t("1"), q("1", exit(DOWN)))                 // QWERTY 1 ↓ is empty since ~ went left (FSS#124)
     }
 
     @Test fun `TK-10 left and right exit QWERTY`() {
@@ -97,10 +92,10 @@ class TapKeyResolverTest {
     }
 
     @Test fun `TK-11 left and right exit Dubeolsik`() {
-        assertEquals(cv('ㄱ', 'ㅓ'), d("r", exit(LEFT)))          // 거 (FSS#122)
-        assertEquals(cv('ㄱ', 'ㅏ'), d("r", exit(RIGHT)))         // 가 (FSS#124; ㄳ in FSS#109..#122)
-        assertEquals(cv('ㄹ', 'ㅓ'), d("f", exit(LEFT)))          // 러 (FSS#124; ㄻ until then)
-        assertEquals(cv('ㄹ', 'ㅏ'), d("f", exit(RIGHT)))         // 라 (FSS#124; ㅀ until then)
+        assertEquals(j('ㄱ'), d("r", exit(LEFT)))
+        assertEquals(j('ㄳ'), d("r", exit(RIGHT)))               // ㅅ (t) is right of ㄱ (FSS#109; ↓ in FSS#97)
+        assertEquals(j('ㄻ'), d("f", exit(LEFT)))                // ㅁ (a) is left of ㄹ (FSS#109; ㄺ until then)
+        assertEquals(j('ㅀ'), d("f", exit(RIGHT)))               // ㅎ (g) is right of ㄹ (FSS#109; ㄻ until then)
         assertEquals(t("{"), d("o", exit(LEFT)))
         assertEquals(t("}"), d("o", exit(RIGHT)))
     }
@@ -112,15 +107,13 @@ class TapKeyResolverTest {
         assertEquals(t("\""), q("comma", exit(RIGHT)))
         assertEquals(t("."), q("period", exit(RIGHT)))
         assertEquals(t("="), q("minus", exit(RIGHT)))
-        assertEquals(t("~"), q("1", exit(LEFT)))                 // ~ ← since FSS#124 (↓ until then)
-        assertEquals(t("~"), d("1", exit(LEFT)))
     }
 
     @Test fun `TK-13 up rub QWERTY is superscript`() = assertEquals(t("ᵃ"), q("a", rub(UP)))
 
     @Test fun `TK-14 up rub Dubeolsik is base jamo`() {
         assertEquals(j('ㄱ'), d("r", rub(UP)))
-        for ((id, base) in listOf("s" to 'ㄴ', "f" to 'ㄹ', "v" to 'ㅍ')) assertEquals(id, j(base), d(id, rub(UP)))   // no consonant + vowel
+        for ((id, base) in listOf("s" to 'ㄴ', "f" to 'ㄹ', "v" to 'ㅍ')) assertEquals(id, j(base), d(id, rub(UP)))   // no compound final
     }
 
     @Test fun `TK-15 up rub number row and symbol is the tap symbol`() {
@@ -134,14 +127,13 @@ class TapKeyResolverTest {
     }
 
     @Test fun `TK-17 down rub Dubeolsik is base jamo`() {
-        // No consonant + vowel on a rub, though ↓ exit types one on each of these (FSS#122, #124).
+        // No compound final on a rub, though ↓ exit types one on each of these (FSS#97).
         for ((id, base) in listOf("r" to 'ㄱ', "s" to 'ㄴ', "f" to 'ㄹ', "q" to 'ㅂ', "t" to 'ㅅ')) assertEquals(id, j(base), d(id, rub(DOWN)))
     }
 
     @Test fun `TK-18 down rub number row and symbol is the tap symbol`() {
         assertEquals(t("3"), q("3", rub(DOWN)))
         assertEquals(t(","), q("comma", rub(DOWN)))
-        assertEquals(t("1"), d("1", rub(DOWN)))                  // no tense consonant on a rub (FSS#124)
     }
 
     @Test fun `TK-19 left and right rub QWERTY resolves like an exit`() {
@@ -152,10 +144,10 @@ class TapKeyResolverTest {
     }
 
     @Test fun `TK-20 left and right rub Dubeolsik resolves like an exit`() {
-        assertEquals(cv('ㄱ', 'ㅓ'), d("r", rub(LEFT)))           // like the exit (FSS#122)
-        assertEquals(cv('ㄱ', 'ㅏ'), d("r", rub(RIGHT)))          // like the exit (FSS#124)
-        assertEquals(cv('ㄹ', 'ㅓ'), d("f", rub(LEFT)))
-        assertEquals(cv('ㄹ', 'ㅏ'), d("f", rub(RIGHT)))
+        assertEquals(j('ㄱ'), d("r", rub(LEFT)))
+        assertEquals(j('ㄳ'), d("r", rub(RIGHT)))                // like the exit (FSS#109)
+        assertEquals(j('ㄻ'), d("f", rub(LEFT)))                 // like the exit (FSS#109)
+        assertEquals(j('ㅀ'), d("f", rub(RIGHT)))
         assertEquals(t("{"), d("o", rub(LEFT)))
         assertEquals(t("}"), d("o", rub(RIGHT)))
     }
@@ -165,7 +157,6 @@ class TapKeyResolverTest {
         assertEquals(t("3"), q("3", rub(RIGHT)))
         assertEquals(t("'"), q("comma", rub(LEFT)))
         assertEquals(t("\""), q("comma", rub(RIGHT)))
-        assertEquals(t("~"), d("1", rub(LEFT)))                  // like the exit (FSS#124)
     }
 
     @Test fun `TK-22 exit and return QWERTY resolves like an exit`() {
@@ -179,16 +170,16 @@ class TapKeyResolverTest {
         assertEquals(t("]"), q("i", back(RIGHT)))
     }
 
-    @Test fun `TK-23 exit and return Dubeolsik resolves like an exit, on a consonant key the paired vowel (FSS 128)`() {
-        assertEquals(cv('ㄱ', 'ㅛ'), d("r", back(UP)))            // 교, the exit is 고 (FSS#128)
+    @Test fun `TK-23 exit and return Dubeolsik resolves like an exit`() {
+        assertEquals(j('ㄲ'), d("r", back(UP)))
         assertEquals(j('ㅒ'), d("o", back(UP)))
-        assertEquals(cv('ㄴ', 'ㅛ'), d("s", back(UP)))
-        assertEquals(cv('ㄱ', 'ㅠ'), d("r", back(DOWN)))          // 규, the exit is 구
+        assertEquals(j('ㄵ'), d("s", back(UP)))                  // like the exit (FSS#97)
+        assertEquals(j('ㄱ'), d("r", back(DOWN)))                // like the exit: nothing below ㄱ (FSS#109)
         assertEquals(t(":"), d("l", back(DOWN)))
-        assertEquals(cv('ㄱ', 'ㅕ'), d("r", back(LEFT)))
-        assertEquals(cv('ㄹ', 'ㅕ'), d("f", back(LEFT)))
+        assertEquals(j('ㄱ'), d("r", back(LEFT)))
+        assertEquals(j('ㄻ'), d("f", back(LEFT)))                // like the exit (FSS#109)
         assertEquals(t("{"), d("o", back(LEFT)))
-        assertEquals(cv('ㄱ', 'ㅑ'), d("r", back(RIGHT)))
+        assertEquals(j('ㄳ'), d("r", back(RIGHT)))               // like the exit (FSS#109)
         assertEquals(t("}"), d("o", back(RIGHT)))
     }
 
@@ -201,8 +192,6 @@ class TapKeyResolverTest {
         assertEquals(t("'"), q("comma", back(LEFT)))
         assertEquals(t("3"), q("3", back(RIGHT)))
         assertEquals(t("\""), q("comma", back(RIGHT)))
-        assertEquals(j('ㅃ'), d("1", back(DOWN)))                // like the exit (FSS#124)
-        assertEquals(t("~"), q("1", back(LEFT)))
     }
 
     // --- §5.3 symbol assignment table: outputs for tap / up / left / right / down ---
@@ -221,16 +210,11 @@ class TapKeyResolverTest {
 
     @Test fun `TA-01 the key right of m, tap = and left -`() = assertSymbolRow("minus", "=", "_", "-", "=", "+")   // FSS#62
 
-    @Test fun `TA-02 number 1`() {
-        assertRow(TapLayouts.QWERTY, "1", t("1"), t("!"), t("~"), t("`"), t("1"))       // ~ ← since FSS#124 (↓ until then)
-        assertRow(TapLayouts.DUBEOLSIK, "1", t("1"), t("!"), t("~"), t("`"), j('ㅃ'))   // ↓ ㅃ (FSS#124)
-    }
+    @Test fun `TA-02 number 1`() = assertSymbolRow("1", "1", "!", "1", "`", "~")
 
     @Test fun `TA-03 numbers 2 to 9`() {
         "2345678".zip("@#\$%^&*").plus('9' to '(').forEach { (n, up) ->
-            assertRow(TapLayouts.QWERTY, "$n", t("$n"), t("$up"), t("$n"), t("$n"), t("$n"))
-            val down = "ㅉㄸㄲㅆ".getOrNull(n - '2')?.let(::j) ?: t("$n")   // 2..5 ↓ in Dubeolsik (FSS#124)
-            assertRow(TapLayouts.DUBEOLSIK, "$n", t("$n"), t("$up"), t("$n"), t("$n"), down)
+            assertSymbolRow("$n", "$n", "$up", "$n", "$n", "$n")
         }
     }
 
@@ -238,7 +222,7 @@ class TapKeyResolverTest {
 
     @Test fun `TA-05 i and ㅑ`() {
         assertRow(TapLayouts.QWERTY, "i", t("i"), t("I"), t("["), t("]"), t("i"))
-        assertRow(TapLayouts.DUBEOLSIK, "i", j('ㅑ'), j('ㅑ'), t("["), t("]"), j('ㅒ'))   // ↓ ㅒ (FSS#126)
+        assertRow(TapLayouts.DUBEOLSIK, "i", j('ㅑ'), j('ㅑ'), t("["), t("]"), j('ㅑ'))
     }
 
     @Test fun `TA-06 o and ㅐ`() {
@@ -270,9 +254,9 @@ class TapKeyResolverTest {
 
     @Test fun `TA-12 other letter keys q ㅂ and s ㄴ`() {
         assertRow(TapLayouts.QWERTY, "q", t("q"), t("Q"), t("q"), t("q"), t("q"))
-        assertRow(TapLayouts.DUBEOLSIK, "q", j('ㅂ'), cv('ㅂ', 'ㅗ'), cv('ㅂ', 'ㅓ'), cv('ㅂ', 'ㅏ'), cv('ㅂ', 'ㅜ'))   // 보 버 바 부 (FSS#124)
+        assertRow(TapLayouts.DUBEOLSIK, "q", j('ㅂ'), j('ㅃ'), j('ㅂ'), j('ㅄ'), j('ㅂ'))   // → ㅄ (FSS#109; #242 ←, #246 →, FSS#97 ↓)
         assertRow(TapLayouts.QWERTY, "s", t("s"), t("S"), t("s"), t("s"), t("s"))
-        assertRow(TapLayouts.DUBEOLSIK, "s", j('ㄴ'), cv('ㄴ', 'ㅗ'), cv('ㄴ', 'ㅓ'), cv('ㄴ', 'ㅏ'), cv('ㄴ', 'ㅜ'))   // 노 너 나 누
+        assertRow(TapLayouts.DUBEOLSIK, "s", j('ㄴ'), j('ㄵ'), j('ㄴ'), j('ㄶ'), j('ㄴ'))   // ↑ ㄵ → ㄶ (FSS#109; FSS#97 ↓ ㄶ)
     }
 
     @Test
@@ -280,32 +264,49 @@ class TapKeyResolverTest {
         fun h(layout: TapLayout, id: String) = TapKeyResolver.edgeHints(layout.keys.single { it.id == id })
         assertEquals(mapOf(Dir.UP to "I", Dir.LEFT to "[", Dir.RIGHT to "]"), h(TapLayouts.QWERTY, "i"))
         assertEquals(mapOf(Dir.UP to "S"), h(TapLayouts.QWERTY, "s"))
-        // Consonant keys: nothing drawn, a consonant + vowel is not shown (owner; FSS#124 took ㅃ ㅄ ㄵ ㄶ off).
-        for (id in listOf("q", "s", "a", "f")) assertEquals(id, emptyMap<Dir, String>(), h(TapLayouts.DUBEOLSIK, id))
-        // Number row: ~ on the left edge of 1 in both layouts, the tense consonants on Dubeolsik 1..5's bottom edge.
-        assertEquals(mapOf(Dir.UP to "!", Dir.LEFT to "~", Dir.RIGHT to "`"), h(TapLayouts.QWERTY, "1"))
-        assertEquals(mapOf(Dir.UP to "!", Dir.LEFT to "~", Dir.RIGHT to "`", Dir.DOWN to "ㅃ"), h(TapLayouts.DUBEOLSIK, "1"))
-        assertEquals(mapOf(Dir.UP to "@", Dir.DOWN to "ㅉ"), h(TapLayouts.DUBEOLSIK, "2"))
-        assertEquals(mapOf(Dir.UP to "@"), h(TapLayouts.QWERTY, "2"))
-        assertEquals(mapOf(Dir.UP to "^"), h(TapLayouts.DUBEOLSIK, "6"))
-        assertEquals(mapOf(Dir.LEFT to "[", Dir.RIGHT to "]", Dir.DOWN to "ㅒ"), h(TapLayouts.DUBEOLSIK, "i"))   // ㅑ: ↑ is ㅑ again, ↓ ㅒ (FSS#126)
+        assertEquals(mapOf(Dir.UP to "ㅃ", Dir.RIGHT to "ㅄ"), h(TapLayouts.DUBEOLSIK, "q"))   // a shift jamo, a compound final
+        assertEquals(mapOf(Dir.UP to "ㄵ", Dir.RIGHT to "ㄶ"), h(TapLayouts.DUBEOLSIK, "s"))   // ㄴ: compound finals on ↑ and → (FSS#109)
+        assertEquals(emptyMap<Dir, String>(), h(TapLayouts.DUBEOLSIK, "a"))          // ㅁ: no shift jamo, nothing assigned
+        assertEquals(mapOf(Dir.LEFT to "[", Dir.RIGHT to "]"), h(TapLayouts.DUBEOLSIK, "i"))   // ㅑ: ↑ is ㅑ again
         for (layout in listOf(TapLayouts.QWERTY, TapLayouts.DUBEOLSIK)) {
             for (k in layout.keys.filter { it.kind == kbd.stroke.layout.TapKeyKind.FUNCTION }) assertEquals(k.id, emptyMap<Dir, String>(), TapKeyResolver.edgeHints(k))
         }
     }
 
     @Test
-    fun `TA-21 Dubeolsik compound finals and the up tense consonants are off the consonant keys, QWERTY unchanged (FSS 124)`() {
-        // The keys that carried them until FSS#124 (#242, FSS#97, #107, #109): every side a consonant + vowel now.
-        for ((id, c) in listOf("r" to 'ㄱ', "s" to 'ㄴ', "f" to 'ㄹ', "q" to 'ㅂ', "w" to 'ㅈ', "e" to 'ㄷ', "t" to 'ㅅ', "x" to 'ㅌ', "v" to 'ㅍ')) {
-            assertRow(TapLayouts.DUBEOLSIK, id, j(c), cv(c, 'ㅗ'), cv(c, 'ㅓ'), cv(c, 'ㅏ'), cv(c, 'ㅜ'))
+    fun `TA-21 Dubeolsik compound finals - one stroke each on the first consonant's key, the shift jamo stays on up, QWERTY unchanged (issue 242, FSS 109)`() {
+        // The whole table (SRS FR-TAP-02c, 0.91): tap / ↑ / ← / → / ↓ of the keys that had or have compound finals.
+        assertRow(TapLayouts.DUBEOLSIK, "r", j('ㄱ'), j('ㄲ'), j('ㄱ'), j('ㄳ'), j('ㄱ'))   // ㄱ ↑ is still ㄲ; ↓ is the plain ㄱ again
+        assertRow(TapLayouts.DUBEOLSIK, "s", j('ㄴ'), j('ㄵ'), j('ㄴ'), j('ㄶ'), j('ㄴ'))   // ↓ is the plain ㄴ again
+        assertRow(TapLayouts.DUBEOLSIK, "f", j('ㄹ'), j('ㄺ'), j('ㄻ'), j('ㅀ'), j('ㄿ'))   // and the diagonals, TA-23
+        assertRow(TapLayouts.DUBEOLSIK, "q", j('ㅂ'), j('ㅃ'), j('ㅂ'), j('ㅄ'), j('ㅂ'))   // ↓ is the plain ㅂ again
+        assertRow(TapLayouts.DUBEOLSIK, "t", j('ㅅ'), j('ㅆ'), j('ㅅ'), j('ㅅ'), j('ㅅ'))   // no compound finals any more (FSS#109)
+        assertRow(TapLayouts.DUBEOLSIK, "x", j('ㅌ'), j('ㅌ'), j('ㅌ'), j('ㅌ'), j('ㅌ'))
+        assertRow(TapLayouts.DUBEOLSIK, "v", j('ㅍ'), j('ㅍ'), j('ㅍ'), j('ㅍ'), j('ㅍ'))
+        // Each of the 11 compound finals is on exactly one key and one direction, on the four keys r s f q.
+        val placed = TapLayouts.DUBEOLSIK.keys.filter { it.jamo !in VOWEL_KEYS }.flatMap { it.dirJamo.values }
+        assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ".toList(), placed.sorted())
+        val carriers = TapLayouts.DUBEOLSIK.keys.filter { it.dirJamo.isNotEmpty() && it.jamo !in VOWEL_KEYS }
+        assertEquals(setOf("r", "s", "f", "q"), carriers.map { it.id }.toSet())
+        // Exit-and-return is the exit; an up/down rub is the plain jamo (SRS tap action table rows 5, 6, 8).
+        for (key in carriers) {
+            for (dir in WAYS) assertEquals("${key.id} $dir", TapKeyResolver.resolve(key, exit(dir)), TapKeyResolver.resolve(key, back(dir)))
+            for (dir in listOf(UP, DOWN)) assertEquals("${key.id} rub $dir", j(key.jamo!!), TapKeyResolver.resolve(key, rub(dir)))
         }
-        // No consonant key has a direction jamo; no key at all has a compound final.
-        assertTrue(TapLayouts.DUBEOLSIK.keys.filter { it.jamo != null && it.jamo !in VOWEL_KEYS }.all { it.dirJamo.isEmpty() })
-        val placed = TapLayouts.DUBEOLSIK.keys.flatMap { it.dirJamo.values }
-        assertTrue(placed.toString(), placed.none { it in "ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ" })
         // QWERTY keeps its letters on the same keys.
         for (id in "rsfqtxv".map { it.toString() }) assertRow(TapLayouts.QWERTY, id, t(id), t(id.uppercase()), t(id), t(id), t(id))
+        // Edge hints show them on the new edges only (owner #198), ㄹ's diagonals in its corners (FR-TAP-02e ⑥).
+        fun h(id: String) = TapKeyResolver.edgeHints(TapLayouts.DUBEOLSIK.keys.single { it.id == id })
+        assertEquals(mapOf(UP to "ㄲ", RIGHT to "ㄳ"), h("r"))
+        assertEquals(mapOf(UP to "ㄵ", RIGHT to "ㄶ"), h("s"))
+        assertEquals(
+            mapOf(UP to "ㄺ", LEFT to "ㄻ", RIGHT to "ㅀ", DOWN to "ㄿ", Diag.UP_LEFT to "ㄼ", Diag.UP_RIGHT to "ㄽ", Diag.DOWN_LEFT to "ㄾ"),
+            h("f"),
+        )
+        assertEquals(mapOf(UP to "ㅃ", RIGHT to "ㅄ"), h("q"))
+        assertEquals(mapOf(UP to "ㅆ"), h("t"))
+        assertEquals(emptyMap<Way, String>(), h("x"))                                     // ㅌ ↑ ㄾ went (FSS#109)
+        assertEquals(emptyMap<Way, String>(), h("v"))
     }
 
     @Test
@@ -329,8 +330,8 @@ class TapKeyResolverTest {
         assertEquals(j('ㅜ'), d("n", rub(DOWN)))
         // The ㅛ ㅕ ㅑ ㅠ keys stay, ㅑ with its brackets.
         assertRow(TapLayouts.DUBEOLSIK, "y", j('ㅛ'), j('ㅛ'), j('ㅛ'), j('ㅛ'), j('ㅛ'))
-        assertRow(TapLayouts.DUBEOLSIK, "u", j('ㅕ'), j('ㅕ'), j('ㅕ'), j('ㅕ'), j('ㅖ'))   // ↓ ㅖ (FSS#126)
-        assertRow(TapLayouts.DUBEOLSIK, "i", j('ㅑ'), j('ㅑ'), t("["), t("]"), j('ㅒ'))
+        assertRow(TapLayouts.DUBEOLSIK, "u", j('ㅕ'), j('ㅕ'), j('ㅕ'), j('ㅕ'), j('ㅕ'))
+        assertRow(TapLayouts.DUBEOLSIK, "i", j('ㅑ'), j('ㅑ'), t("["), t("]"), j('ㅑ'))
         assertRow(TapLayouts.DUBEOLSIK, "b", j('ㅠ'), j('ㅠ'), j('ㅠ'), j('ㅠ'), j('ㅠ'))
         // Only the four keys carry paired vowels, one each.
         val vowels = TapLayouts.DUBEOLSIK.keys.filter { it.jamo in PAIR_KEYS }
@@ -341,34 +342,35 @@ class TapKeyResolverTest {
         // Edge hints: the pair on its own edge, nothing on the others (owner #198).
         fun h(id: String) = TapKeyResolver.edgeHints(TapLayouts.DUBEOLSIK.keys.single { it.id == id })
         assertEquals(mapOf(UP to "ㅛ", RIGHT to "ㅘ", DOWN to "ㅚ", Diag.DOWN_RIGHT to "ㅙ"), h("h"))   // + compound vowels (FSS#110)
-        assertEquals(mapOf(LEFT to "ㅕ", Diag.DOWN_LEFT to "ㅔ", Diag.UP_LEFT to "ㅖ"), h("j"))     // + diagonals (FSS#126)
-        assertEquals(mapOf(RIGHT to "ㅑ", Diag.DOWN_RIGHT to "ㅐ", Diag.UP_RIGHT to "ㅒ"), h("k"))
+        assertEquals(mapOf(LEFT to "ㅕ"), h("j"))
+        assertEquals(mapOf(RIGHT to "ㅑ"), h("k"))
         assertEquals(mapOf(UP to "ㅟ", LEFT to "ㅝ", DOWN to "ㅠ", Diag.DOWN_LEFT to "ㅞ"), h("n"))
-        assertEquals(mapOf(LEFT to "[", RIGHT to "]", DOWN to "ㅒ"), h("i"))   // ↓ ㅒ (FSS#126)
-        assertEquals(mapOf(DOWN to "ㅖ"), h("u"))
-        for (id in listOf("y", "b")) assertEquals(id, emptyMap<Dir, String>(), h(id))
+        assertEquals(mapOf(LEFT to "[", RIGHT to "]"), h("i"))
+        for (id in listOf("y", "u", "b")) assertEquals(id, emptyMap<Dir, String>(), h(id))
     }
 
     @Test
-    fun `TA-23 ㄹ has no compound-final diagonals any more - ↖ ↘ passed for it, or a diagonal for any 4-way key, is its tap (FSS 109, 124, 134)`() {
-        val f = TapLayouts.DUBEOLSIK.keys.single { it.id == "f" }
-        assertTrue(f.eightWay)   // ↙ ㅡ ↗ ㅣ since FSS#134 (TA-30)
-        for (dg in listOf(Diag.UP_LEFT, Diag.DOWN_RIGHT)) {
-            assertEquals(j('ㄹ'), d("f", exit(dg)))
-            assertEquals(j('ㄹ'), d("f", back(dg)))
-            assertEquals(j('ㄱ'), d("r", exit(dg)))
+    fun `TA-23 ㄹ diagonals - exit, exit-and-return and rub give the diagonal's jamo, down-right is the tap (FSS 109)`() {
+        assertEquals(j('ㄼ'), d("f", exit(Diag.UP_LEFT)))        // ㅂ (q) is up-left of ㄹ
+        assertEquals(j('ㄽ'), d("f", exit(Diag.UP_RIGHT)))       // ㅅ (t) up-right
+        assertEquals(j('ㄾ'), d("f", exit(Diag.DOWN_LEFT)))      // ㅌ (x) down-left
+        assertEquals(j('ㄹ'), d("f", exit(Diag.DOWN_RIGHT)))     // ㅊ (c) makes no compound final: the tap
+        for (dg in Diag.entries) {
+            assertEquals("back $dg", d("f", exit(dg)), d("f", back(dg)))
+            assertEquals("rub $dg", d("f", exit(dg)), d("f", rub(dg)))   // the first exit's direction, as on every key
         }
+        // ㄹ's rubs follow the other keys (SRS FR-TAP-02e ④): left and right the exit, up and down the plain ㄹ.
+        assertEquals(j('ㄻ'), d("f", rub(LEFT)))
+        assertEquals(j('ㅀ'), d("f", rub(RIGHT)))
+        assertEquals(j('ㄹ'), d("f", rub(UP)))
+        assertEquals(j('ㄹ'), d("f", rub(DOWN)))
+        // A diagonal passed for a key without diagonals is its tap: QWERTY f (Ctrl·Alt, FR-TAP-02e ⑧), others.
         for (dg in Diag.entries) {
             assertEquals(t("f"), q("f", exit(dg)))
             assertEquals(t("f"), q("f", rub(dg)))
             assertEquals(t("3"), q("3", exit(dg)))
-            assertEquals(t("3"), d("3", exit(dg)))
+            assertEquals(j('ㄱ'), d("r", exit(dg)))
         }
-        // ㄹ's rubs follow the other consonant keys: left and right the exit, up and down the plain ㄹ.
-        assertEquals(cv('ㄹ', 'ㅓ'), d("f", rub(LEFT)))
-        assertEquals(cv('ㄹ', 'ㅏ'), d("f", rub(RIGHT)))
-        assertEquals(j('ㄹ'), d("f", rub(UP)))
-        assertEquals(j('ㄹ'), d("f", rub(DOWN)))
     }
 
     @Test
@@ -385,7 +387,6 @@ class TapKeyResolverTest {
                 val assigned = buildSet<Way> {
                     if (key.kind == kbd.stroke.layout.TapKeyKind.QWERTY_LETTER || key.shiftJamo != null) add(UP)
                     addAll(key.dirJamo.keys)
-                    addAll(key.dirVowel.keys)   // a consonant + vowel since FSS#122 (TA-26)
                     if (a?.up != null) add(UP)
                     if (a?.left != null) add(LEFT)
                     if (a?.right != null) add(RIGHT)
@@ -399,194 +400,11 @@ class TapKeyResolverTest {
                 }
             }
         }
-        assertTrue(checked > 200)
-        // The case the owner named: ㄹ ↘ (4-way since FSS#124, so only a caller could pass it). Up/down/left/right of
-        // every consonant key are a consonant + vowel since FSS#124 (TA-26).
+        assertTrue(checked > 300)
+        // The cases the owner named: ㄹ ↘, ㄱ ↓, ㄴ ↓, ㅂ ↓, ㅅ ↓, ㅌ ↑, ㅍ ↑.
         assertEquals(j('ㄹ'), d("f", exit(Diag.DOWN_RIGHT)))
-    }
-
-    @Test
-    fun `TA-26 Dubeolsik consonant keys - up, down, left and right are the consonant then ㅗ ㅜ ㅓ ㅏ on all 14 keys (FSS 122, 124)`() {
-        // SRS FR-TAP-02h table, written out by hand from the issue: all four ways of every consonant key (FSS#124;
-        // FSS#122 had only the ways without a tense consonant or compound final).
-        val vowel = mapOf(LEFT to 'ㅓ', RIGHT to 'ㅏ', UP to 'ㅗ', DOWN to 'ㅜ')
-        val pair = mapOf('ㅓ' to 'ㅕ', 'ㅏ' to 'ㅑ', 'ㅗ' to 'ㅛ', 'ㅜ' to 'ㅠ')
-        val consonants = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ"
-        assertEquals(14, consonants.length)
-        for (c in consonants) {
-            val key = TapLayouts.DUBEOLSIK.keys.single { it.jamo == c }
-            assertEquals("$c", vowel, key.dirVowel.filterKeys { it is Dir })   // the diagonals are TA-30's (FSS#134)
-            for (w in listOf(UP, DOWN, LEFT, RIGHT)) {
-                val out = TapKeyResolver.resolve(key, exit(w))
-                assertEquals("$c $w", cv(c, vowel.getValue(w)), out)
-                // Exit-and-return: the paired vowel since FSS#128 (TA-29).
-                assertEquals("$c back $w", cv(c, pair.getValue(vowel.getValue(w))), TapKeyResolver.resolve(key, back(w)))
-            }
-            // Rubs: left/right the exit, up/down the plain consonant (as the paired vowels).
-            assertEquals(TapKeyResolver.resolve(key, exit(LEFT)), TapKeyResolver.resolve(key, rub(LEFT)))
-            assertEquals(TapKeyResolver.resolve(key, exit(RIGHT)), TapKeyResolver.resolve(key, rub(RIGHT)))
-            assertEquals(j(c), TapKeyResolver.resolve(key, rub(UP)))
-            assertEquals(j(c), TapKeyResolver.resolve(key, rub(DOWN)))
-            // ↖ ↘ have nothing (passed by a caller: the tap; the view judges them by the edge, FSS#134); nothing is
-            // drawn on the key (owner).
-            for (dg in listOf(Diag.UP_LEFT, Diag.DOWN_RIGHT)) assertEquals("$c $dg", j(c), TapKeyResolver.resolve(key, exit(dg)))
-            assertEquals("$c hints", emptyMap<Way, String>(), TapKeyResolver.edgeHints(key))
-        }
-        assertEquals(cv('ㄱ', 'ㅓ'), d("r", exit(LEFT)))   // 거
-        assertEquals(cv('ㅁ', 'ㅗ'), d("a", exit(UP)))     // 모
-        assertEquals(cv('ㅇ', 'ㅏ'), d("d", exit(RIGHT)))  // 아 (the owner's example)
-        assertEquals(cv('ㄱ', 'ㅗ'), d("r", exit(UP)))     // 고, no longer ㄲ
-        // Vowel keys, number and symbol keys, and QWERTY: no vowel after anything.
-        for (layout in listOf(TapLayouts.QWERTY, TapLayouts.DUBEOLSIK)) for (key in layout.keys) {
-            if (key.kind == kbd.stroke.layout.TapKeyKind.FUNCTION || (key.jamo != null && key.jamo in 'ㄱ'..'ㅎ')) continue
-            assertEquals(key.id, emptyMap<Dir, Char>(), key.dirVowel)
-            assertEquals(key.id, emptyMap<Dir, Char>(), key.returnVowel)
-            for (w in WAYS) assertEquals("${key.id} $w", null, TapKeyResolver.resolve(key, exit(w)).vowel)
-            for (w in WAYS) assertEquals("${key.id} back $w", null, TapKeyResolver.resolve(key, back(w)).vowel)
-        }
-    }
-
-    @Test
-    fun `TA-29 Dubeolsik consonant keys - exit and return types the consonant then ㅛ ㅠ ㅕ ㅑ, the exit and rubs unchanged (FSS 128)`() {
-        // SRS FR-TAP-02h ③, written out by hand from the issue table: ↑ 교, ↓ 규, ← 겨, → 갸 (ㄱ).
-        val back = mapOf(UP to 'ㅛ', DOWN to 'ㅠ', LEFT to 'ㅕ', RIGHT to 'ㅑ')
-        val exitVowel = mapOf(UP to 'ㅗ', DOWN to 'ㅜ', LEFT to 'ㅓ', RIGHT to 'ㅏ')
-        for (c in "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ") {
-            val key = TapLayouts.DUBEOLSIK.keys.single { it.jamo == c }
-            assertEquals("$c", back, key.returnVowel.filterKeys { it is Dir })   // ↙ ↗ ㅢ are TA-31's (FSS#136)
-            for (w in listOf(UP, DOWN, LEFT, RIGHT)) {
-                assertEquals("$c back $w", cv(c, back.getValue(w)), TapKeyResolver.resolve(key, back(w)))
-                assertEquals("$c exit $w", cv(c, exitVowel.getValue(w)), TapKeyResolver.resolve(key, exit(w)))
-            }
-            // Rubs unchanged: left/right the exit (거 가), up/down the plain consonant.
-            assertEquals(cv(c, 'ㅓ'), TapKeyResolver.resolve(key, rub(LEFT)))
-            assertEquals(cv(c, 'ㅏ'), TapKeyResolver.resolve(key, rub(RIGHT)))
-            assertEquals(j(c), TapKeyResolver.resolve(key, rub(UP)))
-            assertEquals(j(c), TapKeyResolver.resolve(key, rub(DOWN)))
-            // ↖ ↘ exit-and-return (judged by the edge in the view, so only a caller passes one) is still the tap; ↙ ↗
-            // and back are ㅢ (TA-31, FSS#136).
-            for (dg in listOf(Diag.UP_LEFT, Diag.DOWN_RIGHT)) assertEquals("$c back $dg", j(c), TapKeyResolver.resolve(key, back(dg)))
-            // Nothing drawn (owner 11-17).
-            assertEquals("$c hints", emptyMap<Way, String>(), TapKeyResolver.edgeHints(key))
-            // Ctrl/Alt keep the same-place QWERTY key's same gesture (FR-TAP-16 ③).
-            for (w in listOf(UP, DOWN, LEFT, RIGHT)) {
-                assertEquals("$c ctrl $w", ChordKeys.ofTap(key.id, exit(w)), ChordKeys.ofTap(key.id, back(w)))
-            }
-        }
-        assertEquals(cv('ㄱ', 'ㅛ'), d("r", back(UP)))      // 교
-        assertEquals(cv('ㄱ', 'ㅠ'), d("r", back(DOWN)))    // 규
-        assertEquals(cv('ㄱ', 'ㅕ'), d("r", back(LEFT)))    // 겨
-        assertEquals(cv('ㄱ', 'ㅑ'), d("r", back(RIGHT)))   // 갸
-        // Vowel keys keep exit-and-return = exit (ㅗ ↑ and back = ㅛ, ㅓ ← and back = ㅕ, ㅗ → and back = ㅘ).
-        assertEquals(j('ㅛ'), d("h", back(UP)))
-        assertEquals(j('ㅕ'), d("j", back(LEFT)))
-        assertEquals(j('ㅘ'), d("h", back(RIGHT)))
-        // Number row 1..5 ↓ and back: the tense consonant, as the exit.
-        assertEquals(j('ㄲ'), d("4", back(DOWN)))
-    }
-
-    @Test
-    fun `TA-30 Dubeolsik consonant keys - ↙ is the consonant then ㅡ, ↗ then ㅣ, ↖ ↘ judged by the edge, nothing drawn (FSS 134)`() {
-        // SRS FR-TAP-02h ④, written out by hand from the issue: ㄱ ↙ 그, ㄱ ↗ 기.
-        for (c in "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ") {
-            val key = TapLayouts.DUBEOLSIK.keys.single { it.jamo == c }
-            assertTrue("$c", key.eightWay)
-            assertEquals("$c", setOf(Diag.UP_LEFT, Diag.DOWN_RIGHT), key.edgeDiagonals)
-            assertEquals("$c", 'ㅡ', key.dirVowel[Diag.DOWN_LEFT])
-            assertEquals("$c", 'ㅣ', key.dirVowel[Diag.UP_RIGHT])
-            // The same output path as ㄱ ↑ 고: jamo + vowel, no text, no error vibration.
-            assertEquals("$c ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, exit(Diag.DOWN_LEFT)))
-            assertEquals("$c ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, exit(Diag.UP_RIGHT)))
-            // A rub that way is the diagonal's exit (FR-TAP-02e ④); exit-and-return is ㅢ since FSS#136 (TA-31).
-            assertEquals("$c rub ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, rub(Diag.DOWN_LEFT)))
-            assertEquals("$c rub ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, rub(Diag.UP_RIGHT)))
-            // Up/down/left/right and their exit-and-return unchanged (TA-26, TA-29).
-            assertEquals(cv(c, 'ㅗ'), TapKeyResolver.resolve(key, exit(UP)))
-            assertEquals(cv(c, 'ㅛ'), TapKeyResolver.resolve(key, back(UP)))
-            // Nothing drawn (owner): the consonant + vowel shows the tap's jamo.
-            assertEquals("$c hints", emptyMap<Way, String>(), TapKeyResolver.edgeHints(key))
-            // Ctrl/Alt: the same-place QWERTY key, which has no diagonals, so the plain letter (as ㅓ ㅏ, TA-28).
-            assertEquals(ChordKeys.ofTap(key.id, tap), ChordKeys.ofTap(key.id, exit(Diag.DOWN_LEFT)))
-            assertEquals(ChordKeys.ofTap(key.id, tap), ChordKeys.ofTap(key.id, exit(Diag.UP_RIGHT)))
-        }
-        assertEquals(cv('ㄱ', 'ㅡ'), d("r", exit(Diag.DOWN_LEFT)))   // 그
-        assertEquals(cv('ㄱ', 'ㅣ'), d("r", exit(Diag.UP_RIGHT)))    // 기
-        assertEquals(cv('ㅎ', 'ㅡ'), d("g", exit(Diag.DOWN_LEFT)))   // 흐
-        assertEquals(cv('ㅁ', 'ㅣ'), d("a", exit(Diag.UP_RIGHT)))    // 미
-        // Vowel, number and QWERTY keys get no diagonal vowel; the vowel keys' diagonals stay their own (TA-25, TA-28).
-        for (layout in listOf(TapLayouts.QWERTY, TapLayouts.DUBEOLSIK)) for (key in layout.keys) {
-            if (key.kind == kbd.stroke.layout.TapKeyKind.FUNCTION || (key.jamo != null && key.jamo in 'ㄱ'..'ㅎ')) continue
-            assertTrue(key.id, key.dirVowel.isEmpty())
-            assertTrue(key.id, key.edgeDiagonals.isEmpty())
-        }
-        assertEquals(j('ㅞ'), d("n", exit(Diag.DOWN_LEFT)))
-        assertEquals(j('ㅒ'), d("k", exit(Diag.UP_RIGHT)))
-        assertEquals(j('ㅡ'), d("m", exit(Diag.UP_RIGHT)))
-    }
-
-    @Test
-    fun `TA-31 Dubeolsik consonant keys - ↙ or ↗ and back is the consonant then ㅢ, the exit and rub still ㅡ ㅣ (FSS 136)`() {
-        // SRS FR-TAP-02h ④, written out by hand from the issue: ㄱ ↙ and back 긔, ㄱ ↗ and back 긔; ↙ alone 그, ↗ alone 기.
-        val back = mapOf(UP to 'ㅛ', DOWN to 'ㅠ', LEFT to 'ㅕ', RIGHT to 'ㅑ')
-        val exitVowel = mapOf(UP to 'ㅗ', DOWN to 'ㅜ', LEFT to 'ㅓ', RIGHT to 'ㅏ')
-        for (c in "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ") {
-            val key = TapLayouts.DUBEOLSIK.keys.single { it.jamo == c }
-            assertEquals("$c", mapOf(Diag.DOWN_LEFT to 'ㅢ', Diag.UP_RIGHT to 'ㅢ'), key.returnVowel.filterKeys { it is Diag })
-            // The same output path as ㄱ ↑ and back 교: jamo + vowel, no text, no error vibration.
-            assertEquals("$c back ↙", cv(c, 'ㅢ'), TapKeyResolver.resolve(key, back(Diag.DOWN_LEFT)))
-            assertEquals("$c back ↗", cv(c, 'ㅢ'), TapKeyResolver.resolve(key, back(Diag.UP_RIGHT)))
-            // The exit alone and a rub (three or more crossings) keep ㅡ ㅣ (FSS#134).
-            assertEquals("$c ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, exit(Diag.DOWN_LEFT)))
-            assertEquals("$c ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, exit(Diag.UP_RIGHT)))
-            assertEquals("$c rub ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, rub(Diag.DOWN_LEFT)))
-            assertEquals("$c rub ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, rub(Diag.UP_RIGHT)))
-            // Up/down/left/right exit and exit-and-return unchanged (TA-26, TA-29).
-            for (w in listOf(UP, DOWN, LEFT, RIGHT)) {
-                assertEquals("$c $w", cv(c, exitVowel.getValue(w)), TapKeyResolver.resolve(key, exit(w)))
-                assertEquals("$c back $w", cv(c, back.getValue(w)), TapKeyResolver.resolve(key, back(w)))
-            }
-            // ↖ ↘ unchanged: nothing on them, so exit, exit-and-return and rub are the tap when a caller passes one.
-            for (dg in listOf(Diag.UP_LEFT, Diag.DOWN_RIGHT)) for (g in listOf(exit(dg), back(dg), rub(dg))) {
-                assertEquals("$c $g", j(c), TapKeyResolver.resolve(key, g))
-            }
-            // The key's judging is unchanged: still 8-way, ↖ ↘ by the edge; nothing drawn (owner).
-            assertTrue("$c", key.eightWay)
-            assertEquals("$c", setOf(Diag.UP_LEFT, Diag.DOWN_RIGHT), key.edgeDiagonals)
-            assertEquals("$c hints", emptyMap<Way, String>(), TapKeyResolver.edgeHints(key))
-            // Ctrl/Alt: the same-place QWERTY key's same gesture, which has no diagonals (TA-30).
-            assertEquals(ChordKeys.ofTap(key.id, tap), ChordKeys.ofTap(key.id, back(Diag.DOWN_LEFT)))
-            assertEquals(ChordKeys.ofTap(key.id, tap), ChordKeys.ofTap(key.id, back(Diag.UP_RIGHT)))
-        }
-        assertEquals(cv('ㄱ', 'ㅢ'), d("r", back(Diag.DOWN_LEFT)))   // 긔
-        assertEquals(cv('ㄱ', 'ㅢ'), d("r", back(Diag.UP_RIGHT)))    // 긔
-        assertEquals(cv('ㅇ', 'ㅢ'), d("d", back(Diag.DOWN_LEFT)))   // 의
-        assertEquals(cv('ㅎ', 'ㅢ'), d("g", back(Diag.UP_RIGHT)))    // 희
-        // Vowel keys keep their diagonal exit-and-return = exit (ㅜ ↙ ㅞ, ㅏ ↗ ㅒ); ㅡ has no diagonal (the tap).
-        assertEquals(j('ㅞ'), d("n", back(Diag.DOWN_LEFT)))
-        assertEquals(j('ㅒ'), d("k", back(Diag.UP_RIGHT)))
-        assertEquals(j('ㅡ'), d("m", back(Diag.DOWN_LEFT)))
-    }
-
-    @Test
-    fun `TA-27 number row - Dubeolsik 1 to 5 down type ㅃ ㅉ ㄸ ㄲ ㅆ as one jamo, 1 left is tilde in both layouts, Ctrl and Alt keep QWERTY (FSS 124)`() {
-        // SRS FR-TAP-02i, by hand from the issue: the tense form of the consonant key right below.
-        val tense = mapOf("1" to 'ㅃ', "2" to 'ㅉ', "3" to 'ㄸ', "4" to 'ㄲ', "5" to 'ㅆ')
-        for (n in "1234567890".map { it.toString() }) {
-            val want = tense[n]?.let(::j) ?: t(n)
-            assertEquals(n, want, d(n, exit(DOWN)))
-            assertEquals(n, want, d(n, back(DOWN)))
-            assertEquals(n, t(n), d(n, rub(DOWN)))       // an up/down rub is the tap, as on every number key
-            assertEquals(n, t(n), q(n, exit(DOWN)))      // QWERTY's number row ↓ is empty
-            assertFalse(d(n, exit(DOWN)).errorVibe)
-            assertEquals(n, null, d(n, exit(DOWN)).vowel)
-        }
-        assertEquals(t("~"), q("1", exit(LEFT)))
-        assertEquals(t("~"), d("1", exit(LEFT)))
-        assertEquals(t("~"), d("1", rub(LEFT)))
-        // Ctrl·Alt send the QWERTY key of the place (FR-TAP-16 ③): 2 ↓ is D2, 1 ← is Shift + `.
-        assertEquals(ChordStroke(ChordKey.D2, shift = false), ChordKeys.ofTap("2", exit(DOWN)))
-        assertEquals(ChordStroke(ChordKey.D1, shift = false), ChordKeys.ofTap("1", exit(DOWN)))
-        assertEquals(ChordStroke(ChordKey.GRAVE, shift = true), ChordKeys.ofTap("1", exit(LEFT)))
+        for (id in listOf("r", "s", "q", "t")) assertEquals(id, d(id, tap), d(id, exit(DOWN)))
+        for (id in listOf("x", "v")) assertEquals(id, d(id, tap), d(id, exit(UP)))
     }
 
     @Test
@@ -627,59 +445,11 @@ class TapKeyResolverTest {
         }
     }
 
-    @Test
-    fun `TA-28 Dubeolsik ㅓ ㅏ diagonals ㅔ ㅖ ㅐ ㅒ and ㅕ ㅑ down ㅖ ㅒ, the other ways unchanged, Ctrl and Alt QWERTY (FSS 126)`() {
-        // The whole of both keys (SRS FR-TAP-02j), all eight directions: exit, exit-and-return and rub.
-        val table = mapOf(
-            "j" to mapOf<Way, Char>(LEFT to 'ㅕ', Diag.DOWN_LEFT to 'ㅔ', Diag.UP_LEFT to 'ㅖ'),
-            "k" to mapOf<Way, Char>(RIGHT to 'ㅑ', Diag.DOWN_RIGHT to 'ㅐ', Diag.UP_RIGHT to 'ㅒ'),
-        )
-        for ((id, ways) in table) {
-            val base = TapLayouts.DUBEOLSIK.keys.single { it.id == id }.jamo!!
-            assertEquals(j(base), d(id, tap))
-            for (w in WAYS) {
-                val want = j(ways[w] ?: base)                                // an empty way is the tap (FR-TAP-02c ④)
-                assertEquals("$id $w", want, d(id, exit(w)))
-                assertEquals("$id back $w", want, d(id, back(w)))
-                assertFalse(d(id, exit(w)).errorVibe)
-                assertEquals("$id $w", null, d(id, exit(w)).vowel)            // one jamo, never a consonant + vowel
-                val rubWant = if (w == UP || w == DOWN) j(base) else want     // rubs as on every key (FR-TAP-02e ④)
-                assertEquals("$id rub $w", rubWant, d(id, rub(w)))
-            }
-        }
-        // The same output as the ㅔ ㅐ keys: tap and ↑.
-        assertEquals(d("p", tap), d("j", exit(Diag.DOWN_LEFT)))
-        assertEquals(d("p", exit(UP)), d("j", exit(Diag.UP_LEFT)))
-        assertEquals(d("o", tap), d("k", exit(Diag.DOWN_RIGHT)))
-        assertEquals(d("o", exit(UP)), d("k", exit(Diag.UP_RIGHT)))
-        // ㅕ ↓ ㅖ, ㅑ ↓ ㅒ (FR-TAP-02j ⑩): exit and exit-and-return; a ↓ rub is the plain vowel; the rest unchanged.
-        assertEquals(j('ㅖ'), d("u", exit(DOWN)))
-        assertEquals(j('ㅖ'), d("u", back(DOWN)))
-        assertEquals(j('ㅒ'), d("i", exit(DOWN)))
-        assertEquals(j('ㅒ'), d("i", back(DOWN)))
-        assertEquals(j('ㅕ'), d("u", rub(DOWN)))
-        assertEquals(j('ㅑ'), d("i", rub(DOWN)))
-        assertEquals(d("p", exit(UP)), d("u", exit(DOWN)))       // the same jamo as the ㅔ ㅐ keys' ↑
-        assertEquals(d("o", exit(UP)), d("i", exit(DOWN)))
-        assertFalse(d("u", exit(DOWN)).errorVibe)
-        assertEquals(t("["), d("i", exit(LEFT)))
-        assertEquals(t("]"), d("i", exit(RIGHT)))
-        assertEquals(ChordStroke(ChordKey.U, shift = false), ChordKeys.ofTap("u", exit(DOWN)))   // QWERTY u ↓ is empty
-        assertEquals(ChordStroke(ChordKey.I, shift = false), ChordKeys.ofTap("i", exit(DOWN)))
-        // Ctrl·Alt (FR-TAP-16 ③): the QWERTY key of the place, j and k have no diagonal, so J and K without Shift.
-        for (dg in Diag.entries) {
-            assertEquals(ChordStroke(ChordKey.J, shift = false), ChordKeys.ofTap("j", exit(dg)))
-            assertEquals(ChordStroke(ChordKey.K, shift = false), ChordKeys.ofTap("k", exit(dg)))
-            assertEquals(t("j"), q("j", exit(dg)))
-            assertEquals(t("k"), q("k", exit(dg)))
-        }
-    }
-
     private companion object {
         /** The four Dubeolsik vowel keys with a paired vowel (FSS#104). */
         val PAIR_KEYS = setOf('ㅗ', 'ㅓ', 'ㅏ', 'ㅜ')
 
-        /** The Dubeolsik vowel keys with a direction jamo: paired, compound (FSS#110) and ㅖ ㅒ ↓ vowels (FSS#126). */
-        val VOWEL_KEYS = PAIR_KEYS + 'ㅡ' + 'ㅕ' + 'ㅑ'
+        /** The Dubeolsik vowel keys with a direction jamo: the paired vowels and the compound vowels (FSS#110). */
+        val VOWEL_KEYS = PAIR_KEYS + 'ㅡ'
     }
 }

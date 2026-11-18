@@ -18,15 +18,9 @@ import kotlin.math.atan2
  * [eightWay] (FSS#109, SRS FR-TAP-02e): the key has a diagonal assignment, so the direction is the angle from the
  * pressed point to the point that counted as the first exit, in eight sectors ([wayOfVector]); the count of the first
  * exit edge still tells exit, exit-and-return and rub apart. The caller decides it from the key's data
- * (`TapKeyDef.eightWay`), never from the key's name. An angle in one of [edgeDiagonals] (`TapKeyDef.edgeDiagonals`,
- * FSS#134: a consonant key's ↖ ↘) is judged by the edge crossed first instead, as on a 4-way key.
+ * (`TapKeyDef.eightWay`), never from the key's name.
  */
-class TapGestureClassifier(
-    key: KeyGeom,
-    minCrossDp: Float,
-    private val eightWay: Boolean = false,
-    private val edgeDiagonals: Set<Diag> = emptySet(),
-) {
+class TapGestureClassifier(key: KeyGeom, minCrossDp: Float, private val eightWay: Boolean = false) {
 
     private val tracker = EdgeCrossingTracker(key, minCrossDp)
     private var start: StrokePoint? = null
@@ -46,9 +40,7 @@ class TapGestureClassifier(
         tracker.add(p)
         val out = tracker.firstOut() ?: return TapGesture.Tap
         val s = start
-        val dir: Way = if (eightWay && s != null) {
-            wayOfVector(out.x - s.x, out.y - s.y).takeUnless { it in edgeDiagonals } ?: out.edge.dir
-        } else out.edge.dir
+        val dir: Way = if (eightWay && s != null) wayOfVector(out.x - s.x, out.y - s.y) else out.edge.dir
         return when (tracker.countOf(out.edge)) {
             1 -> TapGesture.Exit(dir)
             2 -> TapGesture.ExitReturn(dir)

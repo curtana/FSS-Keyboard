@@ -1,8 +1,7 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.38** (2026-11-18)
-- 0.38(FSS#129, SRS 0.99 FR-HGL-04a·04f ②, HLD 0.92 4.4): 3.1 `MergeTables.DUBEOLSIK`에 열 줄(ㅣ+ㅓ ㅏ ㅜ ㅗ = ㅕ ㅑ ㅠ ㅛ, ㅓ ㅏ ㅕ ㅑ + ㅣ = ㅔ ㅐ ㅖ ㅒ, ㅘ ㅝ + ㅣ = ㅙ ㅞ — 모두 열일곱 줄). `VOWEL_STEPS`는 그대로. 형식 변화 없음
+- 버전 **0.37** (2026-11-15)
 - 0.37(FSS#110 후속, SRS 0.93 FR-HGL-04f ③): 3.1 `VOWEL_STEPS`의 ㅙ·ㅞ를 두 단계로(ㅙ [ㅗ, ㅙ], ㅞ [ㅜ, ㅞ] — 키로 친 것과 같음, LLD-04 7.4 0.39). 형식 변화 없음
 - 0.36(FSS#110, SRS 0.92 FR-HGL-04f): 3.1 `JamoTables` 표에 `SPLIT_JONG`(0.29부터 있던 표, 적지 않았던 것)과 새 `VOWEL_STEPS`(겹모음 → 획 단계, LLD-04 7.4)를 적었다. 형식 변화는 이 표 하나다
 - 0.35(FSS#109, SRS 0.91 FR-TAP-02c·02e·02f, HLD 0.84 4.2·5A): 3.3에 대각선 방향 — **`sealed interface Way { val dx: Int; val dy: Int }`**를 `Dir`과 새 **`enum class Diag { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT }`**가 구현한다. `Dir`은 네 값과 순서·이름·확장 속성이 그대로이고 부호 `dx`·`dy`만 더했다(그래서 `Dir`을 쓰는 변 통과·모드 키·그래피티 코드는 바뀌지 않음, D-75). `WAYS`(Dir 넷 + Diag 넷), `wayOfSigns(dx, dy)`. `TapKeyDef.dirJamo`는 `Map<Way, Char>`(LLD-05A 3.1). 손 뗀 키 우선의 짝 판정은 app이 `core-hangul`의 `JamoTables.COMPOUND_JONG`으로 한다 — stroke-core → core-hangul 의존은 만들지 않았다(1.2 그대로, LLD-05A 4.1, D-76).
@@ -147,7 +146,7 @@ object MergeTables {
 
 | 표 | 앞 모음 + 다음 모음 = 결과 |
 |---|---|
-| `DUBEOLSIK` | ㅗ+ㅏ=ㅘ, ㅗ+ㅐ=ㅙ, ㅗ+ㅣ=ㅚ, ㅜ+ㅓ=ㅝ, ㅜ+ㅔ=ㅞ, ㅜ+ㅣ=ㅟ, ㅡ+ㅣ=ㅢ, (0.38, FSS#129) ㅣ+ㅓ=ㅕ, ㅣ+ㅏ=ㅑ, ㅣ+ㅜ=ㅠ, ㅣ+ㅗ=ㅛ, ㅓ+ㅣ=ㅔ, ㅏ+ㅣ=ㅐ, ㅕ+ㅣ=ㅖ, ㅑ+ㅣ=ㅒ, ㅘ+ㅣ=ㅙ, ㅝ+ㅣ=ㅞ — 열일곱 줄, (앞, 뒤)마다 결과 하나. 병합한 중성을 다시 `merge`에 넣어 이어서 병합한다(LLD-04 7.2, ㅣ ㅏ ㅣ = ㅒ) |
+| `DUBEOLSIK` | ㅗ+ㅏ=ㅘ, ㅗ+ㅐ=ㅙ, ㅗ+ㅣ=ㅚ, ㅜ+ㅓ=ㅝ, ㅜ+ㅔ=ㅞ, ㅜ+ㅣ=ㅟ, ㅡ+ㅣ=ㅢ |
 | `NONE` | 없음(그래피티) |
 
 - 시험: HC-01, HC-02, HC-05(표 전수, HC-03·HC-04는 0.15에서 지움), [LLD-11-tests.md#2](LLD-11-tests.md#2-core-hangul).

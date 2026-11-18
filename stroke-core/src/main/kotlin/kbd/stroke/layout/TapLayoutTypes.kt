@@ -32,30 +32,14 @@ data class TapKeyDef(
     val assign: KeyAssign? = null,
     /** Dubeolsik letter keys only: Hangul compatibility jamo (D-25). */
     val jamo: Char? = null,
-    /** Dubeolsik vowel keys ㅐ ㅔ only: the ↑ jamo (ㅒ ㅖ). The consonant keys lost theirs to the number row in FSS#124. */
     val shiftJamo: Char? = null,
     val function: FunctionKey? = null,
     /**
-     * Dubeolsik keys only: the jamo each direction types (HLD 5A, LLD-05A §3.3) — on the vowel keys the paired and
-     * compound vowels of [TapLayouts] (FSS#104, #110, e.g. ㅗ ↑ ㅛ, ㅗ ↘ ㅙ; a diagonal is a [kbd.stroke.geom.Diag]), on
-     * the number keys 1..5 the tense consonant ↓ (FSS#124, 1 ↓ ㅃ). The consonant keys have none since FSS#124.
+     * Dubeolsik letter keys only: the jamo each direction types, from two tables in [TapLayouts] (HLD 5A, LLD-05A §3.3):
+     * the compound finals of the consonant keys (issue #242, e.g. ㄹ ← ㄻ) and the paired vowels of the vowel keys
+     * (FSS#104, e.g. ㅗ ↑ ㅛ). Since FSS#109 a direction may be a diagonal ([kbd.stroke.geom.Diag], e.g. ㄹ ↖ ㄼ).
      */
     val dirJamo: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
-    /**
-     * Dubeolsik consonant keys only (FSS#122, #124, #134, SRS FR-TAP-02h): the vowel a stroke in each direction types
-     * after the key's jamo — up/down/left/right from [TapLayouts.STROKE_VOWEL] (ㄱ ← = 거, ㄱ ↑ = 고) and the ↙ ↗
-     * diagonals from [TapLayouts.DIAG_STROKE_VOWEL] (ㄱ ↙ = 그, ㄱ ↗ = 기), on every consonant key. The diagonals make
-     * the key [eightWay]; its other diagonals are [edgeDiagonals].
-     */
-    val dirVowel: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
-    /**
-     * Dubeolsik consonant keys only (FSS#128, #136, SRS FR-TAP-02h ③ ④): the vowel an exit-and-return in each
-     * direction types after the key's jamo — up/down/left/right from [TapLayouts.RETURN_VOWEL], the paired vowel of
-     * [dirVowel] in the same direction (ㄱ ↑ and back = 교, ← and back = 겨), and ↙ ↗ from
-     * [TapLayouts.DIAG_RETURN_VOWEL] (ㄱ ↙ or ↗ and back = 긔). Only ways [dirVowel] has, so it changes neither
-     * [eightWay] nor [edgeDiagonals].
-     */
-    val returnVowel: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /** Rows the key takes from [row] down (FSS#105): 2 for ↵, 1 for every other key. */
     val rowSpan: Int = 1,
 ) {
@@ -68,17 +52,7 @@ data class TapKeyDef(
      * assignment. Decided by the data only — no key is named in code — so a diagonal added to the tables needs no
      * code change.
      */
-    val eightWay: Boolean get() = (dirJamo.keys + dirVowel.keys).any { it is kbd.stroke.geom.Diag }
-
-    /**
-     * The diagonals of a consonant key ([dirVowel] not empty) with nothing on them (FSS#134: ↖ ↘): a stroke whose angle
-     * falls in one is judged by the edge crossed first, as on a 4-way key, so it keeps the up/down/left/right
-     * consonant + vowel it typed before the key had diagonals. Empty on every other key: there an empty diagonal is
-     * the tap (SRS FR-TAP-02c ④).
-     */
-    val edgeDiagonals: Set<kbd.stroke.geom.Diag>
-        get() = if (dirVowel.isEmpty()) emptySet()
-        else kbd.stroke.geom.Diag.entries.filter { it !in dirJamo && it !in dirVowel }.toSet()
+    val eightWay: Boolean get() = dirJamo.keys.any { it is kbd.stroke.geom.Diag }
 
     /** Whether the key takes row [r]: `row ≤ r < row + rowSpan`. */
     fun inRow(r: Int): Boolean = r >= row && r < row + rowSpan
