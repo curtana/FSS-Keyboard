@@ -20,6 +20,7 @@ import kbd.stroke.geom.StrokePoint
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.geom.Diag
 import kbd.stroke.geom.Dir
+import kbd.stroke.geom.Way
 import kbd.stroke.layout.TapKeyDef
 import kbd.stroke.layout.TapKeyKind
 import kbd.stroke.layout.TapLayout
@@ -177,6 +178,16 @@ class TapKeyboardView(
         for (i in keys.indices) if (modifierOf(keys[i]) != null) access.invalidateVirtualView(i)
     }
 
+    /** Caps Lock went on or off (`InputDispatcher.onCapsChanged`): every letter is drawn and named again (FR-TAP-19 ②). */
+    fun capsChanged() {
+        invalidate()
+        access.invalidateRoot()
+    }
+
+    /** The label drawn and read for [k]: a QWERTY letter in upper case while Caps Lock is on (FR-TAP-19 ②, FSS#131). */
+    internal fun labelOf(k: TapKeyDef): String =
+        if (sink.capsLock && k.kind == TapKeyKind.QWERTY_LETTER) k.label.uppercase() else k.label
+
     /** The layout drawn now: QWERTY for Dubeolsik while Ctrl or Alt is on (FR-TAP-15 ⑥, FSS#117). */
     private fun shownLayout(): TapLayout? =
         logic.geometry?.layout?.let { TapLayouts.shown(it, sink.chord.isNotEmpty()) }
@@ -205,7 +216,7 @@ class TapKeyboardView(
             }
             canvas.drawRoundRect(keyRect, inset * 2, inset * 2, paint)
             val text = if (k.function in WORD_KEYS) wordPaint else labelPaint
-            canvas.drawText(k.label, keyRect.centerX(), keyRect.centerY() - (text.ascent() + text.descent()) / 2, text)
+            canvas.drawText(labelOf(k), keyRect.centerX(), keyRect.centerY() - (text.ascent() + text.descent()) / 2, text)
             if (k.kind != TapKeyKind.FUNCTION) drawHints(canvas, k)
         }
     }
@@ -217,7 +228,7 @@ class TapKeyboardView(
      * (FR-TAP-02h) is not drawn because edgeHints leaves out what types the tap's jamo.
      */
     private fun drawHints(canvas: Canvas, k: TapKeyDef) {
-        val h = kbd.stroke.tap.TapKeyResolver.edgeHints(k)
+        val h = hintsOf(k)
         val pad = HINT_PAD_DP * density
         // Each direction's symbol in the middle of its edge (owner #208): ↑ top, ↓ bottom, ← left, → right; the
         // diagonals in the corners, only on keys that have them (FSS#109).
@@ -232,6 +243,15 @@ class TapKeyboardView(
         h[Diag.UP_RIGHT]?.let { drawHint(canvas, it, keyRect.right - pad, top, Paint.Align.RIGHT) }
         h[Diag.DOWN_LEFT]?.let { drawHint(canvas, it, keyRect.left + pad, bottom, Paint.Align.LEFT) }
         h[Diag.DOWN_RIGHT]?.let { drawHint(canvas, it, keyRect.right - pad, bottom, Paint.Align.RIGHT) }
+    }
+
+    /**
+     * The edge hints drawn on [k]: [kbd.stroke.tap.TapKeyResolver.edgeHints], but no ↑ capital on a QWERTY letter while
+     * Caps Lock is on — that ↑ turns Caps Lock off and types nothing (FR-TAP-19 ②).
+     */
+    internal fun hintsOf(k: TapKeyDef): Map<Way, String> {
+        val h = kbd.stroke.tap.TapKeyResolver.edgeHints(k)
+        return if (sink.capsLock && k.kind == TapKeyKind.QWERTY_LETTER) h - Dir.UP else h
     }
 
     private fun drawHint(canvas: Canvas, s: String, x: Float, y: Float, align: Paint.Align) {
@@ -302,7 +322,7 @@ class TapKeyboardView(
 
     /** What a screen reader says: the key label, a name for function keys (LLD-05A §7). */
     internal fun describe(key: TapKeyDef): String = when (key.function) {
-        null -> key.label
+        null -> labelOf(key)   // upper case while Caps Lock is on (FR-TAP-19 ②)
         FunctionKey.ESC -> context.getString(R.string.a11y_key_esc)
         FunctionKey.CTRL -> context.getString(R.string.a11y_key_ctrl)
         FunctionKey.ALT -> context.getString(R.string.a11y_key_alt)

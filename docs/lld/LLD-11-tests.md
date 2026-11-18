@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.71** (2026-11-18)
+- 버전 **0.72** (2026-11-18)
+- 0.72(FSS#131, SRS 0.99 FR-TAP-19, HLD 0.92 5A, LLD-05A 0.30, LLD-08 0.37): **영문 쿼티 Caps Lock** — 새 7.4b CS-01~CS-16(`InputDispatcherCapsTest`, 글을 가진 가짜 편집기), 7.5 CK-01~CK-04(`TapKeyboardCapsViewTest`), CL-06(`KeyboardServiceChordTest`), DV-48, 9장 표 두 줄. 기존 시험의 기대는 바뀌지 않는다
 - 0.71(FSS#128, SRS 0.98 FR-TAP-02h ③, HLD 0.91 5A·11장, LLD-05A 0.29): **두벌식 자음 키 나갔다 돌아옴 = 자음 + ㅛ·ㅠ·ㅕ·ㅑ** — 새 시험: TA-29(`TapKeyResolverTest`), ID-47(`InputDispatcherTest`, 시험 도우미 `shownAfter`에 `↺` = 나갔다 돌아옴). 기대 바뀜(회귀 아님): TK-23(자음 키 줄), TA-26(나갔다 돌아옴 = 짝 모음, 모음·쿼티·숫자 키 `returnVowel` 빈 맵), TL-11(`returnVowel = RETURN_VOWEL`)
 - 0.70(FSS#126, SRS 0.97 FR-TAP-02j, HLD 0.90 5A·11장, LLD-05A 0.28): **두벌식 ㅓ ↙ ㅔ · ↖ ㅖ, ㅏ ↘ ㅐ · ↗ ㅒ** — 새 시험: TL-15(`TapLayoutsTest`, 표·같은 자모·8방향), TA-28(`TapKeyResolverTest`, 두 키 × 여덟 방향 × 나감·돌아옴·문지르기, ㅔ·ㅐ 키와 같은 출력, Ctrl·Alt = J · K), GV-04(`TallEnterTouchTest`, ㅓ·ㅏ 8방향 판정·구간 경계), GV-05(`TallEnterViewTest`, 모서리 넷·크기), ID-46(`InputDispatcherTest`, 조합·병합·⌫ = 키 입력), DV-47(실기). 보탬 ㅕ ↓ ㅖ · ㅑ ↓ ㅒ: TL-15·TA-28·GV-04·GV-05·ID-46에 더함, TA-05·TA-20(ㅑ 표시에 ↓ ㅒ)·TA-22(u·i 줄과 표시) 갱신. 기대값 갱신: TL-09(`dirJamo` 값에 ㅐ ㅒ ㅔ ㅖ), TL-10(8방향 키 h·j·k·n, 데이터 복사본은 ㅕ(u) 키로), TA-22(j·k 표시에 대각선), GJ-02(모서리 = ㅙ ㅞ ㅔ ㅖ ㅐ ㅒ), GV-01(8방향 키 목록)
 - 0.69(FSS#124, SRS 0.96 FR-TAP-02h·02i, FR-TAP-02c 겹받침 한 번 긋기·FR-TAP-02e ⑤~⑨·FR-TAP-02f 삭제, HLD 0.89 5A·11장, LLD-05A 0.27, LLD-08 0.36): **두벌식 자음 키 위아래좌우 모두 자음 + 모음, 된소리 숫자 1~5 ↓, 겹받침 한 번 긋기·ㄹ 8방향·손 뗀 키 우선 삭제, 1 키 ~ ←** — 새 시험: TL-14(`TapLayoutsTest`, 숫자 1~5 ↓ = 바로 아래 자음 키의 된소리, 쿼티 없음), TA-27(`TapKeyResolverTest`, 숫자 줄 ↓ 된소리·돌아옴·문지르기·1 ← ~·Ctrl 키), ID-45(`InputDispatcherTest`, 빠 짜 따 까 싸, 꼬 ⌫ ㄲ ⌫ 빈, 갂, 가빠), 8절 DV-46(**실기 미확인**). **새 기대로 바꾼 기존 시험(회귀가 아니라 FSS#124의 바뀐 동작):** TL-09(`dirJamo` 값 = 짝 모음 4 + 겹모음 7), TL-10(8방향 키 h·n), TL-11(이제 "자음 키에 겹받침·된소리 없음" — 0.64~0.68의 규칙 계산 시험을 바꿈), 이름 없는 배치 시험 "DUBEOLSIK letters…"(`shiftJamo` = ㅐ ㅒ · ㅔ ㅖ만, 숫자 줄은 `dirJamo`만 다름)·"symbol assignments"(1 = ↑ ! ← ~ → `` ` ``), TK-05·08·09·11·12·14·17·18·20·21·23·24, TA-02·03·12·20·21(이제 "겹받침·↑ 된소리 없어짐")·23(이제 "ㄹ 대각선 없음")·24·26(14키 모두 네 방향), CM-07(1 ← = Shift + `GRAVE`, 1 ↓ = `D1`), CD-20(손 뗀 키 무시), ID-40(닭은 두 번 쳐서, ㄹ ↑ = 다로)·ID-42(겹받침은 두 번 쳐서, 한 번 긋기는 자음 + 모음)·ID-44(ㄱ → 가, ㄱ ↑ 고, ㄷ ↑ 도, ㄱ ← ㄹ ↑ 거로 등), GJ-01(ㄹ 4방향)·GJ-02(자음 키 라벨만, 모서리 ㅙ ㅞ만, 숫자 줄 된소리·1 ~)·GJ-03(손 뗀 키 무시), GV-01(8방향 h·n). 8절 DV-43, DV-45 ②는 FSS#124로 없어짐. CM-09·CM-14·GV-02는 코드·기대 그대로(설명만)
@@ -921,6 +922,30 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 | CL-03 | `onConfigurationChanged`(가로) | 꺼짐 | FR-TAP-17 ① (사) |
 | CL-04 | `onUpdateSelection`(선택 2~5) / (커서 7) | {CTRL, ALT} 그대로 | FR-TAP-17 ② |
 | CL-05 | `dispatcher.onFunctionDown(MODE)` | 꺼짐 | FR-TAP-17 ① (다) |
+| CL-06 | (0.72, FSS#131) Caps Lock 켬(a·s ↑, 입력 연결 없음): `onStartInputView`(`restarting` true), `onFinishInputView(false)`, `onFinishInput()`, `onConfigurationChanged`(가로), `onUpdateSelection`(커서 3) | 앞 셋은 꺼짐, 뒤 둘은 켜짐 그대로 | FR-TAP-19 ③ |
+
+### 7.4b Caps Lock (0.72, FSS#131, LLD-08 6.4)
+
+`InputDispatcherCapsTest`(JVM): 실제 `InputDispatcher`·`ComposingController`·`ModeController`(쿼티), **글을 가진** 가짜 `EditorPort`(커서는 늘 끝: `commitText`는 덧붙이고 `deleteBefore`는 끝 한 글자를 지우고 `textBeforeCursor(n)`은 끝 n글자 — 거둬들임이 다른 글자를 지우면 글에 드러난다. `rejects` = 넣은 글자를 버림, `unreadable` = null을 줌), 바꿀 수 있는 `clock`. 결과는 `TapKeyResolver.resolve(key, 동작)`을 `onTapResult`로 넣는다. "↑" = `Exit(UP)`, 창 = `CAPS_DOUBLE_MS`(400).
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| CS-01 | a ↑ | 글 `A`, 꺼짐, 알림 0 | FR-TAP-19 ① |
+| CS-02 | 글 `x`, a ↑ → (창 그대로 400 뒤) s ↑ | 켜짐, 글 `x`, 포트 `commit(A)`, `del`만, 알림 1 | FR-TAP-19 ①(400 포함, 다른 키) |
+| CS-03 | a ↑ → 401 뒤 s ↑ → 10 뒤 d ↑ | `AS` 꺼짐 → 켜짐, 글 `A`(S를 거둠) | FR-TAP-19 ① |
+| CS-04 | 켜짐: a 탭, a ↓, l →, q ← 문지르기 | `AALQ`, 켜짐 그대로 | FR-TAP-19 ② |
+| CS-05 | 켜짐: i ←, l ↓, 1 탭, a ↑ 문지르기, b ↓ 문지르기 | `[`, `:`, `1`, a 윗첨자, `b` + 오류 진동 1 | FR-TAP-19 ②, FR-TAP-01b |
+| CS-06 | 켜짐, 5 s 뒤 z ↑ → a 탭 | 꺼짐, 포트 호출 없음, 알림 2 / `a` | FR-TAP-19 ③ |
+| CS-07 | a ↑, s ↑, d ↑(빠름) → 10 뒤 f ↑ | 꺼짐, 글 없음 / `F` 꺼짐(끄는 ↑는 짝을 시작하지 않음) | FR-TAP-19 ③ |
+| CS-08 | a, s `ExitReturn(UP)` | 켜짐, 글 없음 | FR-TAP-19 ① |
+| CS-09 | a ↑, b 탭, s ↑ / 스페이스, d ↑ / ⌫ 누름, e ↑ | `AbS` / `AbS D` / `AbS E`, 줄곧 꺼짐 | FR-TAP-19 ① |
+| CS-10 | 글 `xy`, `rejects`: a ↑, s ↑ / `clearCaps`, `unreadable`: a ↑, s ↑ | 켜짐, `xy`, `del` 없음 / 켜짐, `xyA`, `del` 없음 | FR-TAP-19 ①, HLD R24 |
+| CS-11 | 켜짐, `clearCaps()` 두 번 / 다시 켜고 `onModeKey()` | 꺼짐, 알림 2(두 번째는 없음) / 꺼짐, 알림 4, 포트에 더한 호출 없음 | FR-TAP-19 ③ |
+| CS-12 | a ↑, `clearCaps()`, s ↑ | `AS`, 꺼짐 | LLD-08 6.4 |
+| CS-13 | 켜짐, Ctrl, a ↑ / Ctrl, a 탭 / `clearCaps`, a ↑, Ctrl, b, s ↑ | `chord(A,[CTRL, SHIFT])`, 켜짐 그대로 / `chord(A,[CTRL])` / `AS` 꺼짐 | FR-TAP-19 ⑤, FR-TAP-16 |
+| CS-14 | 두벌식 ㅂ 키 ↑ 두 번(조합기 있음) / 쿼티 1 ↑, 2 ↑ | 꺼짐, 알림 0 | FR-TAP-19 ⑤ |
+| CS-15 | a ↑, `onCursorMoved(0, 0, −1, −1)`, s ↑ | `AS`, 꺼짐 | LLD-08 6.4 |
+| CS-16 | 켜짐, `onTapOutput(a, 탭 결과)`(접근성 누르기) | `A`, 켜짐 그대로 | FR-TAP-19 ② |
 
 ### 7.5 그 밖의 app
 
@@ -988,6 +1013,10 @@ FR-HGL-04d 그래피티 사례 ↔ 시험: 가 GH-01, ㄱㆍ GH-02, ㄱ‥ GH-03
 | CV-12 | 〃 | Ctrl → Alt → Ctrl 끔 / Ctrl → Alt 끔 → Ctrl 끔 | 단계마다 쿼티(하나만 꺼도 그대로) / 둘 다 꺼지면 두벌식 글자·이름 | FR-TAP-15 ⑥ |
 | CV-13 | 〃 (싣는 순간 집합을 비우는 싱크) | Ctrl·Alt 켬 → c 탭 / Ctrl 켬 → 싱크가 비우고 `chordChanged()`(모드 키·입력창 변경) | `result:c:ㅊ:Tap`, 집합 빔, 두벌식 / 두벌식 | FR-TAP-15 ⑥, 17 ① |
 | CV-14 | 쿼티 뷰, `TapLayouts.shown`, 조합 키를 다루지 않는 싱크의 두벌식 뷰 | Ctrl·Alt 켬 / 네 조합 / Ctrl 탭 | 그린 글자 그대로 / 두벌식 + 켬만 쿼티 / 한글 그대로, c 노드 "ㅊ" | FR-TAP-15 ⑥, 17 ④ |
+| CK-01 | (0.72, FSS#131, `TapKeyboardCapsViewTest`, 기록용 `Canvas`) 쿼티 뷰, 싱크 `capsLock` 켬·끔 + `capsChanged()` | 켬 / 끔 | 쿼티 글자 키 노드 이름만 대문자(나머지 그대로), 그린 글자에 a~z 대문자 있음·소문자 한 글자 없음 / 처음 이름, `a` 다시 그림 | FR-TAP-19 ② |
+| CK-02 | 〃 `hintsOf` | i, 1 키, 켬 | i ↑ `I` 없어짐, `[`·`]` 그대로, 1 키 표시 그대로, `I`는 한 번(글자)만 그림 | FR-TAP-19 ② |
+| CK-03 | 두벌식 뷰, Ctrl 켬(쿼티 그림) | 켬 / Ctrl 끔 | a 자리 이름 `a` → `A` / `ㅁ` | FR-TAP-19 ⑤, FR-TAP-15 ⑥ |
+| CK-04 | Caps Lock을 다루지 않는 싱크(기본) | 그림 | `a`(글자)와 `A`(↑ 표시) 둘 다 있음 — 0.71과 같음 | FR-TAP-19 ⑤ |
 | BV-01 | (0.62, FSS#105, `TallEnterViewTest`, 기록용 `Canvas`) 쿼티·두벌식 뷰 360 × 6줄 48dp를 그림 | 둥근 사각형 = 키 수(↵ 한 번), ↵ 사각형 = (324, 144, 360, 240)dp에서 안쪽 여백 2dp, 글자 ↵ 하나가 사각형 가로 가운데·세로 3.6~4.4줄(가운데 높이), 글자 크기 = `labelTextSizePx` = 줄 높이 × 0.4 = q 글자 크기 | FR-TAP-03d ⑤ |
 | BV-02 | ↵를 3.2줄에서 누른 채 그림 → 뗌 → 4.8줄에서 누른 채 그림 → 뗌 | 두 번 모두 눌림 바탕은 ↵ 사각형 하나뿐, `down:ENTER`·`up:ENTER` 두 쌍 | FR-TAP-03d ②⑤ |
 | BV-03 | ↵의 `keyBoundsPx`, 접근성 노드 경계, `keyIndexAtPx`(3.2줄·4.8줄), 노드 번호 | 경계 = (324, 144, 360, 240)dp(px로 반올림) = 노드 경계, 두 점 모두 ↵ 번호, 번호 = l + 1 = z − 1, 노드 수 = 키 수, ↵ 하나 | FR-TAP-03d ⑦, NFR-07 |
@@ -1214,6 +1243,7 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | DV-45 | 두벌식 자음 + 모음 긋기(0.68, FSS#122, SRS 6장 D — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ① ㄱ ← 거, ㅁ ↑ 모, ㄷ → 다, ㅅ ↓ 수 등이 한 번에 들어가는지 ② ~~된소리 ↑(ㄲ ㄸ ㅃ ㅆ ㅉ)와 겹받침(ㄳ ㄵ ㄶ ㅄ, ㄹ 네 방향)이 그대로인지~~ — FSS#124로 없어짐(DV-46) ③ 거 ⌫ = ㄱ, 다시 ⌫ = 빈 상태 ④ 받침 뒤(각 + ㄱ ← = 각거, 갈 + ㄱ ← = 갈거) ⑤ 살짝 밀린 탭이 모음까지 넣는 일이 잦지 않은지 ⑥ 키에 모음 표시가 새로 생기지 않았는지 ⑦ Ctrl을 켜고 ㅁ ↑ = Shift + A | 결과에 따라 FR-TAP-02h를 다시 정한다(설계팀) |
 | DV-46 | 두벌식 자음 키 네 방향·숫자 줄 된소리·1 키 ~(0.69, FSS#124, SRS 6장 D — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ① 자음 14키의 ↑ ㅗ · ↓ ㅜ · ← ㅓ · → ㅏ(ㅇ ↑ 오, ㄱ ↑ 고, ㄹ → 라 등)가 한 번에 들어가는지 ② 숫자 1~5 ↓ = ㅃ ㅉ ㄸ ㄲ ㅆ(빠·까, 받침 뒤 갂·가빠)가 잘 들어가는지, ↓가 아래 자음 키로 넘어가도 된소리인지, 숫자를 치려던 탭이 된소리로 바뀌는 일이 잦지 않은지 ③ 1 ← `~`(왼쪽 끝 키 — 여유 칸 쪽)가 잘 되는지, 쿼티 1 ↓ = 1 ④ 숫자 1~5 아래 변의 된소리와 1 왼쪽 변의 ~가 읽히는지, 자음 키에 표시가 없는지 ⑤ 겹받침을 두 번 쳐서 넣는 것(닭 = ㄷ ㅏ ㄹ ㄱ)이 불편하지 않은지 ⑥ ㄹ을 대각선으로 그으면 먼저 지난 변의 자음 + 모음인지 ⑦ Ctrl을 켜고 2 ↓ = 2, 1 ← = Shift + `` ` `` | 결과에 따라 FR-TAP-02h·02i를 다시 정한다(설계팀) |
 | DV-47 | 두벌식 ㅓ·ㅏ 대각선(0.70, FSS#126, SRS 6장 D — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ⓪ ㅕ ↓ ㅖ, ㅑ ↓ ㅒ가 들어가는지(계·걔, ↓ 문지르기 = ㅕ·ㅑ), ㅑ ← `[` → `]` 그대로인지 ① ㅓ ↙ ㅔ · ↖ ㅖ, ㅏ ↘ ㅐ · ↗ ㅒ가 초성 뒤에서 들어가는지(게 계 개 걔, 고 + ㅏ↘ = 괘) ② ㅕ(←)·ㅑ(→)가 60° 구간이 되어도 잘 들어가는지, 비스듬한 ㅕ·ㅑ가 ㅖ·ㅔ·ㅒ·ㅐ로 바뀌는 일이 잦지 않은지 ③ 모서리 표시가 읽히는지 ④ Ctrl을 켜고 ㅓ ↙ = J | 결과에 따라 FR-TAP-02j를 다시 정한다(설계팀) |
+| DV-48 | 영문 쿼티 Caps Lock(0.72, FSS#131, SRS 6장 D·TBD-40, HLD R24 — **실기 미확인**) | 휴대폰·태블릿, 쿼티: ① 메모·메신저·웹 입력창에서 ↑ 두 번(같은 키·다른 키)으로 켜면 글자가 남지 않고 글자 26개가 대문자로 보이는지, 탭이 대문자인지, ↑ 한 번으로 꺼지는지 ② 비밀번호 입력창, 글자 수 제한에 닿은 입력창, 터미널류 앱에서 켤 때 다른 글자가 지워지지 않는지(대문자가 남는 것은 허용) ③ 모드 키·다른 입력창으로 꺼지는지, 가로로 돌려도 켜져 있는지 ④ 400 ms가 손에 맞는지(빠른 두 번이 켜지고, 대문자 둘을 이어 쓸 때 잘못 켜지지 않는지) ⑤ 화면 읽기에서 글자 이름이 대문자로 바뀌는지 | FR-TAP-19 |
 
 ## 9. 안드로이드 클래스 대상 단위 시험 (G1)
 
@@ -1232,8 +1262,9 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | `RepeatTimer`(가짜 `Handler`) | RT-05 |
 | `TapKeyboardView`·`TapKeyAccessHelper` 조합 키(기록용 `Canvas`, 실제 글꼴 측정, 0.59) | CV-01~CV-04, CV-06~CV-09 |
 | 켜진 동안 두벌식을 쿼티로 그림(FSS#117, 0.67) | TL-13, CV-10~CV-14 |
+| `TapKeyboardView` Caps Lock 그림·이름(FSS#131, 0.72) | CK-01~CK-04 |
 | `AndroidEditorPort`(`KeyEvent`, 가짜 입력 연결, 0.59) | CP-01~CP-06 |
-| `KeyboardService` 조합 키 끄기(0.59) | CL-01~CL-05 |
+| `KeyboardService` 조합 키 끄기(0.59), Caps Lock 끄기(0.72) | CL-01~CL-06 |
 | `TapKeyboardView` 겹모음 표시(기록용 `Canvas`, 0.65, FSS#110) | GV-03 |
 
 ### 9.1 ~~안내 설정~~ — 삭제 (0.58, FSS#95)

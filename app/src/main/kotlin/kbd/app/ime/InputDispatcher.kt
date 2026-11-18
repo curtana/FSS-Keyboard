@@ -16,6 +16,7 @@ import kbd.hangul.jamo.JamoKind
 import kbd.stroke.geom.Dir
 import kbd.stroke.layout.FunctionKey
 import kbd.stroke.layout.TapKeyDef
+import kbd.stroke.layout.TapKeyKind
 import kbd.stroke.tap.ChordKeys
 import kbd.stroke.tap.ChordModifier
 import kbd.stroke.tap.TapGesture
@@ -63,15 +64,33 @@ class InputDispatcher(
      */
     private val heldChords = HashMap<FunctionKey, Set<ChordModifier>>()
 
+    /**
+     * Caps Lock of the QWERTY letter keys (FSS#131, SRS FR-TAP-19, LLD-08 §6.4): on with two quick ↑ exits, off with
+     * one ↑ or any reason in [clearCaps]. Like [chord], kept here and never stored.
+     */
+    override var capsLock: Boolean = false
+        private set
+
+    /** Called once each time [capsLock] changes: the tap view draws and names the letters again. */
+    var onCapsChanged: () -> Unit = {}
+
+    /** Milliseconds of a steady clock; the time between two ↑ exits is measured with it (FR-TAP-19 ①). Tests set it. */
+    var clock: () -> Long = { System.nanoTime() / NANOS_PER_MS }
+
+    /** The last ↑ capital typed with Caps Lock off, when the next key may still be its second ↑ (FR-TAP-19 ①). */
+    private var lastUp: LastUp? = null
+
     /** A resolved key without its gesture (the practice sink, an accessibility click): a tap. */
     override fun onTapOutput(key: TapKeyDef, out: TapOutput) = onTapResult(key, out, TapGesture.Tap)
 
     /**
      * One letter, digit or symbol key as it leaves the view's queue. With Ctrl or Alt on, the key of that gesture
      * goes out as a chord instead of the character (FR-TAP-16 ②③), and no error vibration for a missing script.
+     * A QWERTY letter's ↑ exit may turn Caps Lock on or off instead of typing ([capsStroke], FR-TAP-19).
      */
     override fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) {
         if (chord.isNotEmpty()) {
+            lastUp = null
             val mods = takeChord()
             finishForChord()
             val stroke = ChordKeys.ofTap(key.id, gesture)
@@ -79,8 +98,11 @@ class InputDispatcher(
             markInput()
             return
         }
+        val upExit = key.kind == TapKeyKind.QWERTY_LETTER && isUpExit(gesture)
+        if (upExit && capsStroke()) return
         val jamo = out.jamo
-        val text = out.text
+        val text = capsText(key, out, gesture)
+        lastUp = if (upExit && text != null) LastUp(clock(), text) else null   // any other key ends the wait
         if (jamo != null) {
             val j = Jamo.ofCompat(jamo)
             val c = composer
@@ -99,7 +121,51 @@ class InputDispatcher(
         markInput()
     }
 
+    /**
+     * A QWERTY letter's ↑ exit, before it types (FR-TAP-19): true when it was a Caps Lock stroke and types nothing.
+     * With Caps Lock on, it turns it off. With it off, a ↑ within [CAPS_DOUBLE_MS] of the last ↑ capital takes that
+     * capital back ([ComposingController.retract], which deletes nothing unless the capital is there) and turns it
+     * on. Not input (FR-CMN-03a), like Ctrl and Alt; the first ↑ already was.
+     */
+    private fun capsStroke(): Boolean {
+        val prev = lastUp
+        lastUp = null
+        if (capsLock) {
+            setCaps(false)
+            return true
+        }
+        if (prev == null || clock() - prev.at > CAPS_DOUBLE_MS) return false
+        out.retract(prev.text)
+        setCaps(true)
+        return true
+    }
+
+    /**
+     * The text of a resolved key, with Caps Lock applied (FR-TAP-19 ②): on a QWERTY letter key, the lower-case letter
+     * itself — the tap, and an exit with nothing assigned — is upper case. Symbols and the ↑/↓ rubs' super- and
+     * subscripts stay as they are.
+     */
+    private fun capsText(key: TapKeyDef, out: TapOutput, g: TapGesture): String? {
+        val t = out.text
+        if (!capsLock || key.kind != TapKeyKind.QWERTY_LETTER || t != key.label) return t
+        if (g is TapGesture.Rub && (g.dir == Dir.UP || g.dir == Dir.DOWN)) return t   // a missing script: the plain letter (FR-TAP-01b)
+        return t.uppercase()
+    }
+
+    /** Turns Caps Lock off (FR-TAP-19 ③): the mode key, a new field, the keyboard going down. Nothing is sent. */
+    fun clearCaps() {
+        lastUp = null
+        setCaps(false)
+    }
+
+    private fun setCaps(on: Boolean) {
+        if (on == capsLock) return
+        capsLock = on
+        onCapsChanged()
+    }
+
     override fun onFunctionDown(key: FunctionKey) {
+        lastUp = null   // the second ↑ must come right after the first (FR-TAP-19 ①)
         when (key) {
             FunctionKey.CTRL -> toggleChord(ChordModifier.CTRL)
             FunctionKey.ALT -> toggleChord(ChordModifier.ALT)
@@ -211,6 +277,7 @@ class InputDispatcher(
      */
     fun onModeKey() {
         clearChord()   // not a target key: the chord goes and nothing is sent (FR-TAP-17 ① (다))
+        clearCaps()   // FR-TAP-19 ③
         finishAll()
         resetParsers(ResetReason.MODE_CHANGED)
         val before = modes.current
@@ -225,6 +292,7 @@ class InputDispatcher(
      * start, so [ComposingController.finishAfterUserMove] must be the first editor call after it (G13).
      */
     fun onCursorMoved(newS: Int, newE: Int, candS: Int, candE: Int) {
+        lastUp = null
         composer?.finish()
         out.finishAfterUserMove(newS, newE, candS, candE)
         resetParsers(ResetReason.CURSOR_MOVED)
@@ -287,8 +355,19 @@ class InputDispatcher(
 
     private data class Snapshot(val composer: ComposerSnapshot?, val graffiti: GraffitiSnapshot?)
 
-    private companion object {
+    /** A ↑ capital committed at [at] ([clock]), which a second ↑ takes back (FR-TAP-19 ①). */
+    private class LastUp(val at: Long, val text: String)
+
+    /** ↑ exit or ↑ exit-and-return: both type the capital (tap keyboard action table, row 8). */
+    private fun isUpExit(g: TapGesture): Boolean =
+        (g is TapGesture.Exit && g.dir == Dir.UP) || (g is TapGesture.ExitReturn && g.dir == Dir.UP)
+
+    internal companion object {
+        /** The second ↑ comes at most this long after the first to turn Caps Lock on (FR-TAP-19 ①, FSS#131). */
+        const val CAPS_DOUBLE_MS = 400L
+        private const val NANOS_PER_MS = 1_000_000L
+
         /** Function keys that count as input, with a chord as without (FR-CMN-03a, FR-TAP-16 ⑦). */
-        val CHORD_INPUT_KEYS = setOf(FunctionKey.BACKSPACE, FunctionKey.SPACE, FunctionKey.ENTER, FunctionKey.TAB)
+        private val CHORD_INPUT_KEYS = setOf(FunctionKey.BACKSPACE, FunctionKey.SPACE, FunctionKey.ENTER, FunctionKey.TAB)
     }
 }

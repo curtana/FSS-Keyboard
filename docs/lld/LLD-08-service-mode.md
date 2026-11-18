@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.36** (2026-11-18)
+- 버전 **0.37** (2026-11-18)
+- 0.37(FSS#131, SRS 0.99 FR-TAP-19, HLD 0.92 5A "Caps Lock"): **영문 쿼티 Caps Lock**(새 6.4) — `InputDispatcher`의 `capsLock`·`onCapsChanged`·`clock`·`clearCaps()`, 쿼티 글자 키 ↑ 나감의 켜고 끄기, 켜진 동안 글자를 대문자로. 4절 `EditorPort.textBeforeCursor(n)`(기본 null)과 `ComposingController.retract(text)`. 3·3.1·3.2절 서비스가 `clearCaps()`를 부르는 곳과 `onCapsChanged` 연결
 - 0.36(FSS#124, SRS 0.96 FR-TAP-02h·02i, HLD 0.89 5A, LLD-05A 0.27): 코드 변경 없음 — 두벌식 숫자 키 1~5 ↓의 된소리(ㅃ ㅉ ㄸ ㄲ ㅆ)는 `TapOutput.jamo`로 와서 `onTapResult` 평소 길의 `o.jamo` 갈래로 자모 하나가 조합기에 들어간다(조합 중 확정 없음 — 숫자 키지만 `text`가 아님, 6.1). 자음 키 네 방향의 자음 + 모음은 0.35의 `applyAll` 길 그대로. Ctrl·Alt는 `ChordKeys.ofTap`이 같은 id의 쿼티 키로 정한다(2 ↓ = `D2`, 1 ← = Shift + `GRAVE`, LLD-05A 2.4)
 - 0.35(FSS#122, SRS 0.95 FR-TAP-02h, HLD 0.88 5A, LLD-05A 0.26): `onTapResult` 평소 길 — `o.vowel`이 있으면 `composer.applyAll([자음, Vowel(o.vowel)])`로 자모 이벤트 둘을 보내고 `out.show`는 한 번(6.1)
 - 0.34(FSS#98, SRS 0.87 FR-TAP-15~18, HLD 0.80 5A "조합 키 Ctrl·Alt"·8장·R13): **조합 키 Ctrl·Alt**(새 6.3) — `InputDispatcher`가 켜진 조합 키 집합 `chord`와 눌린 기능키마다 그 누름에 실린 집합을 갖는다(`onChordChanged` 알림, `clearChord()`). 글자·숫자·기호 키의 입구 `onTapResult(key, out, gesture)`와 기능키의 입구 `onFunctionDown` 맨 앞에서 조합 키 길(꺼냄 → 조합 확정 → `ChordKeys`(LLD-05A 2.4) → `ComposingController.chordKey` → `EditorPort.sendChord`)과 평소 길을 가른다(6.1). `AndroidEditorPort.sendChord`는 물리 자판과 같은 순서의 키 입력만 보낸다(4절). 서비스는 `onStartInputView`·`onFinishInputView`·`onFinishInput`·`onConfigurationChanged`·꺼진 모드의 자동 전환에서 `clearChord()`를 부르고, 조합 키가 바뀌면 탭 자판 뷰에 알린다(3절). Ctrl·Alt가 꺼져 있으면 0.32와 모든 길이 같다.
@@ -79,12 +80,12 @@ class KeyboardService : InputMethodService() {
 
 | 함수 | 처리 | 근거 |
 |---|---|---|
-| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.27: 켜진 모드. 0.33: `lastMode`가 null이면 — 처음 설치했거나 저장된 이름이 지금 없는 모드 — 한글 두벌식으로 시작, FR-CMN-10·10a). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`, `dispatcher.onChordChanged = { tapView?.chordChanged() }`(0.34: `tapView` = 지금 보이는 쿼티·두벌식 뷰, 그래피티에서는 null — `showModeView`가 정함). 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
+| `onCreate()` | `settings = SettingsStore.loadBlocking()`, `thresholds = ThresholdDefaults.VALUES`(0.26, 고정 상수, LLD-07 3절), `ErrorLog` 준비. `modes = ModeController(InputMode.entries.toList(), settings.lastMode, settings.enabledModes)`(0.27: 켜진 모드. 0.33: `lastMode`가 null이면 — 처음 설치했거나 저장된 이름이 지금 없는 모드 — 한글 두벌식으로 시작, FR-CMN-10·10a). `modes.fixedStart`가 있으면 마지막 모드로 저장(0.27, FR-CMN-03f ③). `dispatcher = InputDispatcher(…, saveLastMode)`, `dispatcher.onChordChanged = { tapView?.chordChanged() }`(0.34: `tapView` = 지금 보이는 쿼티·두벌식 뷰, 그래피티에서는 null — `showModeView`가 정함). `dispatcher.onCapsChanged = { tapView?.capsChanged() }`(0.37, 6.4). 설정 `flow`를 모아 바뀌면 `applySettings()`(끝에 3.2 `applyEnabledModes`) | FR-CMN-10, 03f, HLD 7.3 |
 | `onCreateInputView()` | `root = KeyboardRootView(…)`(줄 높이·두 방향 폭, 0.32: 두 방향 띄우기, `moveFeedback = feedback`, `onFloatMoved = ::saveFloatPosition`, 그리고 `relayout()`). `showModeView(modes.current)` | FR-CMN-10, FR-CMN-15 (0.32) |
 | `onStartInputView(info, restarting)` | 아래 3.1 | FR-CMN-03e, 04, 04b, 08 |
 | `onUpdateSelection(oldS, oldE, newS, newE, candS, candE)` | `r = composing.onUpdateSelection(newS, newE, candS, candE)`. `USER_MOVED` → `dispatcher.onCursorMoved(newS, newE, candS, candE)`. `OTHER_MOVED` → `dispatcher.onCursorMovedNoComposing()` | FR-CMN-06, HLD 8장, R4 |
-| `onFinishInputView(finishing)` | `dispatcher.clearChord()`(0.34, 6.3), `dispatcher.finishAll()`, `guide?.dismiss()`, 반복 타이머 중지. `finishing == false`(키보드가 내려감)면 `root.closeGuide()`. `true`(입력창만 바뀜, 이어서 `onStartInputView`)면 획 안내표는 열린 채(0.24) | FR-CMN-06, FR-GRF-09 |
-| `onFinishInput()` | `dispatcher.clearChord()`(0.34, 6.3), `dispatcher.finishAll()` | HLD 8장, FR-TAP-17 ① |
+| `onFinishInputView(finishing)` | `dispatcher.clearChord()`(0.34, 6.3), `dispatcher.clearCaps()`(0.37, 6.4), `dispatcher.finishAll()`, `guide?.dismiss()`, 반복 타이머 중지. `finishing == false`(키보드가 내려감)면 `root.closeGuide()`. `true`(입력창만 바뀜, 이어서 `onStartInputView`)면 획 안내표는 열린 채(0.24) | FR-CMN-06, FR-GRF-09 |
+| `onFinishInput()` | `dispatcher.clearChord()`(0.34, 6.3), `dispatcher.clearCaps()`(0.37, 6.4), `dispatcher.finishAll()` | HLD 8장, FR-TAP-17 ①, FR-TAP-19 ③ |
 | `onWindowHidden()` | 진행 중 터치·타이머 버림(`root.cancelTouches()` — 0.32: 띄운 자판의 옮기기·기다림도 취소, 7.4), `root.closeGuide()`(0.24) | D-27, FR-GRF-09, FR-CMN-15 ⑩ |
 | `onEvaluateFullscreenMode()` | `false` | FR-CMN-12 |
 | `onConfigurationChanged(c)` | `super`, `dispatcher.clearChord()`(0.34, 6.3), `root.relayout()`(같은 배치를 그 방향의 자판 폭·정렬로, 줄 높이 유지, 7.2. 0.32: 그 방향의 띄우기·자리로, 옮기기 중이면 먼저 취소, 7.4) | FR-CMN-12, FR-CMN-14 ⑩, FR-CMN-15 ⑩⑬ |
@@ -95,6 +96,7 @@ class KeyboardService : InputMethodService() {
 f = FieldInfo.from(info.inputType, info.imeOptions)
 dispatcher.field = f
 dispatcher.clearChord()                    // 0.34: 켜진 Ctrl·Alt를 끔, 아무것도 보내지 않음(FR-TAP-17 ① (마), 6.3)
+dispatcher.clearCaps()                     // 0.37: Caps Lock을 끔(FR-TAP-19 ③, 6.4)
 dispatcher.finishAll()                     // 조합 확정(HLD 8장)
 dispatcher.resetParsers()                  // 그래피티 조립기·일회성 상태(HLD 8장, 5장)
 modes.onFieldChanged()                     // typed = false, previous 유지(FR-CMN-03e)
@@ -118,6 +120,7 @@ if modes.current == GRAFFITI && before != GRAFFITI: dispatcher.graffiti?.enterMo
 ```
 before = modes.current
 if before ∉ on: dispatcher.clearChord()                                                  // 0.34: 자동 전환(FR-TAP-17 ① (다))
+if before ∉ on: dispatcher.clearCaps()                                                   // 0.37: FR-TAP-19 ③
 if before ∉ on && isInputViewShown:  dispatcher.finishAll(); dispatcher.resetParsers()   // 바꾸기 전에 확정(FR-CMN-03d)
 modes.applyEnabled(on)?.let(saveLastMode)
 if modes.current == before || !isInputViewShown: return      // 떠 있지 않으면 다음 onStartInputView의 showModeView가 보임
@@ -147,6 +150,7 @@ if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모�
 interface EditorPort {                     // 안드로이드 없는 경계. AndroidEditorPort가 InputConnection으로 구현
     fun commitText(text: String); fun setComposingText(text: String); fun finishComposingText()
     fun deleteBefore()                       // KEYCODE_DEL 내림·올림
+    fun textBeforeCursor(n: Int): String? = null   // 0.37: 커서 앞 n글자까지, 모르면 null(FSS#131 거둬들임 확인)
     fun sendKey(key: EditorKey)              // DPAD_LEFT/RIGHT/UP/DOWN, ENTER, ESCAPE, FORWARD_DEL(0.22)
     fun sendChord(key: ChordKey, mods: Set<ChordModifier>) {}   // 0.34: 조합 키 입력 하나(FSS#98). 기본 구현은 아무것도 하지 않음
     fun performEditorAction(actionId: Int)
@@ -160,6 +164,7 @@ class ComposingController(private val port: EditorPort) {
     fun finishAfterUserMove(newS: Int, newE: Int, candS: Int, candE: Int)
     fun commitText(text: String)
     fun deleteBefore(); fun arrow(d: Dir); fun tab(); fun enter(f: FieldInfo)
+    fun retract(text: String): Boolean                        // 0.37: 방금 넣은 글자 거둬들이기(6.4)
     fun chordKey(key: ChordKey, mods: Set<ChordModifier>)      // 0.34
     fun onStart(selStart: Int, selEnd: Int)
     fun onUpdateSelection(newS: Int, newE: Int, candS: Int, candE: Int): SelectionVerdict
@@ -203,6 +208,7 @@ class ComposingController(private val port: EditorPort) {
 | `finishAfterUserMove(newS, newE, candS, candE)` | 사용자가 커서를 옮긴 뒤의 확정. `glyph`가 없으면 `finishComposingText()`만. 있으면 `beginBatch`; `setComposingText(composingShown − glyph)`(이때 커서가 조합 끝으로 감. 돌아오면 `composingShown`·`glyph`에서도 임시 글자를 뺌); `finishComposingText()`; 사용자 위치를 되돌림: 조합 구간 끝 `spanEnd` = `candE`(−1이 아니면), 아니면 마지막으로 아는 끝 `composeStart + composingShown.length`(`composeStart`가 있으면), 둘 다 없으면 −1. 각 값 `x`에 대해 `spanEnd ≠ −1`이고 `x ≥ spanEnd`면 `x − glyph.length`, 아니면 `x`로 `setSelection(newS', newE')`; `endBatch`(던져도 항상). 끝을 모르면 옮기지 않는다 — 사용자가 고른 위치를 지킨다(FR-CMN-06, G13, D-36). 상태 비움은 `finishComposing`과 같고, `predictedSel = newE'`(보정한 사용자 위치), `expected.clear()` | FR-CMN-06, FR-HGL-04e |
 | `commitText(s)` | (호출자가 먼저 확정) `commitText(s)`. 기대 커서 큐에 넣음 | FR-TAP-11a |
 | `deleteBefore()` | `port.deleteBefore()`. 확정 글자 한 글자를 지우고, 입력창에 선택 영역이 있으면 편집기 기본 동작대로 선택한 부분을 지운다(`KEYCODE_DEL`이 그렇게 동작함, SRS FR-CMN-07, HLD 8장, DCR-13 결정). 결과 커서를 알 수 없으므로 `predictedSel = −1` | FR-CMN-07 |
+| `retract(text)`(0.37, FSS#131) | 방금 `commitText`로 넣은 `text`를 거둬들인다. `text`가 비었거나 `composingShown`이 비어 있지 않거나 `port.textBeforeCursor(text.length) != text`(null 포함)면 **아무것도 하지 않고 false**. 아니면 `text.length`번 `port.deleteBefore()`, `predictedSel = −1`(⌫와 같음), true. `AndroidEditorPort.textBeforeCursor(n)` = `currentInputConnection?.getTextBeforeCursor(n, 0)?.toString()` — 입력 연결이 없거나 앱이 null을 주면 null. 입력 연습 `PracticeEditor`와 시험의 가짜 포트는 기본(null)이라 지우지 않는다 | FR-TAP-19 ①, HLD 5A "거둬들임" |
 | `arrow(d)` | (호출자가 먼저 확정) `sendKey(DPAD_d)`. `predictedSel = −1` | FR-TAP-10 |
 | `editKey(k)`(0.22) | (호출자가 먼저 확정) `sendKey(k)`(`ESCAPE`, 또는 `FORWARD_DEL` = 커서 오른쪽 한 글자·선택 영역은 편집기 기본 동작). `predictedSel = −1` | 이슈 #198 |
 | `chordKey(key, mods)`(0.34) | (호출자가 먼저 확정) `port.sendChord(key, mods)`. 앱이 그 키 입력으로 무엇을 하는지(커서 이동, 선택, 붙여넣기 …) 알 수 없으므로 방향키·Esc처럼 `predictedSel = −1`(기대 커서를 비움 — 뒤에 오는 `onUpdateSelection`은 4.1의 "모르는 커서" 길로 맞춰진다) | FR-TAP-16, HLD 5A "보내기" |
@@ -288,6 +294,10 @@ class InputDispatcher(private val modes: ModeController, private val out: Compos
     val chord: Set<ChordModifier>                      // 0.34: 켜진 조합 키(Ctrl, Alt). TapSink.chord(6.3)
     var onChordChanged: () -> Unit                     // 0.34: chord가 바뀔 때마다 한 번
     fun clearChord()                                   // 0.34: 조합 키 끄기(6.3)
+    val capsLock: Boolean                              // 0.37: 쿼티 Caps Lock. TapSink.capsLock(6.4)
+    var onCapsChanged: () -> Unit                      // 0.37: capsLock이 바뀔 때마다 한 번
+    var clock: () -> Long                              // 0.37: 두 ↑ 사이를 재는 밀리초 단조 시계
+    fun clearCaps()                                    // 0.37: Caps Lock 끄기(6.4)
 }
 ```
 
@@ -404,6 +414,58 @@ SRS FR-TAP-15~17, HLD 5A "조합 키 Ctrl·Alt". 안드로이드가 없어 JVM �
 - **오류 복구(HLD 9장):** `chord`·`heldChords`는 `snapshot()`·`restore()`에 넣지 않는다. 조합 키 길에서 예외가 나면(`EngineGuard.stroke`) 조합기는 그 단위 전으로 되돌아가지만 조합 키는 ①에서 꺼낸 대로 **꺼진 채**다 — 같은 조합이 켜진 채 남아 다음 키에 다시 실리지 않는다(시험 CD-16). 눌린 기능키의 기억은 남으므로 그 키의 반복은 같은 조합을 다시 보낸다(반복은 매번 같은 조합이라는 규칙 그대로).
 - **입력창 종류(FR-TAP-17 ③):** 따로 가르지 않는다. 비밀번호·숫자류 입력창에서도 같은 길이다. 조합 키와 보낸 키는 기록하지 않는다(`ErrorLog`는 예외의 자리와 클래스 이름만 적는다, NFR-05).
 - **입력 연습(FR-TAP-17 ④):** `PracticeInput.tapSink`는 Ctrl·Alt를 디스패처에 넘기지 않는다(편집 줄의 다른 키와 같음, LLD-07 2.3). 그래서 `chord`는 늘 비어 있고 켜짐 표시도 없다.
+
+### 6.4 Caps Lock (0.37, FSS#131)
+
+SRS FR-TAP-19, HLD 5A "Caps Lock". 안드로이드가 없어 JVM 단위 시험으로 본다(CS-01~CS-16, LLD-11 7.4b). 그리기·이름은 LLD-05A 4·7절(CK-01~CK-04).
+
+**상태** (저장하지 않고, `snapshot()`에 넣지 않는다 — 6.3의 `chord`와 같음)
+
+| 상태 | 뜻 |
+|---|---|
+| `capsLock: Boolean` | Caps Lock 켜짐. 처음 false. 뷰가 `TapSink.capsLock`으로 읽는다(기본 구현 false — 입력 연습 싱크는 이것을 넘기지 않아 늘 꺼짐) |
+| `lastUp: LastUp?` (`at: Long`, `text: String`) | 꺼진 동안 쿼티 글자 키 ↑ 나감으로 넣은 대문자와 그때의 `clock()`. 두 번째 ↑가 거둬들일 것. 다른 결과마다 다시 정한다 |
+| `clock: () -> Long` | 밀리초 단조 시계. 기본 `System.nanoTime() / 1_000_000`, 시험이 바꾼다 |
+| `onCapsChanged: () -> Unit` | `capsLock`이 바뀔 때마다 한 번. 서비스가 `tapView?.capsChanged()`를 단다(LLD-05A 4절) |
+| `CAPS_DOUBLE_MS = 400L` | 두 ↑ 사이 최대 시간(이 값 포함). 설정 항목 없음(SRS TBD-40 ①) |
+
+**`onTapResult(key, out, gesture)`의 차례** (6.3의 조합 키 길 다음)
+```
+chord가 비어 있지 않음 → lastUp = null; 6.3 조합 키 길(Caps Lock은 보지도 바꾸지도 않음)
+upExit = key.kind == QWERTY_LETTER && gesture ∈ {Exit(UP), ExitReturn(UP)}
+upExit이면 capsStroke():                         // true면 여기서 끝 — 글자 없음, markInput 없음
+    prev = lastUp; lastUp = null
+    capsLock → setCaps(false); true              // 끄기(FR-TAP-19 ③). 이 ↑는 새 짝을 시작하지 않음
+    prev == null 또는 clock() − prev.at > 400 → false   // 보통 ↑ 대문자
+    out.retract(prev.text); setCaps(true); true   // 켜기: 결과와 상관없이 켠다(지우지 못하면 대문자가 남음)
+text = capsText(key, out, gesture)                // 아래
+lastUp = upExit && text != null이면 LastUp(clock(), text), 아니면 null   // 다른 결과는 기다림을 끝냄
+그다음은 0.36과 같음(jamo → 조합기, text → finishAll + commitText, errorVibe, markInput)
+```
+- **`capsText`:** `capsLock`이고 `key.kind == QWERTY_LETTER`이고 `out.text == key.label`(소문자 그 글자 — 탭, 배정 없는 방향 나감, ←·→ 문지르기, 나갔다 돌아옴)이면 `uppercase()`. 단 `Rub(UP)`·`Rub(DOWN)`은 그대로(없는 윗첨자·아래첨자의 소문자 대체, FR-TAP-01b). 그 밖(배정 기호, 숫자·기호 키, 두벌식 자모, 윗첨자·아래첨자 글자)은 `out.text` 그대로.
+- **`↑` 판정을 디스패처에서 하는 이유:** `TapKeyResolver`·뷰는 Caps Lock을 모르는 그대로다 — ↑ 나감의 결과는 늘 대문자이고, 그것을 넣을지·거둘지만 디스패처가 정한다. 뷰의 대기열(LLD-05A 5절)이 결과를 누른 차례로 내보내므로 시간은 결과가 이 함수에 닿은 때다.
+- **`onTapOutput(key, out)`**(접근성 누르기)는 `Tap`으로 이 함수를 부르므로 켜진 동안 대문자를 넣고 켜고 끄지 않는다. 입력 연습 싱크는 `onTapOutput`만 쓰므로 ↑ 두 번은 대문자 둘이다(FR-TAP-19 ⑤).
+- **기다림을 끝내는 것:** 다른 `onTapResult`(위), `onFunctionDown`의 첫 줄(`lastUp = null` — 기능키 반복·⌫·조합 키·모드 키 모두), `onCursorMoved`(USER_MOVED — 조합 중일 때만 오므로 쿼티에서는 오지 않는다), `clearCaps()`. `onCursorMovedNoComposing`(OTHER_MOVED)에서는 지우지 않는다: ⌫·방향키 뒤 기대 커서를 모를 때(`predictedSel = −1`) 첫 ↑의 `commitText`도 OTHER_MOVED로 판정되어, 지우면 그때의 ↑ 두 번이 켜지지 않는다. 그 사이 사용자 커서 이동은 `retract`의 커서 앞 글자 확인이 지킨다(HLD 10장 R24).
+
+**함수**
+
+| 함수 | 처리 |
+|---|---|
+| `setCaps(on)` | `on == capsLock`이면 아무것도 안 함. 아니면 `capsLock = on`; `onCapsChanged()` — 바뀔 때마다 정확히 한 번 |
+| `clearCaps()`(공개) | `lastUp = null`; `setCaps(false)`. 아무것도 보내지 않는다 |
+
+**끄기를 부르는 곳** (FR-TAP-19 ③): `onModeKey()`(디스패처 안, `clearChord()` 다음), 서비스의 `onStartInputView`(`clearChord()` 다음 — `restarting`이어도), `onFinishInputView`, `onFinishInput`, `applyEnabledModes`(`before ∉ on`일 때). `onConfigurationChanged`·`onSettingsStroke`에서는 부르지 않는다(6.3과 다름 — 설정에서 돌아오면 `onStartInputView`가 끈다).
+
+| 경우(쿼티, 시각 ms) | 입력창 | `capsLock` |
+|---|---|---|
+| a ↑(0) | `A` | 꺼짐 |
+| a ↑(0) → s ↑(400) | `A` 넣고 ⌫ → 빈칸 | 켜짐 |
+| a ↑(0) → s ↑(401) | `AS` | 꺼짐 |
+| a ↑ → b 탭 → s ↑(모두 100 안) | `AbS` | 꺼짐 |
+| 켜짐: a 탭, a ↓, l →, i ←, a ↑ 문지르기 | `A A L [ ᵃ` | 켜짐 |
+| 켜짐: z ↑ | 없음 | 꺼짐 |
+| a ↑ → s ↑ → d ↑(모두 빠름) | 남는 글자 없음 | 꺼짐 |
+| 입력창이 `A`를 버림(앞 글자 `y`) → s ↑ | `y` 그대로(지우지 않음) | 켜짐 |
 
 ## 7. KeyboardRootView (창 높이 고정·바닥 정렬)
 

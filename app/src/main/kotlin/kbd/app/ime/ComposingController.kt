@@ -104,6 +104,18 @@ class ComposingController(private val port: EditorPort) {
         predictedSel = -1
     }
 
+    /**
+     * Takes back [text] committed just before (FSS#131, SRS FR-TAP-19 ①): one ⌫ per character, only when nothing is
+     * composing and the editor shows exactly [text] right before the cursor. Otherwise — the editor did not take it,
+     * changed it, or does not tell — nothing is deleted and false is returned, so no other character is lost.
+     */
+    fun retract(text: String): Boolean {
+        if (text.isEmpty() || composingShown.isNotEmpty() || port.textBeforeCursor(text.length) != text) return false
+        repeat(text.length) { port.deleteBefore() }
+        predictedSel = -1
+        return true
+    }
+
     fun arrow(d: Dir) {
         port.sendKey(
             when (d) {

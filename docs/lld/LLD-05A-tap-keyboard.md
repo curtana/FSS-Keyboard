@@ -1,7 +1,8 @@
 # LLD-05A 탭 자판 (쿼티·두벌식)
 
 - 대응 HLD 절: 5A장(탭 자판)
-- 버전 **0.29** (2026-11-18)
+- 버전 **0.30** (2026-11-18)
+- 0.30(FSS#131 오너 요청 "영문키보드에서 빠르게 두번 위로 그으면 CAPS LOCK 처럼 동작하고 모든 키보드의 문자를 대문자로 표시하고 다시 한번 그으면 원래 소문자로 돌아오게 해줘", SRS 0.99 FR-TAP-19, HLD 0.92 5A "Caps Lock"): 4절 `TapSink.capsLock`(읽기만), `capsChanged()`, `labelOf`·`hintsOf` — 켜진 동안 쿼티 글자 키의 글자·이름 대문자, ↑ 모서리 표시 없음. 7절 이름. 판정(2절)·대기열(5절)은 바뀌지 않는다 — 켜고 끄기는 LLD-08 6.4
 - 0.29(FSS#128 오너 결정 "자음에서 나가면 방향으로 ㅗ ㅜ ㅓ ㅏ를 결정하는데 나갔다가 다시 돌아오면 ㅛㅠㅕㅑ를 입력해줘", SRS 0.98 FR-TAP-02h ③, HLD 0.91 5A): `TapLayouts.RETURN_VOWEL` = {← ㅕ, → ㅑ, ↑ ㅛ, ↓ ㅠ}와 `TapKeyDef.returnVowel`(자음 키 14개 모두, 3.1·3.3). `resolve`는 1번 정규화 전에 `ExitReturn(d)`이고 `key.returnVowel[d]`가 있으면 `returnSyllable` = 기본 자음 + 그 모음을 낸다(2.2 0번). 나머지 키·동작은 그대로
 - 0.28(FSS#126 오너 결정 "ㅓ에서 좌측 아래는 ㅔ로 좌측위는 ㅖ로 ㅏ에서 우측아래는 ㅐ로 우측 위는 ㅒ 추가해줘", SRS 0.97 FR-TAP-02j, HLD 0.90 5A "두벌식 ㅓ·ㅏ 대각선"): 3.3 **두벌식 대각선 모음 표** 신설 — `TapLayouts.DIAG_VOWEL` = {ㅓ: ↙ ㅔ, ↖ ㅖ / ㅏ: ↘ ㅐ, ↗ ㅒ}, `dirJamo`의 합치는 표에 셋째로 더함. ㅓ·ㅏ의 `eightWay`가 데이터로 참이 됨(판정·결과·표시·Ctrl·Alt 코드 그대로). 3.4 모서리 표시 목록. 시험 TL-15·TA-28·GV-04·GV-05·ID-46(LLD-11 0.70). 보탬("ㅕ 아래는 ㅖ로 ㅑ아래는 ㅒ로 추가해줘"): `TapLayouts.DOWN_VOWEL` = {ㅕ: ↓ ㅖ / ㅑ: ↓ ㅒ}, 합치는 표의 넷째. 검수 반영: 2.2·2.4의 8방향 키 목록
 - 0.27(FSS#124 오너 결정 "1 번키의 아래 ~을 좌측으로 옮기고 1,2,3,4,5 아래 긋기에 ㅃㅉㄸㄲㅆ을 각각 넣어줘 겹받침을 모두 제거하고 … 모든 자음키에 기능을 넣어주고", SRS 0.96 FR-TAP-02h·02i, FR-TAP-02c의 겹받침 한 번 긋기·FR-TAP-02f 삭제, HLD 0.89 5A): **두벌식 자음 키 위아래좌우 모두 자음 + 모음, 된소리는 숫자 1~5 ↓, 겹받침 한 번 긋기·ㄹ 8방향·손 뗀 키 우선 삭제, 1 키 ~ ←** — ① `TapLayouts.COMPOUND_JAMO`(겹받침 표) 삭제, `dirJamo` = 짝 모음 + 겹모음만(3.3). ② `SHIFT_JAMO`는 ㅐ ↑ ㅒ · ㅔ ↑ ㅖ만(3.2). ③ 새 `TapLayouts.TENSE_JAMO` = {1 ㅃ, 2 ㅉ, 3 ㄸ, 4 ㄲ, 5 ㅆ} — 두벌식 숫자 키 1~5의 `dirJamo = {↓ 된소리}`(쿼티 숫자 줄은 빈 맵, 3.3 "숫자 줄 된소리"). ④ `dirVowel(jamo)` = 자음이면 `STROKE_VOWEL` 네 방향 전부, 모음은 빈 맵(빠지는 방향 없음, 3.3 "자음 + 모음"). ⑤ `TapKeyResolver`: `NUMBER_ROW`·`SYMBOL`은 먼저 `numberJamo(key, n)` — 정규화한 나감의 방향에 `dirJamo`가 있으면 그 자모, 없으면 기호 규칙(2.2). 두벌식 글자 키의 찾는 순서는 그대로. ⑥ 1 키 ``KeyAssign("1", up "!", left "~", right "`")`` — `~`를 ↓에서 ←로(두 자판 공통, 3.3). ⑦ ㄹ은 대각선 배정이 없어져 4방향 — 8방향 키는 데이터로 ㅗ·ㅜ(h·n)만(3.1). 판정 코드(`TapGestureClassifier`의 `eightWay`, `Diag`)는 그대로. ⑧ 손 뗀 키 우선 삭제 — `ReleaseKeyCompound`(app) 파일과 `TapGeometry.releasedKey` 삭제, `TapTouchLogic.up`은 `TapKeyResolver.resolve(s.key, g)`만(4절, 4.1). ⑨ `edgeHints`는 그대로(결과가 탭과 다른 것): 자음 키는 아무것도 그리지 않고, 숫자 1~5 아래 변에 된소리, 1 왼쪽 변에 `~`(3.4). ⑩ `InputDispatcher`·`ChordKeys` 코드는 그대로 — 숫자 키 된소리는 `o.jamo` 길로 자모 하나(LLD-08 6.1), Ctrl·Alt는 같은 id의 쿼티 키(2 ↓ = `D2`, 1 ← = Shift + `GRAVE`, 1 ↓ = `D1`, 2.4). 아래 0.14~0.26 이력의 겹받침 배정·ㄹ 대각선·손 뗀 키·된소리 ↑는 이 판에서 없어졌다. 시험 TL-14·TA-27·ID-45(새), TL-09~11, TK-05·08·09·11·12·14·17·18·20·21·23·24, TA-02·03·12·20·21·23·24·26, CM-07, CD-20, ID-40·42·44, GJ-01~03, GV-01(새 기대, LLD-11 0.69)
@@ -354,6 +355,7 @@ interface TapSink {                              // InputDispatcher가 구현(LL
     fun onTapOutput(key: TapKeyDef, out: TapOutput)
     fun onTapResult(key: TapKeyDef, out: TapOutput, gesture: TapGesture) = onTapOutput(key, out)   // 0.20: 뷰가 부르는 입구
     val chord: Set<ChordModifier> get() = emptySet()                                               // 0.20: 켜진 조합 키(읽기만)
+    val capsLock: Boolean get() = false                                                            // 0.30: 쿼티 Caps Lock(읽기만)
     fun onFunctionDown(key: FunctionKey); fun onFunctionUp(key: FunctionKey)
 }
 ```
@@ -427,6 +429,14 @@ CANCEL: outs = queue.onCancelAll(); repeat.stopAll(); fnPointers 각각(떼지 �
 - **켜진 동안 두벌식을 쿼티로 그림(0.25, FSS#117, SRS FR-TAP-15 ⑥):** stroke-core에 순수 함수 `TapLayouts.shown(layout: TapLayout, chordOn: Boolean): TapLayout` = `chordOn && layout === DUBEOLSIK`이면 `QWERTY`, 아니면 `layout`. `onDraw`는 `shown(geometry.layout, sink.chord.isNotEmpty())`의 키 i로 글자·모서리 표시(3.4 `edgeHints`)를 그리고, 바탕·자리는 `geometry`의 키 i(설정된 배치)로 정한다. 두 배치는 키 순서·id·줄·x·폭·줄 수·기능키가 같다(TL-13) — 그래서 자리·크기가 그대로고, Esc·Ctrl·Alt·Del 낱말 크기(`fitWordLabels`)도 그대로다. `shownKeyAt(i)` = 보이는 배치의 키 i(접근성 이름용). `keyAt(i)`·누름 판정·`onTapResult`의 키는 설정된 배치 그대로라 보내는 키(2.4 `ChordKeys.ofTap`은 id로 쿼티 키를 찾는다)·조합·모드가 바뀌지 않는다. 하나만 끄면 집합이 비지 않아 쿼티 그대로다. 디스패처는 싣는 순간 집합을 한 번에 비우므로 그 사이에 두벌식이 그려지지 않는다. 쿼티 배치와 조합 키를 다루지 않는 싱크(연습)는 바뀌지 않는다.
 - 근거: SRS FR-TAP-03c·15·17 ④, HLD 5A "그리기". 시험: CV-01~CV-14(LLD-11 7.5), TL-13.
 
+#### Caps Lock (0.30, FSS#131, SRS FR-TAP-19 ②)
+
+- **상태:** `sink.capsLock`을 그릴 때와 접근성 노드를 채울 때 읽기만 한다. 켜고 끄기·글자 바꾸기는 `InputDispatcher`가 한다(LLD-08 6.4). 판정(`TapTouchLogic`·`TapKeyResolver`)은 Caps Lock을 모른다 — ↑ 나감 결과는 늘 대문자로 싱크에 간다.
+- **`capsChanged()`:** 싱크가 바뀌었다고 알릴 때(`onCapsChanged`) 서비스가 부른다. `invalidate()`; `access.invalidateRoot()`(글자 26개의 이름이 모두 바뀜).
+- **`labelOf(k)`(internal):** `sink.capsLock && k.kind == QWERTY_LETTER`면 `k.label.uppercase()`, 아니면 `k.label`. `onDraw`의 글자와 `describe(key)`의 글자 키 이름(`function == null`)이 이것을 쓴다. 보이는 배치(`shownLayout`, FSS#117)의 키에 쓰므로 Ctrl·Alt 때의 쿼티 그림도 대소문자를 따른다. 두벌식 자모는 `QWERTY_LETTER`가 아니라 그대로다.
+- **`hintsOf(k)`(internal):** `TapKeyResolver.edgeHints(k)`에서, `sink.capsLock && k.kind == QWERTY_LETTER`면 `Dir.UP`을 뺀다(그 ↑는 끄기라 글자가 없음). 다른 방향 표시는 그대로다 — 배정 없는 방향은 `edgeHints`가 이미 그리지 않는다(탭과 같음). `drawHints`가 이것을 쓴다.
+- 근거: SRS FR-TAP-19 ②⑤, HLD 5A "그리기·접근성". 시험: CK-01~CK-04(LLD-11 7.5).
+
 ## 5. MultiPointerQueue (app)
 
 ```kotlin
@@ -482,6 +492,7 @@ class TapKeyAccessHelper(private val view: TapKeyboardView) : ExploreByTouchHelp
 - **두 줄 높이 ↵(0.21, FSS#105, SRS FR-TAP-03d ⑦):** 노드는 키마다 하나이고 경계는 키 사각형(`keyBoundsPx`)이므로 ↵는 노드 하나, 경계 = 두 줄 사각형이다. 이름은 그대로(`a11y_key_enter`). 노드 번호 = 키 목록 순서라 훑어 넘기는 순서에서 ↵는 l 다음, z 앞이다(3.2 키 목록 순서). 시험 BV-03.
 - **조합 키(0.20, FR-TAP-18):** Ctrl·Alt 노드는 켜고 끄는 항목이다. 이름은 `a11y_key_ctrl` = "Ctrl", `a11y_key_alt` = "Alt"(화면 읽기가 켜짐·꺼짐을 덧붙여 읽는다). 조합 키 집합이 바뀌면(`chordChanged()`) 두 노드를 `invalidateVirtualView`로 무효화해 바뀐 상태가 읽히게 한다 — 눌러 켜고 끔, 대상 키에 실려 꺼짐, 모드 키·입력창 변경 등으로 꺼짐 모두 `InputDispatcher.onChordChanged` 하나로 온다. 누르기 동작은 터치와 같이 down+up(켜고 끄기)이고, 켜진 채 다른 키를 누르기 동작으로 누르면 그 키의 탭 결과에 실린다(글자 키는 `Tap`, 기능키는 그 키).
 - 시험: CV-06·CV-07(LLD-11 7.5), 실기기 DV-10·DV-39 ⑨.
+- **Caps Lock(0.30, FR-TAP-19 ②):** 켜진 동안 쿼티 글자 키의 `contentDescription`은 대문자다(`describe` → `labelOf`). 바뀌면 `capsChanged()`가 노드 전부를 무효화한다. 누르기 동작은 `Tap`이라 켜진 동안 대문자를 넣고 켜고 끄지 않는다. 시험: CK-01·CK-03, CS-16.
 
 ## 8. 시퀀스
 
