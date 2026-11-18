@@ -186,8 +186,15 @@ class InputDispatcherTest {
                 else -> null
             }
             val k = dubeolsikKey(c)
-            d.onTapOutput(k, TapKeyResolver.resolve(k, if (dir == null) TapGesture.Tap else TapGesture.Exit(dir)))
-            i += if (dir == null) 1 else 2
+            // A ↺ after the arrow is an exit-and-return (FSS#128).
+            val back = dir != null && keys.getOrNull(i + 2) == '↺'
+            val g = when {
+                dir == null -> TapGesture.Tap
+                back -> TapGesture.ExitReturn(dir)
+                else -> TapGesture.Exit(dir)
+            }
+            d.onTapOutput(k, TapKeyResolver.resolve(k, g))
+            i += if (dir == null) 1 else if (back) 3 else 2
         }
         return shownText(port.calls)
     }
@@ -712,6 +719,29 @@ class InputDispatcherTest {
             "ㅓ↗" to "ㅓ", "ㅓ↘" to "ㅓ", "ㅏ↖" to "ㅏ", "ㅏ↙" to "ㅏ")
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+    }
+
+    @Test
+    fun `ID-47 a consonant key's exit-and-return composes as the consonant then the paired vowel tapped, two backspace units (FSS 128)`() {
+        // SRS FR-TAP-02h ③: 교 ⌫ = ㄱ, ⌫ = nothing; ㅛ ㅠ ㅕ ㅑ do not merge (FR-HGL-04a), dokkaebibul as the keys.
+        val cases = listOf(
+            "ㄱ↑↺" to "교", "ㄱ↓↺" to "규", "ㄱ←↺" to "겨", "ㄱ→↺" to "갸",
+            "ㅇ↑↺" to "요", "ㅇ↓↺" to "유", "ㅇ←↺" to "여", "ㅇ→↺" to "야", "ㄹ↓↺" to "류", "ㅎ←↺" to "혀",
+            "ㄱ↑↺⌫" to "ㄱ", "ㄱ↑↺⌫⌫" to "", "ㄱ←↺⌫" to "ㄱ",
+            "ㄱ↑↺ㅏ" to "교ㅏ", "ㄱ↓↺ㅓ" to "규ㅓ", "ㄱ↓↺ㄹ" to "귤", "ㄱ←↺ㅇ" to "경",
+            "ㄱㅏㄱㄱ←↺" to "각겨", "ㄱㅏㅁ→↺" to "가먀", "ㄱ←ㄱ←↺" to "거겨", "ㄱ↑↺ㄱ↑" to "교고",
+        )
+        val vowel = mapOf('↑' to 'ㅛ', '↓' to 'ㅠ', '←' to 'ㅕ', '→' to 'ㅑ')
+        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> vowel.map { (a, v) -> "$c$a↺" to "$c$v" } }.toMap() +
+            "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c ->
+                mapOf('↑' to 'ㅗ', '↓' to 'ㅜ', '←' to 'ㅓ', '→' to 'ㅏ').map { (a, v) -> "$c$a" to "$c$v" }
+            }.toMap()
+        for ((keys, expected) in cases) {
+            assertEquals(keys, expected, shownAfter(keys))
+            // Exit-and-return strokes first, so "ㄱ↑↺" is not read as "ㄱ↑" then ↺.
             val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
             assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
         }
