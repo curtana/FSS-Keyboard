@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터, 7.4 내 획 학습)
-- 버전 **0.39** (2026-11-14)
+- 버전 **0.40** (2026-11-18)
+- 0.40(FSS#140, SRS 0.96 FR-SET-10, HLD 0.89 7.3): 설정 화면 맨 아래에 읽기 전용 "버전" 묶음(7절 표·묶음 순서), 새 7.1 `BuildInfo`(표시 문자열 순수 함수, `BuildConfig` 필드 `GIT_HASH`·`BUILD_DATE`, 빌드 스크립트의 값 출처). 설정 저장 형식은 그대로다.
 - 0.39(FSS#96, SRS 0.88 FR-TUT-14~17·TBD-30, HLD 0.81 7.3·7.4, LLD-05 0.38 8.3·11절): **내 획 학습** — 새 8절: 대상 글자와 저장 판정 `MyStrokes`(8.1), 개인 획 저장소 `PersonalStrokeStore`·`PersonalStrokeBook`·`PersonalStrokeCodec`과 파일 형식(판 1, `noBackupFilesDir`, 임시 파일에 쓰고 바꿔 끼움, 읽을 수 없는 파일은 빈 목록으로 보고 그대로 둠, 8.2), 화면과 문구 `MyStrokesScreen`(8.3), 인식 반영(8.4). 주제 목록에 "내 획 학습" 줄(2.3). 연습 주제와 설정 저장 형식은 그대로다.
 - 0.38(FSS#98, SRS 0.87 FR-TAP-17 ④, LLD-08 0.34): 연습 탭 자판의 Ctrl·Alt는 편집 줄의 다른 키처럼 보이되 동작이 없다(`tapSink`가 넘기지 않음 — 켜지지 않고 켜짐 표시도 없음), `PracticeEditor.sendChord`는 빈 구현(2.3). 시험 PR-35.
 - 0.37(FSS#95, SRS 0.86 FR-CMN-10a·FR-SET-02 삭제·FR-SET-08·부록 A, HLD 0.79 7.1·7.3: 긋기 입력 모드 삭제): ① 입력 연습 — 주제 ④ 긋기(`swipe`)와 ②의 긋기 자판 항목 셋을 뺐다(주제 넷, 54항목, ② 약 25초). `PracticeBoard { TAP_QWERTY, GRAFFITI }`, `PracticeInput`은 `SwipeHost`가 아니다, `PracticeFlow.hint`(반대 방향 획 덧붙임)와 `onAction`의 `reversed`를 지웠다(2절). 규칙의 정본은 SRS 부록 A(A.1 화면, A.2 주제·항목, A.3 판정)다. ② 설정값 `showDirectionGuide`·`showNextChar`·`showCurrentChar`·`showStrokeTrail`·`swipeEnabled`와 그 키를 지웠다(6.1). ③ **옮겨 오기(6.1, LLD 결정 D-69):** 옛 버전이 남긴 `last_mode = "SWIPE"`는 모르는 이름이라 없음으로 읽고, 남은 다섯 키와 `practice_done`의 `swipe`는 **읽지 않고 지우지도 않는다**(시험 SS-15, MC-40~MC-42, PR-36). ④ 설정 화면: 입력 모드 묶음은 한글(두벌식) · 영문(쿼티) · 그래피티 순서의 셋, "안내 표시" 묶음(네 스위치) 삭제(7절). 아래 0.36까지의 이력에 나오는 긋기 연습 자판·SWIPE n.n 절은 이 판에서 없어졌거나 SRS 부록 A로 옮겨졌다.
@@ -234,11 +235,24 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 세로·가로 화면 키 크기·정렬(0.27, 상자 0.29) | `key_portrait_dp`·`align_portrait`·`key_landscape_dp`·`align_landscape`(6.1). 줄 높이 바로 다음에 **상자 둘**(`KeyboardSizeBoxes`, 0.29, FSS#44): "세로 화면" 상자 = "키 크기"(슬라이더 32dp ~ `fullKeyDp(짧은 변)` 1dp 단계, 위 끝 = 꽉 채움 = 키 없음) + "정렬"(라디오 셋 한 줄: 왼손모드 · 중앙모드 · 오른손모드), "가로 화면" 상자 = "키 크기"(32dp ~ `fullKeyDp(긴 변)`, 위 끝 = `FULL`, 저장값이 없으면 세로의 키 크기 자리) + "정렬". 지금 화면 방향 상자는 제목 줄 오른쪽 끝에 "지금 화면"(강조색). 설정 화면은 회전하면 다시 만들어지므로 표시가 새 방향 상자로 옮겨 간다. 값 칸은 전체 폭 미리보기 = **자판 사각형 폭**(0.34, FSS#84: 여유 칸 포함 11 × 키 크기, `KeyboardWidth.RECT_UNITS`): "키 36dp · 전체 396dp", 꽉 채움이면 "꽉 채움 · 키 약 65dp · 711dp"(대략 가용 폭 ÷ 11). 문구 틀(`settings_key_value`·`settings_key_full`)은 그대로다. `fullKeyDp(대략 가용 폭)` = 가용 폭 / 11 올림(LLD-08 7.2. 360dp 화면 세로는 32~33dp). 가로 슬라이더의 저장값 없는 자리 = 세로의 키 크기, 세로가 꽉 채움이면 `round(짧은 변 / 11)`을 32 ~ 위 끝 안으로 자른 값(짧은 변이 352dp보다 작아도 32dp — 키보드의 하한과 같게). 0.33까지 저장된 키 크기는 그대로 읽어 그 숫자와 11배 폭을 보이고, 위 끝을 넘으면 위 끝("꽉 채움") 자리에 보인다(예: 360dp 화면에 저장된 36dp). 짧은·긴 변 = `displayMetrics`(옆 막대를 빼지 않은 대략값; 키보드는 정확한 폭을 셈). 슬라이더는 뗄 때 저장(줄 높이와 같음). 정렬은 그 방향이 꽉 채움(키 × 11 ≥ 대략 가용 폭)일 때 흐리게·고를 수 없음 | FR-SET-09, FR-CMN-14 |
 | 세로·가로 화면 띄우기(0.36) | `float_portrait`·`float_landscape`(6.1). 방향 상자마다 정렬 바로 아래에 "띄우기" 스위치 한 줄(`FloatRow`, 기본 끔, 시험 태그 `float_portrait`·`float_landscape`)과 그 아래 안내 한 줄 "자판 위 손잡이를 길게 눌러 옮깁니다. 옮긴 뒤에는 정렬 대신 옮긴 자리를 씁니다."(`settings_float_summary`). 스위치는 그 방향의 `on`만 바꾸고 비율은 그대로 둔다(껐다 켜도 자리가 남음, FR-CMN-15 ⑥). 정렬은 띄우기와 상관없이 고를 수 있다(꽉 채움이면 흐린 것은 그대로, OB-07) | FR-SET-09, FR-CMN-15 ①⑥(FSS#86) |
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
+| 버전(0.40, 맨 아래) | 저장 없음. 묶음 제목 "버전"(`settings_section_version`) 아래 읽기 전용 글 두 줄 = `BuildInfo.current()`(7.1, 시험 태그 `settings_version`). 누르는 동작 없음, "버전" 줄을 따로 두지 않음(묶음 제목이 항목 이름) | FR-SET-10, FSS#140 |
 
-- 묶음 순서는 입력 모드 → 입력기 → 피드백 → 자판 → 입력 연습(0.37: "안내 표시" 묶음과 그 문구 `settings_section_display`·`settings_direction_guide`·`settings_next_char`·`settings_current_char`·`settings_stroke_trail`·`settings_mode_swipe` 삭제, FR-SET-02 삭제). 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.
+- 묶음 순서는 입력 모드 → 입력기 → 피드백 → 자판 → 입력 연습 → 버전(0.40: 버전은 늘 맨 아래. 0.37: "안내 표시" 묶음과 그 문구 `settings_section_display`·`settings_direction_guide`·`settings_next_char`·`settings_current_char`·`settings_stroke_trail`·`settings_mode_swipe` 삭제, FR-SET-02 삭제). 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.
 - 0.24: "튜터 다시 실행"은 "입력 연습"으로, 기준값 초기화·내보내기·가져오기는 삭제(FSS#17 오너 결정 ①, FR-TUT-07 삭제).
 - 줄 높이는 40~64dp 범위에서 고른다(FR-SET-06, DCR-14 결정). 설정 화면에는 기준값 상태 안내를 두지 않는다(FR-TUT-05).
 - 시험: 실기기 DV-11.
+
+
+### 7.1 버전 표시 `BuildInfo` (0.40, FSS#140, SRS FR-SET-10, app `kbd.app.settings`, 안드로이드 없음)
+
+- `BuildInfo.text(versionName, versionCode, buildType, gitHash, buildDate): String` — 순수 함수. 첫 줄 `"<versionName> (<versionCode>)"`, 둘째 줄은 `buildType == "release"`이면 `"릴리스"`, 아니면 `"개발"`·`gitHash`·`buildDate` 가운데 빈 것을 뺀 것을 `" · "`로 이은 것. 릴리스이면 해시·날짜가 주어져도 보이지 않는다.
+- `BuildInfo.current()` = `text(BuildConfig.VERSION_NAME, VERSION_CODE, BUILD_TYPE, GIT_HASH, BUILD_DATE)`. `SettingsScreen`은 기본 인수로 이것을 받는다(시험은 고정 글을 넘김).
+- 값 출처(`app/build.gradle.kts`, `buildFeatures.buildConfig = true`):
+  - `GIT_HASH` = Gradle `ValueSource` `GitShortHash`: `git rev-parse --short=7 HEAD`. git이 없거나(실행 예외) 끝 값이 0이 아니거나 출력이 비면 `"unknown"`. 빌드는 실패하지 않는다.
+  - `BUILD_DATE` = `ValueSource` `BuildDate`: 빌드하는 PC의 지역 날짜 `yyyy-MM-dd`. 시각은 넣지 않는다.
+  - 두 값은 **debug 빌드 유형에만** 넣고 release는 빈 문자열이다. 그래서 release APK는 같은 소스면 날짜·체크아웃과 상관없이 같다. debug는 커밋이 바뀌거나 날이 바뀔 때만 달라진다.
+  - 둘 다 `ValueSource`라 구성 캐시를 켜도 빌드마다 다시 읽힌다(값이 바뀌면 캐시 항목이 무효가 됨). 구성 시점에 한 번 읽은 값이 굳지 않는다.
+- 시험: LLD-11 7.11 BI-01~BI-05.
 
 ## 8. 내 획 학습 (HLD 7.4, SRS FR-TUT-14~17, 0.39, FSS#96)
 
