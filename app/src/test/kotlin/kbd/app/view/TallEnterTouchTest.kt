@@ -313,7 +313,44 @@ class TallEnterTouchTest {
         sink.events.clear()
         stroke(l, "m", 20f, 40f)                                       // a diagonal crossing the bottom edge first
         assertEquals(listOf("m:ㅢ:Exit(dir=DOWN)"), sink.events)
-        assertEquals(listOf("h", "n"), geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay }.map { it.id })   // ㄹ 4-way since FSS#124
+        // ㄹ 4-way since FSS#124; ㅓ ㅏ 8-way since FSS#126 (GV-04).
+        assertEquals(listOf("h", "j", "k", "n"), geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay }.map { it.id })
+    }
+
+    @Test
+    fun `GV-04 Dubeolsik ㅓ ㅏ are judged in eight ways from their data, sector edges as ㅗ ㅜ (FSS 126, FR-TAP-02j)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        fun out(id: String, deg: Double): String {
+            sink.events.clear()
+            strokeAt(l, id, deg)
+            return sink.events.single()
+        }
+        // One point in each sector (→ 0, ↗ 45, ↑ 90, ↖ 135, ← 180, ↙ 225, ↓ 270, ↘ 315).
+        val eo = listOf("j:ㅓ:Exit(dir=RIGHT)", "j:ㅓ:Exit(dir=UP_RIGHT)", "j:ㅓ:Exit(dir=UP)", "j:ㅖ:Exit(dir=UP_LEFT)",
+            "j:ㅕ:Exit(dir=LEFT)", "j:ㅔ:Exit(dir=DOWN_LEFT)", "j:ㅓ:Exit(dir=DOWN)", "j:ㅓ:Exit(dir=DOWN_RIGHT)")
+        val a = listOf("k:ㅑ:Exit(dir=RIGHT)", "k:ㅒ:Exit(dir=UP_RIGHT)", "k:ㅏ:Exit(dir=UP)", "k:ㅏ:Exit(dir=UP_LEFT)",
+            "k:ㅏ:Exit(dir=LEFT)", "k:ㅏ:Exit(dir=DOWN_LEFT)", "k:ㅏ:Exit(dir=DOWN)", "k:ㅐ:Exit(dir=DOWN_RIGHT)")
+        for (i in 0 until 8) {
+            assertEquals(eo[i], out("j", i * 45.0))
+            assertEquals(a[i], out("k", i * 45.0))
+        }
+        // Sector edges (FR-TAP-02e ②③): ← and → 60° wide, the diagonals 30°, just inside and outside each edge.
+        assertEquals("j:ㅕ:Exit(dir=LEFT)", out("j", 151.0))
+        assertEquals("j:ㅖ:Exit(dir=UP_LEFT)", out("j", 149.0))
+        assertEquals("j:ㅖ:Exit(dir=UP_LEFT)", out("j", 121.0))
+        assertEquals("j:ㅓ:Exit(dir=UP)", out("j", 119.0))
+        assertEquals("j:ㅕ:Exit(dir=LEFT)", out("j", 209.0))
+        assertEquals("j:ㅔ:Exit(dir=DOWN_LEFT)", out("j", 211.0))
+        assertEquals("j:ㅔ:Exit(dir=DOWN_LEFT)", out("j", 239.0))
+        assertEquals("j:ㅓ:Exit(dir=DOWN)", out("j", 241.0))
+        assertEquals("k:ㅑ:Exit(dir=RIGHT)", out("k", 29.0))
+        assertEquals("k:ㅒ:Exit(dir=UP_RIGHT)", out("k", 31.0))
+        assertEquals("k:ㅒ:Exit(dir=UP_RIGHT)", out("k", 59.0))
+        assertEquals("k:ㅏ:Exit(dir=UP)", out("k", 61.0))
+        assertEquals("k:ㅑ:Exit(dir=RIGHT)", out("k", -29.0))
+        assertEquals("k:ㅐ:Exit(dir=DOWN_RIGHT)", out("k", -31.0))
+        assertEquals("k:ㅐ:Exit(dir=DOWN_RIGHT)", out("k", -59.0))
+        assertEquals("k:ㅏ:Exit(dir=DOWN)", out("k", -61.0))
     }
 
     @Test

@@ -694,4 +694,24 @@ class InputDispatcherTest {
         // ⌫ after a final and dokkaebibul: unit by unit as the keys typed (no literal: the composer's own rule).
         for (keys in listOf("ㄱㅏㄹㄱ←⌫", "ㄱㅏㄹㄱ←⌫⌫", "ㄱㅏㄱㄱ←⌫", "ㄱㅏㄱㄱ←⌫⌫", "ㄱㅏㅁ→⌫", "ㄱㅏㅁ→⌫⌫⌫")) sameAsTaps(keys)
     }
+
+    @Test
+    fun `ID-46 a ㅓ ㅏ diagonal composes as the ㅔ ㅐ key typed - merge, dokkaebibul, backspace (FSS 126)`() {
+        // SRS FR-TAP-02j: each case equals the same keys typed (ㅖ ㅒ are the ㅔ ㅐ keys ↑).
+        val cases = listOf(
+            "ㄱㅓ↙" to "게", "ㄱㅓ↖" to "계", "ㄱㅏ↘" to "개", "ㄱㅏ↗" to "걔",
+            "ㄱㅓ↗" to "거", "ㄱㅓ↘" to "거", "ㄱㅏ↖" to "가", "ㄱㅏ↙" to "가",     // empty diagonals: the tap
+            "ㄱㅗㅏ↘" to "괘", "ㄱㅜㅓ↙" to "궤",                                   // merge as 고 + ㅐ, 구 + ㅔ
+            "ㄱㅗㅏ↗" to "고ㅒ", "ㄱㅜㅓ↖" to "구ㅖ",                               // no (ㅗ, ㅒ) or (ㅜ, ㅖ) merge
+            "ㄱㅏㄱㅏ↘" to "가개", "ㅏ↘" to "ㅐ", "ㄱㅓ↙ㄴ" to "겐",
+            "ㄱㅓ↙⌫" to "ㄱ", "ㄱㅏ↗⌫" to "ㄱ", "ㄱㅗㅏ↘⌫" to "고", "ㄱㅗㅏ↘⌫⌫" to "ㄱ", "ㄱㅏㄱㅏ↘⌫" to "가ㄱ",
+        )
+        val taps = mapOf("ㅓ↙" to "ㅔ", "ㅓ↖" to "ㅔ↑", "ㅏ↘" to "ㅐ", "ㅏ↗" to "ㅐ↑",
+            "ㅓ↗" to "ㅓ", "ㅓ↘" to "ㅓ", "ㅏ↖" to "ㅏ", "ㅏ↙" to "ㅏ")
+        for ((keys, expected) in cases) {
+            assertEquals(keys, expected, shownAfter(keys))
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+    }
 }

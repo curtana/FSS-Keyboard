@@ -257,17 +257,20 @@ class TapLayoutsTest {
                 assertTrue("${k.id} $d $placed", placed.size <= 1)
             }
         }
-        // 4 paired vowels and 7 compound vowels (FSS#110), each once; no compound finals since FSS#124.
-        assertEquals("ㅑㅕㅛㅠㅘㅙㅚㅝㅞㅟㅢ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
+        // 4 paired vowels, 7 compound vowels (FSS#110) and 4 diagonal vowels (FSS#126), each once; no compound finals
+        // since FSS#124.
+        assertEquals("ㅑㅕㅛㅠㅘㅙㅚㅝㅞㅟㅢㅐㅒㅔㅖ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
         assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
     }
     @Test
-    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik h n (FSS 109, 110, 124)`() {
-        assertEquals(listOf("h", "n"), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id })   // ㅗ ㅜ; ㄹ 4-way since FSS#124
+    fun `TL-10 the 8-way keys come from the data - the keys with a diagonal assignment, now Dubeolsik h j k n (FSS 109, 110, 124, 126)`() {
+        // ㅗ ㅜ (FSS#110), ㅓ ㅏ (FSS#126); ㄹ 4-way since FSS#124.
+        assertEquals(listOf("h", "j", "k", "n"), TapLayouts.DUBEOLSIK.keys.filter { it.eightWay }.map { it.id })
         assertTrue(TapLayouts.QWERTY.keys.none { it.eightWay })
         for (k in TapLayouts.DUBEOLSIK.keys) assertEquals(k.id, k.dirJamo.keys.any { it is kbd.stroke.geom.Diag }, k.eightWay)
-        // A key gets eight directions by its data alone: the same key with one diagonal added is an 8-way key.
-        val a = TapLayouts.DUBEOLSIK.key("k")
+        // A key gets eight directions by its data alone: the same key with one diagonal added is an 8-way key
+        // (ㅕ (u) since FSS#126 made ㅏ (k) 8-way).
+        val a = TapLayouts.DUBEOLSIK.key("u")
         assertEquals(false, a.eightWay)
         assertEquals(true, a.copy(dirJamo = a.dirJamo + (kbd.stroke.geom.Diag.DOWN_RIGHT to 'ㅘ')).eightWay)
         assertEquals(false, TapLayouts.DUBEOLSIK.key("m").eightWay)   // ㅡ: ㅢ is ↓, no diagonal (FSS#110)
@@ -358,5 +361,30 @@ class TapLayoutsTest {
         assertEquals(tense.values.toSet(), TapLayouts.TENSE_JAMO.values.toSet())
         // ↓ is free on 1..5 in both layouts' symbols: 1's ~ is on ← (FSS#124), 2..5 have only ↑.
         for (n in "12345") assertNull("$n", d.key(n.toString()).assign?.down)
+    }
+
+    @Test
+    fun `TL-15 Dubeolsik ㅓ ㅏ diagonals - ㅓ ↙ ㅔ ↖ ㅖ, ㅏ ↘ ㅐ ↗ ㅒ, the same jamo as the ㅔ ㅐ keys, 8-way by the data (FSS 126)`() {
+        // SRS FR-TAP-02j, by hand from the issue.
+        val d = TapLayouts.DUBEOLSIK
+        val eo = d.key("j")
+        val a = d.key("k")
+        assertEquals('ㅓ', eo.jamo)
+        assertEquals('ㅏ', a.jamo)
+        assertEquals(mapOf<kbd.stroke.geom.Way, Char>(kbd.stroke.geom.Dir.LEFT to 'ㅕ',
+            kbd.stroke.geom.Diag.DOWN_LEFT to 'ㅔ', kbd.stroke.geom.Diag.UP_LEFT to 'ㅖ'), eo.dirJamo)
+        assertEquals(mapOf<kbd.stroke.geom.Way, Char>(kbd.stroke.geom.Dir.RIGHT to 'ㅑ',
+            kbd.stroke.geom.Diag.DOWN_RIGHT to 'ㅐ', kbd.stroke.geom.Diag.UP_RIGHT to 'ㅒ'), a.dirJamo)
+        assertTrue(eo.eightWay)
+        assertTrue(a.eightWay)
+        // The same jamo as the ㅔ ㅐ keys: their tap and their ↑ (shift jamo).
+        val e = d.keys.single { it.jamo == 'ㅔ' }
+        val ae = d.keys.single { it.jamo == 'ㅐ' }
+        assertEquals(setOf(e.jamo, e.shiftJamo, ae.jamo, ae.shiftJamo), TapLayouts.DIAG_VOWEL.values.flatMap { it.values }.toSet())
+        // Nothing else moved: the ㅔ ㅐ keys keep theirs, QWERTY j k have no direction jamo.
+        assertEquals('ㅖ', e.shiftJamo)
+        assertEquals('ㅒ', ae.shiftJamo)
+        assertTrue(TapLayouts.QWERTY.key("j").dirJamo.isEmpty())
+        assertTrue(TapLayouts.QWERTY.key("k").dirJamo.isEmpty())
     }
 }
