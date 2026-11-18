@@ -237,8 +237,8 @@ class TapLayoutsTest {
     }
 
     @Test
-    fun `TL-09 no Dubeolsik letter key has two assignments in one direction, QWERTY letters have no direction jamo (FSS#104)`() {
-        // Shift jamo (↑ only), direction jamo (compound finals, paired vowels) and assigned symbols: at most one per
+    fun `TL-09 no Dubeolsik letter key has two assignments in one direction, QWERTY letters have no direction jamo (FSS#104, FSS#141)`() {
+        // Shift jamo (↑ only), direction jamo (compound finals, compound vowels) and assigned symbols: at most one per
         // key and direction, so the resolver's order never changes a result (HLD 5A).
         val letters = TapLayouts.DUBEOLSIK.keys.filter { it.kind == TapKeyKind.DUBEOLSIK_LETTER }
         assertEquals(26, letters.size)
@@ -255,8 +255,8 @@ class TapLayoutsTest {
                 assertTrue("${k.id} $d $placed", placed.size <= 1)
             }
         }
-        // 11 compound finals, 4 paired vowels and 7 compound vowels (FSS#110), each once.
-        assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅑㅕㅛㅠㅘㅙㅚㅝㅞㅟㅢ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
+        // 11 compound finals and 7 compound vowels (FSS#110), each once; no paired vowels (FSS#141 took out ㅛ ㅕ ㅑ ㅠ).
+        assertEquals("ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄㅘㅙㅚㅝㅞㅟㅢ".toList().sorted(), letters.flatMap { it.dirJamo.values }.sorted())
         assertTrue(TapLayouts.QWERTY.keys.all { it.dirJamo.isEmpty() })
     }
     @Test
@@ -307,14 +307,15 @@ class TapLayoutsTest {
         )
         // The way each added stroke goes: ㅏ right, ㅓ left, ㅣ down (x right +, y down +, as FR-TAP-02c ①).
         val stroke = mapOf('ㅏ' to (1 to 0), 'ㅓ' to (-1 to 0), 'ㅣ' to (0 to 1))
+        // The way the key vowel's own short stroke goes: ㅗ up, ㅜ down; ㅡ has none (Unicode shapes, not the assignment).
+        val ownStroke = mapOf('ㅗ' to kbd.stroke.geom.Dir.UP, 'ㅜ' to kbd.stroke.geom.Dir.DOWN)
         val computed = HashMap<Char, MutableMap<kbd.stroke.geom.Way, Char>>()
         for ((cv, kv) in parts) {
             val (key, added) = kv
             val sx = Integer.signum(added.sumOf { stroke.getValue(it).first })
             var sy = Integer.signum(added.sumOf { stroke.getValue(it).second })
-            // Where the key's paired vowel is, the vertical flips (ㅜ + ㅣ = ↓ is ㅠ's: ㅟ is ↑).
-            val pairWays = TapLayouts.PAIR_VOWEL[key].orEmpty().keys
-            if (kbd.stroke.geom.wayOfSigns(sx, sy) in pairWays) sy = -sy
+            // Where that is the way of the key vowel's own short stroke, the vertical flips (ㅜ + ㅣ = ↓ is ㅜ's own: ㅟ is ↑).
+            if (kbd.stroke.geom.wayOfSigns(sx, sy) == ownStroke[key]) sy = -sy
             val way = checkNotNull(kbd.stroke.geom.wayOfSigns(sx, sy)) { "$cv" }
             computed.getOrPut(key) { LinkedHashMap() }[way] = cv
         }
