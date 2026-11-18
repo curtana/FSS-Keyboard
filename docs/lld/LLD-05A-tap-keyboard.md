@@ -1,7 +1,8 @@
 # LLD-05A 탭 자판 (쿼티·두벌식)
 
 - 대응 HLD 절: 5A장(탭 자판)
-- 버전 **0.28** (2026-11-18)
+- 버전 **0.29** (2026-11-18)
+- 0.29(FSS#128 오너 결정 "자음에서 나가면 방향으로 ㅗ ㅜ ㅓ ㅏ를 결정하는데 나갔다가 다시 돌아오면 ㅛㅠㅕㅑ를 입력해줘", SRS 0.98 FR-TAP-02h ③, HLD 0.91 5A): `TapLayouts.RETURN_VOWEL` = {← ㅕ, → ㅑ, ↑ ㅛ, ↓ ㅠ}와 `TapKeyDef.returnVowel`(자음 키 14개 모두, 3.1·3.3). `resolve`는 1번 정규화 전에 `ExitReturn(d)`이고 `key.returnVowel[d]`가 있으면 `returnSyllable` = 기본 자음 + 그 모음을 낸다(2.2 0번). 나머지 키·동작은 그대로
 - 0.28(FSS#126 오너 결정 "ㅓ에서 좌측 아래는 ㅔ로 좌측위는 ㅖ로 ㅏ에서 우측아래는 ㅐ로 우측 위는 ㅒ 추가해줘", SRS 0.97 FR-TAP-02j, HLD 0.90 5A "두벌식 ㅓ·ㅏ 대각선"): 3.3 **두벌식 대각선 모음 표** 신설 — `TapLayouts.DIAG_VOWEL` = {ㅓ: ↙ ㅔ, ↖ ㅖ / ㅏ: ↘ ㅐ, ↗ ㅒ}, `dirJamo`의 합치는 표에 셋째로 더함. ㅓ·ㅏ의 `eightWay`가 데이터로 참이 됨(판정·결과·표시·Ctrl·Alt 코드 그대로). 3.4 모서리 표시 목록. 시험 TL-15·TA-28·GV-04·GV-05·ID-46(LLD-11 0.70). 보탬("ㅕ 아래는 ㅖ로 ㅑ아래는 ㅒ로 추가해줘"): `TapLayouts.DOWN_VOWEL` = {ㅕ: ↓ ㅖ / ㅑ: ↓ ㅒ}, 합치는 표의 넷째. 검수 반영: 2.2·2.4의 8방향 키 목록
 - 0.27(FSS#124 오너 결정 "1 번키의 아래 ~을 좌측으로 옮기고 1,2,3,4,5 아래 긋기에 ㅃㅉㄸㄲㅆ을 각각 넣어줘 겹받침을 모두 제거하고 … 모든 자음키에 기능을 넣어주고", SRS 0.96 FR-TAP-02h·02i, FR-TAP-02c의 겹받침 한 번 긋기·FR-TAP-02f 삭제, HLD 0.89 5A): **두벌식 자음 키 위아래좌우 모두 자음 + 모음, 된소리는 숫자 1~5 ↓, 겹받침 한 번 긋기·ㄹ 8방향·손 뗀 키 우선 삭제, 1 키 ~ ←** — ① `TapLayouts.COMPOUND_JAMO`(겹받침 표) 삭제, `dirJamo` = 짝 모음 + 겹모음만(3.3). ② `SHIFT_JAMO`는 ㅐ ↑ ㅒ · ㅔ ↑ ㅖ만(3.2). ③ 새 `TapLayouts.TENSE_JAMO` = {1 ㅃ, 2 ㅉ, 3 ㄸ, 4 ㄲ, 5 ㅆ} — 두벌식 숫자 키 1~5의 `dirJamo = {↓ 된소리}`(쿼티 숫자 줄은 빈 맵, 3.3 "숫자 줄 된소리"). ④ `dirVowel(jamo)` = 자음이면 `STROKE_VOWEL` 네 방향 전부, 모음은 빈 맵(빠지는 방향 없음, 3.3 "자음 + 모음"). ⑤ `TapKeyResolver`: `NUMBER_ROW`·`SYMBOL`은 먼저 `numberJamo(key, n)` — 정규화한 나감의 방향에 `dirJamo`가 있으면 그 자모, 없으면 기호 규칙(2.2). 두벌식 글자 키의 찾는 순서는 그대로. ⑥ 1 키 ``KeyAssign("1", up "!", left "~", right "`")`` — `~`를 ↓에서 ←로(두 자판 공통, 3.3). ⑦ ㄹ은 대각선 배정이 없어져 4방향 — 8방향 키는 데이터로 ㅗ·ㅜ(h·n)만(3.1). 판정 코드(`TapGestureClassifier`의 `eightWay`, `Diag`)는 그대로. ⑧ 손 뗀 키 우선 삭제 — `ReleaseKeyCompound`(app) 파일과 `TapGeometry.releasedKey` 삭제, `TapTouchLogic.up`은 `TapKeyResolver.resolve(s.key, g)`만(4절, 4.1). ⑨ `edgeHints`는 그대로(결과가 탭과 다른 것): 자음 키는 아무것도 그리지 않고, 숫자 1~5 아래 변에 된소리, 1 왼쪽 변에 `~`(3.4). ⑩ `InputDispatcher`·`ChordKeys` 코드는 그대로 — 숫자 키 된소리는 `o.jamo` 길로 자모 하나(LLD-08 6.1), Ctrl·Alt는 같은 id의 쿼티 키(2 ↓ = `D2`, 1 ← = Shift + `GRAVE`, 1 ↓ = `D1`, 2.4). 아래 0.14~0.26 이력의 겹받침 배정·ㄹ 대각선·손 뗀 키·된소리 ↑는 이 판에서 없어졌다. 시험 TL-14·TA-27·ID-45(새), TL-09~11, TK-05·08·09·11·12·14·17·18·20·21·23·24, TA-02·03·12·20·21·23·24·26, CM-07, CD-20, ID-40·42·44, GJ-01~03, GV-01(새 기대, LLD-11 0.69)
 - 0.26(FSS#122 오너 결정 "좌는 ㅓ 우는 ㅏ 상은 ㅗ 하는 ㅜ"·"그냥 기능만 넣어줘", SRS 0.95 FR-TAP-02h, HLD 0.88 5A "두벌식 자음 키 빈 방향 = 자음 + 모음"): `TapOutput.vowel`(2.2), `TapKeyDef.dirVowel`(3.1), `TapLayouts.STROKE_VOWEL`과 3.3 "자음 + 모음" 표, 2.2 찾는 순서 끝의 `syllable` 단계. 조합은 `InputDispatcher`가 `applyAll`로 자모 둘(LLD-08 6절). 표시 없음
@@ -45,7 +46,7 @@
 sealed interface TapGesture {
     data object Tap : TapGesture
     data class Exit(val dir: Way) : TapGesture          // 같은 변 1회 통과
-    data class ExitReturn(val dir: Way) : TapGesture    // 2회(나갔다 돌아옴) — 결과는 Exit(dir)과 같음(2.2)
+    data class ExitReturn(val dir: Way) : TapGesture    // 2회(나갔다 돌아옴) — 결과는 Exit(dir)과 같음(2.2). 0.29: 두벌식 자음 키만 짝 모음(2.2 0번)
     data class Rub(val dir: Way) : TapGesture           // 3회 이상(문지르기)
 }   // dir: 4방향 키는 처음 나간 변의 Dir, 8방향 키는 각도로 정한 Dir 또는 Diag(0.23. 0.22까지 Dir)
 class TapGestureClassifier(key: KeyGeom, minCrossDp: Float, eightWay: Boolean = false) {   // 0.23: eightWay
@@ -79,7 +80,8 @@ object TapKeyResolver {
 `resolve` — SRS 탭 자판 동작 표(8행 × 3열)를 그대로 옮긴다. `a` = 키의 `KeyAssign`(3.1).
 
 ```
-1. g를 정규화: ExitReturn(d) → Exit(d)                       // 나갔다 돌아옴 = 그 방향 나감(표 8행)
+0. g가 ExitReturn(d)이고 key.returnVowel[d]가 있으면 TapOutput(null, key.jamo, false, vowel = 그 모음)   // 0.29: 두벌식 자음 키 나갔다 돌아옴 = 자음 + 짝 모음(FSS#128)
+1. g를 정규화: ExitReturn(d) → Exit(d)                       // 나갔다 돌아옴 = 그 방향 나감(표 8행). 0번에 걸린 자음 키는 오지 않음
              Rub(LEFT) → Exit(LEFT), Rub(RIGHT) → Exit(RIGHT)  // 좌우 문지르기 = 그 방향 나감(표 7행)
              Rub(대각선) → Exit(대각선)                        // 0.23: 처음 나감의 방향을 따름(SRS FR-TAP-02e ④)
 2. 정규화한 것이 Exit(대각선 d)면 key.dirJamo[d]의 자모, 없으면 resolve(key, Tap)   // 0.23: 빈 방향 = 탭
@@ -193,6 +195,7 @@ data class TapKeyDef(val id: String, val row: Int, val x: Float, val w: Float,  
                      val function: FunctionKey? = null,
                      val dirJamo: Map<Way, Char> = emptyMap(),                 // 두벌식 키의 방향별 자모(3.3): 모음 키 = 짝 모음 + 겹모음, 숫자 키 1~5 = ↓ 된소리(0.27). 0.22~0.26은 자음 키의 겹받침도(0.21까지 compoundJamo). 0.23: 대각선도(Way)
                      val dirVowel: Map<Dir, Char> = emptyMap(),                // 0.26: 두벌식 자음 키의 위아래좌우 → 뒤 모음(3.3 "자음 + 모음"). 0.27: 자음 키마다 네 방향 모두
+                     val returnVowel: Map<Dir, Char> = emptyMap(),             // 0.29: 두벌식 자음 키의 위아래좌우 나갔다 돌아옴 → 뒤 모음(3.3 "자음 + 모음", RETURN_VOWEL)
                      val rowSpan: Int = 1) {                                   // 0.21: 차지하는 줄 수(↵ 2, 그 밖 1). 1 미만이면 require 실패
     val eightWay: Boolean get() = dirJamo.keys.any { it is Diag }              // 0.23: 대각선 배정이 있는 키 = 8방향 판정(2.1)
     fun inRow(r: Int): Boolean = r >= row && r < row + rowSpan                 // 줄 r에 드는가
@@ -323,7 +326,7 @@ object TapLayouts { val QWERTY: TapLayout; val DUBEOLSIK: TapLayout }
 |---|---|---|---|---|
 | ㅂ ㅈ ㄷ ㄱ ㅅ ㅁ ㄴ ㅇ ㄹ ㅎ ㅋ ㅌ ㅊ ㅍ (14키) | 넣음 | 넣음 | 넣음 | 넣음 |
 
-- 예: ㅇ ↑ 오 · ↓ 우 · ← 어 · → 아, ㄱ ↑ 고(0.26까지 ㄲ — 된소리는 숫자 4 ↓), ㄹ ↑ 로(0.23~0.26 ㄺ), ㄴ → 나(0.23~0.26 ㄶ). ↑·↓ 문지르기는 기본 자음, ←·→ 문지르기·나갔다 돌아옴은 나감과 같다(2.2).
+- 예: ㅇ ↑ 오 · ↓ 우 · ← 어 · → 아, ㄱ ↑ 고(0.26까지 ㄲ — 된소리는 숫자 4 ↓), ㄹ ↑ 로(0.23~0.26 ㄺ), ㄴ → 나(0.23~0.26 ㄶ). ↑·↓ 문지르기는 기본 자음, ←·→ 문지르기는 나감과 같다(2.2). **나갔다 돌아옴(0.29, FSS#128, SRS FR-TAP-02h ③):** `TapLayouts.RETURN_VOWEL: Map<Dir, Char>` = {← ㅕ, → ㅑ, ↑ ㅛ, ↓ ㅠ}(위 모음의 짝 모음)을 `returnVowel(jamo)`로 자음 키마다 `TapKeyDef.returnVowel`에 둔다(모음 키는 빈 맵). 결과는 기본 자음 + 그 모음 — ㄱ ↑ 나갔다 돌아옴 교 · ↓ 규 · ← 겨 · → 갸. `edgeHints`는 `Exit`만 보므로 표시가 바뀌지 않는다. 0.28까지는 나갔다 돌아옴도 나감과 같았다.
 - 0.26의 표(지난 판): ㅁ ㅇ ㅎ ㅋ ㅌ ㅊ ㅍ 네 방향, ㅈ ㄷ ㅅ ← → ↓(↑ = ㅉ ㄸ ㅆ), ㄱ ㅂ ← ↓(↑ ㄲ ㅃ, → ㄳ ㅄ), ㄴ ← ↓(↑ ㄵ, → ㄶ), ㄹ 없음(네 방향 겹받침). 그때는 `dirVowel(jamo, taken)`이 `dirJamo`의 방향과 시프트 자모가 있는 ↑를 뺐다.
 - 자음 키에는 `assign`(기호)이 없다 — 배치를 만들 때 `require`로 지킨다(기호 키 i·o·p·l은 모음 ㅑ ㅐ ㅔ ㅣ). `dirVowel`에 대각선은 없어 `eightWay`를 만들지 않는다 — 자음 키는 모두 4방향이다(TL-11).
 

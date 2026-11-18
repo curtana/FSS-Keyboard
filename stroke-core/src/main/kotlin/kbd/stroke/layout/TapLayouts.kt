@@ -82,8 +82,17 @@ object TapLayouts {
      */
     val STROKE_VOWEL: Map<Dir, Char> = mapOf(Dir.LEFT to 'ㅓ', Dir.RIGHT to 'ㅏ', Dir.UP to 'ㅗ', Dir.DOWN to 'ㅜ')
 
+    /**
+     * The vowel of an exit-and-return on the Dubeolsik consonant keys (owner, FSS#128, SRS FR-TAP-02h ③): the paired
+     * vowel of the [STROKE_VOWEL] of that direction (ㄱ ↑ and back = 교, ↓ 규, ← 겨, → 갸).
+     */
+    val RETURN_VOWEL: Map<Dir, Char> = mapOf(Dir.LEFT to 'ㅕ', Dir.RIGHT to 'ㅑ', Dir.UP to 'ㅛ', Dir.DOWN to 'ㅠ')
+
     /** The [STROKE_VOWEL] of [jamo]'s key: all four on consonant keys (compatibility jamo ㄱ..ㅎ), none on vowel keys. */
     private fun dirVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') STROKE_VOWEL else emptyMap()
+
+    /** The [RETURN_VOWEL] of [jamo]'s key: all four on consonant keys, none on vowel keys (FSS#128). */
+    private fun returnVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') RETURN_VOWEL else emptyMap()
 
     /** The direction jamo of [jamo]'s key: its paired, compound, diagonal and ↓ vowels, never two in one direction. */
     private fun dirJamo(jamo: Char): Map<Way, Char> {
@@ -171,6 +180,7 @@ object TapLayouts {
                         id.toString(), row, x, KEY_W, TapKeyKind.DUBEOLSIK_LETTER, jamo.toString(),
                         assign = symbols?.assign(jamo.toString()),
                         jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirJamo(jamo), dirVowel = dirVowel(jamo),
+                        returnVowel = returnVowel(jamo),
                     )
                 } else {
                     TapKeyDef(

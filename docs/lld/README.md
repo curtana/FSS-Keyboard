@@ -1,6 +1,7 @@
 # 상세 설계 (LLD)
 
-- 문서: LLD, 버전 **0.63** (2026-11-18)
+- 문서: LLD, 버전 **0.64** (2026-11-18)
+- 0.64(FSS#128 오너 결정 "자음에서 나가면 방향으로 ㅗ ㅜ ㅓ ㅏ를 결정하는데 나갔다가 다시 돌아오면 ㅛㅠㅕㅑ를 입력해줘", SRS 0.98 FR-TAP-02h ③, HLD 0.91 5A): 두벌식 자음 키 나갔다 돌아옴 = 자음 + ㅛ·ㅠ·ㅕ·ㅑ — LLD-05A 0.29(`RETURN_VOWEL`·`returnVowel`·`resolve` 0번), LLD-11 0.71(TA-29, ID-47, TK-23·TA-26·TL-11 기대 바뀜)
 - 0.63(FSS#126 오너 결정 "ㅓ에서 좌측 아래는 ㅔ로 좌측위는 ㅖ로 ㅏ에서 우측아래는 ㅐ로 우측 위는 ㅒ 추가해줘", SRS 0.97 FR-TAP-02j, HLD 0.90 5A): 두벌식 ㅓ·ㅏ 대각선 — LLD-05A 0.28(3.3 `DIAG_VOWEL` 표, ㅓ·ㅏ 8방향은 데이터로, 3.4 모서리 표시), LLD-11 0.70(TL-15·TA-28·GV-04·GV-05·ID-46·DV-47, 기대값 갱신 TL-09·TL-10·TA-22·GJ-02·GV-01). 보탬 ㅕ ↓ ㅖ · ㅑ ↓ ㅒ(LLD-05A `DOWN_VOWEL`, 시험 TA-05·TA-20 갱신). 검수 반영: 8방향 키 목록
 - 0.62(FSS#124 오너 결정 "1 번키의 아래 ~을 좌측으로 옮기고 1,2,3,4,5 아래 긋기에 ㅃㅉㄸㄲㅆ을 각각 넣어줘 겹받침을 모두 제거하고 … 모든 자음키에 기능을 넣어주고", SRS 0.96 FR-TAP-02h·02i, FR-TAP-02c 겹받침 한 번 긋기·FR-TAP-02e ⑤~⑨·FR-TAP-02f 삭제, HLD 0.89 5A): 두벌식 자음 키 위아래좌우 모두 자음 + 모음, 된소리는 숫자 1~5 ↓(`TENSE_JAMO`), 겹받침 한 번 긋기(`COMPOUND_JAMO`)·ㄹ 8방향·손 뗀 키 우선(`ReleaseKeyCompound`·`TapGeometry.releasedKey`) 삭제, 1 키 ~ ← — LLD-05A 0.27, LLD-08 0.36, LLD-11 0.69. 3절 추적표 FR-TAP-02c·02e·02f·02h·02i, 5절 D-74·D-76
 - 0.61(FSS#122 오너 결정 "좌는 ㅓ 우는 ㅏ 상은 ㅗ 하는 ㅜ"·"그냥 기능만 넣어줘", SRS 0.95 FR-TAP-02h, HLD 0.88 5A): 두벌식 자음 키 빈 방향 = 자음 + 모음 — LLD-05A 0.26, LLD-08 0.35, LLD-11 0.68
@@ -118,7 +119,7 @@ LLD-03(공통 타입) → LLD-04(변 통과 판정·조합기) → LLD-05A·05 �
 | ~~FR-TAP-02f~~ (0.57, FSS#109. **0.62 FSS#124로 삭제**) | LLD-05A 4.1 "손 뗀 키 우선 — 삭제"(지난 `TapGeometry.releasedKey`·`ReleaseKeyCompound`), `TapTouchLogic.up` = `TapKeyResolver.resolve`만 | GJ-03, CD-20(없어진 것을 확인) |
 | FR-TAP-02g (0.58, FSS#110) | LLD-05A 3.3 두벌식 겹모음 배정표 = 획 방향 원리의 결과(`TapLayouts.COMPOUND_VOWEL` → `TapKeyDef.dirJamo`), 3.1 `eightWay`(데이터로 ㅗ·ㅜ), 2.1·2.2 판정·결과(그대로), 2.4 `ChordKeys`(그대로), 3.4 표시(그대로), 4.1 손 뗀 키 우선을 모음 키에서 건너뜀(0.62: 손 뗀 키 우선 삭제). 조합·⌫는 LLD-04 7.4 | TA-22, TA-25, TL-09, TL-10, TL-12, CM-15, GV-01~GV-03, GJ-02, ID-43, DV-44 |
 | FR-TAP-02d (0.56, FSS#104) | LLD-05A 2.2 `TapKeyResolver`(찾는 순서 그대로, 문지르기), 3.3 두벌식 짝 모음 배정표(`TapLayouts.PAIR_VOWEL` → `TapKeyDef.dirJamo`, 합치기, 겹침 없음, 처음 누른 키), 3.4 `edgeHints`, 2.4 `ChordKeys`(그대로). 조합은 LLD-04 7절(그대로) | TA-22, TL-09, CM-13, PV-01, ID-41, DV-42 |
-| FR-TAP-02h (0.61, FSS#122. 0.62 FSS#124로 자음 14키 네 방향 모두) | LLD-05A 2.2 `syllable`·`TapOutput.vowel`, 3.1 `TapKeyDef.dirVowel`, 3.3 "자음 + 모음"(`STROKE_VOWEL`), 3.4(표시 없음). 조합은 LLD-08 6.1 `applyAll` | TA-26, TA-21, TA-12, TK-05, TK-08, TK-11, TK-20, TK-23, TL-11, ID-40, ID-42, ID-44, CD-20, GJ-01~GJ-03, DV-45, DV-46 |
+| FR-TAP-02h (0.61, FSS#122. 0.62 FSS#124로 자음 14키 네 방향 모두) | LLD-05A 2.2 `syllable`·`TapOutput.vowel`, 3.1 `TapKeyDef.dirVowel`, 3.3 "자음 + 모음"(`STROKE_VOWEL`, 0.64 나갔다 돌아옴 `RETURN_VOWEL`·`returnVowel`), 3.4(표시 없음). 조합은 LLD-08 6.1 `applyAll` | TA-26, TA-29, ID-47, TA-21, TA-12, TK-05, TK-08, TK-11, TK-20, TK-23, TL-11, ID-40, ID-42, ID-44, CD-20, GJ-01~GJ-03, DV-45, DV-46 |
 | FR-TAP-02i (0.62, FSS#124) | LLD-05A 2.2 `numberJamo`, 3.3 "두벌식 숫자 줄 된소리"(`TapLayouts.TENSE_JAMO` → 숫자 키 `dirJamo`), 3.4 아래 변 표시, 2.4 `ChordKeys`(그대로 — 쿼티 숫자 키). 조합은 LLD-08 6.1 `o.jamo` 길 | TL-14, TA-27, TA-02, TA-03, TA-20, TK-09, TK-18, TK-24, CM-07, ID-45, GJ-02, DV-46 |
 | FR-TAP-03 (0.52, FSS#98로 편집 줄 10키) | LLD-05A 3.2 | TL-01~TL-03, TL-06 |
 | FR-TAP-03d (0.55, FSS#105) | LLD-05A 3.1(`rowSpan`·`rect`), 3.2(배치·빈칸 없음·↵·`/`), 4절(판정·그리기), 7절(노드) | TL-01, TL-02, TL-07, TL-08, KH-03, KH-03b, KH-05, BE-01~BE-07, CD-19, BV-01~BV-04, PR-37, SM-03, DV-41 |
