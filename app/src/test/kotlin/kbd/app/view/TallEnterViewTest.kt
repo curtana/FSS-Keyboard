@@ -168,44 +168,40 @@ class TallEnterViewTest {
     }
 
     @Test
-    fun `GJ-02 the diagonals of Dubeolsik ㄹ are drawn in its corners, down-right empty, no corners on other keys (FSS 109)`() {
+    fun `GJ-02 consonant keys draw only their labels, corners only ㅙ ㅞ, the number row its tense consonants and 1 its tilde on the left (FSS 109, 124)`() {
         show(TapLayouts.DUBEOLSIK)
         val d = draw()
         val inset = 2f * density
         val pad = 2f * density
-        // ㄹ (f): x 108..144, row 3. What is drawn inside it: the label, four edge hints, three corner hints.
-        val left = 108f * density + inset
-        val right = 144f * density - inset
-        val top = 3 * ROW * density + inset
-        val bottom = 4 * ROW * density - inset
-        val inF = d.labels.indices.filter { i -> d.labels[i].second.let { (x, y) -> x in left..right && y in top..bottom } }
-        val drawn = inF.associate { d.labels[it].first to (d.labels[it].second to d.aligns[it]) }
-        assertEquals(setOf("ㄹ", "ㄺ", "ㄻ", "ㅀ", "ㄿ", "ㄼ", "ㄽ", "ㄾ"), drawn.keys)
-        assertEquals(8, inF.size)
-        val midY = (top + bottom) / 2
-        fun at(s: String) = drawn.getValue(s)
-        // ㄼ top-left, ㄽ top-right, ㄾ bottom-left (FR-TAP-02e ⑥).
-        assertEquals(Paint.Align.LEFT, at("ㄼ").second)
-        assertEquals(left + pad, at("ㄼ").first.first, 0.01f)
-        assertTrue(at("ㄼ").first.second < midY)
-        assertEquals(Paint.Align.RIGHT, at("ㄽ").second)
-        assertEquals(right - pad, at("ㄽ").first.first, 0.01f)
-        assertTrue(at("ㄽ").first.second < midY)
-        assertEquals(Paint.Align.LEFT, at("ㄾ").second)
-        assertEquals(left + pad, at("ㄾ").first.first, 0.01f)
-        assertTrue(at("ㄾ").first.second > midY)
-        // The corners share the rows of the edge hints: ㄼ ㄽ on ㄺ's line, ㄾ on ㄿ's.
-        assertEquals(at("ㄺ").first.second, at("ㄼ").first.second, 0.01f)
-        assertEquals(at("ㄺ").first.second, at("ㄽ").first.second, 0.01f)
-        assertEquals(at("ㄿ").first.second, at("ㄾ").first.second, 0.01f)
-        // Edge hints stay in the middle of their edges.
-        assertEquals(Paint.Align.CENTER, at("ㄺ").second)
-        assertEquals(Paint.Align.CENTER, at("ㄿ").second)
-        assertEquals(Paint.Align.LEFT, at("ㄻ").second)
-        assertEquals(Paint.Align.RIGHT, at("ㅀ").second)
-        // No other key has a corner hint: every LEFT/RIGHT hint off its row's middle line is one of ㄹ's three or
-        // ㅗ ㅜ's compound vowel (FSS#110, GV-03).
-        val hintSize = d.labels.first { it.first == "ㄼ" }.third
+        fun inside(d: Drawn, x0: Float, row: Int): Map<String, Pair<Pair<Float, Float>, Paint.Align>> {
+            val l = x0 * density + inset
+            val r = (x0 + 36f) * density - inset
+            val t = row * ROW * density + inset
+            val b = (row + 1) * ROW * density - inset
+            return d.labels.indices.filter { i -> d.labels[i].second.let { (x, y) -> x in l..r && y in t..b } }
+                .associate { d.labels[it].first to (d.labels[it].second to d.aligns[it]) }
+        }
+        // Every consonant key, ㄹ too: the label alone (a consonant + vowel is not drawn, owner; FSS#124 took the
+        // compound finals and the ↑ tense consonants off).
+        for (k in TapLayouts.DUBEOLSIK.keys.filter { it.jamo != null && it.jamo in 'ㄱ'..'ㅎ' }) {
+            assertEquals(k.label, setOf(k.label), inside(d, k.x, k.row).keys)
+        }
+        // Number row: 1 has ! ↑, ~ ←, ` →, ㅃ ↓, each in the middle of its edge; 2..5 their tense consonant at the bottom.
+        val one = inside(d, 0f, 1)
+        assertEquals(setOf("1", "!", "~", "`", "ㅃ"), one.keys)
+        assertEquals(Paint.Align.LEFT, one.getValue("~").second)
+        assertEquals(inset + pad, one.getValue("~").first.first, 0.01f)
+        assertEquals(Paint.Align.CENTER, one.getValue("ㅃ").second)
+        assertTrue(one.getValue("ㅃ").first.second > one.getValue("1").first.second)
+        assertTrue(one.getValue("!").first.second < one.getValue("1").first.second)
+        "ㅉㄸㄲㅆ".forEachIndexed { i, c ->
+            val n = inside(d, (i + 1) * 36f, 1)
+            assertEquals("$c", setOf("${i + 2}", "@#$%"[i].toString(), "$c"), n.keys)
+            assertEquals(Paint.Align.CENTER, n.getValue("$c").second)
+        }
+        assertEquals(setOf("6", "^"), inside(d, 5 * 36f, 1).keys)
+        // Corner hints: only the compound vowels ㅙ ㅞ of ㅗ ㅜ (FSS#110); every other LEFT/RIGHT hint is mid-row.
+        val hintSize = d.labels.first { it.first == "ㅙ" }.third
         val hp = Paint().apply { textSize = hintSize }
         val corners = d.labels.indices.filter { i ->
             val (_, p, size) = d.labels[i]
@@ -213,16 +209,10 @@ class TallEnterViewTest {
             val mid = (row + 0.5f) * ROW * density - (hp.ascent() + hp.descent()) / 2
             size == hintSize && d.aligns[i] != Paint.Align.CENTER && Math.abs(p.second - mid) > 1f
         }.map { d.labels[it].first }
-        assertEquals(listOf("ㄼ", "ㄽ", "ㄾ", "ㅙ", "ㅞ").sorted(), corners.sorted())
-        // ㅌ (x) and ㅍ (v) draw nothing but their labels now (ㄾ ㄿ moved to ㄹ).
-        for ((x0, label) in listOf(36f to "ㅌ", 108f to "ㅍ")) {
-            val l = x0 * density + inset
-            val r = (x0 + 36f) * density - inset
-            val t = 4 * ROW * density + inset
-            val b = 5 * ROW * density - inset
-            val inside = d.labels.filter { (_, p, _) -> p.first in l..r && p.second in t..b }.map { it.first }
-            assertEquals(label, listOf(label), inside)
-        }
+        assertEquals(listOf("ㅙ", "ㅞ").sorted(), corners.sorted())
+        // QWERTY: 1 has ~ on the left too, and nothing at the bottom.
+        show(TapLayouts.QWERTY)
+        assertEquals(setOf("1", "!", "~", "`"), inside(draw(), 0f, 1).keys)
     }
 
     @Test

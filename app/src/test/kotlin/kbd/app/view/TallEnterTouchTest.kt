@@ -207,27 +207,20 @@ class TallEnterTouchTest {
     }
 
     @Test
-    fun `GJ-01 Dubeolsik ㄹ is judged in eight ways from its data, the first-pressed key decides, other keys stay 4-way (FSS 109)`() {
+    fun `GJ-01 Dubeolsik ㄹ is a 4-way key since FSS 124 - a diagonal is the edge crossed first, as on every consonant key (FSS 109, 124)`() {
         val l = logic(TapLayouts.DUBEOLSIK)
-        stroke(l, "f", -60f, -60f)      // ↖ from ㄹ across ㅇ onto ㅈ (w): still ㄹ's ㄼ
-        stroke(l, "f", 36f, -ROW)        // ↗ onto ㅅ (t): ㄽ
-        stroke(l, "f", -36f, ROW)        // ↙ onto ㅋ/ㅌ: ㄾ
-        stroke(l, "f", 36f, ROW)         // ↘: nothing, the tap's ㄹ
-        stroke(l, "f", 0f, -ROW)         // ↑ onto ㄱ (r): ㄺ
-        stroke(l, "f", -36f, 0f)         // ← onto ㅇ (d): ㄻ
-        stroke(l, "f", 36f, 0f)          // → onto ㅎ (g): ㅀ
-        stroke(l, "f", 0f, ROW)          // ↓ onto ㅍ (v): ㄿ
-        stroke(l, "r", -36f, -36f)       // a diagonal on ㄱ, a 4-way key: the edge crossed first (←), the tap's ㄱ
-        stroke(l, "r", 36f, 0f)          // → onto ㅅ: ㄳ
+        stroke(l, "f", -60f, -30f)      // up-left, the left edge first: ←
+        stroke(l, "f", 0f, -ROW)         // ↑ onto ㄱ (r)
+        stroke(l, "f", 36f, 0f)          // → onto ㅎ (g)
+        stroke(l, "f", 0f, ROW)          // ↓ onto ㅍ (v)
+        stroke(l, "r", -36f, -36f)       // a diagonal on ㄱ: the edge crossed first (←)
+        // The sink shows the consonant; its vowel (ㄹ ← = 러, FR-TAP-02h) is the resolver's, TA-26.
         assertEquals(
-            listOf(
-                "f:ㄼ:Exit(dir=UP_LEFT)", "f:ㄽ:Exit(dir=UP_RIGHT)", "f:ㄾ:Exit(dir=DOWN_LEFT)", "f:ㄹ:Exit(dir=DOWN_RIGHT)",
-                "f:ㄺ:Exit(dir=UP)", "f:ㄻ:Exit(dir=LEFT)", "f:ㅀ:Exit(dir=RIGHT)", "f:ㄿ:Exit(dir=DOWN)",
-                "r:ㄱ:Exit(dir=LEFT)", "r:ㄳ:Exit(dir=RIGHT)",
-            ),
+            listOf("f:ㄹ:Exit(dir=LEFT)", "f:ㄹ:Exit(dir=UP)", "f:ㄹ:Exit(dir=RIGHT)", "f:ㄹ:Exit(dir=DOWN)", "r:ㄱ:Exit(dir=LEFT)"),
             sink.events,
         )
-        // QWERTY f is a 4-way key: the same diagonal is the edge crossed first.
+        assertTrue(geometry(TapLayouts.DUBEOLSIK).keys.none { it.jamo != null && it.jamo in 'ㄱ'..'ㅎ' && it.eightWay })
+        // QWERTY f is a 4-way key too: the same diagonal is the edge crossed first.
         sink.events.clear()
         val q = logic(TapLayouts.QWERTY)
         stroke(q, "f", -36f, -36f)
@@ -242,71 +235,29 @@ class TallEnterTouchTest {
     }
 
     @Test
-    fun `GJ-03 a release over the pair key gives the compound final whatever the direction, else the direction rule (FSS 109, FR-TAP-02f)`() {
+    fun `GJ-03 the key under the release changes nothing - the pressed key and its direction decide (FSS 124 removed FR-TAP-02f)`() {
         val l = logic(TapLayouts.DUBEOLSIK)
-        // All 11: first consonant's key centre to second consonant's key centre (ㄹ to ㅂ is ← by direction, ㄹ to ㅌ ↓).
-        val pairs = listOf(
-            "r" to "t" to "ㄳ", "s" to "w" to "ㄵ", "s" to "g" to "ㄶ", "f" to "r" to "ㄺ", "f" to "a" to "ㄻ",
-            "f" to "q" to "ㄼ", "f" to "t" to "ㄽ", "f" to "x" to "ㄾ", "f" to "v" to "ㄿ", "f" to "g" to "ㅀ", "q" to "t" to "ㅄ",
-        )
-        for ((ft, cf) in pairs) {
-            sink.events.clear()
-            strokeTo(l, ft.first, ft.second)
-            assertEquals("${ft.first} to ${ft.second}", cf, sink.events.single().split(":")[1])
-        }
-        // Not a pair: the direction rule of the pressed key.
-        fun out(from: String, to: String): String {
+        // The 11 pairs that gave a compound final by the release key in FSS#109..#122: now the pressed consonant's own
+        // stroke, the same as released anywhere else in that direction.
+        val pairs = listOf("r" to "t", "s" to "w", "s" to "g", "f" to "r", "f" to "a", "f" to "q", "f" to "t", "f" to "x",
+            "f" to "v", "f" to "g", "q" to "t")
+        val base = TapLayouts.DUBEOLSIK.keys.filter { it.jamo != null }.associate { it.id to it.jamo!! }
+        for ((from, to) in pairs) {
             sink.events.clear()
             strokeTo(l, from, to)
-            return sink.events.single()
+            val e = sink.events.single().split(":")
+            assertEquals("$from to $to", listOf(from, base.getValue(from).toString()), e.take(2))
+            assertTrue("$from to $to", e[2].startsWith("Exit("))
         }
-        assertEquals("f:ㄻ:Exit(dir=LEFT)", out("f", "d"))            // ㄹ ← released on ㅇ
-        assertEquals("f:ㄼ:Exit(dir=UP_LEFT)", out("f", "e"))         // ㄹ ↖ released on ㄷ
-        assertEquals("f:ㅀ:Exit(dir=RIGHT)", out("f", "h"))           // released on the vowel ㅗ
-        assertEquals("t:ㅅ:Exit(dir=DOWN)", out("t", "f"))            // the reverse order ㅅ then ㄹ is no pair
-        assertEquals("q:ㅄ:Exit(dir=RIGHT)", out("q", "f"))           // ㅂ then ㄹ: no pair, ㅂ → is ㅄ by direction
-        // Out and back: released on the pressed key itself, the direction rule (ㄹ ↖ back = ㄼ).
+        // A rub released over another key: the rub (up = the plain ㄹ).
         sink.events.clear()
         val c = centre("f")
-        l.down(0, c)
-        l.move(0, (1..8).map { StrokePoint(c.x - 40f * it / 8, c.y - 40f * it / 8, it.toLong()) } +
-            (1..8).map { StrokePoint(c.x - 40f + 40f * it / 8, c.y - 40f + 40f * it / 8, 8L + it) })
-        l.up(0, c.copy(t = 20))
-        assertEquals(listOf("f:ㄼ:ExitReturn(dir=UP_LEFT)"), sink.events)
-        // A rub released over the pair key: the compound final (the rub up alone would be ㄹ).
-        sink.events.clear()
         val up = centre("r").y - c.y
         l.down(0, c)
         l.move(0, listOf(StrokePoint(c.x, c.y + up, 1), StrokePoint(c.x, c.y, 2), StrokePoint(c.x, c.y + up, 3)))
         l.up(0, StrokePoint(c.x, c.y + up, 4))
-        assertEquals(listOf("f:ㄺ:Rub(dir=UP)"), sink.events)
-        // Released in the side margin (no key): the direction rule.
-        sink.events.clear()
-        val qc = centre("q")
-        l.down(0, qc)
-        l.move(0, (1..8).map { StrokePoint(qc.x - (qc.x + 10f) * it / 8, qc.y, it.toLong()) })
-        l.up(0, StrokePoint(-10f, qc.y, 9))                             // left of the view: in the side margin
-        assertEquals(listOf("q:ㅂ:Exit(dir=LEFT)"), sink.events)
-        // ㄹ released in the left margin of row 2: no key (not the nearest ㅂ), so ← = ㄻ, not ㄼ.
-        sink.events.clear()
-        l.down(0, c)
-        l.move(0, (1..8).map { StrokePoint(c.x - (c.x + 10f) * it / 8, c.y - 48f * it / 8, it.toLong()) })
-        l.up(0, StrokePoint(-10f, c.y - 48f, 9))
-        assertEquals(listOf("f:ㄻ:Exit(dir=LEFT)"), sink.events)
-        // A tap near the edge released over the pair key, no exit counted: the tap (no release-key rule).
-        sink.events.clear()
-        val fr = geometry(TapLayouts.DUBEOLSIK).geoms.first { it.id == "f" }.rect
-        l.down(0, StrokePoint(fr.left + 1f, c.y, 0))
-        l.move(0, listOf(StrokePoint(fr.left - 3f, c.y, 1)))            // onto ㅇ (d), less than the crossing distance
-        l.up(0, StrokePoint(fr.left - 3f, c.y, 2))
-        assertEquals(listOf("f:ㄹ:Tap"), sink.events)
-        sink.events.clear()
-        val fx = geometry(TapLayouts.DUBEOLSIK).geoms.first { it.id == "f" }.rect
-        l.down(0, StrokePoint(fx.left + 1f, fx.top + 1f, 0))
-        l.move(0, listOf(StrokePoint(fx.left + 1f, fx.top - 3f, 1)))     // onto ㄱ (r), its pair key, still a tap
-        l.up(0, StrokePoint(fx.left + 1f, fx.top - 3f, 2))
-        assertEquals(listOf("f:ㄹ:Tap"), sink.events)
-        // QWERTY: no release-key rule.
+        assertEquals(listOf("f:ㄹ:Rub(dir=UP)"), sink.events)
+        // QWERTY as before.
         val ql = logic(TapLayouts.QWERTY)
         sink.events.clear()
         strokeTo(ql, "f", "q")
@@ -362,7 +313,7 @@ class TallEnterTouchTest {
         sink.events.clear()
         stroke(l, "m", 20f, 40f)                                       // a diagonal crossing the bottom edge first
         assertEquals(listOf("m:ㅢ:Exit(dir=DOWN)"), sink.events)
-        assertEquals(listOf("f", "h", "n"), geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay }.map { it.id })
+        assertEquals(listOf("h", "n"), geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay }.map { it.id })   // ㄹ 4-way since FSS#124
     }
 
     @Test

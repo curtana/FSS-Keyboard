@@ -16,31 +16,19 @@ object TapLayouts {
 
     private val LETTER_ROWS = listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")
     private val DUBEOLSIK_ROWS = listOf("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ", "ㅋㅌㅊㅍㅠㅜㅡ")
-    private val SHIFT_JAMO = mapOf('ㅂ' to 'ㅃ', 'ㅈ' to 'ㅉ', 'ㄷ' to 'ㄸ', 'ㄱ' to 'ㄲ', 'ㅅ' to 'ㅆ', 'ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ')
+    /** The vowel keys' ↑ (ㅐ ↑ ㅒ, ㅔ ↑ ㅖ). The consonant keys have none since FSS#124: their ↑ is a consonant + ㅗ. */
+    private val SHIFT_JAMO = mapOf('ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ')
 
     /**
-     * Compound finals on the Dubeolsik consonant keys (owner, issue #242): all 11 in one stroke each, on the key of the
-     * first consonant only. QWERTY has none. The direction is one rule (owner, FSS#109, SRS FR-TAP-02c ①): (sign of
-     * the second consonant key's column − the first's, sign of its row − the first's), column = x ÷ 36, row = row
-     * number; this table is its result, and TL-11 computes the rule from these coordinates again. ㄹ points to seven
-     * keys around it, so it has diagonals and is judged in eight directions (SRS FR-TAP-02e). A direction without a
-     * jamo types the plain jamo, like the tap (FR-TAP-02c ④: ㄹ ↘, ㄱ ↓, ㅂ ↓ …). FSS#97 and FSS#107 had other
-     * directions, and ㅅ ㅌ ㅍ keys of their own for ㄽ ㄾ ㄿ.
+     * The tense consonants on the Dubeolsik number row (owner, FSS#124, SRS FR-TAP-02i): a stroke down out of 1..5
+     * types the tense form of the consonant key right below (1 ↓ ㅃ over ㅂ … 5 ↓ ㅆ over ㅅ), one jamo into the
+     * composer. TL-14 checks each against the key below. Until FSS#124 they were ↑ on those consonant keys.
      */
-    internal val COMPOUND_JAMO: Map<Char, Map<Way, Char>> = mapOf(
-        'ㄱ' to mapOf(Dir.RIGHT to 'ㄳ'),                                      // ㅅ (t) is right of ㄱ (r)
-        'ㄴ' to mapOf(Dir.UP to 'ㄵ', Dir.RIGHT to 'ㄶ'),                      // ㅈ (w) above, ㅎ (g) right
-        'ㄹ' to mapOf(
-            Diag.UP_LEFT to 'ㄼ', Dir.UP to 'ㄺ', Diag.UP_RIGHT to 'ㄽ',       // ㅂ (q), ㄱ (r), ㅅ (t)
-            Dir.LEFT to 'ㄻ', Dir.RIGHT to 'ㅀ',                                // ㅁ (a), ㅎ (g)
-            Diag.DOWN_LEFT to 'ㄾ', Dir.DOWN to 'ㄿ',                           // ㅌ (x), ㅍ (v); ↘ has none
-        ),
-        'ㅂ' to mapOf(Dir.RIGHT to 'ㅄ'),                                      // ㅅ (t) is right of ㅂ (q)
-    )
+    internal val TENSE_JAMO: Map<Char, Char> = mapOf('1' to 'ㅃ', '2' to 'ㅉ', '3' to 'ㄸ', '4' to 'ㄲ', '5' to 'ㅆ')
 
     /**
      * Paired vowels on four Dubeolsik vowel keys (owner, FSS#104): a stroke towards the pair's direction types it. The
-     * ㅛ ㅕ ㅑ ㅠ keys stay. Kept apart from [COMPOUND_JAMO] and [COMPOUND_VOWEL]; all go into [TapKeyDef.dirJamo].
+     * ㅛ ㅕ ㅑ ㅠ keys stay. Kept apart from [COMPOUND_VOWEL]; both go into [TapKeyDef.dirJamo].
      */
     internal val PAIR_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
         'ㅗ' to mapOf(Dir.UP to 'ㅛ'),
@@ -54,8 +42,9 @@ object TapLayouts {
      * key positions of the compound finals: a vowel goes the way its added strokes go — ㅏ → (1, 0), ㅓ ← (−1, 0), ㅣ ↓
      * (0, 1), summed and taken by sign as the 3 × 3 direction, the vertical flipped where the key's paired vowel is
      * (ㅜ + ㅣ = ↓ is ㅠ's, so ㅟ is ↑). This table is its result, and TL-12 computes the rule again. ㅙ and ㅞ are
-     * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e); ㅡ stays 4-way. A direction
-     * without a jamo types the plain vowel, like the tap. Kept apart from [COMPOUND_JAMO] and [PAIR_VOWEL].
+     * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e) — the only 8-way keys
+     * since FSS#124 took the compound finals off ㄹ; ㅡ stays 4-way. A direction without a jamo types the plain vowel,
+     * like the tap. Kept apart from [PAIR_VOWEL].
      */
     internal val COMPOUND_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
         'ㅗ' to mapOf(Dir.RIGHT to 'ㅘ', Dir.DOWN to 'ㅚ', Diag.DOWN_RIGHT to 'ㅙ'),   // + ㅏ, + ㅣ, + ㅏ ㅣ
@@ -64,27 +53,19 @@ object TapLayouts {
     )
 
     /**
-     * The vowel of each up/down/left/right direction on the Dubeolsik consonant keys (owner, FSS#122, SRS FR-TAP-02h): a
-     * stroke where the key has nothing else types the consonant and then this vowel, like tapping the two keys (ㄱ ←
-     * = 거, ㅁ ↑ = 모). The direction is the way the vowel's stroke goes, as for the paired vowels (FSS#104, #110).
+     * The vowel of each up/down/left/right direction on the Dubeolsik consonant keys (owner, FSS#122 and FSS#124, SRS
+     * FR-TAP-02h): a stroke out of any of the four sides types the consonant and then this vowel, like tapping the two
+     * keys (ㄱ ← = 거, ㅁ ↑ = 모, ㄱ ↑ = 고). The direction is the way the vowel's stroke goes, as for the paired vowels
+     * (FSS#104, #110). Since FSS#124 every consonant key has all four: no tense consonant, no compound final.
      */
     val STROKE_VOWEL: Map<Dir, Char> = mapOf(Dir.LEFT to 'ㅓ', Dir.RIGHT to 'ㅏ', Dir.UP to 'ㅗ', Dir.DOWN to 'ㅜ')
 
-    /**
-     * The [STROKE_VOWEL] of [jamo]'s key: consonant keys only (compatibility jamo ㄱ..ㅎ), less the directions that
-     * already type something — ↑ with a shift jamo (ㄲ ㄸ ㅃ ㅆ ㅉ) and the [dirJamo] compound finals (ㄱ → ㄳ, all four of ㄹ).
-     */
-    private fun dirVowel(jamo: Char, taken: Map<Way, Char>): Map<Dir, Char> {
-        if (jamo !in 'ㄱ'..'ㅎ') return emptyMap()
-        return STROKE_VOWEL.filterKeys { d -> d !in taken && !(d == Dir.UP && SHIFT_JAMO[jamo] != null) }
-    }
+    /** The [STROKE_VOWEL] of [jamo]'s key: all four on consonant keys (compatibility jamo ㄱ..ㅎ), none on vowel keys. */
+    private fun dirVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') STROKE_VOWEL else emptyMap()
 
-    /**
-     * The direction jamo of [jamo]'s key: its compound finals, paired vowels and compound vowels, never two in one
-     * direction.
-     */
+    /** The direction jamo of [jamo]'s key: its paired vowels and compound vowels, never two in one direction. */
     private fun dirJamo(jamo: Char): Map<Way, Char> {
-        val tables = listOf(COMPOUND_JAMO, PAIR_VOWEL, COMPOUND_VOWEL).map { it[jamo].orEmpty() }
+        val tables = listOf(PAIR_VOWEL, COMPOUND_VOWEL).map { it[jamo].orEmpty() }
         val ways = tables.flatMap { it.keys }
         require(ways.size == ways.toSet().size) { "$jamo: two direction jamo in one direction" }
         return tables.fold(emptyMap()) { all, t -> all + t }
@@ -145,10 +126,12 @@ object TapLayouts {
         x = 0f
         NUMBER_DIGITS.forEachIndexed { i, d ->
             val a = when (d) {
-                '1' -> KeyAssign("1", up = "!", right = "`", down = "~")
+                '1' -> KeyAssign("1", up = "!", left = "~", right = "`")   // ~ ← since FSS#124 (↓ until then)
                 else -> KeyAssign(d.toString(), up = NUMBER_UPS[i].toString())
             }
-            keys += TapKeyDef(d.toString(), 1, x, KEY_W, TapKeyKind.NUMBER_ROW, d.toString(), assign = a)
+            // Dubeolsik 1..5 ↓: the tense consonant of the key below (FSS#124); QWERTY's number row ↓ stays empty.
+            val tense = TENSE_JAMO[d]?.takeIf { dubeolsik }?.let { mapOf<Way, Char>(Dir.DOWN to it) }.orEmpty()
+            keys += TapKeyDef(d.toString(), 1, x, KEY_W, TapKeyKind.NUMBER_ROW, d.toString(), assign = a, dirJamo = tense)
             x += KEY_W
         }
 
@@ -161,12 +144,11 @@ object TapLayouts {
                 val symbols = LETTER_SYMBOLS[id]
                 keys += if (dubeolsik) {
                     val jamo = DUBEOLSIK_ROWS[r][i]
-                    val dirs = dirJamo(jamo)
                     require(symbols == null || jamo !in 'ㄱ'..'ㅎ') { "$id: symbols on a consonant key" }   // FR-TAP-02h
                     TapKeyDef(
                         id.toString(), row, x, KEY_W, TapKeyKind.DUBEOLSIK_LETTER, jamo.toString(),
                         assign = symbols?.assign(jamo.toString()),
-                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirs, dirVowel = dirVowel(jamo, dirs),
+                        jamo = jamo, shiftJamo = SHIFT_JAMO[jamo], dirJamo = dirJamo(jamo), dirVowel = dirVowel(jamo),
                     )
                 } else {
                     TapKeyDef(

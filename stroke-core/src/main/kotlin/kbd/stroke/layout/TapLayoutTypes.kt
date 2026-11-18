@@ -32,18 +32,19 @@ data class TapKeyDef(
     val assign: KeyAssign? = null,
     /** Dubeolsik letter keys only: Hangul compatibility jamo (D-25). */
     val jamo: Char? = null,
+    /** Dubeolsik vowel keys ㅐ ㅔ only: the ↑ jamo (ㅒ ㅖ). The consonant keys lost theirs to the number row in FSS#124. */
     val shiftJamo: Char? = null,
     val function: FunctionKey? = null,
     /**
-     * Dubeolsik letter keys only: the jamo each direction types, from two tables in [TapLayouts] (HLD 5A, LLD-05A §3.3):
-     * the compound finals of the consonant keys (issue #242, e.g. ㄹ ← ㄻ) and the paired vowels of the vowel keys
-     * (FSS#104, e.g. ㅗ ↑ ㅛ). Since FSS#109 a direction may be a diagonal ([kbd.stroke.geom.Diag], e.g. ㄹ ↖ ㄼ).
+     * Dubeolsik keys only: the jamo each direction types (HLD 5A, LLD-05A §3.3) — on the vowel keys the paired and
+     * compound vowels of [TapLayouts] (FSS#104, #110, e.g. ㅗ ↑ ㅛ, ㅗ ↘ ㅙ; a diagonal is a [kbd.stroke.geom.Diag]), on
+     * the number keys 1..5 the tense consonant ↓ (FSS#124, 1 ↓ ㅃ). The consonant keys have none since FSS#124.
      */
     val dirJamo: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /**
-     * Dubeolsik consonant keys only (FSS#122, SRS FR-TAP-02h): the vowel a stroke in each up/down/left/right direction
-     * types after the key's jamo (ㄱ ← = 거), only where the direction has nothing else — no shift jamo, no
-     * [dirJamo]. From [TapLayouts.STROKE_VOWEL]; never a diagonal, so it does not make a key [eightWay].
+     * Dubeolsik consonant keys only (FSS#122, #124, SRS FR-TAP-02h): the vowel a stroke in each up/down/left/right
+     * direction types after the key's jamo (ㄱ ← = 거, ㄱ ↑ = 고), all four on every consonant key. From
+     * [TapLayouts.STROKE_VOWEL]; never a diagonal, so it does not make a key [eightWay].
      */
     val dirVowel: Map<kbd.stroke.geom.Dir, Char> = emptyMap(),
     /** Rows the key takes from [row] down (FSS#105): 2 for ↵, 1 for every other key. */

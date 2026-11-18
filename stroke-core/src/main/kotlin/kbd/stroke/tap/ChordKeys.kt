@@ -69,8 +69,8 @@ object ChordKeys {
      * The chord key of gesture [g] on the letter, number or symbol key [keyId] of either tap layout. The QWERTY key
      * of the same id decides, so a Dubeolsik key sends the English key of its place, and its ↑ carries Shift even
      * where it types the same jamo as the tap (ㅁ ↑ = Shift + M, FR-TAP-16 ③). An up or down rub counts as a tap:
-     * a PC keyboard has no superscripts or subscripts (FR-TAP-16 ②). A diagonal of an 8-way key (ㄹ, FSS#109) is
-     * the QWERTY key's diagonal, which has nothing, so it sends the tap's key without Shift (ㄹ ↖ = F, FR-TAP-02e ⑧).
+     * a PC keyboard has no superscripts or subscripts (FR-TAP-16 ②). A diagonal of an 8-way key (ㅗ ㅜ, FSS#110) is
+     * the QWERTY key's diagonal, which has nothing, so it sends the tap's key without Shift (ㅗ ↘ = H, FR-TAP-02e ⑧).
      */
     fun ofTap(keyId: String, g: TapGesture): ChordStroke {
         val key = requireNotNull(TapLayouts.QWERTY.keys.firstOrNull { it.id == keyId && it.kind != TapKeyKind.FUNCTION }) { keyId }

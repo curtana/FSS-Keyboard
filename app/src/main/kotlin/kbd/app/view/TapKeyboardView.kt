@@ -213,8 +213,8 @@ class TapKeyboardView(
     /**
      * Edge hints (LLD-05A §3.4, FR-TAP-03b, owner #198): what a stroke out of each edge types where it differs from
      * the tap ([TapKeyResolver.edgeHints] — a letter's ↑ capital or shift jamo too), in the middle of that edge. A
-     * key with diagonal assignments (ㄹ, FSS#109) also has them in their corners (FR-TAP-02e ⑥); ↘ = ㄹ is not drawn
-     * because edgeHints leaves out what types the tap.
+     * key with diagonal assignments (ㅗ ㅙ, ㅜ ㅞ) also has them in their corners (FR-TAP-02e ⑥); a consonant + vowel
+     * (FR-TAP-02h) is not drawn because edgeHints leaves out what types the tap's jamo.
      */
     private fun drawHints(canvas: Canvas, k: TapKeyDef) {
         val h = kbd.stroke.tap.TapKeyResolver.edgeHints(k)
