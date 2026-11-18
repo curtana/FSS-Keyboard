@@ -1,9 +1,44 @@
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.time.LocalDate
+import javax.inject.Inject
+
 // AGP 9 compiles Kotlin itself (built-in Kotlin); `org.jetbrains.kotlin.android` must not be applied.
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
 }
+
+// Build information for the settings screen's "버전" item (FSS#140, LLD-07 §7.1). Both are Gradle value sources, so
+// with the configuration cache they are re-read on every build (a new commit or a new day invalidates the entry)
+// instead of being frozen at the first configuration.
+
+/** `git rev-parse --short=7 HEAD`, or `unknown` when git is missing or this is not a git checkout. */
+abstract class GitShortHash : ValueSource<String, ValueSourceParameters.None> {
+    @get:Inject abstract val exec: ExecOperations
+
+    override fun obtain(): String = try {
+        val out = ByteArrayOutputStream()
+        val result = exec.exec {
+            commandLine("git", "rev-parse", "--short=7", "HEAD")
+            standardOutput = out
+            errorOutput = OutputStream.nullOutputStream()
+            isIgnoreExitValue = true
+        }
+        out.toString().trim().takeIf { result.exitValue == 0 && it.isNotEmpty() } ?: "unknown"
+    } catch (e: Exception) {
+        "unknown"   // git not installed: the build goes on
+    }
+}
+
+/** Today's local date, `yyyy-MM-dd`: only the date, so a debug build changes at most once a day. */
+abstract class BuildDate : ValueSource<String, ValueSourceParameters.None> {
+    override fun obtain(): String = LocalDate.now().toString()
+}
+
+val gitShortHash: String = providers.of(GitShortHash::class.java) {}.get()
+val buildDate: String = providers.of(BuildDate::class.java) {}.get()
 
 android {
     // D-01: `kbd.app` is a temporary application ID root.
@@ -41,10 +76,18 @@ android {
     }
 
     buildTypes {
+        // FSS#140: commit and date only in debug builds. Release builds get empty fields, so a release APK does not
+        // change with the day or the checkout it was built from.
+        debug {
+            buildConfigField("String", "GIT_HASH", "\"$gitShortHash\"")
+            buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (releaseSigning) signingConfig = signingConfigs.getByName("release")
+            buildConfigField("String", "GIT_HASH", "\"\"")
+            buildConfigField("String", "BUILD_DATE", "\"\"")
         }
     }
 
@@ -55,6 +98,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true   // FSS#140: version and build type for the settings screen
     }
 
     // T36 (gate G1): Robolectric view tests need the merged resources.

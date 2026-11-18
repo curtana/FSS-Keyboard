@@ -107,6 +107,9 @@ class SettingsActivity : ComponentActivity() {
     }
 }
 
+/** Test tag of the version text (FR-SET-10). */
+internal const val VERSION_TAG = "settings_version"
+
 /** Buttons of the settings screen that leave it. */
 class SettingsActions(
     val openImeSettings: () -> Unit,
@@ -115,7 +118,12 @@ class SettingsActions(
 
 /** The LLD-07 §7 items in order. */
 @Composable
-private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) -> Unit, actions: SettingsActions) {
+internal fun SettingsScreen(
+    settings: Settings,
+    update: ((Settings) -> Settings) -> Unit,
+    actions: SettingsActions,
+    versionText: String = BuildInfo.current(),
+) {
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
@@ -145,6 +153,13 @@ private fun SettingsScreen(settings: Settings, update: ((Settings) -> Settings) 
 
             Section(R.string.settings_section_practice)
             ActionRow(R.string.settings_practice_open, R.string.settings_practice_open_summary, actions.openPractice)   // FR-TUT-06, FR-SET-04
+
+            // FR-SET-10, FSS#140: the last item, read only. The section title is the item's name (no second "버전" row).
+            Section(R.string.settings_section_version)
+            Text(
+                versionText, style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).testTag(VERSION_TAG),
+            )
         }
     }
 }

@@ -39,6 +39,7 @@
     <string name="settings_section_practice">입력 연습</string>
     <string name="settings_practice_open">입력 연습</string>
     <string name="settings_practice_open_summary">영문 대문자 · 기호 · 그래피티를 골라서 짧게 연습</string>
+    <string name="settings_section_version">버전</string>
 
     <!-- Input practice (LLD-07 §2.3, SRS appendix A, FSS#17): topic texts are in PracticeTopics; nothing is measured. -->
     <string name="practice_title">입력 연습</string>

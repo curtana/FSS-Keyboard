@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.67** (2026-11-15)
+- 버전 **0.68** (2026-11-18)
+- 0.68(FSS#140, SRS 0.95 FR-SET-10, HLD 0.88 7.3, LLD-07 0.40 7.1): 설정 화면 "버전" — 새 7.11 BI-01~BI-04(`BuildInfoTest`, JVM: 릴리스·개발·git 없음·빈 값, 지금 빌드의 `BuildConfig`), BI-05(`SettingsVersionItemTest`, Robolectric + Compose UI: 맨 아래·읽기 전용·이름 한 번).
 - 0.67(FSS#117, SRS 0.94 FR-TAP-15 ⑥, HLD 0.87 5A, LLD-05A 0.25): Ctrl·Alt가 켜진 동안 두벌식을 쿼티로 그림 — 새 시험: TL-13(`TapLayoutsTest`, JVM), CV-10~CV-14(`TapKeyboardChordViewTest`, Robolectric)
 - 0.66(FSS#110 후속 오너 결정 "괘는 지우면 고가 되어야해", SRS 0.93 FR-HGL-04f ③·TBD-39 ②, HLD 0.86 11장, LLD-04 0.39, LLD-03 0.37): 한 번 긋기로 넣은 ㅙ·ㅞ를 키로 친 것과 같은 두 단계로 지운다 — HC-72·HC-73·HC-74의 ㅙ·ㅞ 기대값(괘 → 고 → ㄱ, 궤 → 구 → ㄱ, 괘 ⌫ + ㅐ = 괘), 새 HC-76(일곱 겹모음의 긋기·키 입력 ⌫ 결과가 단계마다 같음, 받침 뒤 괙, 도깨비불 가괘 — 수정 전 코드에서 실패 확인), ID-43(괘·궤·괙·가괘의 ⌫를 키 입력과 같은 쪽으로), DV-44 ③
 - 0.65(FSS#110, SRS 0.92 FR-TAP-02g·FR-HGL-04f·FR-CMN-07·TBD-39, HLD 0.85 11장 FSS#110 줄, LLD-05A 0.24, LLD-04 0.38, LLD-03 0.36): **두벌식 겹모음 한 번 긋기** — 새 시험: 2절 HC-70~HC-75(`HangulComposerTest`, 조합기 — HC-70·HC-71은 수정 전 코드의 보이는 글자와 다음 모음 병합을 먼저 고정한 것, HC-72~HC-74는 수정 전 코드에서 실패함을 확인한 것: 11-1-5), TL-12(`TapLayoutsTest`, 원리 = 데이터), TA-25(`TapKeyResolverTest`), CM-15(`ChordKeysTest`), 새 5.10 GV-01·GV-02(`TallEnterTouchTest`, JVM)·GV-03(`TallEnterViewTest`, Robolectric), 7.4 ID-43(`InputDispatcherTest`), 8절 DV-44(**실기 미확인**). **새 기대로 바꾼 기존 시험(회귀가 아니라 FSS#110의 바뀐 배정):** TA-21(겹받침 개수를 셀 때 모음 키 ㅡ도 뺌), TA-22(h → ㅘ · ↓ ㅚ, n ↑ ㅟ · ← ㅝ, 짝 모음 맵은 짝 모음만, 힌트 h·n에 겹모음), TL-09(`dirJamo` 값 = 겹받침 11 + 짝 모음 4 + 겹모음 7), TL-10(8방향 키 = f·h·n, 대각선을 더해 보는 키를 h에서 k로, m은 4방향), GJ-02(모서리 표시 = ㄹ의 셋 + ㅙ·ㅞ). 그래피티 ⌫(BS-06~BS-19·BS-23·BS-24·BS-20의 과(Vowel ㅘ) ⌫ = ㄱ)·키로 친 겹모음 ⌫(BS-03)는 기대 그대로다
@@ -1154,6 +1155,24 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | MV-04 | [다시 학습]·[초기화]·[글자 목록] → [전체 초기화] → [취소] / [지우기] | 문구와 0획 / 글자 목록 / 물음 문구, 취소 = 그대로, 지우기 = 모두 지움 | 8.3, FR-TUT-16 |
 | MV-05 | 1획 저장 뒤 `.tmp` 자리에 폴더를 두고 글자 목록에서 [전체 초기화] → [지우기] | 글자 목록에 "저장하지 못했어요.", 저장소 1획 그대로 | 8.3 |
 
+### 7.11 버전 표시 (0.68, FSS#140, LLD-07 7.1, SRS FR-SET-10)
+
+시험 자리: `kbd.app.settings.BuildInfoTest`(JVM), `kbd.app.settings.SettingsVersionItemTest`(Robolectric + Compose UI).
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| BI-01 | `text("0.1.0-beta", 4, "release", "", "")` / 해시·날짜를 줘도 | `"0.1.0-beta (4)
+릴리스"` / 같음(릴리스는 해시·날짜를 보이지 않음) | 7.1, FR-SET-10 ② |
+| BI-02 | `text("0.1.0-beta", 4, "debug", "47a8398", "2026-11-18")` | `"0.1.0-beta (4)
+개발 · 47a8398 · 2026-11-18"` | 7.1 |
+| BI-03 | debug, 해시 `"unknown"` / 해시·날짜 빈 값 | `"… 
+개발 · unknown · 2026-11-18"` / `"0.1.0-beta (4)
+개발"`(빈 칸 없음) | 7.1 git 없음 |
+| BI-04 | 시험 변형(debug)의 `BuildInfo.current()`·`BuildConfig` | `BUILD_TYPE` = `debug`, 글이 `"<VERSION_NAME> (<VERSION_CODE>)
+개발 · "`로 시작, `GIT_HASH` = 16진 7자 이상 또는 `unknown`, `BUILD_DATE` = `yyyy-MM-dd` | 7.1 값 출처 |
+| BI-05 | `SettingsScreen`(기본 설정, 버전 글 고정) | 태그 `settings_version`의 글이 있고 스크롤해 보임, 누르는 동작 없음, "버전" 글은 하나(묶음 제목), 화면의 모든 글보다 아래 | LLD-07 7절, FR-SET-10 |
+
+- git이 없는 PC의 빌드(`unknown`)는 단위 시험으로 만들 수 없다 — 개발자가 PATH에서 git을 빼고 `:app:generateDebugBuildConfig`를 돌려 `GIT_HASH = "unknown"`과 빌드 성공을 확인하고 PR에 적는다.
 ## 8. 실기기 시험 (D)
 
 | ID | 항목 | 확인 방법 | 근거 |
