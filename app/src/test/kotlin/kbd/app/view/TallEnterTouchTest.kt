@@ -207,19 +207,20 @@ class TallEnterTouchTest {
     }
 
     @Test
-    fun `GJ-01 Dubeolsik ㄹ is a 4-way key since FSS 124 - a diagonal is the edge crossed first, as on every consonant key (FSS 109, 124)`() {
+    fun `GJ-01 Dubeolsik ㄹ has no compound-final diagonals since FSS 124 - ↖ ↘ are the edge crossed first, as on every consonant key (FSS 109, 124, 134)`() {
         val l = logic(TapLayouts.DUBEOLSIK)
         stroke(l, "f", -60f, -30f)      // up-left, the left edge first: ←
         stroke(l, "f", 0f, -ROW)         // ↑ onto ㄱ (r)
         stroke(l, "f", 36f, 0f)          // → onto ㅎ (g)
         stroke(l, "f", 0f, ROW)          // ↓ onto ㅍ (v)
-        stroke(l, "r", -36f, -36f)       // a diagonal on ㄱ: the edge crossed first (←)
+        stroke(l, "r", -36f, -36f)       // ↖ on ㄱ, which has nothing there: the edge crossed first (←, FSS#134)
         // The sink shows the consonant; its vowel (ㄹ ← = 러, FR-TAP-02h) is the resolver's, TA-26.
         assertEquals(
             listOf("f:ㄹ:Exit(dir=LEFT)", "f:ㄹ:Exit(dir=UP)", "f:ㄹ:Exit(dir=RIGHT)", "f:ㄹ:Exit(dir=DOWN)", "r:ㄱ:Exit(dir=LEFT)"),
             sink.events,
         )
-        assertTrue(geometry(TapLayouts.DUBEOLSIK).keys.none { it.jamo != null && it.jamo in 'ㄱ'..'ㅎ' && it.eightWay })
+        // 8-way since FSS#134 (↙ ㅡ ↗ ㅣ, GJ-04), ↖ ↘ by the edge.
+        assertTrue(geometry(TapLayouts.DUBEOLSIK).keys.filter { it.jamo != null && it.jamo in 'ㄱ'..'ㅎ' }.all { it.eightWay })
         // QWERTY f is a 4-way key too: the same diagonal is the edge crossed first.
         sink.events.clear()
         val q = logic(TapLayouts.QWERTY)
@@ -313,8 +314,52 @@ class TallEnterTouchTest {
         sink.events.clear()
         stroke(l, "m", 20f, 40f)                                       // a diagonal crossing the bottom edge first
         assertEquals(listOf("m:ㅢ:Exit(dir=DOWN)"), sink.events)
-        // ㄹ 4-way since FSS#124; ㅓ ㅏ 8-way since FSS#126 (GV-04).
-        assertEquals(listOf("h", "j", "k", "n"), geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay }.map { it.id })
+        // ㅓ ㅏ 8-way since FSS#126 (GV-04), the consonant keys since FSS#134 (GJ-04).
+        assertEquals(listOf("h", "j", "k", "n"),
+            geometry(TapLayouts.DUBEOLSIK).keys.filter { it.eightWay && (it.jamo ?: ' ') !in 'ㄱ'..'ㅎ' }.map { it.id })
+    }
+
+    @Test
+    fun `GJ-04 Dubeolsik consonant keys are judged in eight ways - ↙ ↗ by the angle, ↖ ↘ the edge crossed first, exit-and-return as before (FSS 134)`() {
+        val l = logic(TapLayouts.DUBEOLSIK)
+        fun out(id: String, deg: Double): String {
+            sink.events.clear()
+            strokeAt(l, id, deg)
+            return sink.events.single()
+        }
+        for (id in listOf("r", "a", "g", "f", "v")) {   // ㄱ ㅁ ㅎ ㄹ ㅍ
+            val c = geometry(TapLayouts.DUBEOLSIK).keys.single { it.id == id }.jamo
+            assertEquals("$id:$c:Exit(dir=RIGHT)", out(id, 0.0))
+            assertEquals("$id:$c:Exit(dir=UP_RIGHT)", out(id, 45.0))      // + ㅣ
+            assertEquals("$id:$c:Exit(dir=UP)", out(id, 90.0))
+            assertEquals("$id:$c:Exit(dir=LEFT)", out(id, 180.0))
+            assertEquals("$id:$c:Exit(dir=DOWN_LEFT)", out(id, 225.0))    // + ㅡ
+            assertEquals("$id:$c:Exit(dir=DOWN)", out(id, 270.0))
+            // ↖ ↘ have nothing: the edge crossed first, as before FSS#134 (the key is taller than wide).
+            assertEquals("$id:$c:Exit(dir=LEFT)", out(id, 135.0))
+            assertEquals("$id:$c:Exit(dir=RIGHT)", out(id, 315.0))
+        }
+        // Sector edges (FR-TAP-02e ②③): up/down/left/right 60° wide, ↙ ↗ 30°, just inside and outside each edge.
+        assertEquals("r:ㄱ:Exit(dir=RIGHT)", out("r", 29.0))
+        assertEquals("r:ㄱ:Exit(dir=UP_RIGHT)", out("r", 31.0))
+        assertEquals("r:ㄱ:Exit(dir=UP_RIGHT)", out("r", 59.0))
+        assertEquals("r:ㄱ:Exit(dir=UP)", out("r", 61.0))
+        assertEquals("r:ㄱ:Exit(dir=LEFT)", out("r", 209.0))
+        assertEquals("r:ㄱ:Exit(dir=DOWN_LEFT)", out("r", 211.0))
+        assertEquals("r:ㄱ:Exit(dir=DOWN_LEFT)", out("r", 239.0))
+        assertEquals("r:ㄱ:Exit(dir=DOWN)", out("r", 241.0))
+        // In the ↖ ↘ sectors the edge crossed first decides, whatever the angle.
+        sink.events.clear()
+        stroke(l, "r", 20f, 32f)                                       // ↘ (302°) crossing the bottom edge first
+        stroke(l, "r", -20f, -32f)                                     // ↖ (122°) crossing the top edge first
+        assertEquals(listOf("r:ㄱ:Exit(dir=DOWN)", "r:ㄱ:Exit(dir=UP)"), sink.events)
+        // Exit-and-return up: still the up exit-and-return (교, FSS#128).
+        sink.events.clear()
+        val c = centre("r")
+        l.down(0, c)
+        l.move(0, listOf(StrokePoint(c.x, c.y - ROW, 1), StrokePoint(c.x, c.y, 2)))
+        l.up(0, StrokePoint(c.x, c.y, 3))
+        assertEquals(listOf("r:ㄱ:ExitReturn(dir=UP)"), sink.events)
     }
 
     @Test

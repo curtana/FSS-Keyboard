@@ -59,12 +59,16 @@ object TapKeyResolver {
     }
 
     /**
-     * A diagonal exit (FSS#109): the key's diagonal jamo, else the tap's output — a direction with nothing is the tap
-     * (SRS FR-TAP-02c ④: ㅗ ↙ = ㅗ, no error vibration). Keys without diagonals are never judged diagonally, but a
-     * caller passing one gets the tap as well (FR-TAP-02e ⑧).
+     * A diagonal exit (FSS#109): the key's diagonal jamo, else a consonant key's diagonal consonant + vowel (FSS#134:
+     * ㄱ ↙ = 그, ↗ = 기, the same output as ㄱ ↑ = 고), else the tap's output — a direction with nothing is the tap
+     * (SRS FR-TAP-02c ④: ㅗ ↙ = ㅗ, no error vibration). Keys without diagonals are never judged diagonally, and a
+     * consonant key's ↖ ↘ are judged by the edge ([TapKeyDef.edgeDiagonals]), but a caller passing one gets the tap
+     * as well (FR-TAP-02e ⑧).
      */
     private fun diagonal(key: TapKeyDef, d: Diag): TapOutput =
-        key.dirJamo[d]?.let(::jamo) ?: resolve(key, TapGesture.Tap)
+        key.dirJamo[d]?.let(::jamo)
+            ?: key.dirVowel[d]?.let { syllable(key, requireNotNull(key.jamo) { key.id }, d) }
+            ?: resolve(key, TapGesture.Tap)
 
     private fun qwerty(letter: String, a: KeyAssign?, g: TapGesture): TapOutput = when (g) {
         TapGesture.Tap -> text(letter)
@@ -90,7 +94,7 @@ object TapKeyResolver {
     /**
      * A Dubeolsik up/down/left/right exit with nothing else assigned: on a consonant key — every direction since
      * FSS#124 — its jamo then the direction's vowel (SRS FR-TAP-02h: ㄱ ↓ = 구, ㅁ ↑ = 모), else the tap (vowel keys,
-     * FR-TAP-02c ④). A diagonal never gets here.
+     * FR-TAP-02c ④). [diagonal] also uses it for a consonant key's ↙ ㅡ ↗ ㅣ (FSS#134).
      */
     private fun syllable(key: TapKeyDef, base: Char, dir: Way): TapOutput =
         TapOutput(null, base, errorVibe = false, vowel = key.dirVowel[dir])
