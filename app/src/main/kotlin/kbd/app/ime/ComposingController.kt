@@ -34,9 +34,6 @@ class ComposingController(private val port: EditorPort) {
     /** Expected cursors of our writes not yet confirmed by an update (D-29). */
     private val expected = ArrayDeque<Int>()
 
-    /** The editor last reported a cursor, not a selection (FSS#131: [retract] never sends ⌫ over a selection). */
-    private var selectionCollapsed = true
-
     /** [pendingGlyph]: the graffiti cheonjiin's temporary ㆍ / ‥ after the composition (FR-HGL-04e); dropping it restores the text without it. */
     fun show(r: ComposeResult, pendingGlyph: String = "") {
         val base = r.composing
@@ -107,20 +104,6 @@ class ComposingController(private val port: EditorPort) {
         predictedSel = -1
     }
 
-    /**
-     * Takes back [text] committed just before (FSS#131, SRS FR-TAP-19 ①): one ⌫ per character, only when nothing is
-     * composing, the editor reported no selection and it shows exactly [text] right before the cursor. Otherwise — a
-     * selection (⌫ would delete it all), the editor did not take [text],
-     * changed it, or does not tell — nothing is deleted and false is returned, so no other character is lost.
-     */
-    fun retract(text: String): Boolean {
-        if (text.isEmpty() || composingShown.isNotEmpty() || !selectionCollapsed) return false
-        if (port.textBeforeCursor(text.length) != text) return false
-        repeat(text.length) { port.deleteBefore() }
-        predictedSel = -1
-        return true
-    }
-
     fun arrow(d: Dir) {
         port.sendKey(
             when (d) {
@@ -166,7 +149,6 @@ class ComposingController(private val port: EditorPort) {
     }
 
     fun onStart(selStart: Int, selEnd: Int) {
-        selectionCollapsed = selStart == selEnd
         predictedSel = selEnd
         composeStart = -1
         expected.clear()
@@ -177,7 +159,6 @@ class ComposingController(private val port: EditorPort) {
 
     fun onUpdateSelection(newS: Int, newE: Int, candS: Int, candE: Int): SelectionVerdict {
         val collapsed = newS == newE
-        selectionCollapsed = collapsed
         if (collapsed) {
             val i = expected.indexOf(newE)
             if (i >= 0) {

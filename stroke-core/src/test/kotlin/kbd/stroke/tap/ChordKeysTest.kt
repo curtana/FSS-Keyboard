@@ -126,8 +126,7 @@ class ChordKeysTest {
             assertEquals("$n rub down", plain(k), ChordKeys.ofTap(n.toString(), rub(DOWN)))
         }
         assertEquals(plain(ChordKey.GRAVE), ChordKeys.ofTap("1", exit(RIGHT)))
-        assertEquals(shift(ChordKey.GRAVE), ChordKeys.ofTap("1", exit(LEFT)))   // ~ ← since FSS#124
-        assertEquals(plain(ChordKey.D1), ChordKeys.ofTap("1", exit(DOWN)))      // Dubeolsik ㅃ, QWERTY empty: the tap's key
+        assertEquals(shift(ChordKey.GRAVE), ChordKeys.ofTap("1", exit(DOWN)))
         assertEquals(plain(ChordKey.D2), ChordKeys.ofTap("2", exit(LEFT)))
         assertEquals(plain(ChordKey.D2), ChordKeys.ofTap("2", exit(DOWN)))
     }

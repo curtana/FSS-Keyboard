@@ -88,7 +88,6 @@ class KeyboardService : InputMethodService() {
         dispatcher = InputDispatcher(modes, composing, feedback, ::saveLastMode)
         dispatcher.onShowMode = { m -> showModeView(m, dispatcher.field) }
         dispatcher.onChordChanged = { tapView?.chordChanged() }   // FR-TAP-15 ④, FR-TAP-18
-        dispatcher.onCapsChanged = { tapView?.capsChanged() }   // FR-TAP-19 ②
         dispatcher.onOpenSettings = {   // mode key up stroke, all modes (issue #205)
             startActivity(android.content.Intent(this, kbd.app.settings.SettingsActivity::class.java)
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -127,7 +126,6 @@ class KeyboardService : InputMethodService() {
         val f = FieldInfo.from(info.inputType, info.imeOptions)
         dispatcher.field = f
         dispatcher.clearChord()   // a new field, or this one shown again (FR-TAP-17 ① (마)); nothing is sent
-        dispatcher.clearCaps()   // FR-TAP-19 ③
         dispatcher.finishAll()   // HLD 8
         dispatcher.resetParsers()
         modes.onFieldChanged()   // FR-CMN-03e
@@ -157,7 +155,6 @@ class KeyboardService : InputMethodService() {
      */
     override fun onFinishInputView(finishingInput: Boolean) {
         dispatcher.clearChord()   // FR-TAP-17 ① (바)
-        dispatcher.clearCaps()   // FR-TAP-19 ③
         dispatcher.finishAll()
         if (::root.isInitialized) {
             root.cancelTouches()
@@ -168,7 +165,6 @@ class KeyboardService : InputMethodService() {
 
     override fun onFinishInput() {
         dispatcher.clearChord()   // FR-TAP-17 ① (바)
-        dispatcher.clearCaps()   // FR-TAP-19 ③
         dispatcher.finishAll()
         super.onFinishInput()
     }
@@ -290,7 +286,6 @@ class KeyboardService : InputMethodService() {
     private fun applyEnabledModes(on: Set<InputMode>) {
         val before = modes.current
         if (before !in on) dispatcher.clearChord()   // an automatic mode change (FR-TAP-17 ① (다))
-        if (before !in on) dispatcher.clearCaps()   // FR-TAP-19 ③
         if (before !in on && isInputViewShown) {
             dispatcher.finishAll()   // FR-CMN-03d
             dispatcher.resetParsers()

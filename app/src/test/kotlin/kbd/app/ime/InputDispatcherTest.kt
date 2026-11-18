@@ -130,19 +130,14 @@ class InputDispatcherTest {
     }
 
     @Test
-    fun `ID-40 Dubeolsik compound final by two taps - 다 ㄹ ㄱ is 닭, ⌫ gives 달, and ㄹ up on 다 is 다로 (issue 242, FSS 109, 124)`() {
+    fun `ID-40 Dubeolsik compound final in one stroke - ㄹ up on 다 is 닭, ⌫ gives 달 as two taps would (issue 242, FSS 109)`() {
         dubeolsik()
-        type("ㄷㅏㄹㄱ")
+        type("ㄷㅏ")
+        val r = dubeolsikKey('ㄹ')
+        d.onTapOutput(r, TapKeyResolver.resolve(r, TapGesture.Exit(kbd.stroke.geom.Dir.UP)))   // ㄺ is ↑ since FSS#109 (← until then)
         assertEquals("닭", cc.composingShown)
         d.onFunctionDown(FunctionKey.BACKSPACE)
         assertEquals("달", cc.composingShown)
-        // No compound final in one stroke since FSS#124: ㄹ ↑ is ㄹ + ㅗ (ㄺ in FSS#109..#122).
-        d.finishAll()
-        port.calls.clear()
-        type("ㄷㅏ")
-        val r = dubeolsikKey('ㄹ')
-        d.onTapOutput(r, TapKeyResolver.resolve(r, TapGesture.Exit(kbd.stroke.geom.Dir.UP)))
-        assertEquals("다로", shownText(port.calls))
     }
 
     /** What the editor shows after [port]'s calls: committed text plus the composing text. */
@@ -186,15 +181,8 @@ class InputDispatcherTest {
                 else -> null
             }
             val k = dubeolsikKey(c)
-            // A ↺ after the arrow is an exit-and-return (FSS#128).
-            val back = dir != null && keys.getOrNull(i + 2) == '↺'
-            val g = when {
-                dir == null -> TapGesture.Tap
-                back -> TapGesture.ExitReturn(dir)
-                else -> TapGesture.Exit(dir)
-            }
-            d.onTapOutput(k, TapKeyResolver.resolve(k, g))
-            i += if (dir == null) 1 else if (back) 3 else 2
+            d.onTapOutput(k, TapKeyResolver.resolve(k, if (dir == null) TapGesture.Tap else TapGesture.Exit(dir)))
+            i += if (dir == null) 1 else 2
         }
         return shownText(port.calls)
     }
@@ -208,37 +196,36 @@ class InputDispatcherTest {
             "ㄱㅜ↓ㄹ" to "귤",
             "ㄱㅜㅓ←" to "구ㅕ",     // ㅜ + ㅕ does not merge
             "ㄱㅜㅓ" to "궈",        // the tap still merges
-            "ㄱㅏㅌ↑" to "가토",     // ㅌ ↑ is ㅌ + ㅗ (FSS#122; ㅌ in FSS#109, ㄾ in FSS#107)
-            "ㄱㅏㅌ←" to "가터",
+            "ㄱㅏㅌ↑" to "같",       // ㅌ ↑ is ㅌ again (FSS#109; ㄾ in FSS#107)
+            "ㄱㅏㅌ←" to "같",
             "ㄱㅏㅌ" to "같",
             "ㄱㅗ↑⌫" to "ㄱ",        // ⌫ takes the vowel, one unit
-            "ㄱㅏㅌ↑⌫" to "가ㅌ",    // ⌫ takes the ㅗ, as 가토 typed (FSS#122; 가 in FSS#109, 갈 while ㅌ ↑ was ㄾ)
+            "ㄱㅏㅌ↑⌫" to "가",      // ⌫ takes the final ㅌ (FSS#109; 갈 while ㅌ ↑ was ㄾ)
         )
-        val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㅌㅗ", "ㅌ←" to "ㅌㅓ")
+        val taps = mapOf("ㅗ↑" to "ㅛ", "ㅓ←" to "ㅕ", "ㅏ→" to "ㅑ", "ㅜ↓" to "ㅠ", "ㅌ↑" to "ㅌ", "ㅌ←" to "ㅌ")
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
-            // The same as the keys typed by taps (ㅌ ↑ as ㅌ ㅗ).
+            // The same as the keys typed by taps (ㄾ as ㄹ ㅌ).
             val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
             assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
         }
     }
 
     @Test
-    fun `ID-42 compound finals are typed as their two consonants, no stroke types one any more (FSS 109, 124)`() {
-        // FSS#124: the one-stroke compound finals (FR-TAP-02c ①) are gone; each stroke below is a consonant + vowel,
-        // composed as the two keys tapped, and the compound finals come from two taps (갉 = ㄱㅏㄹㄱ).
+    fun `ID-42 every compound final in one stroke composes as its two consonants typed - the eight ways of ㄹ (FSS 109)`() {
+        // SRS FR-TAP-02c ① table; 가 + the stroke, then ⌫ (one unit: the second consonant), as the two taps would.
         val cases = listOf(
-            "ㄱㅏㄹㄱ" to "갉", "ㄱㅏㄹㅂ" to "갋", "ㄱㅏㄹㅅ" to "갌", "ㄱㅏㄹㅁ" to "갊", "ㄱㅏㄹㅎ" to "갏",
-            "ㄱㅏㄹㅌ" to "갍", "ㄱㅏㄹㅍ" to "갎", "ㄱㅏㄱㅅ" to "갃", "ㄱㅏㄴㅈ" to "갅", "ㄱㅏㄴㅎ" to "갆", "ㄱㅏㅂㅅ" to "값",
-            "ㄱㅏㄹ↑" to "가로", "ㄱㅏㄹ←" to "가러", "ㄱㅏㄹ→" to "가라", "ㄱㅏㄹ↓" to "가루",
-            "ㄱㅏㄱ→" to "가가", "ㄱㅏㄴ↑" to "가노", "ㄱㅏㄴ→" to "가나", "ㄱㅏㅂ→" to "가바",
-            "ㄱㅏㄹ↖" to "갈", "ㄱㅏㄹ↘" to "갈",       // a diagonal passed for ㄹ (4-way now) is the tap
-            "ㄱㅏㄹㅂㅏ" to "갈바",                     // dokkaebibul: ㅂ of ㄼ goes on
-            "ㄱㅏㄹㅌ⌫" to "갈", "ㄱㅏㅂㅅ⌫" to "갑",
+            "ㄱㅏㄹ↑" to "갉", "ㄱㅏㄹ↖" to "갋", "ㄱㅏㄹ↗" to "갌", "ㄱㅏㄹ←" to "갊", "ㄱㅏㄹ→" to "갏",
+            "ㄱㅏㄹ↙" to "갍", "ㄱㅏㄹ↓" to "갎", "ㄱㅏㄱ→" to "갃", "ㄱㅏㄴ↑" to "갅", "ㄱㅏㄴ→" to "갆", "ㄱㅏㅂ→" to "값",
+            "ㄱㅏㄹ↘" to "갈",       // nothing down-right: the tap
+            "ㄱㅏㄱ↓" to "각", "ㄱㅏㅂ↓" to "갑", "ㄱㅏㅅ↓" to "갓", "ㄱㅏㅍ↑" to "갚",   // directions with nothing (FR-TAP-02c ④)
+            "ㄱㅏㄹ↖ㅏ" to "갈바",    // dokkaebibul: ㅂ of ㄼ goes on
+            "ㄱㅏㄹ↙⌫" to "갈", "ㄱㅏㅂ→⌫" to "갑",
         )
         val taps = mapOf(
-            "ㄹ↑" to "ㄹㅗ", "ㄹ←" to "ㄹㅓ", "ㄹ→" to "ㄹㅏ", "ㄹ↓" to "ㄹㅜ", "ㄹ↖" to "ㄹ", "ㄹ↘" to "ㄹ",
-            "ㄱ→" to "ㄱㅏ", "ㄴ↑" to "ㄴㅗ", "ㄴ→" to "ㄴㅏ", "ㅂ→" to "ㅂㅏ",
+            "ㄹ↑" to "ㄹㄱ", "ㄹ↖" to "ㄹㅂ", "ㄹ↗" to "ㄹㅅ", "ㄹ←" to "ㄹㅁ", "ㄹ→" to "ㄹㅎ", "ㄹ↙" to "ㄹㅌ", "ㄹ↓" to "ㄹㅍ",
+            "ㄹ↘" to "ㄹ", "ㄱ→" to "ㄱㅅ", "ㄴ↑" to "ㄴㅈ", "ㄴ→" to "ㄴㅎ", "ㅂ→" to "ㅂㅅ",
+            "ㄱ↓" to "ㄱ", "ㅂ↓" to "ㅂ", "ㅅ↓" to "ㅅ", "ㅍ↑" to "ㅍ",
         )
         for ((keys, expected) in cases) {
             assertEquals(keys, expected, shownAfter(keys))
@@ -247,47 +234,7 @@ class InputDispatcherTest {
         }
     }
 
-    @Test
-    fun `ID-45 a number key's tense consonant composes as one jamo, as ㄲ ㄸ ㅃ ㅆ ㅉ did on the consonant keys (FSS 124)`() {
-        // SRS FR-TAP-02i: 4 ↓ ㄲ then ㅗ = 꼬, ⌫ ⌫ takes ㅗ then ㄲ (one unit each); after a final as typed.
-        fun down(n: String) {
-            val k = TapLayouts.DUBEOLSIK.keys.single { it.id == n }
-            d.onTapOutput(k, TapKeyResolver.resolve(k, TapGesture.Exit(kbd.stroke.geom.Dir.DOWN)))
-        }
-        val tense = mapOf("1" to "빠", "2" to "짜", "3" to "따", "4" to "까", "5" to "싸")
-        for ((n, syllable) in tense) {
-            d.finishAll()
-            dubeolsik()
-            port.calls.clear()
-            down(n)
-            type("ㅏ")
-            assertEquals(n, syllable, shownText(port.calls))
-        }
-        d.finishAll()
-        dubeolsik()
-        port.calls.clear()
-        down("4")
-        type("ㅗ")
-        assertEquals("꼬", cc.composingShown)
-        d.onFunctionDown(FunctionKey.BACKSPACE)
-        assertEquals("ㄲ", cc.composingShown)
-        d.onFunctionDown(FunctionKey.BACKSPACE)
-        assertEquals("", cc.composingShown)
-        // After a syllable: ㄲ and ㅆ can close it, ㅃ ㄸ ㅉ cannot (the composer's rule, as typed before FSS#124).
-        d.finishAll()
-        port.calls.clear()
-        type("ㄱㅏ")
-        down("4")
-        assertEquals("갂", cc.composingShown)
-        d.finishAll()
-        port.calls.clear()
-        type("ㄱㅏ")
-        down("1")
-        type("ㅏ")
-        assertEquals("가빠", shownText(port.calls))
-    }
-
-    // ---- RT ----    // ---- RT ----
+    // ---- RT ----
 
     @Test
     fun `RT-03 backspace press and two repeats on 닭 give 달 then 다 then ㄷ`() {
@@ -653,14 +600,12 @@ class InputDispatcherTest {
         val same = listOf(
             "ㄱㅗ→" to "과", "ㄱㅗ↓" to "괴", "ㄱㅗ↘" to "괘", "ㄱㅜ←" to "궈", "ㄱㅜ↑" to "귀", "ㄱㅜ↙" to "궤", "ㅇㅡ↓" to "의",
             "ㄱㅗ←" to "고", "ㄱㅗ↖" to "고", "ㄱㅜ→" to "구", "ㄱㅜ↘" to "구", "ㅇㅡ↑" to "으",   // empty ways: the tap
-            "ㄱㅏㄱㅗ→" to "가과", "ㄱㅗ→ㅣ" to "괘", "ㅗ→" to "ㅘ", "ㄱㅗ→⌫" to "고", "ㄱㅜ↑⌫" to "구", "ㅇㅡ↓⌫" to "으",
+            "ㄱㅏㄱㅗ→" to "가과", "ㄱㅗ→ㅣ" to "과ㅣ", "ㅗ→" to "ㅘ", "ㄱㅗ→⌫" to "고", "ㄱㅜ↑⌫" to "구", "ㅇㅡ↓⌫" to "으",
             // ㅙ ㅞ backspace as their keys (owner 2026-11-15 "괘는 지우면 고가 되어야해"): 괘 → 고 → ㄱ, 궤 → 구 → ㄱ.
             "ㄱㅗ↘⌫" to "고", "ㄱㅗ↘⌫⌫" to "ㄱ", "ㄱㅜ↙⌫" to "구", "ㄱㅜ↙⌫⌫" to "ㄱ",
             "ㄱㅗ↘ㄱ⌫" to "괘", "ㄱㅗ↘ㄱ⌫⌫" to "고",                                         // 괙 → 괘 → 고
             "ㄱㅏㄱㅗ↘" to "가괘", "ㄱㅏㄱㅗ↘⌫" to "가고", "ㄱㅏㄱㅜ↙⌫" to "가구",            // dokkaebibul
             "ㄱㅗ↘⌫ㅐ" to "괘", "ㅗ↘⌫" to "ㅗ",
-            // FSS#129: (ㅘ, ㅣ) = ㅙ, so a ㅣ key after a stroked ㅘ merges, and ⌫ takes the ㅣ back first.
-            "ㄱㅗ→ㅣ⌫" to "과", "ㄱㅗ→ㅣ⌫⌫" to "고", "ㄱㅜ←ㅣ" to "궤", "ㄱㅜ←ㅣ⌫" to "궈",
         )
         val taps = mapOf("ㅗ→" to "ㅗㅏ", "ㅗ↓" to "ㅗㅣ", "ㅗ↘" to "ㅗㅐ", "ㅜ←" to "ㅜㅓ", "ㅜ↑" to "ㅜㅣ", "ㅜ↙" to "ㅜㅔ",
             "ㅡ↓" to "ㅡㅣ", "ㅗ←" to "ㅗ", "ㅗ↖" to "ㅗ", "ㅜ→" to "ㅜ", "ㅜ↘" to "ㅜ", "ㅡ↑" to "ㅡ")
@@ -674,119 +619,5 @@ class InputDispatcherTest {
             "ㄱㅏㄱㅗ→⌫" to "가고", "ㅗ→⌫" to "ㅗ", "ㄱㅗ↘⌫ㅣ" to "괴", "ㄱㅗ→⌫ㅏ" to "과", "ㄱㅗㅐ⌫" to "고",
         )
         for ((keys, expected) in steps) assertEquals(keys, expected, shownAfter(keys))
-    }
-
-    @Test
-    fun `ID-44 a consonant key's up, down, left and right compose as the consonant then the vowel tapped, two backspace units (FSS 122, 124)`() {
-        // SRS FR-TAP-02h ②: 거 ⌫ = ㄱ, ⌫ = nothing; after a final as the keys would (각거, 갈거).
-        val cases = listOf(
-            "ㄱ←" to "거", "ㄱ→" to "가", "ㄱ↑" to "고", "ㄱ↓" to "구", "ㅁ↑" to "모", "ㅁ→" to "마", "ㅇ←" to "어", "ㅎ↓" to "후",
-            "ㄷ→" to "다", "ㄷ↑" to "도", "ㅅ←" to "서", "ㅈ↓" to "주", "ㄴ←" to "너", "ㅂ↓" to "부", "ㅋ→" to "카",
-            "ㅇ↑" to "오", "ㅇ↓" to "우", "ㅇ→" to "아", "ㄹ→" to "라", "ㅂ↑" to "보", "ㅅ↑" to "소", "ㅈ↑" to "조",   // FSS#124
-            "ㄱ←⌫" to "ㄱ", "ㄱ←⌫⌫" to "", "ㅁ↑⌫" to "ㅁ",
-            "ㄱㅏㄱㄱ←" to "각거", "ㄱㅏㄹㄱ←" to "갈거",
-            "ㄱ←ㄴ" to "건", "ㄱ←ㄴㅁ↑" to "건모", "ㄱ←ㄹ↑" to "거로", "ㄱ←ㅏ" to "거ㅏ", "ㅗㄱ←" to "ㅗ거",
-            "ㄱㅗㅁ→" to "고마", "ㄱㅏㅁ→" to "가마",
-        )
-        // Each stroke as its two keys tapped (FR-TAP-02h ②): every up/down/left/right of every consonant key (FSS#124).
-        val vowel = mapOf('↑' to 'ㅗ', '↓' to 'ㅜ', '←' to 'ㅓ', '→' to 'ㅏ')
-        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> vowel.map { (a, v) -> "$c$a" to "$c$v" } }.toMap()
-        val arrows = "↑←→↓"
-        fun sameAsTaps(keys: String) {
-            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
-            if (tapped.none { it in arrows }) assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
-        }
-        for ((keys, expected) in cases) {
-            assertEquals(keys, expected, shownAfter(keys))
-            sameAsTaps(keys)
-        }
-        // ⌫ after a final and dokkaebibul: unit by unit as the keys typed (no literal: the composer's own rule).
-        for (keys in listOf("ㄱㅏㄹㄱ←⌫", "ㄱㅏㄹㄱ←⌫⌫", "ㄱㅏㄱㄱ←⌫", "ㄱㅏㄱㄱ←⌫⌫", "ㄱㅏㅁ→⌫", "ㄱㅏㅁ→⌫⌫⌫")) sameAsTaps(keys)
-    }
-
-    @Test
-    fun `ID-46 a ㅓ ㅏ diagonal composes as the ㅔ ㅐ key typed - merge, dokkaebibul, backspace (FSS 126)`() {
-        // SRS FR-TAP-02j: each case equals the same keys typed (ㅖ ㅒ are the ㅔ ㅐ keys ↑).
-        val cases = listOf(
-            "ㄱㅓ↙" to "게", "ㄱㅓ↖" to "계", "ㄱㅏ↘" to "개", "ㄱㅏ↗" to "걔",
-            "ㄱㅓ↗" to "거", "ㄱㅓ↘" to "거", "ㄱㅏ↖" to "가", "ㄱㅏ↙" to "가",     // empty diagonals: the tap
-            "ㄱㅗㅏ↘" to "괘", "ㄱㅜㅓ↙" to "궤",                                   // merge as 고 + ㅐ, 구 + ㅔ
-            "ㄱㅗㅏ↗" to "고ㅒ", "ㄱㅜㅓ↖" to "구ㅖ",                               // no (ㅗ, ㅒ) or (ㅜ, ㅖ) merge
-            "ㄱㅏㄱㅏ↘" to "가개", "ㅏ↘" to "ㅐ", "ㄱㅓ↙ㄴ" to "겐",
-            "ㄱㅓ↙⌫" to "ㄱ", "ㄱㅏ↗⌫" to "ㄱ", "ㄱㅗㅏ↘⌫" to "고", "ㄱㅗㅏ↘⌫⌫" to "ㄱ", "ㄱㅏㄱㅏ↘⌫" to "가ㄱ",
-            // ㅕ ↓ ㅖ, ㅑ ↓ ㅒ (FSS#126 addition).
-            "ㄱㅕ↓" to "계", "ㄱㅑ↓" to "걔", "ㅇㅕ↓" to "예", "ㄱㅕ↓⌫" to "ㄱ", "ㄱㅏㄱㅑ↓" to "가걔", "ㄱㅗㅑ↓" to "고ㅒ",
-        )
-        val taps = mapOf("ㅕ↓" to "ㅔ↑", "ㅑ↓" to "ㅐ↑", "ㅓ↙" to "ㅔ", "ㅓ↖" to "ㅔ↑", "ㅏ↘" to "ㅐ", "ㅏ↗" to "ㅐ↑",
-            "ㅓ↗" to "ㅓ", "ㅓ↘" to "ㅓ", "ㅏ↖" to "ㅏ", "ㅏ↙" to "ㅏ")
-        for ((keys, expected) in cases) {
-            assertEquals(keys, expected, shownAfter(keys))
-            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
-            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
-        }
-    }
-
-    @Test
-    fun `ID-47 a consonant key's exit-and-return composes as the consonant then the paired vowel tapped, two backspace units (FSS 128)`() {
-        // SRS FR-TAP-02h ③: 교 ⌫ = ㄱ, ⌫ = nothing; ㅛ ㅠ ㅕ ㅑ do not merge (FR-HGL-04a), dokkaebibul as the keys.
-        val cases = listOf(
-            "ㄱ↑↺" to "교", "ㄱ↓↺" to "규", "ㄱ←↺" to "겨", "ㄱ→↺" to "갸",
-            "ㅇ↑↺" to "요", "ㅇ↓↺" to "유", "ㅇ←↺" to "여", "ㅇ→↺" to "야", "ㄹ↓↺" to "류", "ㅎ←↺" to "혀",
-            "ㄱ↑↺⌫" to "ㄱ", "ㄱ↑↺⌫⌫" to "", "ㄱ←↺⌫" to "ㄱ",
-            "ㄱ↑↺ㅏ" to "교ㅏ", "ㄱ↓↺ㅓ" to "규ㅓ", "ㄱ↓↺ㄹ" to "귤", "ㄱ←↺ㅇ" to "경",
-            "ㄱㅏㄱㄱ←↺" to "각겨", "ㄱㅏㅁ→↺" to "가먀", "ㄱ←ㄱ←↺" to "거겨", "ㄱ↑↺ㄱ↑" to "교고",
-        )
-        val vowel = mapOf('↑' to 'ㅛ', '↓' to 'ㅠ', '←' to 'ㅕ', '→' to 'ㅑ')
-        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> vowel.map { (a, v) -> "$c$a↺" to "$c$v" } }.toMap() +
-            "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c ->
-                mapOf('↑' to 'ㅗ', '↓' to 'ㅜ', '←' to 'ㅓ', '→' to 'ㅏ').map { (a, v) -> "$c$a" to "$c$v" }
-            }.toMap()
-        for ((keys, expected) in cases) {
-            assertEquals(keys, expected, shownAfter(keys))
-            // Exit-and-return strokes first, so "ㄱ↑↺" is not read as "ㄱ↑" then ↺.
-            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
-            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
-        }
-    }
-
-    @Test
-    fun `ID-48 a consonant key's ↙ ↗ compose as the consonant then ㅡ ㅣ tapped, two backspace units as ↑ (FSS 134)`() {
-        // SRS FR-TAP-02h ④: 그 ⌫ = ㄱ, ⌫ = nothing, as 고 (ID-44); merge and dokkaebibul as the keys.
-        val cases = listOf(
-            "ㄱ↙" to "그", "ㄱ↗" to "기", "ㅎ↙" to "흐", "ㅁ↗" to "미", "ㅇ↙" to "으", "ㅇ↗" to "이", "ㄹ↙" to "르", "ㅅ↗" to "시",
-            "ㄱ↙⌫" to "ㄱ", "ㄱ↙⌫⌫" to "", "ㄱ↗⌫" to "ㄱ", "ㄱ↗⌫⌫" to "",
-            "ㄱ↙ㄹ" to "글", "ㄱ↗ㄴ" to "긴", "ㄱ↙ㅣ" to "긔", "ㅇ↙ㅣ" to "의", "ㄱㅏㄱㄱ↗" to "각기", "ㄱㅏㄹㄱ↙" to "갈그",
-            "ㄱ↙ㄹ⌫" to "그", "ㄱ↙ㄱ↗" to "그기",
-        )
-        val vowel = mapOf('↙' to 'ㅡ', '↗' to 'ㅣ')
-        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> vowel.map { (a, v) -> "$c$a" to "$c$v" } }.toMap()
-        for ((keys, expected) in cases) {
-            assertEquals(keys, expected, shownAfter(keys))
-            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
-            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
-        }
-        // ⌫ as the ↑ stroke: the same steps after the same keys (ID-44's ㄱ↑⌫ = ㄱ).
-        assertEquals(shownAfter("ㄱ↑⌫"), shownAfter("ㄱ↙⌫"))
-    }
-
-    @Test
-    fun `ID-49 a consonant key's ↙ or ↗ exit-and-return composes as the consonant then the ㅡ key's ↓ ㅢ, backspace one step at a time (FSS 136)`() {
-        // SRS FR-TAP-02h ④: the same jamo events as ㄱ then the ㅡ key ↓ (FSS#110), so ⌫ goes one step at a time as a
-        // one-stroke compound vowel (FR-HGL-04f, 의 ⌫ = 으): 긔 ⌫ = 그, ⌫ = ㄱ, ⌫ = nothing. Merge and dokkaebibul too.
-        val cases = listOf(
-            "ㄱ↙↺" to "긔", "ㄱ↗↺" to "긔", "ㅇ↙↺" to "의", "ㅇ↗↺" to "의", "ㅎ↙↺" to "희", "ㄴ↗↺" to "늬", "ㅌ↙↺" to "틔",
-            "ㄱ↙↺⌫" to "그", "ㄱ↙↺⌫⌫" to "ㄱ", "ㄱ↙↺⌫⌫⌫" to "", "ㄱ↗↺⌫" to "그", "ㄱ↗↺⌫⌫" to "ㄱ", "ㄱ↗↺⌫⌫⌫" to "",
-            "ㄱ↙↺ㄹ" to "긜", "ㅇ↗↺ㄴ" to "읜", "ㄱㅏㄱㅇ↙↺" to "각의", "ㄱ↙↺ㄱ↙" to "긔그", "ㄱ↗↺ㄱ↗" to "긔기",
-            "ㄱ↙↺ㄹ⌫" to "긔",
-        )
-        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> listOf("$c↙↺" to "${c}ㅡ↓", "$c↗↺" to "${c}ㅡ↓") }.toMap()
-        for ((keys, expected) in cases) {
-            assertEquals(keys, expected, shownAfter(keys))
-            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
-            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
-        }
-        // The same ⌫ steps as ㅇ then the ㅡ key ↓ (ID-43's 의 ⌫ = 으).
-        assertEquals(shownAfter("ㅇㅡ↓⌫"), shownAfter("ㅇ↙↺⌫"))
-        assertEquals(shownAfter("ㅇㅡ↓⌫"), shownAfter("ㅇ↗↺⌫"))
     }
 }
