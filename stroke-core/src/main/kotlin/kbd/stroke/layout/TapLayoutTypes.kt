@@ -49,11 +49,13 @@ data class TapKeyDef(
      */
     val dirVowel: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /**
-     * Dubeolsik consonant keys only (FSS#128, SRS FR-TAP-02h ③): the vowel an exit-and-return in each
-     * up/down/left/right direction types after the key's jamo (ㄱ ↑ and back = 교, ← and back = 겨). From
-     * [TapLayouts.RETURN_VOWEL]; the paired vowel of [dirVowel] in the same direction.
+     * Dubeolsik consonant keys only (FSS#128, #136, SRS FR-TAP-02h ③ ④): the vowel an exit-and-return in each
+     * direction types after the key's jamo — up/down/left/right from [TapLayouts.RETURN_VOWEL], the paired vowel of
+     * [dirVowel] in the same direction (ㄱ ↑ and back = 교, ← and back = 겨), and ↙ ↗ from
+     * [TapLayouts.DIAG_RETURN_VOWEL] (ㄱ ↙ or ↗ and back = 긔). Only ways [dirVowel] has, so it changes neither
+     * [eightWay] nor [edgeDiagonals].
      */
-    val returnVowel: Map<kbd.stroke.geom.Dir, Char> = emptyMap(),
+    val returnVowel: Map<kbd.stroke.geom.Way, Char> = emptyMap(),
     /** Rows the key takes from [row] down (FSS#105): 2 for ↵, 1 for every other key. */
     val rowSpan: Int = 1,
 ) {

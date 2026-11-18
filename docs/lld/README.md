@@ -1,6 +1,7 @@
 # 상세 설계 (LLD)
 
-- 문서: LLD, 버전 **0.67** (2026-11-18)
+- 문서: LLD, 버전 **0.68** (2026-11-18)
+- 0.68(FSS#136 오너 요청 "자음키 대각선 나갔다 돌아오기: ↙·↗ = +ㅢ"(이슈 제목), ↗ = 오른쪽 위로 나갔다 돌아옴(오너 확인), SRS 0.102 FR-TAP-02h ④, HLD 0.95 5A): 두벌식 자음 키 ↙·↗ 나갔다 돌아옴 = 자음 + ㅢ — LLD-05A 0.33(3.3 `DIAG_RETURN_VOWEL`, 3.1 `returnVowel: Map<Way, Char>`, 2.2 0번 단계), LLD-11 0.75(TA-31·GJ-05·ID-49, 기대 바뀜 TA-29·TA-30·TL-11). 3절 추적표 FR-TAP-02h
 - 0.67(FSS#134 오너 요청 "좌측 아래(↙) = 자음 + ㅡ"·"우측 위(↗) = 자음 + ㅣ", SRS 0.101 FR-TAP-02h ④·02e, HLD 0.94 5A·R25): 두벌식 자음 키 ↙ = 자음 + ㅡ, ↗ = 자음 + ㅣ — LLD-05A 0.32(3.3 `DIAG_STROKE_VOWEL`, 3.1 `dirVowel: Map<Way, Char>`·`eightWay`·`edgeDiagonals`, 2.1 빈 ↖·↘ = 변, 2.2 2번 단계), LLD-11 0.74(TA-30·GJ-04·ID-48, 기대 바뀜 TL-10·TL-11·TA-23·TA-26·TA-29·GJ-01·GV-01)
 - 0.66(FSS#131 오너 요청 "영문키보드에서 빠르게 두번 위로 그으면 CAPS LOCK 처럼 동작하고 모든 키보드의 문자를 대문자로 표시하고 다시 한번 그으면 원래 소문자로 돌아오게 해줘", SRS 0.100 FR-TAP-19, HLD 0.93 5A "Caps Lock"·R24): 영문 쿼티 Caps Lock — LLD-05A 0.31(4·7절 그림·이름), LLD-08 0.37(6.4 켜고 끄기·거둬들임, 4절 `textBeforeCursor`·`retract`, 3절 끄는 곳), LLD-11 0.73(CS-01~CS-18, CK-01~CK-04, CL-06, DV-48). 3절 추적표 FR-TAP-19, 4절 D-78
 - 0.65(FSS#129 오너 결정 "모음 조합을 넓히는 거야"·보탬 "ㅘ + ㅣ= ㅙ, ㅝ + ㅣ = ㅞ까지 넣어야지", SRS 0.99 FR-HGL-04a·04d·04f ②, HLD 0.92 4.4·11장): **두벌식 모음 병합 넓히기** — LLD-03 0.38(3.1 `MergeTables.DUBEOLSIK` 열일곱 줄), LLD-04 0.40(7.2 그대로·7.4 D-77 근거 고침, 과 + ㅣ = 괘), LLD-05A 0.30(짝 모음 뒤 병합 문장), LLD-11 0.72(HC-77~HC-80 신설, HC-01·02·14·21·71, ID-43 기대값). 형식·모듈 변화 없음
@@ -122,7 +123,7 @@ LLD-03(공통 타입) → LLD-04(변 통과 판정·조합기) → LLD-05A·05 �
 | ~~FR-TAP-02f~~ (0.57, FSS#109. **0.62 FSS#124로 삭제**) | LLD-05A 4.1 "손 뗀 키 우선 — 삭제"(지난 `TapGeometry.releasedKey`·`ReleaseKeyCompound`), `TapTouchLogic.up` = `TapKeyResolver.resolve`만 | GJ-03, CD-20(없어진 것을 확인) |
 | FR-TAP-02g (0.58, FSS#110) | LLD-05A 3.3 두벌식 겹모음 배정표 = 획 방향 원리의 결과(`TapLayouts.COMPOUND_VOWEL` → `TapKeyDef.dirJamo`), 3.1 `eightWay`(데이터로 ㅗ·ㅜ), 2.1·2.2 판정·결과(그대로), 2.4 `ChordKeys`(그대로), 3.4 표시(그대로), 4.1 손 뗀 키 우선을 모음 키에서 건너뜀(0.62: 손 뗀 키 우선 삭제). 조합·⌫는 LLD-04 7.4 | TA-22, TA-25, TL-09, TL-10, TL-12, CM-15, GV-01~GV-03, GJ-02, ID-43, DV-44 |
 | FR-TAP-02d (0.56, FSS#104) | LLD-05A 2.2 `TapKeyResolver`(찾는 순서 그대로, 문지르기), 3.3 두벌식 짝 모음 배정표(`TapLayouts.PAIR_VOWEL` → `TapKeyDef.dirJamo`, 합치기, 겹침 없음, 처음 누른 키), 3.4 `edgeHints`, 2.4 `ChordKeys`(그대로). 조합은 LLD-04 7절(그대로) | TA-22, TL-09, CM-13, PV-01, ID-41, DV-42 |
-| FR-TAP-02h (0.61, FSS#122. 0.62 FSS#124로 자음 14키 네 방향 모두. 0.67 FSS#134 ↙ ㅡ · ↗ ㅣ) | LLD-05A 2.1 `edgeDiagonals`(0.67), 2.2 `syllable`·`TapOutput.vowel`, 3.1 `TapKeyDef.dirVowel`·`eightWay`·`edgeDiagonals`, 3.3 "자음 + 모음"(`STROKE_VOWEL`, 0.64 나갔다 돌아옴 `RETURN_VOWEL`·`returnVowel`, 0.67 `DIAG_STROKE_VOWEL`), 3.4(표시 없음). 조합은 LLD-08 6.1 `applyAll` | TA-26, TA-29, ID-47, TA-21, TA-12, TK-05, TK-08, TK-11, TK-20, TK-23, TL-11, ID-40, ID-42, ID-44, CD-20, GJ-01~GJ-03, DV-45, DV-46 |
+| FR-TAP-02h (0.61, FSS#122. 0.62 FSS#124로 자음 14키 네 방향 모두. 0.67 FSS#134 ↙ ㅡ · ↗ ㅣ. 0.68 FSS#136 ↙·↗ 나갔다 돌아옴 ㅢ) | LLD-05A 2.1 `edgeDiagonals`(0.67), 2.2 `syllable`·`TapOutput.vowel`, 3.1 `TapKeyDef.dirVowel`·`eightWay`·`edgeDiagonals`, 3.3 "자음 + 모음"(`STROKE_VOWEL`, 0.64 나갔다 돌아옴 `RETURN_VOWEL`·`returnVowel`, 0.67 `DIAG_STROKE_VOWEL`, 0.68 `DIAG_RETURN_VOWEL`), 3.4(표시 없음). 조합은 LLD-08 6.1 `applyAll` | TA-26, TA-29, TA-30, TA-31, ID-47, ID-48, ID-49, GJ-04, GJ-05, TA-21, TA-12, TK-05, TK-08, TK-11, TK-20, TK-23, TL-11, ID-40, ID-42, ID-44, CD-20, GJ-01~GJ-03, DV-45, DV-46 |
 | FR-TAP-02i (0.62, FSS#124) | LLD-05A 2.2 `numberJamo`, 3.3 "두벌식 숫자 줄 된소리"(`TapLayouts.TENSE_JAMO` → 숫자 키 `dirJamo`), 3.4 아래 변 표시, 2.4 `ChordKeys`(그대로 — 쿼티 숫자 키). 조합은 LLD-08 6.1 `o.jamo` 길 | TL-14, TA-27, TA-02, TA-03, TA-20, TK-09, TK-18, TK-24, CM-07, ID-45, GJ-02, DV-46 |
 | FR-TAP-03 (0.52, FSS#98로 편집 줄 10키) | LLD-05A 3.2 | TL-01~TL-03, TL-06 |
 | FR-TAP-03d (0.55, FSS#105) | LLD-05A 3.1(`rowSpan`·`rect`), 3.2(배치·빈칸 없음·↵·`/`), 4절(판정·그리기), 7절(노드) | TL-01, TL-02, TL-07, TL-08, KH-03, KH-03b, KH-05, BE-01~BE-07, CD-19, BV-01~BV-04, PR-37, SM-03, DV-41 |
@@ -833,3 +834,4 @@ T27(PR #78)·T30(PR #84) 구현 중 찾은 LLD 0.4의 빈틈이다. 두 PR이 �
 | 0.65 | 2026-11-18 | 두벌식 모음 병합 넓히기(FSS#129): 근거 판 SRS 0.99·HLD 0.92. LLD-03 0.38, LLD-04 0.40, LLD-05A 0.30, LLD-11 0.72. 3절 추적표 FR-HGL-04a·04f |
 | 0.66 | 2026-11-18 | 영문 쿼티 Caps Lock(FSS#131): 근거 판 SRS 0.100·HLD 0.93. LLD-05A 0.31, LLD-08 0.37, LLD-11 0.73. 3절 추적표 FR-TAP-19, D-78 |
 | 0.67 | 2026-11-18 | 두벌식 자음 키 ↙ ㅡ · ↗ ㅣ(FSS#134): 근거 판 SRS 0.101·HLD 0.94. LLD-05A 0.32, LLD-11 0.74. 3절 추적표 FR-TAP-02h |
+| 0.68 | 2026-11-18 | 두벌식 자음 키 ↙·↗ 나갔다 돌아옴 ㅢ(FSS#136): 근거 판 SRS 0.102·HLD 0.95. LLD-05A 0.33, LLD-11 0.75. 3절 추적표 FR-TAP-02h |

@@ -768,4 +768,25 @@ class InputDispatcherTest {
         // ⌫ as the ↑ stroke: the same steps after the same keys (ID-44's ㄱ↑⌫ = ㄱ).
         assertEquals(shownAfter("ㄱ↑⌫"), shownAfter("ㄱ↙⌫"))
     }
+
+    @Test
+    fun `ID-49 a consonant key's ↙ or ↗ exit-and-return composes as the consonant then the ㅡ key's ↓ ㅢ, backspace one step at a time (FSS 136)`() {
+        // SRS FR-TAP-02h ④: the same jamo events as ㄱ then the ㅡ key ↓ (FSS#110), so ⌫ goes one step at a time as a
+        // one-stroke compound vowel (FR-HGL-04f, 의 ⌫ = 으): 긔 ⌫ = 그, ⌫ = ㄱ, ⌫ = nothing. Merge and dokkaebibul too.
+        val cases = listOf(
+            "ㄱ↙↺" to "긔", "ㄱ↗↺" to "긔", "ㅇ↙↺" to "의", "ㅇ↗↺" to "의", "ㅎ↙↺" to "희", "ㄴ↗↺" to "늬", "ㅌ↙↺" to "틔",
+            "ㄱ↙↺⌫" to "그", "ㄱ↙↺⌫⌫" to "ㄱ", "ㄱ↙↺⌫⌫⌫" to "", "ㄱ↗↺⌫" to "그", "ㄱ↗↺⌫⌫" to "ㄱ", "ㄱ↗↺⌫⌫⌫" to "",
+            "ㄱ↙↺ㄹ" to "긜", "ㅇ↗↺ㄴ" to "읜", "ㄱㅏㄱㅇ↙↺" to "각의", "ㄱ↙↺ㄱ↙" to "긔그", "ㄱ↗↺ㄱ↗" to "긔기",
+            "ㄱ↙↺ㄹ⌫" to "긔",
+        )
+        val taps = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ".flatMap { c -> listOf("$c↙↺" to "${c}ㅡ↓", "$c↗↺" to "${c}ㅡ↓") }.toMap()
+        for ((keys, expected) in cases) {
+            assertEquals(keys, expected, shownAfter(keys))
+            val tapped = taps.entries.fold(keys) { s, (stroke, jamo) -> s.replace(stroke, jamo) }
+            assertEquals("$keys = $tapped", shownAfter(tapped), shownAfter(keys))
+        }
+        // The same ⌫ steps as ㅇ then the ㅡ key ↓ (ID-43's 의 ⌫ = 으).
+        assertEquals(shownAfter("ㅇㅡ↓⌫"), shownAfter("ㅇ↙↺⌫"))
+        assertEquals(shownAfter("ㅇㅡ↓⌫"), shownAfter("ㅇ↗↺⌫"))
+    }
 }

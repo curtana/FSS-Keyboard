@@ -453,7 +453,7 @@ class TapKeyResolverTest {
         val exitVowel = mapOf(UP to 'ㅗ', DOWN to 'ㅜ', LEFT to 'ㅓ', RIGHT to 'ㅏ')
         for (c in "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ") {
             val key = TapLayouts.DUBEOLSIK.keys.single { it.jamo == c }
-            assertEquals("$c", back, key.returnVowel)
+            assertEquals("$c", back, key.returnVowel.filterKeys { it is Dir })   // ↙ ↗ ㅢ are TA-31's (FSS#136)
             for (w in listOf(UP, DOWN, LEFT, RIGHT)) {
                 assertEquals("$c back $w", cv(c, back.getValue(w)), TapKeyResolver.resolve(key, back(w)))
                 assertEquals("$c exit $w", cv(c, exitVowel.getValue(w)), TapKeyResolver.resolve(key, exit(w)))
@@ -464,7 +464,7 @@ class TapKeyResolverTest {
             assertEquals(j(c), TapKeyResolver.resolve(key, rub(UP)))
             assertEquals(j(c), TapKeyResolver.resolve(key, rub(DOWN)))
             // ↖ ↘ exit-and-return (judged by the edge in the view, so only a caller passes one) is still the tap; ↙ ↗
-            // and back are the diagonal's exit (TA-30, FSS#134).
+            // and back are ㅢ (TA-31, FSS#136).
             for (dg in listOf(Diag.UP_LEFT, Diag.DOWN_RIGHT)) assertEquals("$c back $dg", j(c), TapKeyResolver.resolve(key, back(dg)))
             // Nothing drawn (owner 11-17).
             assertEquals("$c hints", emptyMap<Way, String>(), TapKeyResolver.edgeHints(key))
@@ -497,9 +497,9 @@ class TapKeyResolverTest {
             // The same output path as ㄱ ↑ 고: jamo + vowel, no text, no error vibration.
             assertEquals("$c ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, exit(Diag.DOWN_LEFT)))
             assertEquals("$c ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, exit(Diag.UP_RIGHT)))
-            // Exit-and-return and a rub that way are the diagonal's exit (FR-TAP-02e ④): no paired vowel for ㅡ ㅣ.
-            for (g in listOf(back(Diag.DOWN_LEFT), rub(Diag.DOWN_LEFT))) assertEquals("$c $g", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, g))
-            for (g in listOf(back(Diag.UP_RIGHT), rub(Diag.UP_RIGHT))) assertEquals("$c $g", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, g))
+            // A rub that way is the diagonal's exit (FR-TAP-02e ④); exit-and-return is ㅢ since FSS#136 (TA-31).
+            assertEquals("$c rub ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, rub(Diag.DOWN_LEFT)))
+            assertEquals("$c rub ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, rub(Diag.UP_RIGHT)))
             // Up/down/left/right and their exit-and-return unchanged (TA-26, TA-29).
             assertEquals(cv(c, 'ㅗ'), TapKeyResolver.resolve(key, exit(UP)))
             assertEquals(cv(c, 'ㅛ'), TapKeyResolver.resolve(key, back(UP)))
@@ -522,6 +522,49 @@ class TapKeyResolverTest {
         assertEquals(j('ㅞ'), d("n", exit(Diag.DOWN_LEFT)))
         assertEquals(j('ㅒ'), d("k", exit(Diag.UP_RIGHT)))
         assertEquals(j('ㅡ'), d("m", exit(Diag.UP_RIGHT)))
+    }
+
+    @Test
+    fun `TA-31 Dubeolsik consonant keys - ↙ or ↗ and back is the consonant then ㅢ, the exit and rub still ㅡ ㅣ (FSS 136)`() {
+        // SRS FR-TAP-02h ④, written out by hand from the issue: ㄱ ↙ and back 긔, ㄱ ↗ and back 긔; ↙ alone 그, ↗ alone 기.
+        val back = mapOf(UP to 'ㅛ', DOWN to 'ㅠ', LEFT to 'ㅕ', RIGHT to 'ㅑ')
+        val exitVowel = mapOf(UP to 'ㅗ', DOWN to 'ㅜ', LEFT to 'ㅓ', RIGHT to 'ㅏ')
+        for (c in "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ") {
+            val key = TapLayouts.DUBEOLSIK.keys.single { it.jamo == c }
+            assertEquals("$c", mapOf(Diag.DOWN_LEFT to 'ㅢ', Diag.UP_RIGHT to 'ㅢ'), key.returnVowel.filterKeys { it is Diag })
+            // The same output path as ㄱ ↑ and back 교: jamo + vowel, no text, no error vibration.
+            assertEquals("$c back ↙", cv(c, 'ㅢ'), TapKeyResolver.resolve(key, back(Diag.DOWN_LEFT)))
+            assertEquals("$c back ↗", cv(c, 'ㅢ'), TapKeyResolver.resolve(key, back(Diag.UP_RIGHT)))
+            // The exit alone and a rub (three or more crossings) keep ㅡ ㅣ (FSS#134).
+            assertEquals("$c ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, exit(Diag.DOWN_LEFT)))
+            assertEquals("$c ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, exit(Diag.UP_RIGHT)))
+            assertEquals("$c rub ↙", cv(c, 'ㅡ'), TapKeyResolver.resolve(key, rub(Diag.DOWN_LEFT)))
+            assertEquals("$c rub ↗", cv(c, 'ㅣ'), TapKeyResolver.resolve(key, rub(Diag.UP_RIGHT)))
+            // Up/down/left/right exit and exit-and-return unchanged (TA-26, TA-29).
+            for (w in listOf(UP, DOWN, LEFT, RIGHT)) {
+                assertEquals("$c $w", cv(c, exitVowel.getValue(w)), TapKeyResolver.resolve(key, exit(w)))
+                assertEquals("$c back $w", cv(c, back.getValue(w)), TapKeyResolver.resolve(key, back(w)))
+            }
+            // ↖ ↘ unchanged: nothing on them, so exit, exit-and-return and rub are the tap when a caller passes one.
+            for (dg in listOf(Diag.UP_LEFT, Diag.DOWN_RIGHT)) for (g in listOf(exit(dg), back(dg), rub(dg))) {
+                assertEquals("$c $g", j(c), TapKeyResolver.resolve(key, g))
+            }
+            // The key's judging is unchanged: still 8-way, ↖ ↘ by the edge; nothing drawn (owner).
+            assertTrue("$c", key.eightWay)
+            assertEquals("$c", setOf(Diag.UP_LEFT, Diag.DOWN_RIGHT), key.edgeDiagonals)
+            assertEquals("$c hints", emptyMap<Way, String>(), TapKeyResolver.edgeHints(key))
+            // Ctrl/Alt: the same-place QWERTY key's same gesture, which has no diagonals (TA-30).
+            assertEquals(ChordKeys.ofTap(key.id, tap), ChordKeys.ofTap(key.id, back(Diag.DOWN_LEFT)))
+            assertEquals(ChordKeys.ofTap(key.id, tap), ChordKeys.ofTap(key.id, back(Diag.UP_RIGHT)))
+        }
+        assertEquals(cv('ㄱ', 'ㅢ'), d("r", back(Diag.DOWN_LEFT)))   // 긔
+        assertEquals(cv('ㄱ', 'ㅢ'), d("r", back(Diag.UP_RIGHT)))    // 긔
+        assertEquals(cv('ㅇ', 'ㅢ'), d("d", back(Diag.DOWN_LEFT)))   // 의
+        assertEquals(cv('ㅎ', 'ㅢ'), d("g", back(Diag.UP_RIGHT)))    // 희
+        // Vowel keys keep their diagonal exit-and-return = exit (ㅜ ↙ ㅞ, ㅏ ↗ ㅒ); ㅡ has no diagonal (the tap).
+        assertEquals(j('ㅞ'), d("n", back(Diag.DOWN_LEFT)))
+        assertEquals(j('ㅒ'), d("k", back(Diag.UP_RIGHT)))
+        assertEquals(j('ㅡ'), d("m", back(Diag.DOWN_LEFT)))
     }
 
     @Test

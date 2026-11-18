@@ -290,7 +290,7 @@ class TapLayoutsTest {
             assertEquals("${k.jamo}", emptyMap<kbd.stroke.geom.Way, Char>(), k.dirJamo)
             assertNull("${k.jamo}", k.shiftJamo)
             assertEquals("${k.jamo}", TapLayouts.STROKE_VOWEL + TapLayouts.DIAG_STROKE_VOWEL, k.dirVowel)   // FSS#134
-            assertEquals("${k.jamo}", TapLayouts.RETURN_VOWEL, k.returnVowel)   // FSS#128
+            assertEquals("${k.jamo}", TapLayouts.RETURN_VOWEL + TapLayouts.DIAG_RETURN_VOWEL, k.returnVowel)   // FSS#128, #136
             assertTrue("${k.jamo}", k.eightWay)   // ↙ ㅡ ↗ ㅣ (FSS#134)
         }
         val all = TapLayouts.DUBEOLSIK.keys.flatMap { it.dirJamo.values + listOfNotNull(it.shiftJamo) }
