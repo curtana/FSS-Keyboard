@@ -42,14 +42,36 @@ object TapLayouts {
      * key positions of the compound finals: a vowel goes the way its added strokes go — ㅏ → (1, 0), ㅓ ← (−1, 0), ㅣ ↓
      * (0, 1), summed and taken by sign as the 3 × 3 direction, the vertical flipped where the key's paired vowel is
      * (ㅜ + ㅣ = ↓ is ㅠ's, so ㅟ is ↑). This table is its result, and TL-12 computes the rule again. ㅙ and ㅞ are
-     * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e) — the only 8-way keys
-     * since FSS#124 took the compound finals off ㄹ; ㅡ stays 4-way. A direction without a jamo types the plain vowel,
-     * like the tap. Kept apart from [PAIR_VOWEL].
+     * diagonals, so ㅗ and ㅜ are judged in eight directions by this data alone (FR-TAP-02e) — with ㅓ ㅏ
+     * ([DIAG_VOWEL], FSS#126) the only 8-way keys since FSS#124 took the compound finals off ㄹ; ㅡ stays 4-way. A
+     * direction without a jamo types the plain vowel, like the tap. Kept apart from [PAIR_VOWEL].
      */
     internal val COMPOUND_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
         'ㅗ' to mapOf(Dir.RIGHT to 'ㅘ', Dir.DOWN to 'ㅚ', Diag.DOWN_RIGHT to 'ㅙ'),   // + ㅏ, + ㅣ, + ㅏ ㅣ
         'ㅜ' to mapOf(Dir.LEFT to 'ㅝ', Dir.UP to 'ㅟ', Diag.DOWN_LEFT to 'ㅞ'),      // + ㅓ, + ㅣ (↓ is ㅠ), + ㅓ ㅣ
         'ㅡ' to mapOf(Dir.DOWN to 'ㅢ'),                                               // + ㅣ
+    )
+
+    /**
+     * Diagonal vowels on the Dubeolsik ㅓ ㅏ keys (owner, FSS#126, SRS FR-TAP-02j): ㅓ ↙ ㅔ ↖ ㅖ, ㅏ ↘ ㅐ ↗ ㅒ. ㅔ = ㅓ + ㅣ and
+     * ㅐ = ㅏ + ㅣ go the way of the stroke rule above (← or → plus ㅣ ↓); ㅖ and ㅒ are their upper pairs. Each types
+     * the same single jamo as the ㅔ ㅐ keys (↑ ㅖ ㅒ), so composing, merging and ⌫ are the keys'. The diagonals make ㅓ
+     * and ㅏ 8-way keys by this data alone (FR-TAP-02e); their other diagonals are the tap. Kept apart from
+     * [PAIR_VOWEL] and [COMPOUND_VOWEL].
+     */
+    internal val DIAG_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
+        'ㅓ' to mapOf(Diag.DOWN_LEFT to 'ㅔ', Diag.UP_LEFT to 'ㅖ'),
+        'ㅏ' to mapOf(Diag.DOWN_RIGHT to 'ㅐ', Diag.UP_RIGHT to 'ㅒ'),
+    )
+
+    /**
+     * ㅖ ㅒ on the Dubeolsik ㅕ ㅑ keys (owner, FSS#126 addition, SRS FR-TAP-02j ⑩): ㅕ ↓ ㅖ, ㅑ ↓ ㅒ — ㅕ + ㅣ and ㅑ + ㅣ,
+     * the ㅣ stroke going down. The same single jamo as the ㅔ ㅐ keys' ↑. No diagonal, so both keys stay 4-way; ㅑ's
+     * ← `[` → `]` stay. Kept apart from [DIAG_VOWEL].
+     */
+    internal val DOWN_VOWEL: Map<Char, Map<Way, Char>> = mapOf(
+        'ㅕ' to mapOf(Dir.DOWN to 'ㅖ'),
+        'ㅑ' to mapOf(Dir.DOWN to 'ㅒ'),
     )
 
     /**
@@ -63,9 +85,9 @@ object TapLayouts {
     /** The [STROKE_VOWEL] of [jamo]'s key: all four on consonant keys (compatibility jamo ㄱ..ㅎ), none on vowel keys. */
     private fun dirVowel(jamo: Char): Map<Dir, Char> = if (jamo in 'ㄱ'..'ㅎ') STROKE_VOWEL else emptyMap()
 
-    /** The direction jamo of [jamo]'s key: its paired vowels and compound vowels, never two in one direction. */
+    /** The direction jamo of [jamo]'s key: its paired, compound, diagonal and ↓ vowels, never two in one direction. */
     private fun dirJamo(jamo: Char): Map<Way, Char> {
-        val tables = listOf(PAIR_VOWEL, COMPOUND_VOWEL).map { it[jamo].orEmpty() }
+        val tables = listOf(PAIR_VOWEL, COMPOUND_VOWEL, DIAG_VOWEL, DOWN_VOWEL).map { it[jamo].orEmpty() }
         val ways = tables.flatMap { it.keys }
         require(ways.size == ways.toSet().size) { "$jamo: two direction jamo in one direction" }
         return tables.fold(emptyMap()) { all, t -> all + t }
