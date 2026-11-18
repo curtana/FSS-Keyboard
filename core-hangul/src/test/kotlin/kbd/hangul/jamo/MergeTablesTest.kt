@@ -13,7 +13,9 @@ class MergeTablesTest {
     private fun pairs(vararg s: String): Map<Pair<Jamo, Jamo>, Jamo> =
         s.associate { (j(it[0]) to j(it[1])) to j(it[2]) }
 
-    private val dubeolsik = pairs("ㅗㅏㅘ", "ㅗㅐㅙ", "ㅗㅣㅚ", "ㅜㅓㅝ", "ㅜㅔㅞ", "ㅜㅣㅟ", "ㅡㅣㅢ")
+    private val dubeolsik = pairs("ㅗㅏㅘ", "ㅗㅐㅙ", "ㅗㅣㅚ", "ㅜㅓㅝ", "ㅜㅔㅞ", "ㅜㅣㅟ", "ㅡㅣㅢ",
+        // FSS#129: paired vowels, ㅣ-ending vowels and ㅘ ㅝ + ㅣ.
+        "ㅣㅓㅕ", "ㅣㅏㅑ", "ㅣㅜㅠ", "ㅣㅗㅛ", "ㅓㅣㅔ", "ㅏㅣㅐ", "ㅕㅣㅖ", "ㅑㅣㅒ", "ㅘㅣㅙ", "ㅝㅣㅞ")
 
     /** Every other (prev, next) over all 51×51 jamo pairs gives null. */
     private fun assertOnly(table: VowelMergeTable, expected: Map<Pair<Jamo, Jamo>, Jamo>) {
@@ -23,15 +25,15 @@ class MergeTablesTest {
     }
 
     @Test
-    fun `HC-01 DUBEOLSIK merges its 7 pairs`() {
-        assertEquals(7, dubeolsik.size)
-        assertEquals("ㅘㅙㅚㅝㅞㅟㅢ", dubeolsik.values.map { it.compat }.joinToString(""))
+    fun `HC-01 DUBEOLSIK merges its 17 pairs (FSS 129)`() {
+        assertEquals(17, dubeolsik.size)
+        assertEquals("ㅘㅙㅚㅝㅞㅟㅢㅕㅑㅠㅛㅔㅐㅖㅒㅙㅞ", dubeolsik.values.map { it.compat }.joinToString(""))
         for ((k, v) in dubeolsik) assertEquals("$k", v, MergeTables.DUBEOLSIK.merge(k.first, k.second))
     }
 
     @Test
     fun `HC-02 DUBEOLSIK does not merge other pairs`() {
-        for (s in listOf("ㅏㅣ", "ㅓㅣ", "ㅘㅣ")) assertNull(s, MergeTables.DUBEOLSIK.merge(j(s[0]), j(s[1])))
+        for (s in listOf("ㅙㅣ", "ㅞㅣ", "ㅛㅏ", "ㅠㅓ", "ㅐㅣ", "ㅔㅣ", "ㅖㅣ", "ㅒㅣ", "ㅣㅣ", "ㅣㅡ", "ㅣㅕ", "ㅏㅓ", "ㅚㅣ")) assertNull(s, MergeTables.DUBEOLSIK.merge(j(s[0]), j(s[1])))
         assertOnly(MergeTables.DUBEOLSIK, dubeolsik)
     }
 
