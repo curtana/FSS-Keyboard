@@ -65,6 +65,12 @@ import kbd.graffiti.recognize.TemplateSet
  * children are placed on the plate, and nothing else is painted or touchable. A long press on the handle moves the
  * plate ([PlateMover]); the place it is put at is told to [onFloatMoved]. With the setting off, or no room, every
  * path here is the docked one above: same height, same places, same plate, no handle.
+ *
+ * Suggestion bar (SRS FR-SUG-01~03, HLD 5B.4, LLD-12 §10, FSS#73): with a bar set ([setSuggestionBar]) the window is one
+ * row higher ([barHeight]); the bar is a child as wide as the keys, right above the [WINDOW_ROWS] rows of the key area,
+ * whatever the mode, docked or on a floating plate under the handle. The guide button sits at the top of the key area.
+ * A finger that comes down on the bar while it is not the gesture's first is dropped like one off the keys. With no bar
+ * the height, places, plate and touches are as before.
  */
 class KeyboardRootView(context: Context) : FrameLayout(context) {
 
@@ -159,6 +165,16 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
     private val offKeyboard = OffKeyboardPointers(::onChild)
 
+    /** True while the event being dispatched is a gesture's first `ACTION_DOWN` (the bar takes only that finger). */
+    private var firstDown = false
+
+    /** The suggestion bar child, or null = none (the setting is off, LLD-12 §10). */
+    internal var suggestionBar: SuggestionBarView? = null
+        private set
+
+    /** Height of the suggestion bar, px: one row ([rowHeightDp]) with a bar, 0 without. */
+    internal val barHeight: Int get() = if (suggestionBar != null) px(rowHeightDp) else 0
+
     private var rows = WINDOW_ROWS
     private var modeView: View? = null
 
@@ -252,6 +268,18 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     }
 
 
+    /**
+     * The suggestion bar above the key area, or null for none (FR-SUG-01): the one before is taken out. The caller calls
+     * [relayout] after it.
+     */
+    fun setSuggestionBar(bar: SuggestionBarView?) {
+        val old = suggestionBar
+        if (old === bar) return
+        old?.let { removeView(it) }
+        suggestionBar = bar
+        if (bar != null) addView(bar, LayoutParams(LayoutParams.MATCH_PARENT, px(rowHeightDp)))
+    }
+
     /** Same layout at the new width, row height or floating setting (FR-CMN-12, FR-CMN-15 ⑬); a move in progress is given up. */
     fun relayout() {
         dropMove()
@@ -262,6 +290,7 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
             it.width = px(rowHeightDp)
             it.height = px(rowHeightDp)
         }
+        suggestionBar?.layoutParams?.height = px(rowHeightDp)
         requestLayout()
         invalidate()
     }
@@ -415,31 +444,36 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     /** The children get the event without the pointers that came down off them (FR-CMN-14 ⑤, LLD-08 §7.2). */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         onMoveEvent(ev)
+        firstDown = ev.actionMasked == MotionEvent.ACTION_DOWN
         val e = offKeyboard.filter(ev) ?: return true   // only off-keyboard pointers: taken, no input
         val handled = super.dispatchTouchEvent(e)
         if (e !== ev) e.recycle()
         return handled || offKeyboard.active
     }
 
-    /** True when ([x], [y]) is on a shown child: the mode view, the open guide panel or the guide button. */
+    /**
+     * True when ([x], [y]) is on a shown child: the mode view, the open guide panel, the guide button, or the suggestion
+     * bar for a gesture's first finger (FR-SUG-03 ③).
+     */
     private fun onChild(x: Float, y: Float): Boolean {
         for (i in 0 until childCount) {
             val c = getChildAt(i)
+            if (c === suggestionBar && !firstDown) continue
             if (c.visibility == VISIBLE && x >= c.left && x < c.right && y >= c.top && y < c.bottom) return true
         }
         return false
     }
 
     /**
-     * Height = [WINDOW_ROWS] rows + the bottom padding. Children of `MATCH_PARENT` width (the mode view and the guide
-     * panel) get the width of the keys of the orientation's setting (FR-CMN-14 ④); the available width is the measured
+     * Height = the suggestion bar ([barHeight]) + [WINDOW_ROWS] rows + the bottom padding. Children of `MATCH_PARENT`
+     * width (the mode view, the guide panel and the suggestion bar) get the width of the keys of the orientation's setting (FR-CMN-14 ④); the available width is the measured
      * width less the side padding (system bars), the portrait width is the screen's short side (③). The mode view is
      * told the side margin before it is measured (⑧).
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         if (mover.pointer != null) dropMove()   // laid out again: the move is given up (FR-CMN-15 ⑩)
         val w = MeasureSpec.getSize(widthMeasureSpec)
-        val h = px(WINDOW_ROWS * rowHeightDp) + paddingBottom
+        val h = barHeight + px(WINDOW_ROWS * rowHeightDp) + paddingBottom
         val landscape = isLandscape
         val dm = resources.displayMetrics
         span = KeyboardWidth.place(w - paddingLeft - paddingRight, minOf(dm.widthPixels, dm.heightPixels), density,
@@ -472,14 +506,14 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
     /** The floating place in this view at [viewWidth] × [viewHeight] with the measured span, or null = docked. */
     private fun floatPlaceIn(viewWidth: Int, viewHeight: Int): FloatPlace? = FloatingKeyboard.place(
         viewWidth, viewHeight, paddingLeft, topInset, paddingRight, paddingBottom, span,
-        px(FloatingKeyboard.HANDLE_DP) + px(WINDOW_ROWS * rowHeightDp),
+        px(FloatingKeyboard.HANDLE_DP) + barHeight + px(WINDOW_ROWS * rowHeightDp),
         if (measuredLandscape) landscapeFloat else portraitFloat,
     )
 
     /**
      * The mode view and the guide panel at the bottom of the rows, at the keys' left end; the guide button at the
-     * top, at the keys' right end (FR-CMN-14 ⑥, FR-GRF-09). The side margins stay empty. The plate is set here, from
-     * the same span the children are placed with.
+     * top of the key area, at the keys' right end (FR-CMN-14 ⑥, FR-GRF-09); the suggestion bar right above the key area
+     * (LLD-12 §10). The side margins stay empty. The plate is set here, from the same span the children are placed with.
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         val fp = if (measuredFloat) floatPlaceIn(right - left, bottom - top) else null
@@ -495,13 +529,16 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
         }
         val x = keyboardLeft
         val rowsBottom = bottom - top - paddingBottom
+        val keysTop = rowsBottom - px(WINDOW_ROWS * rowHeightDp)   // 0 (the top padding) with no bar
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             if (c.visibility == GONE) continue
             if (c === handle) {
                 c.layout(0, 0, 0, 0)   // docked although the setting is on (no room): no handle to see or touch
+            } else if (c === suggestionBar) {
+                c.layout(x, keysTop - barHeight, x + span.keysWidth, keysTop)
             } else if (c === guideButton) {
-                c.layout(x + span.keysWidth - c.measuredWidth, paddingTop, x + span.keysWidth, paddingTop + c.measuredHeight)
+                c.layout(x + span.keysWidth - c.measuredWidth, keysTop, x + span.keysWidth, keysTop + c.measuredHeight)
             } else {
                 c.layout(x, rowsBottom - c.measuredHeight, x + c.measuredWidth, rowsBottom)
             }
@@ -510,16 +547,19 @@ class KeyboardRootView(context: Context) : FrameLayout(context) {
 
     /**
      * A floating keyboard's children on its plate [p] (FR-CMN-15 ②, HLD 5A): the handle across the top, the rows under
-     * it; in the rows the same places as docked, the keys one side margin in from the plate's left.
+     * it, the suggestion bar under the handle; in the rows the same places as docked, the keys one side margin in from
+     * the plate's left.
      */
     private fun layoutOnPlate(p: PxRect) {
-        val rowsTop = p.top + px(FloatingKeyboard.HANDLE_DP)
+        val handleBottom = p.top + px(FloatingKeyboard.HANDLE_DP)
+        val rowsTop = handleBottom + barHeight
         val x = p.left + span.margin
         for (i in 0 until childCount) {
             val c = getChildAt(i)
             if (c.visibility == GONE) continue
             when {
-                c === handle -> c.layout(p.left, p.top, p.right, rowsTop)
+                c === handle -> c.layout(p.left, p.top, p.right, handleBottom)
+                c === suggestionBar -> c.layout(x, handleBottom, x + span.keysWidth, rowsTop)
                 c === guideButton -> c.layout(x + span.keysWidth - c.measuredWidth, rowsTop, x + span.keysWidth, rowsTop + c.measuredHeight)
                 else -> c.layout(x, p.bottom - c.measuredHeight, x + c.measuredWidth, p.bottom)
             }
