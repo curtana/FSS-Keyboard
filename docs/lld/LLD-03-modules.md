@@ -1,7 +1,8 @@
 # LLD-03 모듈 구조와 공통 타입
 
 - 대응 HLD 절: 1장(설계 원칙), 2장(시스템 구조), 3장(모듈)(3.1 빌드 변형은 HLD 0.59에서 삭제, 이슈 #251)
-- 버전 **0.37** (2026-11-15)
+- 버전 **0.38** (2026-11-24)
+- 0.38(FSS#73, SRS 0.97 FR-SUG·NFR-08, HLD 0.90 2·3장·5B): 새 모듈 **`core-suggest`**(Kotlin/JVM, 의존 없음, 패키지 `kbd.suggest`·`kbd.suggest.en`, 영문 사전 리소스) — 1절 표·`settings.gradle.kts`, 1.1 의존 방향 `app ──► core-suggest`, 1.2 패키지 표(app `kbd.app.ime`에 `SuggestionController`·`OwnEditLedger`·`EditorEdit`, `kbd.app.view`에 `SuggestionBarView`·`BarCell`·`SuggestionAccessHelper`), 2.1 앱 의존과 시험 별칭. 명세는 [LLD-12-suggest.md](LLD-12-suggest.md) 2절. 새 라이브러리 없음
 - 0.37(FSS#110 후속, SRS 0.93 FR-HGL-04f ③): 3.1 `VOWEL_STEPS`의 ㅙ·ㅞ를 두 단계로(ㅙ [ㅗ, ㅙ], ㅞ [ㅜ, ㅞ] — 키로 친 것과 같음, LLD-04 7.4 0.39). 형식 변화 없음
 - 0.36(FSS#110, SRS 0.92 FR-HGL-04f): 3.1 `JamoTables` 표에 `SPLIT_JONG`(0.29부터 있던 표, 적지 않았던 것)과 새 `VOWEL_STEPS`(겹모음 → 획 단계, LLD-04 7.4)를 적었다. 형식 변화는 이 표 하나다
 - 0.35(FSS#109, SRS 0.91 FR-TAP-02c·02e·02f, HLD 0.84 4.2·5A): 3.3에 대각선 방향 — **`sealed interface Way { val dx: Int; val dy: Int }`**를 `Dir`과 새 **`enum class Diag { UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT }`**가 구현한다. `Dir`은 네 값과 순서·이름·확장 속성이 그대로이고 부호 `dx`·`dy`만 더했다(그래서 `Dir`을 쓰는 변 통과·모드 키·그래피티 코드는 바뀌지 않음, D-75). `WAYS`(Dir 넷 + Diag 넷), `wayOfSigns(dx, dy)`. `TapKeyDef.dirJamo`는 `Map<Way, Char>`(LLD-05A 3.1). 손 뗀 키 우선의 짝 판정은 app이 `core-hangul`의 `JamoTables.COMPOUND_JONG`으로 한다 — stroke-core → core-hangul 의존은 만들지 않았다(1.2 그대로, LLD-05A 4.1, D-76).
@@ -33,9 +34,10 @@
 | `core-hangul` | `org.jetbrains.kotlin.jvm` | `kbd.hangul` | 모두 | 없음 |
 | `stroke-core` | `org.jetbrains.kotlin.jvm` | `kbd.stroke` | 모두 | 없음 |
 | `recognizer` | `org.jetbrains.kotlin.jvm` | `kbd.graffiti` | 모두 | 없음 |
+| `core-suggest`(0.38, FSS#73) | `org.jetbrains.kotlin.jvm` | `kbd.suggest` | 하나 | 없음 |
 | `app` | `com.android.application`(AGP 내장 Kotlin) | `kbd.app` | 하나(0.27, 변형 없음) | 있음 |
 
-- `settings.gradle.kts`: `include(":core-hangul", ":stroke-core", ":recognizer", ":app")`(0.31: `gesture-engine` 삭제).
+- `settings.gradle.kts`: `include(":core-hangul", ":stroke-core", ":recognizer", ":core-suggest", ":app")`(0.31: `gesture-engine` 삭제, 0.38: `core-suggest` 더함).
 - **AGP 내장 Kotlin:** AGP 9.x는 Kotlin 컴파일을 내장하고 `org.jetbrains.kotlin.android` 플러그인을 적용하면 빌드를 거부한다. 그래서 `app`에는 이 플러그인을 적용하지 않는다. Kotlin 컴파일러 플러그인(`org.jetbrains.kotlin.plugin.serialization`, `org.jetbrains.kotlin.plugin.compose`)은 그대로 적용한다(T01, PR #16, 이슈 #13).
 - 빌드 스크립트는 Kotlin DSL(`*.gradle.kts`)로 쓴다.
 - 패키지 루트 `kbd`는 임시 이름이다(앱 ID는 [README.md#5](README.md#5-lld에서-정한-세부) D-01).
@@ -43,10 +45,11 @@
 ### 1.1 의존 방향 (HLD 2장)
 
 ```
-app ──► core-hangul, stroke-core, recognizer
+app ──► core-hangul, stroke-core, recognizer, core-suggest
 recognizer ──► core-hangul
 stroke-core ──► (없음)
 core-hangul ──► (없음)
+core-suggest ──► (없음)        (0.38, FSS#73 — 글자 분류도 자기 안에 둔다, 시험 MOD-05)
 ```
 
 - `recognizer`가 `core-hangul`에서 쓰는 것은 `kbd.hangul.jamo`(자모 정의·병합 표 데이터), `kbd.hangul.event`(이벤트 형식), `kbd.hangul.cheonjiin`(천지인 조립, 0.16, 이슈 #160, HLD 3장) 세 패키지뿐이다. `kbd.hangul.compose`(조합 상태 기계)는 `app`만 쓴다. 이 경계는 시험 `MOD-03`(패키지 의존 검사)으로 지킨다.
@@ -68,9 +71,11 @@ core-hangul ──► (없음)
 | recognizer | `kbd.graffiti.ink` | `InkPoint`, `InkStroke`, `PadArea`, `GraffitiLang` | [LLD-05-graffiti.md#2](LLD-05-graffiti.md#2-타입) |
 | recognizer | `kbd.graffiti.recognize` | `Recognizer`, `StrokeRules`, `TemplateMatcher`, `TemplateSet`, `TemplateLoader`, `StrokeToken` | [LLD-05-graffiti.md#3](LLD-05-graffiti.md#3-recognizer) |
 | recognizer | `kbd.graffiti.state` | `GraffitiState`, `GraffitiAction` | [LLD-05-graffiti.md#5](LLD-05-graffiti.md#5-graffitistate) |
-| app | `kbd.app.ime` | `KeyboardService`, `FieldInfo`, `ModeController`, `InputMode`, `ComposingController`, `EditorPort`, `AndroidEditorPort`, `InputDispatcher` | [LLD-08-service-mode.md](LLD-08-service-mode.md) |
+| core-suggest | `kbd.suggest`(0.38) | 공급자 계약 `SuggestionSource`, `Candidate`, `SuggestKey`, `KeyAnswer`, `EditPlan`, `EditCommand`, `OnFail`, `TextPeek`, `ResetReason` | [LLD-12-suggest.md#6](LLD-12-suggest.md#6-공급자-계약-kbdsuggest-언어-중립--hld-5b1-d-80) |
+| core-suggest | `kbd.suggest.en`(0.38) | `WordIndex`, `WordDictionary`, `EnglishDictionary`, `CaseRule`, `WordChars`, `EnglishWordSource`, 리소스 `suggest/en_words.txt` | [LLD-12-suggest.md](LLD-12-suggest.md) 3~7절 |
+| app | `kbd.app.ime` | `KeyboardService`, `FieldInfo`, `ModeController`, `InputMode`, `ComposingController`, `EditorPort`, `AndroidEditorPort`, `InputDispatcher`, `SuggestionController`·`OwnEditLedger`·`EditorEdit`(0.38) | [LLD-08-service-mode.md](LLD-08-service-mode.md), [LLD-12-suggest.md](LLD-12-suggest.md) 8·12~14절 |
 | app | `kbd.app.graffiti` | `GraffitiInputHandler`, `GraffitiPadView`, `InkCollector` | [LLD-05-graffiti.md#6](LLD-05-graffiti.md#6-graffitiinputhandler-app) |
-| app | `kbd.app.view` | `KeyboardRootView`, `TapKeyboardView`, `TapKeyAccessHelper`, `MultiPointerQueue`, `RepeatTimer`, `RepeatSchedule` | [LLD-05A-tap-keyboard.md](LLD-05A-tap-keyboard.md), [LLD-08-service-mode.md#7](LLD-08-service-mode.md#7-keyboardrootview-창-높이-고정바닥-정렬) |
+| app | `kbd.app.view` | `KeyboardRootView`, `TapKeyboardView`, `TapKeyAccessHelper`, `MultiPointerQueue`, `RepeatTimer`, `RepeatSchedule`, `SuggestionBarView`·`BarCell`·`SuggestionAccessHelper`(0.38, [LLD-12-suggest.md](LLD-12-suggest.md) 9·10절) | [LLD-05A-tap-keyboard.md](LLD-05A-tap-keyboard.md), [LLD-08-service-mode.md#7](LLD-08-service-mode.md#7-keyboardrootview-창-높이-고정바닥-정렬) |
 | app | `kbd.app.feedback` | `Feedback` | [LLD-08-service-mode.md#8](LLD-08-service-mode.md#8-feedback) |
 | app | `kbd.app.store` | `SettingsStore`, `Settings`, `RowHeight`, `ErrorLog`(0.28: `ThresholdStore` 삭제) | [LLD-07-tutor-store.md](LLD-07-tutor-store.md) |
 | app | `kbd.app.practice`(0.28) | `PracticeActivity`, `PracticeFlow`, `PracticeInput`, `PracticeItemJudge`, `PracticeTopics`, `PracticeLaunchPolicy` | [LLD-07-tutor-store.md#2](LLD-07-tutor-store.md#2-입력-연습-hld-71-srs-부록-a-fss17) |
@@ -79,7 +84,7 @@ core-hangul ──► (없음)
 
 - **배치 데이터의 위치(D-25):** 탭 자판 배치(쿼티·두벌식)는 `stroke-core`의 `kbd.stroke.layout`에 둔다. 배치 검사 시험(TL)을 JVM에서 돌리려는 것이다. `stroke-core`는 다른 모듈에 의존하지 않으므로 탭 자판 데이터의 두벌식 자모는 `Char`(호환 자모)로 두고, 앱이 `Jamo.ofCompat(c)`로 바꾼다(LLD-05A 3.1).
 - `FunctionKey`(기능키 종류)는 `stroke-core`(`kbd.stroke.layout`)에 둔다. 탭 자판 데이터와 그래피티 보조 줄(app)이 함께 쓴다.
-- `app`의 안드로이드 없는 클래스(`ModeController`, `ComposingController`, `InputDispatcher`, `FieldInfo`, `GraffitiInputHandler`, `MultiPointerQueue`, `RepeatSchedule`, `PracticeFlow`, `PracticeItemJudge`, `PracticeLaunchPolicy`, `RowHeight`, `EngineGuard`)는 `android.*`를 import하지 않는다. 그래서 `app/src/test`의 JVM 단위 시험으로 시험한다.
+- `app`의 안드로이드 없는 클래스(`ModeController`, `ComposingController`, `InputDispatcher`, `FieldInfo`, `GraffitiInputHandler`, `MultiPointerQueue`, `RepeatSchedule`, `PracticeFlow`, `PracticeItemJudge`, `PracticeLaunchPolicy`, `RowHeight`, `EngineGuard`, 0.38의 `SuggestionController`·`OwnEditLedger`)는 `android.*`를 import하지 않는다. 그래서 `app/src/test`의 JVM 단위 시험으로 시험한다.
 
 ## 2. 빌드
 
@@ -94,6 +99,7 @@ dependencies {
     implementation(project(":core-hangul"))
     implementation(project(":stroke-core"))
     implementation(project(":recognizer"))
+    implementation(project(":core-suggest"))   // 0.38, FSS#73
 }
 ```
 
@@ -103,7 +109,7 @@ dependencies {
 | test | `app/src/test/kotlin` | 모든 앱 시험(0.27: `testPersonal`·`testPublic` 합침) |
 
 - 시험 `MOD-01`은 `assembleDebug`가 성공하는지 검사한다. 0.30까지의 `MOD-02`(app이 긋기 엔진을 `kbd.app.swipe.impl`에서만 import)는 긋기 엔진과 함께 없앴다(0.31).
-- **시험 태스크 별칭:** 프로젝트 시험 명령은 `./gradlew testDebugUnitTest`다. JVM 모듈에는 이 이름의 태스크가 없어서 루트 빌드 스크립트에서 JVM 모듈마다 `tasks.register("testDebugUnitTest") { dependsOn("test") }`를 둔다(D-02). `app`은 변형이 없어 AGP가 만드는 `testDebugUnitTest`를 그대로 쓴다(0.27).
+- **시험 태스크 별칭:** 프로젝트 시험 명령은 `./gradlew testDebugUnitTest`다. JVM 모듈에는 이 이름의 태스크가 없어서 루트 빌드 스크립트에서 JVM 모듈마다 `tasks.register("testDebugUnitTest") { dependsOn("test") }`를 둔다(D-02 — 0.38: 목록에 `:core-suggest`). `app`은 변형이 없어 AGP가 만드는 `testDebugUnitTest`를 그대로 쓴다(0.27).
 
 ### 2.2 ~~SwipeModule 인터페이스~~ — 삭제 (0.31, FSS#95)
 

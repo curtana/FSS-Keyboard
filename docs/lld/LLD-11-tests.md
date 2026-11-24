@@ -1,7 +1,8 @@
 # LLD-11 시험 설계
 
 - 대응 HLD 절: 11장(시험 설계)
-- 버전 **0.69** (2026-11-18)
+- 버전 **0.70** (2026-11-24)
+- 0.70(FSS#73, SRS 0.97 3.9 FR-SUG-01~11·FR-SET-11·NFR-05·NFR-14·NFR-15·6장 T 단어 후보, HLD 0.90 5B·11장, LLD-12 0.1): **영문 단어 후보 1단계** — 새 7.12: WD-01~WD-13(`WordDictionaryTest`, JVM — WD-10~WD-13은 실제 자료), CR-01~CR-05(`CaseRuleTest`), ES-01~ES-36(`EnglishWordSourceTest`), MOD-05(core-suggest 모듈 경계), FI-13~FI-20(`FieldInfoTest`), OL-01~OL-15(`OwnEditLedgerTest`), PW-01~PW-08(`ComposingEditsTest`), CP-07~CP-10(`AndroidEditorPortReadTest`, Robolectric), SB-01~SB-12(`SuggestionBarViewTest`), BR-01~BR-16(`KeyboardSuggestBarTest`), SS-16, SE-01(`SettingsSuggestTest`), PR-38, SU-01~SU-16(`SuggestionControllerTest`, JVM), SX-01~SX-09(`InputDispatcherSuggestTest`), SV-01~SV-08(`KeyboardServiceSuggestTest`, Robolectric), DT-01~DT-09(`tools/en-dict` 파이썬 시험). 8절 DV-45(실기 미확인), 9절 표. 기존 기대값은 바뀌지 않는다
 - 0.69(FSS#140, SRS 0.96 FR-SET-10, HLD 0.89 7.3, LLD-07 0.40 7.1): 설정 화면 "버전" — 새 7.11 BI-01~BI-04(`BuildInfoTest`, JVM: 릴리스·개발·git 없음·빈 값, 지금 빌드의 `BuildConfig`), BI-05(`SettingsVersionItemTest`, Robolectric + Compose UI: 맨 아래·읽기 전용·이름 한 번).
 - 0.68(FSS#141, SRS 0.95 FR-TAP-02d·02g ①, HLD 0.88 5A·11장, LLD-05A 0.26): **두벌식 짝 모음 긋기 빼기** — **새 기대로 바꾼 기존 시험(회귀가 아니라 FSS#141의 바뀐 배정):** TA-22(짝 모음이 없음 — ㅗ ↑ · ㅓ ← · ㅏ → · ㅜ ↓ = 탭 출력·진동 없음(나감·돌아옴·문지르기), ㅓ·ㅏ의 `dirJamo` 빔·4방향·여덟 방향 = 탭, 어느 키에도 ㅛ ㅕ ㅑ ㅠ 없음, 힌트), TA-25(h ↑ · n ↓ = 기본 모음, 힌트), TL-09(`dirJamo` 값 = 겹받침 11 + 겹모음 7), TL-12(세로 뒤집기 = 키 모음 자신의 획 방향 ㅗ ↑ · ㅜ ↓, `PAIR_VOWEL`을 읽지 않음 — 결과 `COMPOUND_VOWEL` 그대로), CM-13·CM-15(보내는 키 그대로, 주석·이름만), PV-01(ㅜ ↓ 스페이스 위 = ㅜ, ㅗ ↑ = ㅗ, ㅓ ← = ㅓ, ㅏ → = ㅏ), GV-01(h 90°·61° = ㅗ, n 270°·241° = ㅜ, 8방향 키 f·h·n 그대로), GV-02(h → y = ㅗ), GV-03(h 안에 ㅛ 없음, n 안에 ㅠ 없음, ㅞ는 ㅙ와 같은 줄 높이), ID-41(긋기 결과 = 기본 모음을 친 입력열: 고 / 거 / 가 / 구 / 과 / 가거 / 굴 / 궈), DV-42를 짝 모음 빼기 실기 확인으로. TA-24(빈 방향 = 탭, 데이터에서 셈)는 기대 그대로 통과하고 옛 짝 모음 자리 넷도 함께 센다
 - 0.67(FSS#117, SRS 0.94 FR-TAP-15 ⑥, HLD 0.87 5A, LLD-05A 0.25): Ctrl·Alt가 켜진 동안 두벌식을 쿼티로 그림 — 새 시험: TL-13(`TapLayoutsTest`, JVM), CV-10~CV-14(`TapKeyboardChordViewTest`, Robolectric)
@@ -1174,6 +1175,275 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | BI-05 | `SettingsScreen`(기본 설정, 버전 글 고정) | 태그 `settings_version`의 글이 있고 스크롤해 보임, 누르는 동작 없음, "버전" 글은 하나(묶음 제목), 화면의 모든 글보다 아래 | LLD-07 7절, FR-SET-10 |
 
 - git이 없는 PC의 빌드(`unknown`)는 단위 시험으로 만들 수 없다 — 개발자가 PATH에서 git을 빼고 `:app:generateDebugBuildConfig`를 돌려 `GIT_HASH = "unknown"`과 빌드 성공을 확인하고 PR에 적는다.
+### 7.12 단어 후보 (0.70, FSS#73, LLD-12)
+
+근거: SRS 0.97 3.9 FR-SUG-01~11·FR-SET-11·NFR-05·NFR-14·NFR-15·6장 T 단어 후보 ①~⑨, HLD 0.90 5B·11장, LLD-12. 시험 함수 이름은 ID로 시작한다(기존 방식).
+
+**시험 사전 `core-suggest/src/test/resources/suggest/mini_words.txt`** — 아래 줄을 이 순서로 둔다(`⏎`는 빈 줄). 받아들이는 줄의 번호(순위)는 오른쪽 수, `×`는 건너뛰는 줄(LLD-12 3절):
+
+```
+#fss-words 1            ×(머리)
+#name mini              ×
+the 0 · of 1 · and 2 · to 3 · in 4 · a 5 · is 6 · I 7 · that 8 · it 9 · I'm 10 · for 11 · don't 12 · it's 13 · do 14
+they 15 · there 16 · then 17 · them 18
+The                     ×(같은 소문자 키)
+these 19 · done 20 · don 21 · Monday 22 · money 23
+⏎                       ×(빈 줄)
+month 24 · monster 25 · hello 26 · help 27 · held 28 · helm 29 · McDonald 30
+naïve                   ×(영문 글자 밖)
+'tis                    ×(' 로 시작)
+rock'n'roll 31
+foo bar                 ×(공백)
+abcdefghijklmnopqrstuvwxyzabcdefg   ×(33자)
+abcdefghijklmnopqrstuvwxyzabcdef 32 (32자)
+```
+
+(한 줄에 한 단어로 쓴다 — 위 표기는 줄을 아낀 것이다.) 크기 33.
+
+#### (가) 사전 `WordDictionary`·`EnglishDictionary` — `kbd.suggest.en.WordDictionaryTest`(JVM)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| WD-01 | 시험 사전 읽기 | `size` 33, `form(0)` = `the`, `form(7)` = `I`, `form(10)` = `I'm`, `form(22)` = `Monday`, `form(31)` = `rock'n'roll` | LLD-12 3절 순위 = 받아들인 줄 순서 |
+| WD-02 | 시험 사전 | `The`·빈 줄·`naïve`·`'tis`·`foo bar`·33자 줄·`#` 줄이 번호를 먹지 않음(WD-01의 번호). 따로 `"go\r\nup\r\n"`을 읽으면 `go`·`up`(끝 `\r` 하나 지움) | 3절 |
+| WD-03 | `top("t")` / `top("th")` / `top("the")` | `[0, 3, 8, 15]` / `[0, 8, 15, 16]` / `[0, 15, 16, 17]`(K = 4, 순위순) | 4절, HLD 5B.2 |
+| WD-04 | `top("i")` / `top("i'")` / `top("do")` / `top("mc")` / `top("rock'")` | `[4, 6, 7, 9]` / `[10]` / `[12, 14, 20, 21]` / `[30]` / `[31]` | 4절(키는 소문자) |
+| WD-05 | 시험 사전 단어 모두의 모든 접두어(소문자), 그리고 정해진 씨앗의 생성 목록 2,000단어(글자 a~e, 길이 1~8, 같은 키 없음) | `top(p)` = 그 접두어로 시작하는 단어 번호를 오름차순으로 앞 4개(전수 대조, 없으면 null) | 4절 사후 조건 |
+| WD-06 | `top("xyz")` / `top("")` / `top("T")` / `top("a-")` | null / null / null(대문자는 호출자가 바꿈) / null | 4절 |
+| WD-07 | 32자 줄 / 33자 줄 | 받아들임(번호 32) / 건너뜀 | 3절, `MAX_WORD` |
+| WD-08 | `top("t")`로 받은 배열을 바꾼 뒤 다시 `top("t")` | `[0, 3, 8, 15]` 그대로 | 4절(복사본) |
+| WD-09 | 빈 입력 / 머리 줄만 | `size` 0, `top("a")` null | 3절 |
+| WD-10 | 실제 자료 `EnglishDictionary.load()`(T-a 자료가 들어온 뒤) | 예외 없음, `size` 50,000, 파일 머리에 `#fss-words 1`·`#words 50000`, `#sha256`이 단어 줄의 sha256과 같음 | 3절, FR-SUG-11 ① |
+| WD-11 | 실제 자료 전부 | 모든 모양이 3절 정규식·32자 이하, 소문자 키가 겹치지 않음, `a`·`I`·`I'm`·`don't`가 있음, 한 글자는 `a`·`I`뿐 | 3절, 16.2 ⑤⑧ |
+| WD-12 | 실제 자료로 `EnglishWordSource` 후보: `t`, `th`, `i`, `i'`, `don`, `mon`, `hel`, `Th`, `MON` | 시험을 쓸 때 들어온 자료가 내는 목록을 기대값으로 고정(자료를 다시 만들면 함께 고침 — HLD 11장). 그리고 늘 참: `i'`의 첫 칸 = `I'm`, `don`의 칸에 `don't`, 모든 칸이 3개 이하 | HLD 11장 |
+| WD-13 | 실제 자료, 접두어 1~6글자 1만 개(정해진 목록)로 `candidates` 계산 시간(데워 둔 뒤) | 평균 < 100µs(개발 PC JVM. NFR-14 ①의 대리 기준 0.1ms) — 측정값을 시험 출력에 남김 | NFR-14 ① |
+
+#### (나) `CaseRule` — `kbd.suggest.en.CaseRuleTest`(JVM)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| CR-01 | `shapeOf`: `the`, `The`, `T`, `TH`, `tHe`, `hELlo`, `don'`, `DON'`, `I'm`, `i` | LOWER, FIRST_UPPER, FIRST_UPPER, ALL_UPPER, MIXED, MIXED, LOWER, ALL_UPPER, FIRST_UPPER, LOWER | LLD-12 5절 |
+| CR-02 | LOWER: (`i`, `I`), (`i'm`, `I'm`), (`mon`, `Monday`), (`mc`, `McDonald`), (`the`, `the`) | `I`, `I'm`, `Monday`, `McDonald`, `the` | FR-SUG-05 ⑤ |
+| CR-03 | FIRST_UPPER: (`Th`, `the`), (`I`, `in`), (`Mc`, `McDonald`), (`M`, `money`) | `The`, `In`, `McDonald`, `Money` | 〃 |
+| CR-04 | ALL_UPPER: (`MON`, `Monday`), (`I'M`, `I'm`), (`DON'`, `don't`), (`MC`, `McDonald`) | `MONDAY`, `I'M`, `DON'T`, `MCDONALD` | 〃 |
+| CR-05 | MIXED: (`hELlo`, `hello`), (`tHe`, `the`) | null | TBD-40 ④ |
+
+#### (다) `EnglishWordSource` — `kbd.suggest.en.EnglishWordSourceTest`(JVM, 시험 사전, 가짜 `TextPeek`: 앞·뒤·선택 값과 부른 횟수를 적음)
+
+표기: `N(t)`·`N(f)` = `None(prevKnown)`, `T(w)` = `Typing(w)`, `B` = `Blocked`, `J(p, t)` = `JustPicked`. 사건 = `onKey` 뒤 (답이 Pass·WriteThenPass이면) `afterKey`를 부르는 것까지. "칸" = `candidates`의 글.
+
+| ID | 시작 · 사건 열 | 기대 | 근거 |
+|---|---|---|---|
+| ES-01 | `N(t)` · `h` `e` `l` | 엿보기 0회, 칸: `h`·`he`·`hel` 모두 [hello, help, held], 답 모두 Pass | FR-SUG-04 ③ |
+| ES-02 | `N(f)` · `h`, 엿보기 앞 `""` 뒤 `""` 선택 false / 앞 `" "` 뒤 `"\n"` | `T(h)`, 엿보기 3회(앞·뒤·선택) / `T(h)` | FR-SUG-04 ③ |
+| ES-03 | `N(f)` · `h`, 앞 `"a"` / 뒤 `"x"` / 앞 `"'"` / 뒤 `"'"` | 모두 `B`, 칸 [] | 〃(단어 가운데) |
+| ES-04 | `N(f)` · `h`, 앞 null / 앞 `""`·뒤 null / 앞·뒤 `""`·선택 null / 선택 true | `B`, 엿보기 1회 / `B`, 2회 / `B`, 3회 / `B` | 〃(읽기 실패·선택 영역) |
+| ES-05 | ES-03의 `B` · `e` `l` `l` · 스페이스 · `h` | `e`~`l` 동안 `B`·칸 [], 스페이스 뒤 `N(t)`, `h` → `T(h)`, 엿보기 없음 | 7.3 `Blocked` |
+| ES-06 | `N(t)` · `d` `o` `n` `'` / 이어서 `'` | `T(don')`, 칸 [don't] / `N(t)`(`'` 뒤의 `'`는 단어 끝) | FR-SUG-04 ① |
+| ES-07 | `N(f)` · `'` · `t` | `'` 뒤 `N(t)`(엿보기 없음), `t` → `T(t)`(엿보기 없음) | FR-SUG-04 ①(맨 앞 `'`) |
+| ES-08 | `T(hel)` · 각각 `1` / `-` / `¹` / `Text("ab")` / 스페이스 | 모두 `N(t)`, 칸 [] | FR-SUG-04 ①, 09 ③ |
+| ES-09 | `T(hel)` · 각각 Enter / Tab / Navigation / Function, 이어서 `h` | `N(f)`, `h`에서 엿보기 | FR-SUG-09 ② |
+| ES-10 | `T(hel)` · ⌫ / ⌫ ⌫ ⌫ / 이어서 `h` | `T(he)`, 칸 [hello, help, held] / `N(t)` / `T(h)`, 엿보기 없음 | FR-SUG-04 ⑤ |
+| ES-11 | `N(t)` · ⌫ · `o`(앞 `"d"`) | ⌫ 뒤 `N(f)`, `o` → `B`(앞 단어 안으로 들어가도 후보 없음) | FR-SUG-04 ⑤, TBD-40 ⑥ |
+| ES-12 | `N(t)` · 글자 32개 / 33번째 글자 / 이어서 ⌫ | `T`(32자) / `B`, 칸 [] / `B` | FR-SUG-04 ④ |
+| ES-13 | `N(t)` · `h` `E` `l` / 이어서 ⌫ ⌫ | 칸 [](섞임) / `T(h)`, 칸 [hello, help, held] | FR-SUG-05 ⑤ |
+| ES-14 | 칸: `t` / `th` / `the` / `i` / `I` / `i'` / `do` / `don` | [the, to, that] / [the, that, they] / [they, there, then] / [in, is, I] / [In, Is, It] / [I'm] / [don't, done, don] / [don't, done] | FR-SUG-05 ①~③ |
+| ES-15 | 칸: `mon` / `Mon` / `MON` / `mOn` / `mc` / `Mc` / `MC` / `rock'` | [Monday, money, month] / [Monday, Money, Month] / [MONDAY, MONEY, MONTH] / [] / [McDonald] / [McDonald] / [MCDONALD] / [rock'n'roll] | FR-SUG-05 ⑤ |
+| ES-16 | 칸: `xyz` / `Xyz` / `helm` | [xyz(TYPED)] / [Xyz(TYPED)] / [](사전 단어가 있어 친 글자 칸 없음) | FR-SUG-05 ④ |
+| ES-17 | `T(the)` · `pick(0)` | `EditPlan("the", [Insert("y ")])`, 상태 `J(they, the)`, 칸 [] | FR-SUG-06 ① |
+| ES-18 | `T(mon)` · `pick(0)` / `T(i)` · `pick(2)` / `T(Mon)` · `pick(0)` | `EditPlan("mon", [DeleteBefore(3), Insert("Monday ")])` / `EditPlan("i", [DeleteBefore(1), Insert("I ")])` / `EditPlan("Mon", [Insert("day ")])` | FR-SUG-06 ①(대소문자) |
+| ES-19 | `T(xyz)` · `pick(0)` | `EditPlan("xyz", [Insert(" ")])`, `J(xyz, xyz)` | TBD-40 ⑤ |
+| ES-20 | `T(the)` · `pick(3)` / `N(t)` · `pick(0)` / `J(…)` · `pick(0)` | null, 상태 그대로(셋 다) | 7.4 ① |
+| ES-21 | `J(they, the)` · 구두점 10개 각각(`. , ! ? ; : ) ] } '`) | 답 `WriteThenPass(EditPlan(" ", [DeleteBefore(1)]))`, afterKey 뒤 `'`이면 `T(they')`, 나머지 `N(t)` | FR-SUG-07 ① |
+| ES-22 | `T(do)` · `pick(2)`(don) · `'` | 고르기 계획 `EditPlan("do", [Insert("n ")])`, `'` → WriteThenPass, 뒤 `T(don')`, 칸 [don't] | FR-SUG-07 ② |
+| ES-23 | `J(they, the)` · 각각 `(` / `"` / `1` / `-` / `¹` | 답 Pass, `N(t)` | FR-SUG-07 ① |
+| ES-24 | `J(they, the)` · 스페이스 · 스페이스 · `.` | 스페이스마다 `Consume(EditPlan.NONE, NOTHING)`·상태 `J(they, the)` 그대로, `.` → WriteThenPass | FR-SUG-07 ③ |
+| ES-25 | `J(they, the)` · ⌫ | `Consume(EditPlan("they ", [DeleteBefore(5), Insert("the")]), PASS)`, onKey 뒤(afterKey 없이) `T(the)`, 칸 [they, there, then] | FR-SUG-08 ① |
+| ES-26 | ES-25 뒤 ⌫ / ES-24의 스페이스 둘 뒤 ⌫ | Pass → `T(th)` / ES-25와 같은 Consume | FR-SUG-08 ②, ① |
+| ES-27 | `J(they, the)` · `.` · ⌫ / `J(they, the)` · `x` · ⌫ | `.` 뒤 `N(t)`, ⌫ Pass → `N(f)` / `x` → `T(x)`(엿보기 없음), ⌫ Pass → `N(t)` | FR-SUG-08 ②, 07 ④ |
+| ES-28 | `T(Mon)` · `pick(0)` · ⌫ / `T(i)` · `pick(2)` · ⌫ | `Consume(EditPlan("Monday ", [DeleteBefore(7), Insert("Mon")]), PASS)` → `T(Mon)`, 칸 [Monday, Money, Month] / `Consume(EditPlan("I ", [DeleteBefore(2), Insert("i")]), PASS)` → `T(i)` | FR-SUG-08 ①(친 그대로) |
+| ES-29 | `J(they, the)` · ⌫ ⌫ ⌫(반복과 같은 사건 셋) | Consume, 뒤 Pass 둘 → `T(t)` | FR-SUG-08 ③ |
+| ES-30 | `J(they, the)` · Enter / Navigation | `N(f)` | FR-SUG-09 ② |
+| ES-31 | `N(t)`(사용자 스페이스 뒤) · `.` | Pass(계획 없음), `N(t)` | FR-SUG-07 ①(사용자 공백은 안 지움) |
+| ES-32 | `T(the)`·`J(they, the)` · `onWriteFailed()` · `h` | `N(f)`, `h`에서 엿보기 | 6.1, FR-SUG-06 ② |
+| ES-33 | WriteThenPass 실패 흉내: `J(they, the)` · onKey(`.`) · `onWriteFailed()` · afterKey(`.`) / 같은 것을 `'`로 | `N(t)` / `N(t)` | 6.1 |
+| ES-34 | 되돌리기 실패 흉내: `J(they, the)` · onKey(⌫) · `onWriteFailed()` · afterKey(⌫) | `N(f)` | FR-SUG-08 ① 실패 |
+| ES-35 | `T(the)`·`J(…)`·`B` · `reset(r)` — `ResetReason` 8개 각각 | `N(f)`, 칸 [] | FR-SUG-09 ②④ |
+| ES-36 | 두 인스턴스에 ES-01~ES-34의 사건 열을 같은 엿보기 값으로 | 칸·답·계획이 모두 같음 | NFR-04, 6.2 |
+
+#### (라) 모듈 경계 — `kbd.suggest.ModuleBoundaryTest`(JVM, core-suggest)
+
+| ID | 대상 | 기대 | 근거 |
+|---|---|---|---|
+| MOD-05 | `core-suggest/src/main/kotlin` 아래 모든 파일, `core-suggest/build.gradle.kts` | `import android.` 없음, `kbd.suggest` 밖의 `import kbd.` 없음, `project(` 의존 없음(검사 함수가 금지 줄을 찾는지도 봄) | LLD-12 2절, HLD 5B.2 |
+
+#### (마) 입력창 표 `FieldInfo.autocompleteAllowed` — `kbd.app.ime.FieldInfoTest`(JVM, 7.1에 더함)
+
+| ID | inputType / imeOptions | 기대 | 근거 |
+|---|---|---|---|
+| FI-13 | TEXT \| URI(0x11) | `autocompleteAllowed` false, `noSuggest` true, `isPassword` false | FR-SUG-10, 결정 7 |
+| FI-14 | TEXT \| EMAIL_ADDRESS(0x21) / TEXT \| WEB_EMAIL_ADDRESS(0xD1) | false / false | 〃 |
+| FI-15 | TEXT \| NO_SUGGESTIONS(0x80001) / + MULTI_LINE | false / false | FR-SUG-10 |
+| FI-16 | NUMBER \| NUMBER_PASSWORD(0x12) / NUMBER(0x02) / PHONE(3) / DATETIME(4) | 모두 false, 0x12의 `noSuggest` false(클래스가 TEXT 아님 — URI로 읽지 않음) | FR-SUG-10, FR-CMN-08 ① |
+| FI-17 | TEXT \| PASSWORD(0x81) / VISIBLE_PASSWORD(0x91) / WEB_PASSWORD(0xE1) | false | FR-SUG-10 |
+| FI-18 | TYPE_NULL(0) | `fieldClass` OTHER, false | FR-SUG-10 |
+| FI-19 | TEXT(1) / + MULTI_LINE / + AUTO_COMPLETE(0x10001) / + IME_FLAG_NO_PERSONALIZED_LEARNING / 변형 EMAIL_SUBJECT(0x31)·SHORT_MESSAGE(0x41)·LONG_MESSAGE(0x51)·PERSON_NAME(0x61)·POSTAL_ADDRESS(0x71)·WEB_EDIT_TEXT(0xA1)·PHONETIC(0xC1) | 모두 true | FR-SUG-10, TBD-40 ⑦⑪ |
+| FI-20 | 위치 인자 5개로 만든 `FieldInfo(TEXT, false, false, false, null)` | `noSuggest` false, `autocompleteAllowed` true(기존 호출이 그대로 컴파일) | LLD-12 8.1 |
+
+#### (바) 커서 장부 `OwnEditLedger`·`ComposingController` — `kbd.app.ime.OwnEditLedgerTest`(JVM)
+
+표기: 쓰기 열 뒤 `→ (s, e) 참/거짓` = 그 알림에 `explains`가 내는 값.
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| OL-01 | `start(5, 5)`, `committed(1)` ×3, 알림 (6,6)·(7,7)·(8,8) | 참·참·참 | FR-SUG-04 ② |
+| OL-02 | `start(5, 5)`, `committed(1)` ×3, 알림 (8,8) 하나 뒤 (8,8) 다시 | 참, 참(같은 자리 알림) | 8.4 ③④ |
+| OL-03 | `start(5, 5)`, `committed(1)`, `deletedKey()`, `committed(1)`, 알림 (6,6)·(5,5)·(6,6) / 알림 (6,6) 하나만 | 모두 참 / 참(⌫ 뒤 글자 — 지금 판정이 `OTHER_MOVED`로 보는 함정) | 8.4 문제 |
+| OL-04 | `start(10, 10)`, `deletedKey()` ×4(⌫ 반복), 알림 (9,9)…(6,6) / (6,6)만 | 모두 참 / 참 | FR-SUG-08 ③ |
+| OL-05 | `start(3, 3)`, `deletedBefore(3)`, `committed(7)`(고르기 "mon" → "Monday "), 알림 (7,7) / (0,0)·(7,7) | 참 / 참·참 | FR-SUG-06 |
+| OL-06 | `start(5, 5)`, `committed(1)`, 알림 (6,6), 알림 (2,2), 이어 `committed(1)`, 알림 (3,3) | 참, **거짓**(사용자 터치), 참(다시 맞춤) | FR-SUG-09 ② |
+| OL-07 | `start(5, 5)`, 알림 (2,5)(선택) / 이어 `deletedKey()`, 알림 (2,2) / 이어 `committed(1)`, 알림 (3,3) | 거짓 / 참(선택 지움 = 시작) / 참 | 8.4 |
+| OL-08 | `start(5, 5)`, `unknown()`(방향키), `committed(1)`, 알림 (4,4), 알림 (5,5), 이어 알림 (1,1) | 참(모름), 참(쓰기 없는 알림 → 다시 맞춤 5), **거짓** | 8.4 ② |
+| OL-09 | `unknown()`, 알림 (7,7)(쓰기 없음 → 다시 맞춤), `committed(1)`, 알림 (8,8), 알림 (3,3) | 참, 참, 거짓 | 8.4 ② |
+| OL-10 | `start(-1, -1)`, 알림 (4,4), `committed(1)`, 알림 (5,5) | 참, 참 | 8.4 `start` |
+| OL-11 | `start(0, 0)`, `deletedKey()`, 알림 (0,0) / `start(2, 2)`, `deletedBefore(3)`, 알림 (0,0) | 참(모름) / 참(모름) | 8.4 쓰기 |
+| OL-12 | `start(5, 5)`, `committed(1)`, 알림 (9,9), 이어 알림 (6,6) | 거짓(예상 비움, 9로 다시 맞춤), 거짓 | 8.4 ⑤ |
+| OL-13 | `ComposingController`(가짜 포트): `onStart(5, 5)`, `commitText("a")`, `deleteBefore()`, `commitText("b")`, 알림 (6,6)·(5,5)·(6,6)마다 `onUpdateSelection` 뒤 `isOwnCursorChange` | `isOwnCursorChange` 모두 참. 같은 알림의 `onUpdateSelection` 판정은 0.96과 같음(둘째·셋째 `OTHER_MOVED`) | 8.4 "기존 판정 그대로" |
+| OL-14 | `ComposingController`: `show(("", "가"))`(조합), 알림 (6,6,5,6) / `arrow(LEFT)`, 알림 (4,4) | `isOwnCursorChange` 참(모름) / 참 | 8.4 `unknown` |
+| OL-15 | `ComposingController`: `onStart(5, 5)`, `applyEdits("", [Insert("ab")])`, 알림 (7,7) / `enter`(동작 있음), 알림 (0,0) | 참 / 참(모름) | 8.3·8.4 |
+
+#### (사) 계획 쓰기·읽기 `ComposingController`·`EditorPort` — `kbd.app.ime.ComposingEditsTest`(JVM, 읽는 가짜 포트: 앞 글자를 돌려주고 호출을 적음)
+
+| ID | 입력 | 기대 호출 | 근거 |
+|---|---|---|---|
+| PW-01 | 앞 `"mon"`, `applyEdits("mon", [DeleteBefore(3), Insert("Monday ")])` | `textBeforeCursor(3)`, `beginBatch`, `deleteBeforeCursor(3)`, `commitText("Monday ")`, `endBatch`; 참 | FR-SUG-06 ①②, HLD 11장 |
+| PW-02 | 앞 `"mOn"` / `"on"`(짧음) / null, 같은 계획 | `textBeforeCursor(3)`만; 거짓 | FR-SUG-06 ② |
+| PW-03 | `applyEdits("", [], then = 적기)` | 포트 호출 없음, then 1회; 참 | 무동작 스페이스 |
+| PW-04 | 앞 `" "`, `applyEdits(" ", [DeleteBefore(1)], then = { commitText(".") })` | `textBeforeCursor(1)`, `beginBatch`, `deleteBeforeCursor(1)`, `commitText(".")`, `endBatch`; 참 | FR-SUG-07 ① 한 묶음 |
+| PW-05 | 앞 `"x"`, PW-04의 계획 | `textBeforeCursor(1)`만, then 안 부름; 거짓 | 〃 |
+| PW-06 | 가짜 포트 `deleteBeforeCursor`가 예외 | 예외가 호출자에게 감, `endBatch`가 불림 | 8.3, 이슈 #89 방식 |
+| PW-07 | 읽기를 구현하지 않은 최소 가짜 포트(지금 메서드만) | `canReadText` false, 읽기 셋 null, `deleteBeforeCursor(3)` = `deleteBefore` 3회 | 8.2 기본 구현 |
+| PW-08 | `ComposingController.canReadText`·`textBefore(1)`·`textAfter(1)`·`hasSelection()` | 포트의 같은 값(넘겨주기만) | 8.3 |
+
+#### (아) `AndroidEditorPort` 읽기·지우기 — `kbd.app.ime.AndroidEditorPortReadTest`(Robolectric, 호출을 적는 가짜 입력 연결 — CP-01과 같은 방식)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| CP-07 | `textBeforeCursor(3)`·`textAfterCursor(1)`, 연결이 `"mon"`·`"x"` / null을 줌 | `getTextBeforeCursor(3, 0)`·`getTextAfterCursor(1, 0)`, 값 `"mon"`·`"x"` / null | 8.2 |
+| CP-08 | `hasSelection()`, `getSelectedText(0)`이 `"ab"` / `""` / null | true / false / false | 8.2 |
+| CP-09 | `deleteBeforeCursor(3)` | `deleteSurroundingText(3, 0)` 1회, 키 이벤트 없음 | 8.2 |
+| CP-10 | 입력 연결 없음 | 읽기 셋 null, 지우기 아무 호출 없음, `canReadText` true | HLD 9장 |
+
+#### (자) 후보 줄 뷰 `SuggestionBarView`·`SuggestionAccessHelper` — `kbd.app.view.SuggestionBarViewTest`(Robolectric, 기록용 `Canvas`, 가짜 `FeedbackPort`)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| SB-01 | 폭 330px / 331px로 잼 | 칸 [0,110)·[110,220)·[220,330) / [0,110)·[110,221)·[221,331) | FR-SUG-03 ①, 9절 |
+| SB-02 | `show([a, b], 1)` | 글 두 개가 칸 0·1 가운데에 그려짐, 칸 2는 글 없음, 구분선 2개 | 9절 |
+| SB-03 | 칸 1 안에서 누름·뗌 | 누를 때 `feedback.key()` 1회, 뗄 때 `onPick(1, 판)` 1회 | FR-SUG-03 ② |
+| SB-04 | 칸 0에서 누르고 칸 1에서 뗌 / 뷰 위(y < 0)·아래(y ≥ 높이)에서 뗌 | `onPick` 없음(피드백은 누를 때 1회) | FR-SUG-03 ② |
+| SB-05 | 칸 2(빈 칸)에서 누름·뗌 / `show([], 1)` 뒤 어디든 | 피드백·`onPick` 없음, `onTouchEvent` 참(소비) | FR-SUG-03 ② |
+| SB-06 | `show(c, 3)`, 칸 0 누름, `show(c', 4)`, 칸 0 안에서 뗌 | `onPick(0, 3)`(누를 때의 판) | FR-SUG-03 ③ |
+| SB-07 | 누른 뒤 `ACTION_CANCEL` | `onPick` 없음 | 9절 |
+| SB-08 | 칸 폭보다 긴 단어(40자) / 조금 긴 단어 / 짧은 단어 | 크기 = 기본 × 0.70이고 `…`로 끝남 / 기본과 0.70배 사이 크기로 다 그림 / 기본 크기 | FR-SUG-03 ①(LLD) |
+| SB-09 | 같은 칸으로 `show` 두 번 / 다른 칸 | 두 번째는 다시 그리기 요청 없음 / 요청 있음 | 9절 |
+| SB-10 | 오래 누름(2초) 뒤 칸 안에서 뗌 | 반복 없음, `onPick` 1회 | FR-SUG-03 ④ |
+| SB-11 | `show([they, there], 5)` 접근성 | 가상 항목 2개(id 0·1), 이름 `they`·`there`, 경계 = 칸, 클릭 동작 → `onPick(0, 5)` | FR-SUG-03 ⑤, NFR-07 |
+| SB-12 | 이어서 `show([], 6)` / `show([x], 7)` | 항목 0개 / 1개(나무를 다시 만듦), 알림 소리 이벤트 없음 | D-89 |
+
+#### (차) 루트의 후보 줄 `KeyboardRootView` — `kbd.app.view.KeyboardSuggestBarTest`(Robolectric, `KeyboardRootViewTest`·`KeyboardFloatViewTest`의 틀)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| BR-01 | 줄을 두지 않은 루트(설정 끔) — 꽉 채움·줄인 자판(36dp, 왼손·중앙·오른손)·띄운 자판, 6줄·5줄 모드 | 입력 뷰 높이·모드 뷰 사각형·안내표 버튼 사각형·자판 판·`floatPlace`가 0.96 식과 같음, 후보 줄 자식 없음 | FR-SUG-01 ① |
+| BR-02 | 줄 켬, 줄 높이 40·48·64dp, 아래 여백 있음/없음 | 높이 = `px(row)` + `px(6 × row)` + 아래 여백 | FR-SUG-02 ① |
+| BR-03 | 줄 켬, `setModeView`를 6줄 → 5줄 → 6줄 | 높이 같음 | FR-SUG-01 ③ |
+| BR-04 | 줄 켬, 꽉 채움 / 키 36dp 왼손·중앙·오른손 / 가로 화면 옆 여백 | 후보 줄 = (`keyboardLeft`, 0, `keyboardLeft` + W, `px(row)`) — 자판 폭 W 안, x = l + x + m | FR-SUG-01 ②, FR-SUG-03 ① |
+| BR-05 | 줄 켬, 6줄 모드 / 5줄 모드 | 모드 뷰 아래 = 높이 − 아래 여백, 위 = 아래 − `px(6 × row)`(= `px(row)`) / 아래 − `px(5 × row)` | HLD 5B.4 |
+| BR-06 | 줄 켬, 그래피티(안내표 켬) / 덮개 엶 | 버튼 = (x + W − `px(row)`, `px(row)`)(키 영역 위, 후보 줄과 겹치지 않음) / 덮개 = 모드 뷰 자리(패드 + 보조 줄), 후보 줄을 덮지 않음, 후보 줄 그대로 | FR-SUG-02 ③ |
+| BR-07 | 줄 켬, 붙은 자판 | `plate` 위 0·아래 = 높이(후보 줄 자리가 듦), `KeyboardInsets`의 `touchableRegion` = 판 | FR-SUG-02 ① |
+| BR-08 | 줄 켬, 띄우기 켬, 부모 높이 = `px(24)+px(row)+px(6row)` + t + b 바로 위·바로 아래 / fy 0.3 저장 | 띄움 / 붙음(들어가지 않음) / 자판 판 높이 = 그 합, 세로 범위 Y = S 높이 − 그 합, 위에서부터 손잡이 띠·후보 줄·모드 뷰 | FR-SUG-02 ② |
+| BR-09 | 띄운 자판, 손잡이 띠로 끔 | 후보 줄이 다른 자식과 같은 변위로 옮겨짐, 끄는 동안 후보 줄에 닿은 손가락은 아무 일 없음 | FR-SUG-02 ② |
+| BR-10 | 첫 손가락이 키, 둘째 손가락이 후보 줄 칸(글 있음)에 내려와 뗌 | 후보 줄이 사건을 받지 않음(피드백·`onPick` 없음), 모드 뷰의 첫 손가락 그대로 | FR-SUG-03 ③ |
+| BR-11 | 첫 손가락이 후보 줄 칸, 둘째가 키 | 키가 `ACTION_DOWN`을 받아 보통 입력 | FR-SUG-03 ③ |
+| BR-12 | 띄운 자판, 손잡이 띠를 누르고 기다리는 동안 둘째 손가락이 후보 줄 | 옮기기 버림(시작 안 함), 후보 줄 아무 일 없음 | HLD 5B.4 |
+| BR-13 | 줄 켬, 쿼티 맨 윗줄 키에서 위로 후보 줄을 지나 그은 획 | 모드 뷰가 음수 y로 계속 받고 ↑ 판정이 줄 끔과 같음 | FR-SUG-02 ③ |
+| BR-14 | 줄 켬 → `setSuggestionBar(null)` + `relayout()` / 줄 높이 48 → 56 + `relayout()` | BR-01 값으로 돌아옴 / 후보 줄 높이·입력 뷰 높이가 56 기준 | FR-SUG-01 ④ |
+| BR-15 | 줄 켬, `relayout()` | 모드 뷰가 다시 붙지 않음(같은 객체), 후보 줄 같은 객체 | FR-SUG-01 ④ |
+| BR-16 | 줄 켬, 모드 뷰를 바꿈·덮개 여닫음 | 후보 줄 사각형 그대로 | FR-SUG-02 ③ |
+
+#### (카) 설정·연습 — `SettingsStoreTest`(7.5에 더함), `kbd.app.settings.SettingsSuggestTest`(Robolectric + Compose UI), `PracticeScreenTest`(7.6에 더함)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| SS-16 | 빈 저장소 / `update { it.copy(wordSuggest = true) }` 뒤 다시 엶 / 저장소 키 직접 읽기 | false / true / `word_suggest` = true | FR-SET-11, 11절 |
+| SE-01 | 설정 화면(기본 설정) | "입력 모드" 묶음 바로 뒤에 묶음 "단어 후보", 그 안에 태그 `word_suggest` 스위치(꺼짐)와 안내 글 한 줄. 누르면 `update`가 `wordSuggest = true`로 불림 | FR-SET-11 |
+| PR-38 | `wordSuggest = true` 설정으로 연습 화면의 자판 틀 | `SuggestionBarView`가 없음, 틀 높이 = 0.96과 같음 | FR-SUG-01 ⑤ |
+
+#### (타) `SuggestionController` — `kbd.app.ime.SuggestionControllerTest`(JVM, 가짜 공급자: 답을 정해 두고 호출 순서를 적음, 읽는 가짜 포트)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| SU-01 | 활성이 아닌 경우 각각 — `enabled` false / `fieldAllowed` false / `mode` DUBEOLSIK·GRAFFITI / `chordOn` / 공급자 없음 / `canReadText` false 포트 — 에서 `key(Text("a"), normal)` | `normal` 1회, 공급자 호출 없음, 포트 읽기 없음, 판 그대로 | 12.1, FR-SUG-10, NFR-14 ③ |
+| SU-02 | 답 Pass | 순서 `onKey` → `normal` → `afterKey` → `onCandidates` | 6.1 |
+| SU-03 | 답 WriteThenPass, 앞 글자 맞음 | 포트 `textBeforeCursor` → `beginBatch` → 지우기 → (`normal` 안의 쓰기) → `endBatch`, 그 뒤 `afterKey` | 6.1, FR-SUG-07 ① |
+| SU-04 | 답 WriteThenPass, 앞 글자 어긋남 | `onWriteFailed` → `normal`(묶음 밖) → `afterKey`, 지우기 없음 | 〃 |
+| SU-05 | 답 Consume(계획 있음) 맞음 / Consume(NONE) | 지우기·넣기 한 묶음, `normal`·`afterKey` 없음 / 포트 쓰기 없음, `normal`·`afterKey` 없음 | 6.1 |
+| SU-06 | Consume 어긋남, `onFail` PASS / NOTHING | `onWriteFailed` → `normal` → `afterKey` / `onWriteFailed`만 | FR-SUG-08 ① |
+| SU-07 | `pick(i, 지금 판)` / `pick(i, 지난 판)` / 공급자 `pick` null | 계획 쓰기 / 아무것도 안 함 / 쓰기 없음 | 12.3, FR-SUG-03 ③ |
+| SU-08 | `pick`의 앞 글자 어긋남 | 쓰기 없음, `onWriteFailed` | FR-SUG-06 ② |
+| SU-09 | 공급자 후보 5개 | `onCandidates`의 칸 = 앞 3개(`text`·`spoken`), 판은 `key`·`pick`·`reset`·`attach`마다 1씩 오름 | 12.2 |
+| SU-10 | 활성인 채 `enabled`·`fieldAllowed`·`mode`·`chordOn`·`attach(null)`로 꺼짐 각각 | 공급자 `reset(INACTIVE)` 1회(`attach(null)`은 앞 공급자를 버림), 빈 칸 알림 | 12.1 |
+| SU-11 | 공급자 `onKey`가 예외 | `onError("Suggest.source", e)`, 공급자 `reset` 시도, `normal` 1회(키를 잃지 않음) | 12.6, HLD 9장 |
+| SU-12 | 공급자 `afterKey`·`pick`·`candidates`가 예외 | `onError`, 초기화, 예외가 밖으로 나가지 않음 | 12.6 |
+| SU-13 | `normal`이 예외 | 예외가 `key`의 호출자에게 감 | 12.2 |
+| SU-14 | 실제 `EnglishWordSource`(시험 사전) + 글을 흉내 내는 가짜 편집기(커서 앞 글·`deleteBeforeCursor`·`commitText`를 버퍼에 적용): ` mon`, `pick(0)`, `.` | 편집기 글 ` Monday.` | 17.1 |
+| SU-15 | 같은 틀: ` i`, `pick(2)`, ⌫ / ` the`, `pick(0)`, 스페이스, ⌫ | ` i`, 칸 [in, is, I] / ` the`, 칸 [they, there, then] | 17.2, FR-SUG-08 |
+| SU-16 | 같은 틀, 가짜 편집기가 읽기마다 null(`canReadText` 참): `" "` 뒤 `the`, `pick(0)` | 칸은 나오나 고르기는 쓰기 없음, 그 뒤 칸 [] | FR-SUG-06 ②, R22 ① |
+
+#### (파) `InputDispatcher` 배선 — `kbd.app.ime.InputDispatcherSuggestTest`(JVM, 가짜 포트·`SuggestionController`와 적는 가짜 공급자)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| SX-01 | 쿼티 글자 키 `a`·`A`(↑)·`1`·`'` | 각각 `SuggestKey.Text` 한 번, 평소 길(`commitText`)은 `key`의 `normal` 안에서 | 13절 |
+| SX-02 | ⌫, 스페이스, 엔터, ⇥, ←↑↓→, Esc, Del | `Backspace`, `Space`, `Enter`, `Tab`, `Navigation` ×6, 평소 길 결과는 0.96과 같음 | 13절 |
+| SX-03 | Ctrl 켬 → `c` | 켤 때 `chordOn` 참(공급자 `reset(INACTIVE)`), `c`는 조합 키 길(공급자 호출 없음), 실린 뒤 꺼지면 `chordOn` 거짓 | FR-SUG-09 ① |
+| SX-04 | 모드 키 탭 / 모드 키 ↑ | 공급자 `reset(MODE)` | FR-SUG-09 ② |
+| SX-05 | `suggest` = null인 디스패처(입력 연습과 같음) | 0.96과 같은 호출(기존 `InputDispatcherTest` 사례 몇 개를 그대로) | FR-SUG-01 ⑤ |
+| SX-06 | 두벌식(조합기 있음)에서 기호 키 `-` | 컨트롤러 활성 아님 → `normal`만, 공급자 호출 없음 | 12.1 |
+| SX-07 | 실제 공급자, 쿼티: `t` `h` `e` 고름(0) 뒤 `onFunctionDown(BACKSPACE)` 3번(반복) | 첫 번 되돌리기(` the`), 다음 둘은 한 글자씩(` t`) | FR-SUG-08 ③ |
+| SX-08 | 그래피티 모드의 글자·스페이스 | 공급자 호출 없음 | 13절 |
+| SX-09 | 고른 뒤 스페이스(무동작) | `markInput` 불림(0.96 스페이스와 같음), 편집기 쓰기 없음 | 13절 |
+
+#### (하) 서비스 — `kbd.app.ime.KeyboardServiceSuggestTest`(Robolectric, `KeyboardServiceChordTest`의 틀, 호출을 적는 가짜 입력 연결)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| SV-01 | 설정 끔(기본), 문자 입력창에서 쿼티로 `the` · 스페이스 · ⌫ | 루트에 후보 줄 자식 없음, 입력 뷰 높이 0.96과 같음, 가짜 연결의 `getTextBeforeCursor`·`getTextAfterCursor`·`getSelectedText`·`deleteSurroundingText` 호출 0, 사전 읽기 시작 안 함 | FR-SUG-01 ①, NFR-14 ③ |
+| SV-02 | 설정 켬으로 서비스 시작, 사전(시험 사전을 주는 `dictionaryLoader`) 붙음, `the` | 후보 줄 칸 [they, there, then] | 14절 |
+| SV-03 | 설정 켬, 비밀번호·URI·숫자 입력창에서 `the` | 빈 줄, 읽기 호출 0 | FR-SUG-10 |
+| SV-04 | 설정 켬, `the` 뒤 연결이 키보드 쓰기 위치로 `onUpdateSelection`을 보냄(글자마다, ⌫·⌫ 반복, 고르기, 공백 지우기, 되돌리기 뒤) / 다른 위치(사용자 터치) | 후보·상태 유지 / 빈 줄(초기화) | FR-SUG-04 ②, FR-SUG-09 ② |
+| SV-05 | 보이는 동안 설정 흐름으로 켬 → 끔 | 켬: 후보 줄 자식 생김, 높이 + `px(row)`, 사전 읽기 / 끔: 자식 없음, 높이 원래대로, 공급자 null | FR-SUG-01 ④, 11절 |
+| SV-06 | 설정 켬, 쿼티 `th` → 모드 키(두벌식) → 모드 키 두 번(쿼티로) | 두벌식에서 빈 줄·같은 높이, 쿼티로 돌아와도 빈 줄(지난 단어 없음) | FR-SUG-01 ③, 09 ② |
+| SV-07 | `th` 뒤 각각 `onFinishInputView` / `onFinishInput` / `onConfigurationChanged` / 같은 입력창 `onStartInputView(restarting)` | 빈 줄 | FR-SUG-09 ② |
+| SV-08 | `dictionaryLoader`가 예외 | 오류 기록에 `EnglishDictionary.load`·예외 이름만(단어 없음), 서비스 그대로, 빈 줄, 입력 평소대로 | FR-SUG-11 ③, NFR-05 |
+
+#### (거) 사전 빌드 도구 — `tools/en-dict/test_build_en_words.py`(파이썬 `unittest`, venv, `testdata/`의 작은 입력)
+
+| ID | 입력 | 기대 | 근거 |
+|---|---|---|---|
+| DT-01 | `testdata/`의 작은 집계 tsv·SCOWL 폴더·LDNOOBW 파일·축약형 표로 `build` | `testdata/expected_en_words.txt`와 바이트까지 같음 | 16.2 |
+| DT-02 | 같은 입력으로 두 번 | 두 파일이 같음, 출력에 날짜·시각 없음 | 16.2 ⑨, HLD 11장 |
+| DT-03 | DT-01 출력의 머리 | 3절 순서의 머리 줄, `#words` = 단어 줄 수, `#sha256` = 단어 줄 부분의 sha256 | 3절 |
+| DT-04 | 대소문자 사례(소문자 몫 < 0.2이고 대문자형이 U에 있음 / 0.2 이상 / L에 없고 U에만 / `i`) | 대문자형 / 소문자 / 가장 많이 쓰인 U 모양 / `I`, 키마다 줄 하나, 한 글자는 `a`·`I`만 | 16.2 ④⑤ |
+| DT-05 | LDNOOBW에 든 낱말 / 그 낱말이 `restore.txt`에도 있음 | 빠짐 / 남음 | 16.2 ⑦ |
+| DT-06 | 축약형 표: C에 있음·없음, `extra = 1`, `host` 없음, 점수 동점 | 있음·빠짐, 남음, 빠짐, 모양 글자 순 | 16.2 ⑥⑧ |
+| DT-07 | 정규식에 안 맞는 모양·33자·겹치는 키를 만드는 입력 | 도구가 0 아닌 끝 코드로 멈추고 파일을 쓰지 않음 | 16.2 ⑧ |
+| DT-08 | `sources.json` | 출처가 정확히 `ngram`·`scowl`·`ldnoobw` 셋(그 밖의 키가 있으면 도구가 멈춤), 검사합이 다른 파일을 주면 `fetch`의 검사 함수가 멈춤 | NFR-15, HLD 11장 |
+| DT-09 | 실제 원자료로 `build` 뒤 `check`(작업 T-a가 PR에 결과를 붙임) | 저장소의 `en_words.txt`와 같음 | 16.2 ⑨, NFR-15 |
+
+- 기존 시험은 고치지 않고 통과해야 한다(SRS 6장 T ⑨ — 가짜 포트 7곳·`PracticeEditor`, `KeyboardRootViewTest`·`KeyboardPlateViewTest`·`KeyboardFloatViewTest`·`KeyboardInsetsTest`의 `WINDOW_ROWS` 사용, `ComposingControllerTest` CC-01~CC-22의 판정).
+
 ## 8. 실기기 시험 (D)
 
 | ID | 항목 | 확인 방법 | 근거 |
@@ -1215,6 +1485,7 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | DV-42 | 두벌식 짝 모음 긋기 빼기·ㅌ ↑(0.68, FSS#141. 0.63~0.67은 짝 모음 긋기 FSS#104·#107, SRS 6장 D — **실기 미확인**) | 휴대폰·태블릿, 세로·가로: ① ㅗ ↑ · ㅓ ← · ㅏ → · ㅜ ↓가 진동 없이 기본 모음으로 들어가는지(ㅌ ↑ = ㅌ, 겹받침은 DV-43) ② ㅜ ↓가 스페이스로 들어가지 않는지 ③ ㅗ·ㅓ·ㅏ·ㅜ 키 변에 ㅛ·ㅕ·ㅑ·ㅠ가 그려지지 않는지 ④ 겹모음 긋기(DV-44)가 그대로인지 | 문제가 있으면 새 이슈(설계팀) |
 | DV-43 | 두벌식 겹받침 방향 규칙·ㄹ 8방향·손 뗀 키(0.64, FSS#109, SRS 6장 D·TBD-38 — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ① ㄹ ↖ ㄼ · ↑ ㄺ · ↗ ㄽ · ← ㄻ · → ㅀ · ↙ ㄾ · ↓ ㄿ, ㄱ → ㄳ, ㄴ ↑ ㄵ · → ㄶ, ㅂ → ㅄ이 받침 없는 글자 뒤에서 한 번에 들어가는지(닭, 짧, 곬, 삶, 싫, 핥, 읊, 몫, 앉, 않, 값) ② 대각선 폭 30°가 좁아 ㄼ·ㄽ·ㄾ이 위아래좌우로, 또는 그 반대로 잘못 들어가는 일이 잦은지(R20 ①, TBD-38), 키를 누른 자리(위·아래 끝)에 따라 같은 손짓이 달라지는지(R20 ②) ③ ㄹ 키 모서리의 ㄼ·ㄽ·ㄾ과 위 변 ㄺ이 겹치지 않고 읽히는지, ↘ 모서리가 비어 있는지 ④ 빈 방향(ㄹ ↘, ㄱ·ㄴ·ㅂ·ㅅ ↓, ㅌ·ㅍ ↑)으로 그으면 진동 없이 탭과 같은지 ⑤ 손 뗀 키: ㄹ → ㅂ·ㅌ 키 위에서 떼면 ㄼ·ㄾ, 짝이 아닌 키·여유 칸에서 떼면 방향대로, 키 가장자리 탭이 이웃 키에서 떼져도 탭인지 ⑥ 가장자리 키(ㅂ q)의 →, ㄹ의 ↖가 왼쪽 여유 칸 쪽에서도 되는지 | 결과에 따라 TBD-38(폭·경계)을 다시 정한다(설계팀) |
 | DV-44 | 두벌식 겹모음 한 번 긋기(0.65, FSS#110, SRS 6장 D·TBD-39 — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 두벌식: ① ㅗ → ㅘ · ↓ ㅚ · ↘ ㅙ, ㅜ ← ㅝ · ↑ ㅟ · ↙ ㅞ, ㅡ ↓ ㅢ가 초성 뒤에서 한 번에 들어가는지(과 괴 괘 궈 귀 궤 의, 받침 뒤 도깨비불 가과) ② ㅗ·ㅜ가 8방향이 되어 ㅚ·ㅟ(↓·↑ 60°)가 전보다 덜 들어가지 않는지(0.67까지 ㅛ·ㅠ도), ㅙ·ㅞ(대각선 30°)와 ㅘ·ㅚ·ㅝ가 서로 잘못 들어가는 일이 잦은지(R21 ①) ③ ⌫ 한 단계씩(과 → 고, 괘 → 고 → ㄱ, 궤 → 구 → ㄱ — 0.66부터 키로 친 것과 같음)이 불편하지 않은지 ④ ㅗ 키의 오른쪽 아래 모서리 ㅙ·ㅜ 키의 왼쪽 아래 모서리 ㅞ와 변 가운데 ㅘ·ㅚ·ㅝ·ㅟ·ㅢ가 겹치지 않고 읽히는지 ⑤ ㅗ에서 →로 그어 ㅓ·ㅏ 위에서 떼도 ㅘ, ㅜ·ㅡ ↓가 스페이스 위로 넘어가도 ㅜ·ㅢ인지(0.68) ⑥ 빈 방향(ㅗ ↑·←·↖·↗·↙, ㅜ ↓·→·↖·↗·↘, ㅡ ↑·←·→ — ㅗ ↑ · ㅜ ↓는 0.68부터)이 진동 없이 탭과 같은지 ⑦ Ctrl을 켜고 ㅗ → = H, ㅜ ↑ = Shift + N인지 | 결과에 따라 TBD-39(⌫ 단계 수 등)·TBD-38(폭·경계)을 다시 정한다(설계팀) |
+| DV-45 | 영문 단어 후보(0.70, FSS#73, SRS 6장 D 단어 후보 ①~⑧, HLD R22~R24·R27 — **실기 미확인**) | 휴대폰·태블릿, 세로·가로, 설정 켬: ① 웹 입력창·메신저·터미널류에서 커서 앞뒤 읽기가 늦거나 null일 때 후보가 꺼지고 입력은 그대로인지 ② 고르기·자동 공백 지우기·되돌리기가 메모·메신저·이메일·웹 입력창에서 바르게 쓰이는지(지우기 + 넣기 한 묶음) ③ 빠르게 칠 때·⌫를 누르고 있을 때 후보가 사라지거나 어긋나지 않는지(커서 장부, 앱이 알림을 묶을 때) ④ 켰을 때 한 줄 높아짐·앱 화면 밀림, 모드·입력창을 바꿔도 높이 그대로, 띄운 자판·줄인 자판·가로 화면 ⑤ 칸 폭(360dp 꽉 채움 약 109dp)에서 긴 단어 읽힘, 편집 줄과 잘못 누름 ⑥ 사전 읽기 시간·힙(서비스 시작 → 첫 후보), 첫 단어부터 후보 ⑦ 화면 읽기(칸 이름·고르기) ⑧ 자기 완성 목록을 보이는 입력창(검색창)에서 겹쳐 거슬리는지 ⑨ `getSelectedText`가 선택 없음에 null을 주는지 | SRS 6장 D, FR-SUG-01~11, NFR-14, LLD-12 8.2·8.4 |
 
 ## 9. 안드로이드 클래스 대상 단위 시험 (G1)
 
@@ -1236,6 +1507,7 @@ JVM 시험(FK·PM)은 안드로이드 없는 순수 함수·상태 기계, Robol
 | `AndroidEditorPort`(`KeyEvent`, 가짜 입력 연결, 0.59) | CP-01~CP-06 |
 | `KeyboardService` 조합 키 끄기(0.59) | CL-01~CL-05 |
 | `TapKeyboardView` 겹모음 표시(기록용 `Canvas`, 0.65, FSS#110) | GV-03 |
+| 단어 후보(0.70, FSS#73): `AndroidEditorPort` 읽기·지우기, `SuggestionBarView`·`SuggestionAccessHelper`, `KeyboardRootView` 후보 줄, 설정 화면, 연습 화면, `KeyboardService` | CP-07~CP-10, SB-01~SB-12, BR-01~BR-16, SE-01, PR-38, SV-01~SV-08 |
 
 ### 9.1 ~~안내 설정~~ — 삭제 (0.58, FSS#95)
 
