@@ -250,7 +250,7 @@ class HelperTest(unittest.TestCase):
             code, log = run(['contractions', '--scowl', os.path.join(DATA, 'scowl', 'final'), '--out', out])
             self.assertEqual(code, 0, log)
             self.assertEqual(read(out), read(os.path.join(DATA, 'expected_contractions.tsv')))
-            self.assertIn("left out (host not determined): ain't o'clock wouldn't've", log)
+            self.assertIn("left out (host not determined): ain't h'm o'clock wouldn't've", log)
         finally:
             shutil.rmtree(os.path.dirname(out))
 

@@ -54,7 +54,7 @@ NAME_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]*')
 # §16.2 ⑥ contraction table: suffix -> permille, irregular n't hosts, the `'s` forms SCOWL does not list
 SUFFIX_PERMILLE = (("n't", 50), ("'m", 50), ("'re", 20), ("'ve", 20), ("'ll", 20), ("'d", 20), ("'s", 10))
 IRREGULAR_HOSTS = {"can't": 'can', "won't": 'will', "shan't": 'shall'}
-UNDETERMINED = ("ain't",)   # n't form whose part before the suffix is no word (§16.2 ⑥ example)
+UNDETERMINED = ("ain't",)   # the part before n't is no word; a one-letter host other than i (h'm) is none either
 EXTRA_S_FORMS = ("it's", "that's", "he's", "she's", "there's", "what's", "here's", "who's", "where's", "how's", "let's")
 CONTRACTIONS_HEADER = 'form\thost\tpermille\textra'
 
@@ -229,7 +229,7 @@ def contraction_rows(lower, contr):
             for suffix, permille in SUFFIX_PERMILLE:
                 if c.endswith(suffix):
                     host = IRREGULAR_HOSTS.get(c, c[:-len(suffix)])
-                    if c not in UNDETERMINED and (c in IRREGULAR_HOSTS or host == 'i' or host in lower):
+                    if c not in UNDETERMINED and (c in IRREGULAR_HOSTS or host == 'i' or (len(host) > 1 and host in lower)):
                         form = 'I' + c[1:] if host == 'i' else c
                         row = (form, host, permille, 0)
                     break
