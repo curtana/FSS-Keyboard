@@ -13,7 +13,12 @@ data class FieldInfo(
     val noLearning: Boolean,
     val multiLine: Boolean,
     val enterAction: Int?,
+    /** The field itself turns suggestions off: the NO_SUGGESTIONS flag, or a text URI, email address or web email address variation (LLD-12 §8.1). */
+    val noSuggest: Boolean = false,
 ) {
+    /** SRS FR-SUG-10 field table (LLD-12 §8.1): word suggestions only in a text field that is not a password and does not turn them off. */
+    val autocompleteAllowed: Boolean get() = fieldClass == FieldClass.TEXT && !isPassword && !noSuggest
+
     /**
      * FR-CMN-08 ①: a password field hides what shows the typed text (the big current character, the center
      * consonant, the graffiti glyph flash). A no-learning field shows everything as usual (owner 2026-11-01:
@@ -41,6 +46,10 @@ data class FieldInfo(
         private const val TYPE_TEXT_VARIATION_VISIBLE_PASSWORD = 0x90
         private const val TYPE_TEXT_VARIATION_WEB_PASSWORD = 0xE0
         private const val TYPE_NUMBER_VARIATION_PASSWORD = 0x10
+        private const val TYPE_TEXT_VARIATION_URI = 0x10
+        private const val TYPE_TEXT_VARIATION_EMAIL_ADDRESS = 0x20
+        private const val TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS = 0xD0
+        private const val TYPE_TEXT_FLAG_NO_SUGGESTIONS = 0x80000
         private const val TYPE_TEXT_FLAG_MULTI_LINE = 0x20000
         private const val IME_MASK_ACTION = 0xFF
         private const val IME_ACTION_UNSPECIFIED = 0
@@ -50,6 +59,10 @@ data class FieldInfo(
 
         private val TEXT_PASSWORD_VARIATIONS = setOf(
             TYPE_TEXT_VARIATION_PASSWORD, TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, TYPE_TEXT_VARIATION_WEB_PASSWORD,
+        )
+
+        private val TEXT_NO_SUGGEST_VARIATIONS = setOf(
+            TYPE_TEXT_VARIATION_URI, TYPE_TEXT_VARIATION_EMAIL_ADDRESS, TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
         )
 
         /** HLD 8 field table, as written in LLD-08 §2. */
@@ -68,10 +81,13 @@ data class FieldInfo(
                 (cls == TYPE_CLASS_NUMBER && varn == TYPE_NUMBER_VARIATION_PASSWORD)
             val noLearning = imeOptions and IME_FLAG_NO_PERSONALIZED_LEARNING != 0
             val multiLine = cls == TYPE_CLASS_TEXT && inputType and TYPE_TEXT_FLAG_MULTI_LINE != 0
+            // Text class only, like the password check: number password 0x10 is not read as URI.
+            val noSuggest = cls == TYPE_CLASS_TEXT &&
+                (inputType and TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0 || varn in TEXT_NO_SUGGEST_VARIATIONS)
             val action = imeOptions and IME_MASK_ACTION
             val noAction = imeOptions and IME_FLAG_NO_ENTER_ACTION != 0 ||
                 action == IME_ACTION_UNSPECIFIED || action == IME_ACTION_NONE
-            return FieldInfo(fieldClass, isPassword, noLearning, multiLine, if (noAction) null else action)
+            return FieldInfo(fieldClass, isPassword, noLearning, multiLine, if (noAction) null else action, noSuggest)
         }
     }
 }

@@ -28,4 +28,22 @@ interface EditorPort {
     fun setSelection(start: Int, end: Int)
     fun beginBatch()
     fun endBatch()
+
+    // Reads and n-character delete for word suggestions (LLD-12 §8.2, D-83). The defaults keep every port that does
+    // not implement them compiling and unchanged; such a port never turns suggestions on.
+
+    /** Whether this port can read the editor's text. Default false: no word suggestions over a port that cannot read. */
+    val canReadText: Boolean get() = false
+
+    /** Up to [n] characters before the cursor. Default null (cannot read). */
+    fun textBeforeCursor(n: Int): String? = null
+
+    /** Up to [n] characters after the cursor. Default null. */
+    fun textAfterCursor(n: Int): String? = null
+
+    /** Whether there is a selection. Default null (unknown). */
+    fun hasSelection(): Boolean? = null
+
+    /** Deletes [n] characters before the cursor. Default: [deleteBefore] [n] times (key events). */
+    fun deleteBeforeCursor(n: Int) { repeat(n) { deleteBefore() } }
 }
