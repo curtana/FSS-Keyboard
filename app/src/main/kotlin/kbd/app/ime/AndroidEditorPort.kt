@@ -84,6 +84,21 @@ class AndroidEditorPort(private val service: InputMethodService) : EditorPort {
         ic?.endBatchEdit()
     }
 
+    /** Reads go through the connection (LLD-12 §8.2); with no connection they give null. */
+    override val canReadText: Boolean get() = true
+
+    override fun textBeforeCursor(n: Int): String? = ic?.getTextBeforeCursor(n, 0)?.toString()
+
+    override fun textAfterCursor(n: Int): String? = ic?.getTextAfterCursor(n, 0)?.toString()
+
+    /** The platform gives null when nothing is selected, so null reads as no selection; no connection = unknown (null). */
+    override fun hasSelection(): Boolean? = ic?.let { c -> c.getSelectedText(0)?.isNotEmpty() ?: false }
+
+    /** One `deleteSurroundingText(n, 0)`, no key events; the result is ignored (D-32). */
+    override fun deleteBeforeCursor(n: Int) {
+        ic?.deleteSurroundingText(n, 0)
+    }
+
     /** Same events as `InputMethodService.sendDownUpKeyEvents`, on one connection. */
     private fun sendDownUp(keyCode: Int) {
         val c = ic ?: return

@@ -34,10 +34,24 @@ class ComposingController(private val port: EditorPort) {
     /** Expected cursors of our writes not yet confirmed by an update (D-29). */
     private val expected = ArrayDeque<Int>()
 
+    /** Cursor ledger for word suggestions (LLD-12 §8.4); every write below reports to it. The verdict above never reads it. */
+    private val ledger = OwnEditLedger()
+
+    /** Whether the port can read the editor's text (LLD-12 §8.3). */
+    val canReadText: Boolean get() = port.canReadText
+
+    fun textBefore(n: Int): String? = port.textBeforeCursor(n)
+
+    fun textAfter(n: Int): String? = port.textAfterCursor(n)
+
+    fun hasSelection(): Boolean? = port.hasSelection()
+
     /** [pendingGlyph]: the graffiti cheonjiin's temporary ㆍ / ‥ after the composition (FR-HGL-04e); dropping it restores the text without it. */
     fun show(r: ComposeResult, pendingGlyph: String = "") {
         val base = r.composing
         val d = base + pendingGlyph
+        val writes = r.committed.isNotEmpty() || d.isNotEmpty() || composingShown.isNotEmpty()
+        if (writes) ledger.unknown()
         batch {
             if (r.committed.isNotEmpty()) {
                 port.commitText(r.committed)
@@ -74,6 +88,7 @@ class ComposingController(private val port: EditorPort) {
             composeStart != -1 -> composeStart + composingShown.length
             else -> -1
         }
+        ledger.unknown()
         val g = composingShown.length - bare.length   // the glyph's share of the span (0 when "‥" stands for ㅣ / ㅡ)
         val restoredS = restore(newS, spanEnd, g)
         val restoredE = restore(newE, spanEnd, g)
@@ -96,12 +111,14 @@ class ComposingController(private val port: EditorPort) {
     fun commitText(text: String) {
         port.commitText(text)
         expectCommit(text)
+        ledger.committed(text.length)
     }
 
     /** Deletes one character, or the selection (FR-CMN-07). The resulting cursor is unknown. */
     fun deleteBefore() {
         port.deleteBefore()
         predictedSel = -1
+        ledger.deletedKey()
     }
 
     fun arrow(d: Dir) {
@@ -114,12 +131,14 @@ class ComposingController(private val port: EditorPort) {
             },
         )
         predictedSel = -1
+        ledger.unknown()
     }
 
     /** Esc or forward Del key event (issue #198); like an arrow, the resulting cursor is unknown. */
     fun editKey(k: EditorKey) {
         port.sendKey(k)
         predictedSel = -1
+        ledger.unknown()
     }
 
     /**
@@ -129,6 +148,7 @@ class ComposingController(private val port: EditorPort) {
     fun chordKey(key: ChordKey, mods: Set<ChordModifier>) {
         port.sendChord(key, mods)
         predictedSel = -1
+        ledger.unknown()
     }
 
     fun tab() = commitText("\t")
@@ -139,11 +159,13 @@ class ComposingController(private val port: EditorPort) {
             action != null -> {
                 port.performEditorAction(action)
                 predictedSel = -1
+                ledger.unknown()
             }
             f.multiLine -> commitText("\n")
             else -> {
                 port.sendKey(EditorKey.ENTER)
                 predictedSel = -1
+                ledger.unknown()
             }
         }
     }
@@ -155,6 +177,7 @@ class ComposingController(private val port: EditorPort) {
         composingShown = ""
         glyph = ""
         bare = ""
+        ledger.start(selStart, selEnd)
     }
 
     fun onUpdateSelection(newS: Int, newE: Int, candS: Int, candE: Int): SelectionVerdict {
@@ -187,6 +210,36 @@ class ComposingController(private val port: EditorPort) {
         return if (newE != before) SelectionVerdict.OTHER_MOVED else SelectionVerdict.OWN
     }
 
+    /**
+     * Precondition check, then [edits] and [then] in one batch (LLD-12 §8.3, D-84). If the text before the cursor is
+     * not exactly [expectBefore] (or cannot be read), nothing is written, [then] is not called, and the result is
+     * false. Empty [edits]: just [then], no batch, true. Called only while nothing is composing.
+     */
+    fun applyEdits(expectBefore: String, edits: List<EditorEdit>, then: () -> Unit = {}): Boolean {
+        if (expectBefore.isNotEmpty() && port.textBeforeCursor(expectBefore.length) != expectBefore) return false
+        if (edits.isEmpty()) {
+            then()
+            return true
+        }
+        batch {
+            for (ed in edits) {
+                when (ed) {
+                    is EditorEdit.DeleteBefore -> {
+                        port.deleteBeforeCursor(ed.count)
+                        predictedSel = -1   // like deleteBefore: the cursor is unknown to the verdict
+                        ledger.deletedBefore(ed.count)
+                    }
+                    is EditorEdit.Insert -> commitText(ed.text)
+                }
+            }
+            then()
+        }
+        return true
+    }
+
+    /** Whether the cursor notice is explained by the keyboard's writes (LLD-12 §8.4). Once per notice, after [onUpdateSelection]. */
+    fun isOwnCursorChange(newS: Int, newE: Int): Boolean = ledger.explains(newS, newE)
+
     /** A user position after the temporary glyph ([g] chars) is gone: positions at or past the span end shift left; −1 = unknown end, no shift. */
     private fun restore(x: Int, spanEnd: Int, g: Int) = if (spanEnd != -1 && x >= spanEnd) x - g else x
 
@@ -202,6 +255,7 @@ class ComposingController(private val port: EditorPort) {
 
     /** Takes the temporary glyph out of the editor's span; once that write returns, the glyph is gone from our state too. */
     private fun dropGlyph() {
+        ledger.unknown()
         val withoutGlyph = bare
         port.setComposingText(withoutGlyph)
         expectComposing(withoutGlyph)

@@ -6,7 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** FI-01..FI-12 (LLD-11 §7.1, LLD-08 §2). Literal Android `InputType`/`EditorInfo` values. */
+/** FI-01..FI-12 (LLD-11 §7.1, LLD-08 §2), FI-13..FI-20 (LLD-11 §7.12 (마), LLD-12 §8.1). Literal Android `InputType`/`EditorInfo` values. */
 class FieldInfoTest {
 
     private companion object {
@@ -25,6 +25,11 @@ class FieldInfoTest {
         const val ACTION_UNSPECIFIED = 0
         const val ACTION_NONE = 1
         const val ACTION_SEARCH = 3
+        const val TEXT_EMAIL_ADDRESS = 0x21
+        const val TEXT_WEB_EMAIL_ADDRESS = 0xD1
+        const val NO_SUGGESTIONS = 0x80000
+        const val AUTO_COMPLETE = 0x10000
+        const val TYPE_NULL = 0
     }
 
     @Test
@@ -113,5 +118,63 @@ class FieldInfoTest {
         assertTrue(f.noRecord)
         assertTrue(f.hidesDisplay)
         assertTrue(f.numericLike)
+    }
+
+    @Test
+    fun `FI-13 text URI turns suggestions off`() {
+        val f = FieldInfo.from(TEXT_URI, 0)
+        assertFalse(f.autocompleteAllowed)
+        assertTrue(f.noSuggest)
+        assertFalse(f.isPassword)
+    }
+
+    @Test
+    fun `FI-14 text email address and web email address turn suggestions off`() {
+        assertFalse(FieldInfo.from(TEXT_EMAIL_ADDRESS, 0).autocompleteAllowed)
+        assertFalse(FieldInfo.from(TEXT_WEB_EMAIL_ADDRESS, 0).autocompleteAllowed)
+    }
+
+    @Test
+    fun `FI-15 text with the no-suggestions flag, also multi-line, turns suggestions off`() {
+        assertFalse(FieldInfo.from(TEXT or NO_SUGGESTIONS, 0).autocompleteAllowed)
+        assertFalse(FieldInfo.from(TEXT or NO_SUGGESTIONS or MULTI_LINE, 0).autocompleteAllowed)
+    }
+
+    @Test
+    fun `FI-16 number password, number, phone, datetime - no suggestions, number password not read as URI`() {
+        for (t in listOf(NUMBER_PASSWORD, NUMBER, PHONE, DATETIME)) assertFalse("$t", FieldInfo.from(t, 0).autocompleteAllowed)
+        assertFalse(FieldInfo.from(NUMBER_PASSWORD, 0).noSuggest)
+    }
+
+    @Test
+    fun `FI-17 text password variations - no suggestions`() {
+        for (t in listOf(TEXT_PASSWORD, TEXT_VISIBLE_PASSWORD, TEXT_WEB_PASSWORD)) {
+            assertFalse("$t", FieldInfo.from(t, 0).autocompleteAllowed)
+        }
+    }
+
+    @Test
+    fun `FI-18 no input type is OTHER with no suggestions`() {
+        val f = FieldInfo.from(TYPE_NULL, 0)
+        assertEquals(FieldClass.OTHER, f.fieldClass)
+        assertFalse(f.autocompleteAllowed)
+    }
+
+    @Test
+    fun `FI-19 other text fields allow suggestions, incl auto-complete and no-learning`() {
+        assertTrue(FieldInfo.from(TEXT, 0).autocompleteAllowed)
+        assertTrue(FieldInfo.from(TEXT or MULTI_LINE, 0).autocompleteAllowed)
+        assertTrue(FieldInfo.from(TEXT or AUTO_COMPLETE, 0).autocompleteAllowed)
+        assertTrue(FieldInfo.from(TEXT, NO_PERSONALIZED_LEARNING).autocompleteAllowed)
+        for (t in listOf(0x31, 0x41, 0x51, 0x61, 0x71, 0xA1, 0xC1)) {
+            assertTrue("$t", FieldInfo.from(t, 0).autocompleteAllowed)
+        }
+    }
+
+    @Test
+    fun `FI-20 five positional arguments still build a field that allows suggestions`() {
+        val f = FieldInfo(FieldClass.TEXT, false, false, false, null)
+        assertFalse(f.noSuggest)
+        assertTrue(f.autocompleteAllowed)
     }
 }
