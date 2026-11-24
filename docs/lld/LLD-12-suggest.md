@@ -438,7 +438,7 @@ internal class OwnEditLedger {
 - `ComposingController`가 부르는 곳: `commitText`·`tab`·`enter`의 여러 줄 → `committed`; `deleteBefore` → `deletedKey`; `applyEdits` → `deletedBefore`·`committed`; `show`(조합 쓰기)·`finishComposing`의 임시 글자 빼기·`finishAfterUserMove`·`arrow`·`editKey`·`chordKey`·`enter`의 동작·키 → `unknown`; `onStart(s, e)` → `start(s, e)`.
 - `explains(newS, newE)`:
   1. `w = writesSinceUpdate`, `writesSinceUpdate = 0`.
-  2. **기다림**이면(PM 결정 2026-11-24, 검수 1회차 중요 3 (나)): 이 알림을 **`unknown()` 쓰기의 결과**로 본다 — `(s, e) = (min, max)(newS, newE)`, `awaiting = false`, 그 뒤 `pending`의 쓰기를 차례로 앎의 규칙으로 다시 적용(그때마다 `expected`에 새 커서를 더함)하고 `pending`을 비운다. **true**. 그래서 방향키 뒤 곧바로 친 글자들도 예상에 들어가고, 그 뒤의 사용자 터치는 6에서 초기화된다 — 모름이 입력으로 이어지지 않는다(SRS FR-SUG-04 ②·09 ② 그대로 — 남는 경우는 아래 한계 문단의 둘이고, 둘 다 공급자 상태를 틀리게 쓰지 않는다).
+  2. **기다림**이면(PM 결정 2026-11-24, 검수 1회차 중요 3 (나)): 이 알림을 **`unknown()` 쓰기의 결과**로 본다 — `(s, e) = (min, max)(newS, newE)`, `awaiting = false`, 그 뒤 `pending`의 쓰기를 차례로 앎의 규칙으로 다시 적용(그때마다 `expected`에 새 커서를 더함)하고 `pending`을 비운다. **true**. 그래서 방향키 뒤 곧바로 친 글자들도 예상에 들어가고, 그 뒤의 사용자 터치는 6에서 초기화된다 — 모름이 입력으로 이어지지 않는다(SRS FR-SUG-04 ②·09 ② 그대로 — 남는 경우는 아래 한계 문단의 둘이고, 둘 다 입력창은 안전하다 — 전제 확인이 쓰기를 막음).
   3. **그 밖의 모름**(시작 값 없음, 맨 앞 ⌫, 범위 밖 지우기): **늘 true**(모름에서는 초기화하지 않음). 다시 맞추는 것은 `w == 0`일 때만이다 — `(s, e) = (min, max)(newS, newE)`. `w ≥ 1`이면 모름 그대로 둔다(날아가는 내 쓰기의 알림이 아직 남음).
   4. 앎이고 `newS == newE`이고 `expected`에 newE가 있으면: 그것까지 앞에서 지우고 true(늦게 오거나 묶여 온 알림, D-29와 같은 생각).
   5. 앎이고 `(newS, newE) == (s, e)`이면(쓰기 없는 같은 자리 알림): `expected` 비우고 true.
