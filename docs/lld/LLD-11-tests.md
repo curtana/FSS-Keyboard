@@ -1301,12 +1301,12 @@ abcdefghijklmnopqrstuvwxyzabcdef 32 (32자)
 | OL-03 | `start(5, 5)`, `committed(1)`, `deletedKey()`, `committed(1)`, 알림 (6,6)·(5,5)·(6,6) / 알림 (6,6) 하나만 | 모두 참 / 참(⌫ 뒤 글자 — 지금 판정이 `OTHER_MOVED`로 보는 함정) | 8.4 문제 |
 | OL-04 | `start(10, 10)`, `deletedKey()` ×4(⌫ 반복), 알림 (9,9)…(6,6) / (6,6)만 | 모두 참 / 참 | FR-SUG-08 ③ |
 | OL-05 | `start(3, 3)`, `deletedBefore(3)`, `committed(7)`(고르기 "mon" → "Monday "), 알림 (7,7) / (0,0)·(7,7) | 참 / 참·참 | FR-SUG-06 |
-| OL-06 | `start(5, 5)`, `committed(1)`, 알림 (6,6), 알림 (2,2), 이어 `committed(1)`, 알림 (3,3) | 참, **거짓**(사용자 터치), 참(다시 맞춤) | FR-SUG-09 ② |
+| OL-06 | `start(5, 5)`, `committed(1)`, 알림 (6,6), 알림 (2,2), 이어 `committed(1)`, 알림 (3,3) | 참, **거짓**(사용자 터치 — 2로 다시 맞춤), 참(예상 3) | FR-SUG-09 ② |
 | OL-07 | `start(5, 5)`, 알림 (2,5)(선택) / 이어 `deletedKey()`, 알림 (2,2) / 이어 `committed(1)`, 알림 (3,3) | 거짓 / 참(선택 지움 = 시작) / 참 | 8.4 |
 | OL-08 | `start(5, 5)`, `unknown()`(방향키), `committed(1)`, 알림 (4,4), 알림 (5,5), 이어 알림 (1,1) | 참(기다림 → 4가 방향키 결과, `committed` 다시 적용 → 예상 5), 참, **거짓** | 8.4 ② |
 | OL-09 | 방향키 → 입력 → 터치: `start(5, 5)`, `unknown()`, `committed(1)` ×3(`hel`), 알림 (2,2)·(3,3)·(4,4)·(5,5), 이어 알림 (0,0) / `unknown()`만, 알림 (7,7), `committed(1)`, 알림 (8,8), 알림 (3,3) | 참·참·참·참, **거짓**(모름이 입력으로 이어지지 않음) / 참, 참, 거짓 | 8.4 ②, SRS FR-SUG-04 ②·09 ② |
 | OL-10 | `start(-1, -1)`, 알림 (4,4), `committed(1)`, 알림 (5,5) | 참, 참 | 8.4 `start` |
-| OL-11 | `start(0, 0)`, `deletedKey()`, 알림 (0,0) / `start(2, 2)`, `deletedBefore(3)`, 알림 (0,0) | 참(기다림 아닌 모름, 쓰기 있어 다시 맞추지 않음) / 참(같음) | 8.4 쓰기 ③ |
+| OL-11 | `start(0, 0)`, `deletedKey()`, 알림 (0,0) / `start(2, 2)`, `deletedBefore(3)`, 알림 (0,0) | 참(기다림 아닌 모름, w = 1이라 다시 맞추지 않음) / 참(범위 밖 지우기 → 기다림 아닌 모름, w = 1 경로) | 8.4 쓰기, `explains` 3 |
 | OL-12 | `start(5, 5)`, `committed(1)`, 알림 (9,9), 이어 알림 (6,6) | 거짓(예상 비움, 9로 다시 맞춤), 거짓 | 8.4 ⑤ |
 | OL-13 | `ComposingController`(가짜 포트): `onStart(5, 5)`, `commitText("a")`, `deleteBefore()`, `commitText("b")`, 알림 (6,6)·(5,5)·(6,6)마다 `onUpdateSelection` 뒤 `isOwnCursorChange` | `isOwnCursorChange` 모두 참. 같은 알림의 `onUpdateSelection` 판정은 0.96과 같음(둘째·셋째 `OTHER_MOVED`) | 8.4 "기존 판정 그대로" |
 | OL-14 | `ComposingController`: `show(("", "가"))`(조합), 알림 (6,6,5,6) / `arrow(LEFT)`, 알림 (4,4), `commitText("a")`, 알림 (5,5), 알림 (9,9) | `isOwnCursorChange` 참(기다림 결과) / 참, 참, **거짓** | 8.4 `unknown` |
