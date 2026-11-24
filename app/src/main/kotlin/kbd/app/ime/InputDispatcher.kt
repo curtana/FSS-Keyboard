@@ -20,6 +20,8 @@ import kbd.stroke.tap.ChordKeys
 import kbd.stroke.tap.ChordModifier
 import kbd.stroke.tap.TapGesture
 import kbd.stroke.tap.TapOutput
+import kbd.suggest.SuggestKey
+import kbd.suggest.ResetReason as SuggestReset
 
 /**
  * Applies view output to the composer, the editor and the mode state (LLD-08 §6). Android-free.
@@ -39,6 +41,12 @@ class InputDispatcher(
 
     /** Current field; set by `KeyboardService.onStartInputView` (LLD-08 §3.1). */
     override var field: FieldInfo = FieldInfo(FieldClass.TEXT, isPassword = false, noLearning = false, multiLine = false, enterAction = null)
+
+    /**
+     * Word suggestions (LLD-12 §12, §13). null = none: the practice keyboard has no suggestions (FR-SUG-01 ⑤). The chord
+     * paths never ask it (FR-SUG-09 ①).
+     */
+    var suggest: SuggestionController? = null
 
     /** The service shows the view of the new mode (LLD-08 §6.1 `onModeKey`). */
     var onShowMode: (InputMode) -> Unit = {}
@@ -88,8 +96,10 @@ class InputDispatcher(
                 this.out.show(c.apply(if (j.kind == JamoKind.CONSONANT) JamoEvent.Consonant(j) else JamoEvent.Vowel(j)))
             }
         } else if (text != null) {
-            finishAll()   // FR-TAP-11a
-            this.out.commitText(text)
+            keyed(SuggestKey.Text(text)) {
+                finishAll()   // FR-TAP-11a
+                this.out.commitText(text)
+            }
         }
         if (out.errorVibe) feedback.error()
         markInput()
@@ -118,30 +128,36 @@ class InputDispatcher(
         }
         when (key) {
             FunctionKey.BACKSPACE -> {
-                backspace()
+                keyed(SuggestKey.Backspace) { backspace() }   // a repeat comes here too (FR-SUG-08 ③)
                 markInput()
             }
             FunctionKey.SPACE -> {
-                finishAll()
-                out.commitText(" ")
-                markInput()
+                keyed(SuggestKey.Space) {
+                    finishAll()
+                    out.commitText(" ")
+                }
+                markInput()   // a space the provider takes (no-op after a pick) is input too
             }
             FunctionKey.ENTER -> {
-                finishAll()
-                out.enter(field)
+                keyed(SuggestKey.Enter) {
+                    finishAll()
+                    out.enter(field)
+                }
                 markInput()
             }
             FunctionKey.TAB -> {
-                finishAll()
-                out.tab()
+                keyed(SuggestKey.Tab) {
+                    finishAll()
+                    out.tab()
+                }
                 markInput()
             }
-            FunctionKey.ARROW_LEFT -> arrow(Dir.LEFT)
-            FunctionKey.ARROW_UP -> arrow(Dir.UP)
-            FunctionKey.ARROW_DOWN -> arrow(Dir.DOWN)
-            FunctionKey.ARROW_RIGHT -> arrow(Dir.RIGHT)
-            FunctionKey.ESC -> editKey(EditorKey.ESCAPE)
-            FunctionKey.DELETE -> editKey(EditorKey.FORWARD_DEL)
+            FunctionKey.ARROW_LEFT -> keyed(SuggestKey.Navigation) { arrow(Dir.LEFT) }
+            FunctionKey.ARROW_UP -> keyed(SuggestKey.Navigation) { arrow(Dir.UP) }
+            FunctionKey.ARROW_DOWN -> keyed(SuggestKey.Navigation) { arrow(Dir.DOWN) }
+            FunctionKey.ARROW_RIGHT -> keyed(SuggestKey.Navigation) { arrow(Dir.RIGHT) }
+            FunctionKey.ESC -> keyed(SuggestKey.Navigation) { editKey(EditorKey.ESCAPE) }
+            FunctionKey.DELETE -> keyed(SuggestKey.Navigation) { editKey(EditorKey.FORWARD_DEL) }
             FunctionKey.MODE, FunctionKey.CTRL, FunctionKey.ALT -> error("not a target key: $key")
         }
     }
@@ -169,6 +185,7 @@ class InputDispatcher(
     private fun setChord(s: Set<ChordModifier>) {
         if (s == chord) return
         chord = s
+        suggest?.chordOn = s.isNotEmpty()   // on: the word goes and suggestions wait until it is off (FR-SUG-09 ①)
         onChordChanged()
     }
 
@@ -197,6 +214,7 @@ class InputDispatcher(
         clearChord()   // FR-TAP-17 ① (라)
         finishAll()
         resetParsers(ResetReason.MODE_CHANGED)
+        suggest?.reset(SuggestReset.MODE)
         onOpenSettings()
     }
 
@@ -209,6 +227,7 @@ class InputDispatcher(
         clearChord()   // not a target key: the chord goes and nothing is sent (FR-TAP-17 ① (다))
         finishAll()
         resetParsers(ResetReason.MODE_CHANGED)
+        suggest?.reset(SuggestReset.MODE)   // FR-SUG-09 ②
         val before = modes.current
         val next = modes.onModeKey()
         if (!modes.inNumericField) saveMode(next)
@@ -265,6 +284,12 @@ class InputDispatcher(
         val snap = s as Snapshot
         snap.composer?.let { composer?.restore(it) }
         snap.graffiti?.let { graffiti?.restore(it) }
+    }
+
+    /** A key the word suggestions see (LLD-12 §13): through [suggest] when there is one, else [normal] alone. */
+    private inline fun keyed(k: SuggestKey, crossinline normal: () -> Unit) {
+        val s = suggest
+        if (s == null) normal() else s.key(k) { normal() }
     }
 
     /** Arrows are not input (FR-TAP-10, FR-CMN-03a). */

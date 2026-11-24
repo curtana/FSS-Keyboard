@@ -113,6 +113,7 @@ dependencies {
     implementation(project(":core-hangul"))
     implementation(project(":stroke-core"))
     implementation(project(":recognizer"))
+    implementation(project(":core-suggest"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.customview)
