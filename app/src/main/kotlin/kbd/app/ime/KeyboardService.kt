@@ -24,6 +24,7 @@ import kbd.app.store.ErrorLog
 import kbd.app.store.Settings
 import kbd.app.store.SettingsStore
 import kbd.app.view.KeyboardRootView
+import kbd.app.view.SuggestionBarView
 import kbd.app.view.TapKeyboardView
 import kbd.hangul.cheonjiin.CheonjiinAssembler
 import kbd.graffiti.recognize.TemplateLoader
@@ -34,6 +35,10 @@ import kbd.hangul.compose.HangulComposer
 import kbd.stroke.layout.TapLayouts
 import kbd.stroke.threshold.ThresholdDefaults
 import kbd.stroke.threshold.Thresholds
+import kbd.suggest.ResetReason
+import kbd.suggest.en.EnglishDictionary
+import kbd.suggest.en.EnglishWordSource
+import kbd.suggest.en.WordIndex
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -74,6 +79,15 @@ class KeyboardService : InputMethodService() {
     private lateinit var guard: EngineGuard
     private lateinit var feedback: FeedbackPort
 
+    /** English word suggestions (LLD-12 §12, §14); with the setting off it has no provider and reads nothing. */
+    internal lateinit var suggestion: SuggestionController
+    /** The suggestion bar on the root, null while the setting is off (FR-SUG-01 ①). */
+    internal var bar: SuggestionBarView? = null
+    /** Generation of the dictionary read: a read that ends after the setting went off and on again is dropped. */
+    private var dictGen = 0
+    /** Reads the word list; tests give a small dictionary or one that fails (LLD-11 SV-02, SV-08). */
+    internal var dictionaryLoader: () -> WordIndex = EnglishDictionary::load
+
     override fun onCreate() {
         super.onCreate()
         errorLog = ErrorLog(File(filesDir, ERROR_LOG_FILE))
@@ -86,6 +100,11 @@ class KeyboardService : InputMethodService() {
         feedback = Feedback({ if (::root.isInitialized) root else null }, getSystemService(AudioManager::class.java), { settings })
         composing = ComposingController(AndroidEditorPort(this))
         dispatcher = InputDispatcher(modes, composing, feedback, ::saveLastMode)
+        suggestion = SuggestionController(composing) { site, e -> errorLog.record(site, e) }   // NFR-05: site and class only
+        suggestion.onCandidates = { cells, revision -> bar?.show(cells, revision) }
+        suggestion.enabled = settings.wordSuggest
+        suggestion.mode = modes.current
+        dispatcher.suggest = suggestion
         dispatcher.onShowMode = { m -> showModeView(m, dispatcher.field) }
         dispatcher.onChordChanged = { tapView?.chordChanged() }   // FR-TAP-15 ④, FR-TAP-18
         dispatcher.onOpenSettings = {   // mode key up stroke, all modes (issue #205)
@@ -93,6 +112,7 @@ class KeyboardService : InputMethodService() {
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
         }
         guard = EngineGuard(errorLog, dispatcher)
+        if (settings.wordSuggest) loadDictionary()   // after guard: the read reports through it
         createGraffiti()
         scope.launch {
             settingsStore.flow.collect { s -> handler.post { applySettings(s) } }
@@ -114,6 +134,7 @@ class KeyboardService : InputMethodService() {
             it.landscapeFloat = settings.landscapeFloat
             it.moveFeedback = feedback
             it.onFloatMoved = ::saveFloatPosition
+            if (settings.wordSuggest) it.setSuggestionBar(newBar())   // FR-SUG-01 ①
             it.relayout()   // the move handle, when this orientation floats
         }
         showModeView(modes.current, dispatcher.field)
@@ -134,6 +155,8 @@ class KeyboardService : InputMethodService() {
         modes.applyEnabled(settings.enabledModes)?.let(::saveLastMode)   // FR-CMN-03f; committed above
         errorLog.enabled = !f.noRecord   // NFR-05, FR-CMN-08 ① ②
         composing.onStart(info.initialSelStart, info.initialSelEnd)
+        suggestion.fieldAllowed = f.autocompleteAllowed   // FR-SUG-10
+        suggestion.reset(ResetReason.FIELD)   // a new field, or this one shown again (FR-SUG-09 ②)
         recognizers.warm()   // personal strokes stored since the last show are in from now on (FR-TUT-17 ③, LLD-05 §11)
         showModeView(modes.current, f)
         if (modes.current == InputMode.GRAFFITI && before != InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
@@ -146,6 +169,8 @@ class KeyboardService : InputMethodService() {
             SelectionVerdict.OTHER_MOVED -> dispatcher.onCursorMovedNoComposing()
             SelectionVerdict.OWN -> Unit
         }
+        // Once per notice, after the verdict above: a change the keyboard's writes do not explain (FR-SUG-04 ②, 09 ②).
+        if (!composing.isOwnCursorChange(newSelStart, newSelEnd)) suggestion.reset(ResetReason.CURSOR)
     }
 
     /**
@@ -156,6 +181,7 @@ class KeyboardService : InputMethodService() {
     override fun onFinishInputView(finishingInput: Boolean) {
         dispatcher.clearChord()   // FR-TAP-17 ① (바)
         dispatcher.finishAll()
+        suggestion.reset(ResetReason.FINISHED)   // FR-SUG-09 ②
         if (::root.isInitialized) {
             root.cancelTouches()
             if (!finishingInput) root.closeGuide()
@@ -166,6 +192,7 @@ class KeyboardService : InputMethodService() {
     override fun onFinishInput() {
         dispatcher.clearChord()   // FR-TAP-17 ① (바)
         dispatcher.finishAll()
+        suggestion.reset(ResetReason.FINISHED)
         super.onFinishInput()
     }
 
@@ -188,6 +215,7 @@ class KeyboardService : InputMethodService() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         dispatcher.clearChord()   // FR-TAP-17 ① (사)
+        suggestion.reset(ResetReason.CONFIG)   // FR-SUG-09 ②
         if (::root.isInitialized) root.relayout()
     }
 
@@ -230,6 +258,7 @@ class KeyboardService : InputMethodService() {
 
     /** LLD-08 §3.1 `showModeView`; the composer is re-created for the mode (D-10). */
     private fun showModeView(mode: InputMode, f: FieldInfo) {
+        suggestion.mode = mode   // leaving QWERTY drops the word (FR-SUG-01 ③, 09 ②)
         dispatcher.composer = when (mode) {
             InputMode.DUBEOLSIK -> HangulComposer(ComposePolicy.DUBEOLSIK, ::onInvalidComposerEvent)
             InputMode.GRAFFITI -> HangulComposer(ComposePolicy.GRAFFITI, ::onInvalidComposerEvent)
@@ -264,11 +293,14 @@ class KeyboardService : InputMethodService() {
     private fun applySettings(s: Settings) {
         val rowChanged = s.rowHeightDp != settings.rowHeightDp
         val widthChanged = s.portraitWidth != settings.portraitWidth || s.landscapeWidth != settings.landscapeWidth
+        val suggestChanged = s.wordSuggest != settings.wordSuggest
         settings = s
+        if (suggestChanged) applyWordSuggest(s.wordSuggest)
         pad?.let { if (it.letterRatio != s.graffitiLetterRatio) it.letterRatio = s.graffitiLetterRatio }
         // The root already has the shares of a place it was just put at: that coming back is no change (FR-CMN-15 ⑨).
         val floatChanged = ::root.isInitialized && (s.portraitFloat != root.portraitFloat || s.landscapeFloat != root.landscapeFloat)
-        if ((rowChanged || widthChanged || floatChanged) && ::root.isInitialized) {
+        // A bar added or taken away: placed again at once, mode and composing text kept (FR-SUG-01 ④).
+        if ((rowChanged || widthChanged || floatChanged || suggestChanged) && ::root.isInitialized) {
             root.rowHeightDp = s.rowHeightDp
             root.portraitWidth = s.portraitWidth   // FR-CMN-14 ⑩: placed again at once
             root.landscapeWidth = s.landscapeWidth
@@ -296,6 +328,43 @@ class KeyboardService : InputMethodService() {
         if (modes.current == InputMode.GRAFFITI) dispatcher.graffiti?.enterMode()   // FR-GRF-05a
     }
 
+    /** The setting "English word suggestions" changed (LLD-12 §14, FR-SET-11): the bar and the dictionary follow. */
+    private fun applyWordSuggest(on: Boolean) {
+        suggestion.reset(ResetReason.SETTING)
+        suggestion.enabled = on
+        if (on) {
+            loadDictionary()
+            if (::root.isInitialized) root.setSuggestionBar(newBar())
+        } else {
+            releaseDictionary()
+            if (::root.isInitialized) root.setSuggestionBar(null)
+            bar = null
+        }
+    }
+
+    /** A new bar; its picks run as one guarded stroke, like a key (LLD-09 §2). */
+    private fun newBar(): SuggestionBarView = SuggestionBarView(this, feedback).also {
+        it.onPick = { i, r -> guard.stroke(SITE_PICK) { suggestion.pick(i, r) } }
+        bar = it
+    }
+
+    /**
+     * Reads the dictionary on a background thread so input does not wait (FR-SUG-11 ③); the provider is attached on
+     * the main thread. A failure is logged with its site and class only and leaves no provider (NFR-03, NFR-05).
+     */
+    private fun loadDictionary() {
+        val gen = ++dictGen
+        scope.launch {
+            val dict = guard.run(SITE_DICT) { dictionaryLoader() }
+            handler.post { if (gen == dictGen && settings.wordSuggest) suggestion.attach(dict?.let(::EnglishWordSource)) }
+        }
+    }
+
+    private fun releaseDictionary() {
+        dictGen++   // a read still running is dropped
+        suggestion.attach(null)
+    }
+
     /** The floating keyboard was put somewhere (FR-CMN-15 ⑨): the shares given are stored, and kept here until they come back. */
     private fun saveFloatPosition(landscape: Boolean, fx: Float?, fy: Float?) {
         val old = if (landscape) settings.landscapeFloat else settings.portraitFloat
@@ -321,5 +390,7 @@ class KeyboardService : InputMethodService() {
         const val SITE_COMPOSER = "HangulComposer.invalid"
         const val SITE_TEMPLATES = "TemplateLoader.load"
         const val TEMPLATES_RESOURCE = "/graffiti/templates.json"
+        const val SITE_DICT = "EnglishDictionary.load"
+        const val SITE_PICK = "Suggest.pick"
     }
 }
