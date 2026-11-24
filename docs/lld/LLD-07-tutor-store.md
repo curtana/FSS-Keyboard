@@ -1,7 +1,8 @@
 # LLD-07 입력 연습과 저장소
 
 - 대응 HLD 절: 7장(7.1 입력 연습, 7.2 기준값, 7.3 저장 데이터, 7.4 내 획 학습)
-- 버전 **0.40** (2026-11-18)
+- 버전 **0.41** (2026-11-24)
+- 0.41(FSS#73, SRS 0.97 FR-SET-11·FR-SUG-01 ⑤, HLD 0.90 7.3): 설정 **"영문 단어 후보"** — 6.1 `Settings.wordSuggest`(기본 false)·키 `word_suggest`, 7절 새 묶음 "단어 후보"(입력 모드 바로 뒤, 스위치 한 줄 + 안내 한 줄)·묶음 순서. 입력 연습의 `BoardFrame`은 이 값을 읽지 않는다(후보 줄 없음, 2.3 그대로). 키보드 쪽 반영은 [LLD-12-suggest.md](LLD-12-suggest.md) 11·14절. 옮겨 오기 없음(새 키)
 - 0.40(FSS#140, SRS 0.96 FR-SET-10, HLD 0.89 7.3): 설정 화면 맨 아래에 읽기 전용 "버전" 묶음(7절 표·묶음 순서), 새 7.1 `BuildInfo`(표시 문자열 순수 함수, `BuildConfig` 필드 `GIT_HASH`·`BUILD_DATE`, 빌드 스크립트의 값 출처). 설정 저장 형식은 그대로다.
 - 0.39(FSS#96, SRS 0.88 FR-TUT-14~17·TBD-30, HLD 0.81 7.3·7.4, LLD-05 0.38 8.3·11절): **내 획 학습** — 새 8절: 대상 글자와 저장 판정 `MyStrokes`(8.1), 개인 획 저장소 `PersonalStrokeStore`·`PersonalStrokeBook`·`PersonalStrokeCodec`과 파일 형식(판 1, `noBackupFilesDir`, 임시 파일에 쓰고 바꿔 끼움, 읽을 수 없는 파일은 빈 목록으로 보고 그대로 둠, 8.2), 화면과 문구 `MyStrokesScreen`(8.3), 인식 반영(8.4). 주제 목록에 "내 획 학습" 줄(2.3). 연습 주제와 설정 저장 형식은 그대로다.
 - 0.38(FSS#98, SRS 0.87 FR-TAP-17 ④, LLD-08 0.34): 연습 탭 자판의 Ctrl·Alt는 편집 줄의 다른 키처럼 보이되 동작이 없다(`tapSink`가 넘기지 않음 — 켜지지 않고 켜짐 표시도 없음), `PracticeEditor.sendChord`는 빈 구현(2.3). 시험 PR-35.
@@ -165,7 +166,8 @@ data class Settings(val lastMode: InputMode?,       // 0.37: showDirectionGuide�
                     val portraitWidth: WidthSetting = WidthSetting.DEFAULT,    // 0.27, FSS#25 (LLD-08 7.2)
                     val landscapeWidth: WidthSetting = WidthSetting.DEFAULT,
                     val portraitFloat: FloatSetting = FloatSetting.DEFAULT,    // 0.36, FSS#86 (LLD-08 7.4)
-                    val landscapeFloat: FloatSetting = FloatSetting.DEFAULT) {
+                    val landscapeFloat: FloatSetting = FloatSetting.DEFAULT,
+                    val wordSuggest: Boolean = false) {          // 0.41, FSS#73 FR-SET-11 (LLD-12 11절)
     val enabledModes: Set<InputMode>   // {DUBEOLSIK, QWERTY} ∪ 켜진 GRAFFITI (LLD-08 5절 applyEnabled에 넘김)
 }
 class SettingsStore(private val ds: DataStore<Preferences>) {
@@ -197,6 +199,7 @@ object RowHeight { const val MIN_DP = 40f; const val MAX_DP = 64f; const val DEF
 
 | `float_portrait`, `float_x_portrait`, `float_y_portrait` (0.36) | false, 없음, 없음 | FR-CMN-15 ①⑤⑥, FR-SET-09(FSS#86). 띄우기(Boolean)와 띄운 자판의 자리 비율 fx·fy(Float, 0~1, 이동 영역의 가로·세로 범위에 대한 몫, LLD-08 7.4). 비율 키가 없으면 그 축은 한 번도 놓지 않은 것(가로 = 정렬 설정의 자리, 세로 = 아래 끝). 읽을 때 `FloatingKeyboard.ratio`: 0~1 밖은 가까운 끝, 숫자가 아닌 값(NaN)은 없음(SS-14). 비율은 **놓을 때만** `setFloatPosition`으로 쓰고(준 축만, null인 축은 그대로 둠, SS-13), 스위치는 `update`로 쓴다(`update`는 `FloatSetting` 셋을 그대로 쓰고 null 비율은 키를 지운다 — 설정 화면은 `on`만 바꾸고 비율은 읽은 그대로 넘기므로 지우지 않는다) |
 | `float_landscape`, `float_x_landscape`, `float_y_landscape` (0.36) | false, 없음, 없음 | 〃 가로 화면. 세로와 따로 기억한다(FR-CMN-15 ⑤, SS-12) |
+| `word_suggest` (0.41) | **false** | FR-SET-11(오너 결정 2026-11-24, FSS#73 결정 4): 영문 단어 후보 줄. 방향별로 두지 않음. 키가 없으면 끔(옛 설치본도 끔으로 시작). 시험 SS-16 |
 - 저장된 `lastMode` 이름이 모르는 값이면 없음으로 본다(FR-CMN-10·10a ①): `InputMode.entries.firstOrNull { it.name == 이름 }`. 옛 버전이 쓴 `"SWIPE"`가 그 경우이고, `ModeController`는 저장 없음으로 시작한다(순서의 첫 모드 한글 두벌식, LLD-08 5절). `fixedStart`는 null이라(저장 없음) 시작 때 저장하지 않고, 사용자가 모드 키를 누르거나 켜진 모드가 바뀌어 `setLastMode`가 불릴 때 그 값이 덮어쓴다.
 - **옮겨 오기(0.37, SRS FR-CMN-10a ②③, HLD 7.3 "남은 값을 지울지는 LLD", LLD 결정 D-69):** 옛 버전(SRS 0.85까지)이 남긴 키 `swipe_enabled`·`show_stroke_trail`·`show_direction_guide`·`show_next_char`·`show_current_char`는 **읽지 않고 쓰지 않으며 지우지도 않는다.** 코드에는 이 키의 상수가 없다. `decode`는 아는 키만 읽으므로 남은 값이 있어도 예외가 없고, `update`·`setLastMode`·`markPracticeDone`·`setFloatPosition`은 `DataStore.edit`로 아는 키만 바꾸므로 남은 값은 그대로 남는다. 지우지 않는 까닭: 쓰는 곳이 없어 동작에 영향이 없고, 지우려면 옛 키 이름과 한 번 지우는 코드를 계속 들고 있어야 하며, 앱 삭제 때 함께 지워진다(D-68 옛 기준값 파일과 같은 처리). 그 밖의 값(진동·소리, 줄 높이, 그래피티 켜기·영역 비율, 자판 폭·정렬, 띄우기와 자리, 첫 실행 표시, 해 본 표시)은 키 이름·형식이 그대로라 그대로 읽힌다. 시험 SS-15(옛 값이 든 저장소 읽기·쓰기), MC-40~MC-42(시작 모드), PR-36(해 본 표시).
 - `graffiti_letter_ratio`는 Float 하나로 저장한다(`floatPreferencesKey`). 값은 패드 폭 가운데 **문자 영역의 몫**이다: 1 : 1 = 1/2, 2 : 1 = 2/3, 3 : 1 = 3/4(문자 : 숫자 = r : 1 − r). 설정 화면은 세 값만 쓴다(`GRAFFITI_RATIOS`, 7절). 읽을 때는 검사하지 않는다: 저장값이 없으면 기본값 2/3, 있으면 목록 밖 값이라도 그대로 `GraffitiPadGeometry`에 넘겨 그 몫으로 패드를 나누고, 설정 화면은 어느 선택지도 고르지 않은 상태(세 값과의 차가 모두 0.001 이상)로 보인다. 사용자가 하나를 고르면 그 값으로 덮어쓴다. 앱이 목록 밖 값을 쓰는 길은 없으므로(설정 화면이 유일한 쓰기) 이 경우는 저장 파일이 손상되거나 바깥에서 고친 때뿐이다.
@@ -228,6 +231,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 항목 | 저장 | 근거 |
 |---|---|---|
 | **입력 모드**(0.25, 첫 묶음) | 체크 상자 셋, 이 순서(0.37, 모드 키 순환 순서와 같게): 한글(두벌식) · 영문(쿼티) · 그래피티(한 획 손글씨). 한글·영문은 체크된 채 흐리게(바꿀 수 없음) 오른쪽에 "늘 켜짐", 그래피티 → `graffiti_enabled`. 묶음 제목 아래 설명 "끈 모드는 모드 키로 넘길 때 건너뜁니다" | FR-SET-08, FR-CMN-03f |
+| **단어 후보**(0.41, 입력 모드 바로 뒤 묶음) | `word_suggest`. 묶음 제목 "단어 후보"(`settings_section_suggest`) 아래 스위치 "영문 단어 후보"(`settings_word_suggest`, 기본 끔, 시험 태그 `word_suggest`)와 안내 한 줄 "영문 쿼티 자판 위에 단어 후보 한 줄을 둡니다. 켜면 키보드가 한 줄 높아집니다."(`settings_word_suggest_summary`) | FR-SET-11, FR-SUG-01 ③(LLD-12 11절, SE-01) |
 | 진동·소리 | `haptic`, `sound`(기본 진동 켬·소리 끔) | FR-SET-03 |
 | 입력 연습(0.24) | `PracticeActivity` 열기(설명 "영문 대문자 · 기호 · 그래피티를 골라서 짧게 연습"). 첫 실행의 주제 목록은 2.5 | FR-TUT-06, FR-SET-04 |
 | 그래피티 영역 비율 | `graffiti_letter_ratio`. 라디오 단추 셋: 1 : 1 / 2 : 1(기본) / 3 : 1 → 1/2 / 2/3 / 3/4 저장(6.1) | FR-SET-05(오너 결정 #108 A), GRAFFITI 6.3 |
@@ -237,7 +241,7 @@ class ErrorLog(private val file: File, private val maxBytes: Int = 64 * 1024) {
 | 입력기 켜기 안내 | 시스템 입력기 설정 화면 열기(`Settings.ACTION_INPUT_METHOD_SETTINGS`) | FR-CMN-01 |
 | 버전(0.40, 맨 아래) | 저장 없음. 묶음 제목 "버전"(`settings_section_version`) 아래 읽기 전용 글 두 줄 = `BuildInfo.current()`(7.1, 시험 태그 `settings_version`). 누르는 동작 없음, "버전" 줄을 따로 두지 않음(묶음 제목이 항목 이름) | FR-SET-10, FSS#140 |
 
-- 묶음 순서는 입력 모드 → 입력기 → 피드백 → 자판 → 입력 연습 → 버전(0.40: 버전은 늘 맨 아래. 0.37: "안내 표시" 묶음과 그 문구 `settings_section_display`·`settings_direction_guide`·`settings_next_char`·`settings_current_char`·`settings_stroke_trail`·`settings_mode_swipe` 삭제, FR-SET-02 삭제). 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.
+- 묶음 순서는 입력 모드 → 단어 후보(0.41) → 입력기 → 피드백 → 자판 → 입력 연습 → 버전(0.40: 버전은 늘 맨 아래. 0.37: "안내 표시" 묶음과 그 문구 `settings_section_display`·`settings_direction_guide`·`settings_next_char`·`settings_current_char`·`settings_stroke_trail`·`settings_mode_swipe` 삭제, FR-SET-02 삭제). 문구는 `strings_settings.xml`의 `settings_section_modes`·`settings_mode_*`·`settings_modes_summary`.
 - 0.24: "튜터 다시 실행"은 "입력 연습"으로, 기준값 초기화·내보내기·가져오기는 삭제(FSS#17 오너 결정 ①, FR-TUT-07 삭제).
 - 줄 높이는 40~64dp 범위에서 고른다(FR-SET-06, DCR-14 결정). 설정 화면에는 기준값 상태 안내를 두지 않는다(FR-TUT-05).
 - 시험: 실기기 DV-11.

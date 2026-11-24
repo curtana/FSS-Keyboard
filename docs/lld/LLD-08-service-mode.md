@@ -1,7 +1,8 @@
 # LLD-08 입력기 생명주기·플랫폼 처리·모드 키
 
 - 대응 HLD 절: 8장(입력기 생명주기와 플랫폼 처리), 8.1(ModeController), 5A의 창 높이·바닥 정렬·처리 시점
-- 버전 **0.34** (2026-11-14)
+- 버전 **0.35** (2026-11-24)
+- 0.35(FSS#73, SRS 0.97 FR-SUG-01~10·FR-SET-11, HLD 0.90 5B.3·5B.4·8장): **영문 단어 후보** — 명세는 [LLD-12-suggest.md](LLD-12-suggest.md)에 두고 여기에는 닿는 자리만 적었다: 2절 `FieldInfo.noSuggest`·`autocompleteAllowed`(LLD-12 8.1), 3절 서비스 배선(14절), 4절 `EditorPort` 읽기·지우기 기본 구현·`ComposingController.applyEdits`·커서 장부(8.2~8.4 — 4.1의 판정은 그대로), 6절 `InputDispatcher.suggest`(13절), 7절 후보 줄 높이·놓기·안내표 버튼 기준(10절). 설정이 꺼져 있으면 이 문서의 모든 동작이 0.34와 같다
 - 0.34(FSS#98, SRS 0.87 FR-TAP-15~18, HLD 0.80 5A "조합 키 Ctrl·Alt"·8장·R13): **조합 키 Ctrl·Alt**(새 6.3) — `InputDispatcher`가 켜진 조합 키 집합 `chord`와 눌린 기능키마다 그 누름에 실린 집합을 갖는다(`onChordChanged` 알림, `clearChord()`). 글자·숫자·기호 키의 입구 `onTapResult(key, out, gesture)`와 기능키의 입구 `onFunctionDown` 맨 앞에서 조합 키 길(꺼냄 → 조합 확정 → `ChordKeys`(LLD-05A 2.4) → `ComposingController.chordKey` → `EditorPort.sendChord`)과 평소 길을 가른다(6.1). `AndroidEditorPort.sendChord`는 물리 자판과 같은 순서의 키 입력만 보낸다(4절). 서비스는 `onStartInputView`·`onFinishInputView`·`onFinishInput`·`onConfigurationChanged`·꺼진 모드의 자동 전환에서 `clearChord()`를 부르고, 조합 키가 바뀌면 탭 자판 뷰에 알린다(3절). Ctrl·Alt가 꺼져 있으면 0.32와 모든 길이 같다.
 - 0.33(FSS#95, SRS 0.86 FR-CMN-02·03 ②·03f·10·10a, HLD 0.79 8장·8.1: **긋기 입력 모드 삭제, 모드 키 순환 순서 한글 두벌식 → 영문 쿼티 → 그래피티**): ① `InputMode { DUBEOLSIK, QWERTY, GRAFFITI }`(선언 순서 = 순환 순서, LLD-03 3.5). 저장이 없을 때 시작 모드 = `available[0]` = 한글 두벌식(5절). `ModeController`의 코드는 그대로이고 순서만 바뀐다. ② **옮겨 오기:** 저장된 마지막 모드 이름이 지금 없는 이름(`"SWIPE"`)이면 `SettingsStore`가 없음으로 읽어 `ModeController(…, saved = null, …)`이 된다(5절, LLD-07 6.1, 시험 MC-40~MC-42). ③ `KeyboardService`는 `SwipeHost`가 아니고 `SwipeModule`을 쓰지 않는다. `showModeView`는 탭 자판 뷰 아니면 그래피티 패드다(3절). ④ `InputDispatcher`에서 `swipeState`·`onJamoEvents`·`onSwipeText`·`centerText`·`closeSwipe`를 지웠다. `resetParsers`는 그래피티만 비우고, ⌫는 그래피티 아니면 조합기다(6.1). ⑤ `ComposingController.show(r, g)`의 `replacesLast`(긋기 낱모음 ‥)를 지웠다(4절). ⑥ 7절: 모드 뷰는 탭 자판(6줄)·그래피티(5줄) 둘. 탭 자판·그래피티·모드 키·좌우 여유 칸·자판 판·띄운 자판의 동작은 그대로다. 아래 0.32까지의 이력에 나오는 긋기 자판·`Swipe…`·SWIPE n.n은 이 판에서 없어졌다.
 - 0.32(FSS#86, SRS 0.84 FR-CMN-15·1.3·TBD-33, HLD 0.77 5A "띄운 자판"·8장·R12): **띄운 자판**(새 7.4) — 순수 함수 `FloatingKeyboard.place`·`drag`·`ratios`(이동 영역 S, 자판 판 = 손잡이 띠 + 자판 사각형, 비율 fx·fy, 들어가지 않으면 붙은 자판), 순수 상태 기계 `PlateMover`(HLD ⓐ~ⓚ), `KeyboardRootView`의 `portraitFloat`·`landscapeFloat`·손잡이 띠 뷰 `MoveHandle`·`movePlate`·이동 영역의 위 t(상태 막대·컷아웃, 붙은 동안은 큰 값만), `KeyboardInsets`의 띄운 자판 인셋(내용·보이는 인셋 = 입력 뷰 아래 끝, 늘 `REGION`), `FeedbackPort.grab()`(8절), 서비스의 `saveFloatPosition`·설정 흐름의 띄우기 변경(3절). 플랫폼 동작 ⑨~⑭(문서 근거·미확인). 띄우기 끔이면 0.31과 모든 길이 같다.
@@ -38,6 +39,8 @@
 
 ## 2. FieldInfo
 
+- 0.35(FSS#73): 마지막 칸 `noSuggest: Boolean = false`(NO_SUGGESTIONS 플래그, 문자 클래스의 URI·이메일 주소·웹 이메일 주소 변형)와 파생 `autocompleteAllowed` — [LLD-12-suggest.md](LLD-12-suggest.md) 8.1(판정 표, 시험 FI-13~FI-20).
+
 ```kotlin
 enum class FieldClass { TEXT, NUMBER, PHONE, DATETIME, OTHER }
 data class FieldInfo(val fieldClass: FieldClass, val isPassword: Boolean, val noLearning: Boolean,
@@ -66,6 +69,8 @@ enterAction = if (imeOptions and IME_FLAG_NO_ENTER_ACTION (0x40000000)) != 0 || 
 - 근거: FR-CMN-04, 04b, 08, 09, HLD 8장. 시험: FI-01~FI-12.
 
 ## 3. KeyboardService
+
+- 0.35(FSS#73): `SuggestionController`·후보 줄·사전 따로 읽기의 배선(`onCreate`·`onCreateInputView`·`onStartInputView`·`showModeView`·`onUpdateSelection`·`onFinishInputView`·`onFinishInput`·`onConfigurationChanged`·`applySettings`) — [LLD-12-suggest.md](LLD-12-suggest.md) 14절.
 
 ```kotlin
 class KeyboardService : InputMethodService() {
@@ -140,6 +145,8 @@ if modes.current == GRAFFITI: dispatcher.graffiti?.enterMode()   // (꺼진 모�
 - `restarting`은 따로 다루지 않는다(HLD 8장에 구분이 없음, D-28).
 
 ## 4. ComposingController와 EditorPort
+
+- 0.35(FSS#73): `EditorPort`에 기본 구현이 있는 `canReadText`·`textBeforeCursor`·`textAfterCursor`·`hasSelection`·`deleteBeforeCursor`(기존 가짜 포트·`PracticeEditor`를 고치지 않음), `ComposingController`에 읽기 넘겨주기·`applyEdits`(전제 확인 → 한 묶음)·`isOwnCursorChange`(커서 장부 `OwnEditLedger`) — [LLD-12-suggest.md](LLD-12-suggest.md) 8.2~8.4. 4.1의 판정(`SelectionVerdict`, `predictedSel`, `expected`)은 바꾸지 않는다.
 
 ```kotlin
 interface EditorPort {                     // 안드로이드 없는 경계. AndroidEditorPort가 InputConnection으로 구현
@@ -275,6 +282,8 @@ class ModeController(private val available: List<InputMode>, saved: InputMode?, 
 
 ## 6. InputDispatcher
 
+- 0.35(FSS#73): `var suggest: SuggestionController?`(null = 없음, 입력 연습)와 글자·스페이스·⌫·엔터·⇥·방향키·Esc·Del을 `suggest.key(…) { 평소 길 }`로 감쌈, `setChord`의 `chordOn`, 모드 키·모드 키 ↑의 초기화 — [LLD-12-suggest.md](LLD-12-suggest.md) 13절. 조합 키가 실린 길·두벌식·그래피티는 그대로.
+
 뷰가 내는 결과를 조합기·편집기·모드 상태에 반영한다. 안드로이드 없는 클래스이고 `TapSink`, 그래피티 `InputSink`, `EngineGuard`의 `GuardedState`(LLD-09 2절)를 구현한다.
 
 ```kotlin
@@ -404,6 +413,8 @@ SRS FR-TAP-15~17, HLD 5A "조합 키 Ctrl·Alt". 안드로이드가 없어 JVM �
 - **입력 연습(FR-TAP-17 ④):** `PracticeInput.tapSink`는 Ctrl·Alt를 디스패처에 넘기지 않는다(편집 줄의 다른 키와 같음, LLD-07 2.3). 그래서 `chord`는 늘 비어 있고 켜짐 표시도 없다.
 
 ## 7. KeyboardRootView (창 높이 고정·바닥 정렬)
+
+- 0.35(FSS#73): 설정 "영문 단어 후보"가 켜져 있으면 자식 하나로 **후보 줄**(높이 H_s = 줄 높이)을 키 영역 바로 위에 두고, 입력 뷰 높이 = H_s + 6줄 + 아래 여백, 띄운 자판의 자판 판 = 손잡이 띠 + H_s + 키 영역, **안내표 버튼의 위 = 키 영역 위**(아래 `onLayout`의 `paddingTop` 자리), 둘째 손가락은 후보 줄에서 떨군다 — [LLD-12-suggest.md](LLD-12-suggest.md) 10절. 꺼져 있으면 아래 표 그대로다(`WINDOW_ROWS` = 6 그대로).
 
 ```kotlin
 class KeyboardRootView(context: Context) : FrameLayout(context) {
