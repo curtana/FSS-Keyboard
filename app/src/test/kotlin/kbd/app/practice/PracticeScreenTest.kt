@@ -25,6 +25,7 @@ import kbd.app.store.WidthSetting
 import kbd.app.view.KeyboardRootView
 import kbd.app.view.PlateView
 import kbd.app.view.RectCanvas
+import kbd.app.view.SuggestionBarView
 import kbd.app.view.TapGeometry
 import kbd.app.view.TapKeyboardView
 import kbd.app.view.Touches
@@ -275,6 +276,26 @@ class PracticeScreenTest {
         assertEquals(Math.round(KeyboardRootView.WINDOW_ROWS * settings.rowHeightDp * d), height)
         assertTrue(children.none { it.contentDescription == KeyboardRootView.HANDLE_NAME })
         assertEquals(1, children.size)
+    }
+
+    /** FSS#73 (FR-SUG-01 ⑤, LLD-12 §10): the practice keyboard has no suggestion bar; with the setting on its frame is as before. */
+    @Test
+    fun `PR-38 word suggestions on - the practice frame has no suggestion bar and the height of before`() {
+        val s = settings.copy(wordSuggest = true)
+        val flow = PracticeFlow()
+        compose.setContent {
+            val fb = Feedback({ null }, compose.activity.getSystemService(AudioManager::class.java), { s })
+            PracticeScreen(flow, flowOf(s), s, BoardFactory(s, fb, ErrorLog(File(tmp.root, "e.log")), TemplateSet(emptyMap()))) {}
+        }
+        compose.onNodeWithText(PracticeTopics.UPPER.title).performClick()
+        compose.onNodeWithText("시작").performClick()
+        compose.waitForIdle()
+        val decor = compose.activity.window.decorView
+        assertEquals(null, find(decor, SuggestionBarView::class.java))
+        val frame = checkNotNull(find(decor, TapKeyboardView::class.java)).parent as ViewGroup
+        val d = compose.activity.resources.displayMetrics.density
+        assertEquals(Math.round(KeyboardRootView.WINDOW_ROWS * settings.rowHeightDp * d), frame.height)
+        assertEquals(1, frame.childCount)
     }
 
     /** FSS#84: the graffiti pad inside the practice column is told the side margin too. */

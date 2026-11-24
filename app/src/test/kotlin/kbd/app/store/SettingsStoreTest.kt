@@ -32,7 +32,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** SS-01..SS-05, SS-07, SS-08, SS-10..SS-15 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4). */
+/** SS-01..SS-05, SS-07, SS-08, SS-10..SS-15 (LLD-11 §7.5, LLD-07 §6.1, LLD-09 §4); SS-16 (LLD-11 §7.12 (카), FSS#73). */
 class SettingsStoreTest {
 
     @get:Rule
@@ -279,6 +279,16 @@ class SettingsStoreTest {
         assertEquals(GRAFFITI, s.lastMode)
         assertTrue(s.graffitiEnabled)
         assertEquals(GRAFFITI, ModeController(InputMode.entries.toList(), s.lastMode, s.enabledModes).current)
+    }
+
+    @Test
+    fun `SS-16 the English word suggestion setting - off when absent, read back after reopening, stored as word_suggest`() {
+        assertFalse(SettingsStore(open()).loadBlocking().wordSuggest)
+        assertFalse(Settings.DEFAULT.wordSuggest)
+        runBlocking { SettingsStore(reopen()).update { it.copy(wordSuggest = true) } }
+        assertTrue(SettingsStore(reopen()).loadBlocking().wordSuggest)
+        val r = reopen()
+        assertEquals(true, runBlocking { r.data.first()[booleanPreferencesKey("word_suggest")] })
     }
 
     @Test

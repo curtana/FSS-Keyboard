@@ -60,6 +60,7 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             writeWidth(p, s.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE)
             writeFloat(p, s.portraitFloat, FLOAT_PORTRAIT, FLOAT_X_PORTRAIT, FLOAT_Y_PORTRAIT)
             writeFloat(p, s.landscapeFloat, FLOAT_LANDSCAPE, FLOAT_X_LANDSCAPE, FLOAT_Y_LANDSCAPE)
+            p[WORD_SUGGEST] = s.wordSuggest
         }
     }
 
@@ -101,6 +102,7 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
             landscapeWidth = readWidth(p, d.landscapeWidth, KEY_LANDSCAPE, ALIGN_LANDSCAPE),
             portraitFloat = readFloat(p, FLOAT_PORTRAIT, FLOAT_X_PORTRAIT, FLOAT_Y_PORTRAIT),
             landscapeFloat = readFloat(p, FLOAT_LANDSCAPE, FLOAT_X_LANDSCAPE, FLOAT_Y_LANDSCAPE),
+            wordSuggest = p[WORD_SUGGEST] ?: d.wordSuggest,
         )
     }
 
@@ -153,5 +155,7 @@ class SettingsStore(private val ds: DataStore<Preferences>, private val errorLog
         val FLOAT_LANDSCAPE = booleanPreferencesKey("float_landscape")
         val FLOAT_X_LANDSCAPE = floatPreferencesKey("float_x_landscape")
         val FLOAT_Y_LANDSCAPE = floatPreferencesKey("float_y_landscape")
+        /** FR-SET-11 (FSS#73): absent = off. */
+        val WORD_SUGGEST = booleanPreferencesKey("word_suggest")
     }
 }

@@ -110,6 +110,9 @@ class SettingsActivity : ComponentActivity() {
 /** Test tag of the version text (FR-SET-10). */
 internal const val VERSION_TAG = "settings_version"
 
+/** Test tag of the English word suggestion switch (FR-SET-11). */
+internal const val WORD_SUGGEST_TAG = "word_suggest"
+
 /** Buttons of the settings screen that leave it. */
 class SettingsActions(
     val openImeSettings: () -> Unit,
@@ -137,6 +140,13 @@ internal fun SettingsScreen(
             CheckRow(R.string.settings_mode_dubeolsik, checked = true, onChange = null)
             CheckRow(R.string.settings_mode_qwerty, checked = true, onChange = null)
             CheckRow(R.string.settings_mode_graffiti, settings.graffitiEnabled) { v -> update { it.copy(graffitiEnabled = v) } }
+
+            Section(R.string.settings_section_suggest)   // FR-SET-11: right after the modes, one for both orientations
+            SwitchRow(R.string.settings_word_suggest, settings.wordSuggest, WORD_SUGGEST_TAG) { v -> update { it.copy(wordSuggest = v) } }
+            Text(
+                stringResource(R.string.settings_word_suggest_summary), style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
 
             Section(R.string.settings_section_input)
             ActionRow(R.string.settings_ime, R.string.settings_ime_summary, actions.openImeSettings)
@@ -182,9 +192,9 @@ private fun ActionRow(title: Int, summary: Int?, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SwitchRow(title: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(title: Int, checked: Boolean, tag: String? = null, onChange: (Boolean) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().selectable(checked, role = Role.Switch) { onChange(!checked) }.padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().let { if (tag == null) it else it.testTag(tag) }.selectable(checked, role = Role.Switch) { onChange(!checked) }.padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(stringResource(title), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))

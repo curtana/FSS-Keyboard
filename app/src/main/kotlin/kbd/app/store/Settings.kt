@@ -23,6 +23,8 @@ data class Settings(
     val portraitFloat: FloatSetting = FloatSetting.DEFAULT,
     /** The same on the landscape screen; the two are kept apart (FR-CMN-15 ⑤). */
     val landscapeFloat: FloatSetting = FloatSetting.DEFAULT,
+    /** English word suggestions over the QWERTY keys (FR-SET-11, FSS#73; stored key `word_suggest`). Default off. */
+    val wordSuggest: Boolean = false,
 ) {
     /** The modes on in the keyboard, for `ModeController.applyEnabled` (FR-CMN-03f). */
     val enabledModes: Set<InputMode>
