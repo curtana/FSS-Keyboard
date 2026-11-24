@@ -491,6 +491,37 @@ class EnglishWordSourceTest {
     @Test fun `ES-34 failed undo then afterKey ends in N(f)`() = es34(::d)
 
     @Test
+    fun `ES-21b apostrophe after a pick keeps the length rule - 32 blocks, 31 types`() {
+        val long = "abcdefghijklmnopqrstuvwxyzabcdef" // 32 = MAX_WORD, in the test dictionary
+        val x = d().typing("abc")
+        x.pick(0)
+        assertEquals(State.JustPicked(long, "abc"), x.state)
+        assertTrue(x.text("'") is KeyAnswer.WriteThenPass)
+        assertEquals(State.Blocked, x.state)
+
+        val w31 = "x".repeat(WordChars.MAX_WORD - 1) // no dictionary word: the typed cell
+        val y = d().typing(w31)
+        y.pick(0)
+        assertEquals(State.JustPicked(w31, w31), y.state)
+        y.text("'")
+        assertEquals(State.Typing("$w31'"), y.state)
+    }
+
+    @Test
+    fun `ES-34b afterKey of a letter in N(f) without a peek decision is Blocked`() {
+        val x = d()
+        x.src.afterKey(SuggestKey.Text("h")) // no onKey at all
+        assertEquals(State.Blocked, x.state)
+
+        val y = d()
+        val k = SuggestKey.Text("h")
+        assertEquals(KeyAnswer.Pass, y.src.onKey(k, FakePeek()))
+        y.reset(ResetReason.CURSOR) // drops the pending decision
+        y.src.afterKey(k)
+        assertEquals(State.Blocked, y.state)
+    }
+
+    @Test
     fun `ES-35 every reset reason goes to N(f) with no cells`() {
         for (r in ResetReason.entries) {
             val blocked = d().also { it.text("h", FakePeek(before = "a")) }
