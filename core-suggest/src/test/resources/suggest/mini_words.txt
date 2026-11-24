@@ -1,0 +1,41 @@
+#fss-words 1
+#name mini
+the
+of
+and
+to
+in
+a
+is
+I
+that
+it
+I'm
+for
+don't
+it's
+do
+they
+there
+then
+them
+The
+these
+done
+don
+Monday
+money
+
+month
+monster
+hello
+help
+held
+helm
+McDonald
+naïve
+'tis
+rock'n'roll
+foo bar
+abcdefghijklmnopqrstuvwxyzabcdefg
+abcdefghijklmnopqrstuvwxyzabcdef
