@@ -311,7 +311,7 @@ object WordChars {
 
 1. `shape = CaseRule.shapeOf(w)`. `MIXED`이면 빈 목록.
 2. `ids = index.top(w.lowercase(Locale.ROOT))`. null(그 접두어로 시작하는 사전 단어가 없음)이면 `[Candidate(w, kind = TYPED)]`(FR-SUG-05 ④).
-3. `ids`를 순서대로 `CaseRule.apply(w, index.form(id))`로 바꾸고, **결과가 `w`와 글자 그대로 같은 것을 뺀 뒤** 앞에서 3개(`BAR_CELLS = 3`)까지(FR-SUG-05 ②③). 빼고 남은 것이 없으면 빈 목록(사전 단어가 있으므로 친 글자 칸은 없다).
+3. `ids`를 순서대로 `CaseRule.apply(w, index.form(id))`로 바꾸고, **결과가 `w`와 글자 그대로 같은 것을 뺀 뒤** 앞에서 3개(`EnglishWordSource.MAX_CANDIDATES = 3` — core-suggest 안의 상수. 앱 줄의 칸 수 `SuggestionController.BAR_CELLS`와는 따로 둔다)까지(FR-SUG-05 ②③). 빼고 남은 것이 없으면 빈 목록(사전 단어가 있으므로 친 글자 칸은 없다).
 - 사전이 없을 때(읽기 전·실패)는 공급자 자체가 없다(12.5) — 빈 줄, 입력 그대로(FR-SUG-11 ③).
 - 길이 상한을 넘는 단어는 `Blocked`라 여기 오지 않는다. 한 글자부터 낸다(TBD-40 ②), 길이로 빼는 규칙 없음(③).
 - 다른 칸이 같은 글이 되는 일은 없다: 사전은 소문자 키 하나에 모양 하나이고(3절), `CaseRule.apply`는 키가 다른 두 모양을 같은 글로 만들지 않는다(소문자 키가 다르면 대문자로 바꾼 글도 다르다).
@@ -332,7 +332,7 @@ data class FieldInfo(
 ```
 
 - 새 칸 `noSuggest`는 **기본값이 있는 마지막 매개변수**다 — 위치 인자로 `FieldInfo(…5개…)`를 만드는 지금 코드·시험(`InputDispatcher.kt:41` 등)이 그대로 컴파일된다.
-- `from(inputType, imeOptions)`(`FieldInfo.kt:92-111`)에 더하는 것: 상수 `TYPE_TEXT_VARIATION_URI = 0x10`, `TYPE_TEXT_VARIATION_EMAIL_ADDRESS = 0x20`, `TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS = 0xD0`, `TYPE_TEXT_FLAG_NO_SUGGESTIONS = 0x80000`(모두 `android.text.InputType`의 공개 값). `noSuggest = cls == TYPE_CLASS_TEXT && (inputType and TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0 || varn in setOf(URI, EMAIL_ADDRESS, WEB_EMAIL_ADDRESS))`. 클래스와 함께 보므로 숫자 비밀번호 변형(0x10)은 URI로 읽히지 않는다(지금 비밀번호 판별과 같은 방식, `FieldInfo.kt:102-104`).
+- `from(inputType, imeOptions)`(`FieldInfo.kt:56-75`)에 더하는 것: 상수 `TYPE_TEXT_VARIATION_URI = 0x10`, `TYPE_TEXT_VARIATION_EMAIL_ADDRESS = 0x20`, `TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS = 0xD0`, `TYPE_TEXT_FLAG_NO_SUGGESTIONS = 0x80000`(모두 `android.text.InputType`의 공개 값). `noSuggest = cls == TYPE_CLASS_TEXT && (inputType and TYPE_TEXT_FLAG_NO_SUGGESTIONS != 0 || varn in setOf(URI, EMAIL_ADDRESS, WEB_EMAIL_ADDRESS))`. 클래스와 함께 보므로 숫자 비밀번호 변형(0x10)은 URI로 읽히지 않는다(지금 비밀번호 판별과 같은 방식, `FieldInfo.kt:66-68`).
 
 | 입력창(SRS FR-SUG-10 표) | `fieldClass` | `isPassword` | `noSuggest` | `autocompleteAllowed` |
 |---|---|---|---|---|
@@ -429,8 +429,8 @@ internal class OwnEditLedger {
 ```
 
 - 상태: 예상 선택 `(s, e)`(−1 = 모름), 예상 커서 줄 `expected: ArrayDeque<Int>`(오래된 것부터), `writesSinceUpdate`(마지막 알림 뒤의 내 쓰기 수).
-- 쓰기(모두 `writesSinceUpdate += 1`):
-  - `committed(len)`: 앎이면 새 커서 = `s + len`(선택이 있었으면 선택을 바꿔 넣음 — 시작은 s) → `(c, c)`, `expected += c`. 모름이면 모름.
+- 쓰기(`unknown()`을 포함해 모두 `writesSinceUpdate += 1` — 모름으로 만든 쓰기의 알림도 아직 오는 중이므로). "새 커서 = c"는 늘 `(s, e) = (c, c)`로 두고 **`expected` 끝에 c를 더한다**는 뜻이다(세 쓰기 모두):
+  - `committed(len)`: 앎이면 새 커서 = `s + len`(선택이 있었으면 선택을 바꿔 넣음 — 시작은 s). 모름이면 모름.
   - `deletedKey()`: 앎이고 `s != e`이면 새 커서 = s(선택 지움). 앎이고 `s == e ≥ 1`이면 `e − 1`. 그 밖(맨 앞, 모름)은 모름.
   - `deletedBefore(n)`: 앎이고 `s == e ≥ n`이면 `e − n`, 아니면 모름.
   - `unknown()`: 모름(expected 비움).
@@ -444,7 +444,7 @@ internal class OwnEditLedger {
 - **모름에서 true인 까닭:** 모름은 방향키·Esc·Del·조합 키·엔터 동작·한글 조합 쓰기 뒤에만 생기고, 앞의 넷과 엔터는 이미 공급자를 초기화하며 한글 모드에는 공급자가 없다. 모름일 때 온 사용자 터치를 놓칠 수 있으나(다음 알림부터는 앎), 그동안의 고르기·되돌리기·공백 지우기는 전제 확인(8.3)으로 막혀 입력창을 망가뜨리지 않는다. 방향키 바로 뒤 빠르게 친 글자의 알림이 방향키 알림보다 먼저 맞춰지는 일을 막으려고, 다시 맞추는 것은 "마지막 알림 뒤 내 쓰기가 없을 때"뿐이다.
 - 한계(실기 R22 ③): 앱이 알림을 묶지 않고 중간 위치를 건너뛰어 보내면 3이 맞고, 앱이 자기 글을 바꾸면(자동 서식) 5가 되어 초기화한다(SRS 그대로 — 앱이 글을 바꿈). 이모지처럼 두 단위인 글자 하나를 ⌫ 하면 예상이 1 어긋나 5가 된다 — 그때는 단어가 없거나(이모지는 단어 끝) 초기화되어도 해가 없다.
 - `isOwnCursorChange(newS, newE)` = `ledger.explains(newS, newE)`. 서비스가 `onUpdateSelection`에서 기존 판정 처리 **뒤에** 늘 부른다(14절).
-- 시험: OL-01~OL-12.
+- 시험: OL-01~OL-15.
 
 ## 9. 후보 줄 `SuggestionBarView` (app `kbd.app.view`, D-86·D-89)
 
@@ -454,7 +454,7 @@ data class BarCell(val text: String, val spoken: String = text)
 class SuggestionBarView(context: Context, private val feedback: FeedbackPort) : View(context) {
     /** 칸 [index]를 그 칸 안에서 누르고 뗐다. [revision] = 누를 때 받은 판. */
     var onPick: (index: Int, revision: Int) -> Unit = { _, _ -> }
-    /** 받은 칸들(앞에서 3개까지 그림)과 판. 칸이 같으면 다시 그리지 않는다. */
+    /** 받은 칸들(앞에서 3개까지 그림)과 판. **판은 늘 새 값으로 바꾸고**, 칸이 같으면 다시 그리기(와 접근성 나무 다시 만들기)만 건너뛴다. */
     fun show(cells: List<BarCell>, revision: Int)
     internal val cellCount: Int                      // = 3
     internal fun cellAt(x: Float): Int               // 0~2, 밖이면 −1
@@ -553,7 +553,7 @@ class SuggestionController(
 5. `publish()`.
 - `edits(p)` = `p.commands`를 같은 이름의 `EditorEdit`로 1:1(8.3).
 - `normal()`과 `applyEdits`의 포트 호출에서 난 예외는 잡지 않는다 — 0.96처럼 뷰의 `EngineGuard.stroke`까지 간다(키 처리 실패의 길이 바뀌지 않음).
-- `publish()` = `cells = if (active) source.candidates.take(BAR_CELLS).map { BarCell(it.text, it.spoken) } else emptyList()`; `onCandidates(cells, revision)`(같은 칸이면 줄이 다시 그리지 않음, 9절).
+- `publish()` = `cells = if (active) source.candidates.take(BAR_CELLS).map { BarCell(it.text, it.spoken) } else emptyList()`; `onCandidates(cells, revision)`(같은 칸이어도 판은 줄에 늘 넘어가고, 다시 그리기만 줄이 건너뜀, 9절).
 
 ### 12.3 `pick(index, revision)`
 
@@ -605,7 +605,7 @@ class InputDispatcher(…) {
 | 자리(`KeyboardService.kt`) | 바꿈 |
 |---|---|
 | 필드 | `suggestion: SuggestionController`, `bar: SuggestionBarView?`, `dictGen: Int`, `internal var dictionaryLoader: () -> WordIndex = EnglishDictionary::load`(시험이 작은 사전·실패를 넣는 자리, LLD-11 SV-02·SV-08) |
-| `onCreate`(`:77-100`) | `composing` 다음에 `suggestion = SuggestionController(composing) { site, e -> errorLog.record(site, e) }`, `dispatcher.suggest = suggestion`, `suggestion.enabled = settings.wordSuggest`, `suggestion.mode = modes.current`. `settings.wordSuggest`이면 `loadDictionary()` |
+| `onCreate`(`:77-100`) | `composing` 다음에 `suggestion = SuggestionController(composing) { site, e -> errorLog.record(site, e) }`, `dispatcher.suggest = suggestion`, `suggestion.enabled = settings.wordSuggest`, `suggestion.mode = modes.current`. `settings.wordSuggest`이면 `loadDictionary()` — **`guard` 생성(`:95`) 뒤에** 부른다(`guard`는 `lateinit`이고 `loadDictionary`가 쓴다) |
 | `onCreateInputView`(`:108-121`) | 루트를 만든 뒤 `settings.wordSuggest`이면 `root.setSuggestionBar(newBar())`, 그 다음 지금의 `relayout()` |
 | `newBar()` | `SuggestionBarView(this, feedback)`; `onPick = { i, r -> guard.stroke(SITE_PICK) { suggestion.pick(i, r) } }`; `bar = 그것`; `suggestion.onCandidates = { c, r -> bar?.show(c, r) }` |
 | `onStartInputView`(`:124-140`) | `composing.onStart(…)` 다음에 `suggestion.fieldAllowed = f.autocompleteAllowed`, `suggestion.reset(FIELD)`(입력창 바뀜·다시 뜸, FR-SUG-09 ②) |
@@ -650,7 +650,7 @@ private fun releaseDictionary() { dictGen++; suggestion.attach(null) }
 | `tools/en-dict/contractions.tsv` | 축약형 표(16.2 ⑥) |
 | `tools/en-dict/restore.txt` | 되살릴 소문자 키 목록(LDNOOBW가 거른 낱말 가운데 되살릴 것). 1단계는 빈 파일(HLD 5B.5 "되살릴 목록을 둘 수 있게만") |
 | `tools/en-dict/README.md` | 다시 만드는 법·입력·판·검사합 |
-| `tools/en-dict/test_build_en_words.py`, `tools/en-dict/testdata/` | 작은 입력으로 도구를 시험(DT-01~DT-08) |
+| `tools/en-dict/test_build_en_words.py`, `tools/en-dict/testdata/` | 작은 입력으로 도구를 시험(DT-01~DT-09) |
 
 ### 16.2 처리 (같은 입력 = 같은 출력)
 
