@@ -250,7 +250,7 @@ object WordChars {
 | `Backspace` | ⌫ |
 | `Enter`, `Tab`, `Navigation`, `Function` | **초기화 키**(SRS FR-SUG-09 ②) |
 
-- 엿보기 값의 분류: 받은 글자(앞 1·뒤 1)가 `isLetter`이거나 `'`이면 "단어 글자"로 본다(단어 가운데로 친다 — 보수적으로 후보 없음 쪽). 빈 글(입력창 맨 앞·끝)은 단어 글자가 아니다.
+- 엿보기 값의 분류: 받은 글자(앞 1·뒤 1)가 `isLetter`일 때만 "단어 글자"다. `'`는 출처(입력창에 원래 있던 글자인지 키보드가 넣은 글자인지)와 상관없이 단어 글자로 보지 않는다 — 한 글자만 읽어서는 단어 안의 `'`인지 알 수 없고, SRS FR-SUG-04 ①이 단어 맨 앞의 `'`를 따옴표로 보므로 키보드가 넣은 `'`(7.3 `None` 행)와 같게 둔다(PM 결정 2026-11-24, 검수 1회차 J2). 빈 글(입력창 맨 앞·끝)도 단어 글자가 아니다.
 
 ### 7.2 상태
 
@@ -346,7 +346,7 @@ data class FieldInfo(
 | 문자 + `IME_FLAG_NO_PERSONALIZED_LEARNING` | TEXT | 거짓 | 거짓 | **참**(학습 금지 ≠ 출력 금지) |
 | 그 밖의 문자(일반·여러 줄·짧은·긴 메시지·이메일 제목·웹 편집창·사람 이름·주소·발음 변형 등) | TEXT | 거짓 | 거짓 | 참(TBD-40 ⑪) |
 
-- 입력 연결이 없을 때의 "끔"(FR-SUG-10)은 이 칸이 아니라 읽기가 null을 주는 것으로 물러선다(8.2, 7.3 엿보기, 8.3 전제).
+- 입력 연결이 없을 때의 "끔"(FR-SUG-10)은 이 칸이 아니라 읽기가 null을 주는 것으로 물러선다(8.2, 7.3 엿보기, 8.3 전제). **SRS 문구와의 차이(검수 1회차 J3, 기록):** `canReadText`는 포트의 성질이라 연결이 없어도 참이고, 앞 글자를 아는 상태(`None(true)`)에서는 엿보지 않으므로 연결이 없는 동안 후보가 보일 수 있다. 해는 없다 — 연결이 없으면 평소 길의 `commitText`부터 아무 일도 하지 않아 지금 단어가 생기지 않고(키보드가 넣은 글이 없음), 고르기는 전제 읽기가 null이라 쓰지 않으며, 연결이 다시 생기면 `onStartInputView`가 초기화한다.
 
 ### 8.2 `EditorPort` 확장 (D-83)
 
@@ -428,20 +428,22 @@ internal class OwnEditLedger {
 }
 ```
 
-- 상태: 예상 선택 `(s, e)`(−1 = 모름), 예상 커서 줄 `expected: ArrayDeque<Int>`(오래된 것부터), `writesSinceUpdate`(마지막 알림 뒤의 내 쓰기 수).
-- 쓰기(`unknown()`을 포함해 모두 `writesSinceUpdate += 1` — 모름으로 만든 쓰기의 알림도 아직 오는 중이므로). "새 커서 = c"는 늘 `(s, e) = (c, c)`로 두고 **`expected` 끝에 c를 더한다**는 뜻이다(세 쓰기 모두):
-  - `committed(len)`: 앎이면 새 커서 = `s + len`(선택이 있었으면 선택을 바꿔 넣음 — 시작은 s). 모름이면 모름.
-  - `deletedKey()`: 앎이고 `s != e`이면 새 커서 = s(선택 지움). 앎이고 `s == e ≥ 1`이면 `e − 1`. 그 밖(맨 앞, 모름)은 모름.
-  - `deletedBefore(n)`: 앎이고 `s == e ≥ n`이면 `e − n`, 아니면 모름.
-  - `unknown()`: 모름(expected 비움).
+- 상태: 예상 선택 `(s, e)`(−1 = 모름), 예상 커서 줄 `expected: ArrayDeque<Int>`(오래된 것부터), **결과 기다림** `awaiting`(참 = `unknown()`의 결과 알림을 아직 받지 못함)과 그동안의 내 쓰기 `pending`(쓰기 종류와 값의 목록), `writesSinceUpdate`(마지막 알림 뒤의 내 쓰기 수 — 기다림이 아닌 모름에서만 씀).
+- 쓰기(모두 `writesSinceUpdate += 1`). "새 커서 = c"는 늘 `(s, e) = (c, c)`로 두고 **`expected` 끝에 c를 더한다**는 뜻이다(세 쓰기 모두):
+  - `committed(len)`: 앎이면 새 커서 = `s + len`(선택이 있었으면 선택을 바꿔 넣음 — 시작은 s). 기다림이면 `pending += committed(len)`. 그 밖의 모름이면 모름.
+  - `deletedKey()`: 앎이고 `s != e`이면 새 커서 = s(선택 지움). 앎이고 `s == e ≥ 1`이면 `e − 1`. 앎이고 맨 앞(0)이면 모름(기다림 아님). 기다림이면 `pending += deletedKey`.
+  - `deletedBefore(n)`: 앎이고 `s == e ≥ n`이면 `e − n`, 앎인데 그렇지 않으면 모름(기다림 아님). 기다림이면 `pending += deletedBefore(n)`.
+  - `unknown()`: 모름, `expected`·`pending` 비움, **`awaiting = true`**.
+  - `start(selS, selE)`: 둘 다 ≥ 0이면 앎 `(min, max)`, 아니면 모름(기다림 아님). `expected`·`pending` 비움, `writesSinceUpdate = 0`.
 - `ComposingController`가 부르는 곳: `commitText`·`tab`·`enter`의 여러 줄 → `committed`; `deleteBefore` → `deletedKey`; `applyEdits` → `deletedBefore`·`committed`; `show`(조합 쓰기)·`finishComposing`의 임시 글자 빼기·`finishAfterUserMove`·`arrow`·`editKey`·`chordKey`·`enter`의 동작·키 → `unknown`; `onStart(s, e)` → `start(s, e)`.
 - `explains(newS, newE)`:
   1. `w = writesSinceUpdate`, `writesSinceUpdate = 0`.
-  2. **모름**이면: `w == 0`이면(날아가는 내 쓰기가 없음) `(s, e) = (min, max)(newS, newE)`로 다시 맞춘다. **true**(모름에서는 초기화하지 않음).
-  3. 앎이고 `newS == newE`이고 `expected`에 newE가 있으면: 그것까지 앞에서 지우고 true(늦게 오거나 묶여 온 알림, D-29와 같은 생각).
-  4. 앎이고 `(newS, newE) == (s, e)`이면(쓰기 없는 같은 자리 알림): `expected` 비우고 true.
-  5. 그 밖: `(s, e) = (min, max)`, `expected` 비우고 **false**(키보드 쓰기로 설명되지 않는 변화 → 초기화).
-- **모름에서 true인 까닭:** 모름은 방향키·Esc·Del·조합 키·엔터 동작·한글 조합 쓰기 뒤에만 생기고, 앞의 넷과 엔터는 이미 공급자를 초기화하며 한글 모드에는 공급자가 없다. 모름일 때 온 사용자 터치를 놓칠 수 있으나(다음 알림부터는 앎), 그동안의 고르기·되돌리기·공백 지우기는 전제 확인(8.3)으로 막혀 입력창을 망가뜨리지 않는다. 방향키 바로 뒤 빠르게 친 글자의 알림이 방향키 알림보다 먼저 맞춰지는 일을 막으려고, 다시 맞추는 것은 "마지막 알림 뒤 내 쓰기가 없을 때"뿐이다.
+  2. **기다림**이면(PM 결정 2026-11-24, 검수 1회차 중요 3 (나)): 이 알림을 **`unknown()` 쓰기의 결과**로 본다 — `(s, e) = (min, max)(newS, newE)`, `awaiting = false`, 그 뒤 `pending`의 쓰기를 차례로 앎의 규칙으로 다시 적용(그때마다 `expected`에 새 커서를 더함)하고 `pending`을 비운다. **true**. 그래서 방향키 뒤 곧바로 친 글자들도 예상에 들어가고, 그 뒤의 사용자 터치는 6에서 초기화된다 — 모름이 입력으로 이어지지 않는다(SRS FR-SUG-04 ②·09 ② 그대로, 예외 없음).
+  3. **그 밖의 모름**(시작 값 없음, 맨 앞 ⌫, 범위 밖 지우기): `w == 0`이면 `(s, e) = (min, max)(newS, newE)`로 다시 맞춘다. **true**.
+  4. 앎이고 `newS == newE`이고 `expected`에 newE가 있으면: 그것까지 앞에서 지우고 true(늦게 오거나 묶여 온 알림, D-29와 같은 생각).
+  5. 앎이고 `(newS, newE) == (s, e)`이면(쓰기 없는 같은 자리 알림): `expected` 비우고 true.
+  6. 그 밖: `(s, e) = (min, max)`, `expected` 비우고 **false**(키보드 쓰기로 설명되지 않는 변화 → 초기화).
+- **기다림의 한계:** 모름을 만든 쓰기(방향키 등)의 알림이 따로 오지 않고 뒤의 내 글자와 **한 알림으로 묶여** 오면, 그 알림을 방향키의 결과로 보아 예상이 묶인 글자 수만큼 어긋나고 다음 알림이 6이 되어 **초기화**한다(후보가 한 번 사라짐 — 쓰기는 일어나지 않으므로 입력창은 안전). 그 반대(사용자 터치를 놓침)는 생기지 않는다. 3의 모름에서는 0.1 판처럼 사용자 터치를 한 번 놓칠 수 있으나, 시작 값 없음·맨 앞 ⌫·범위 밖 지우기 뒤에는 공급자가 이미 "단어 없음, 앞 글자 모름"이고 그동안의 고르기·되돌리기·공백 지우기는 전제 확인(8.3)으로 막힌다. 실기 DV-45 ③(방향키 → 단어 입력 → 다른 곳 터치).
 - 한계(실기 R22 ③): 앱이 알림을 묶지 않고 중간 위치를 건너뛰어 보내면 3이 맞고, 앱이 자기 글을 바꾸면(자동 서식) 5가 되어 초기화한다(SRS 그대로 — 앱이 글을 바꿈). 이모지처럼 두 단위인 글자 하나를 ⌫ 하면 예상이 1 어긋나 5가 된다 — 그때는 단어가 없거나(이모지는 단어 끝) 초기화되어도 해가 없다.
 - `isOwnCursorChange(newS, newE)` = `ledger.explains(newS, newE)`. 서비스가 `onUpdateSelection`에서 기존 판정 처리 **뒤에** 늘 부른다(14절).
 - 시험: OL-01~OL-15.
@@ -490,7 +492,7 @@ class KeyboardRootView … {
 - **놓기 — 붙은 자판 `onLayout`(`:484-513`):** `rowsBottom = 높이 − paddingBottom`, `keysTop = rowsBottom − px(WINDOW_ROWS × rowHeightDp)`(줄이 없으면 0 = 지금 `paddingTop`과 같은 값 — 루트의 위 padding은 늘 0, `:181`). 후보 줄 = `(x, keysTop − H_s, x + W, keysTop)`(x = `keyboardLeft`, 줄이 있으면 위 = 0). **안내표 버튼의 위 = `keysTop`**(`:503-504`의 `paddingTop`을 바꿈 — 키 영역 기준, 분석 code-integration 2-2 ⓐ). 모드 뷰·덮개는 지금 그대로 `rowsBottom`에 붙는다.
 - **놓기 — 띄운 자판 `layoutOnPlate`(`:515-527`):** `rowsTop = p.top + px(HANDLE_DP) + H_s`. 손잡이 띠 = `(p.left, p.top, p.right, p.top + px(HANDLE_DP))`, 후보 줄 = `(x, p.top + px(HANDLE_DP), x + W, rowsTop)`(x = `p.left + span.margin`), 안내표 버튼 = 위 `rowsTop`, 그 밖 = `p.bottom` 바닥 정렬(지금 그대로).
 - **자판 판·칠하기·터치 영역·인셋:** 붙은 자판의 판은 `KeyboardPlate.rect`가 입력 뷰 높이 전체를 쓰므로(`KeyboardWidth.kt:133-143`) 고칠 것이 없다 — 후보 줄 자리가 판에 들고, 양쪽 여유 칸 자리(u/2씩)는 루트가 칠하는 판의 빈 자리다(FR-SUG-01 ②). 띄운 자판은 `floatPlace.plate`가 새 `plateHeight`로 나온다. `KeyboardInsets.compute`는 그대로다(앱이 후보 줄 높이만큼 더 밀림 — 붙은 자판, FR-SUG-02 ①).
-- **둘째 손가락(FR-SUG-03 ③):** 루트의 `dispatchTouchEvent`(`:416-422`)가 `offKeyboard.filter(ev)`를 부르기 **전에** `firstDown = ev.actionMasked == ACTION_DOWN`을 둔다. `onChild(x, y)`(`:425-431`)는 자식이 후보 줄이고 `firstDown`이 거짓이면 그 자식을 "닿은 자식"으로 치지 않는다 → 다른 손가락이 닿아 있는 동안 후보 줄에 내려온 손가락은 `OffKeyboardPointers`가 떨궈 아무 데도 가지 않는다(입력·피드백 없음, 손을 뗄 때까지). `OffKeyboardPointers`는 고치지 않는다. 후보 줄을 첫 손가락으로 누른 뒤 키에 닿은 손가락은 보통의 자판 터치다(키에 닿았으므로 떨구지 않음).
+- **둘째 손가락(FR-SUG-03 ③):** 루트의 `dispatchTouchEvent`(`:416-422`)가 `offKeyboard.filter(ev)`를 부르기 **전에** `firstDown = ev.actionMasked == ACTION_DOWN`을 둔다. `onChild(x, y)`(`:425-431`)는 자식이 후보 줄이고 `firstDown`이 거짓이면 그 자식을 "닿은 자식"으로 치지 않는다 → 다른 손가락이 닿아 있는 동안 후보 줄에 내려온 손가락은 `OffKeyboardPointers`가 떨궈 아무 데도 가지 않는다(입력·피드백 없음, 손을 뗄 때까지). `OffKeyboardPointers`는 고치지 않는다. 후보 줄을 첫 손가락으로 누른 뒤 키에 닿은 손가락은 보통의 자판 터치다(키에 닿았으므로 떨구지 않음). **한계(검수 1회차 J4, 근사 유지):** "다른 손가락이 키보드에 닿아 있는 동안"을 "제스처의 첫 손가락이 아닌 손가락"으로 근사한다 — 첫 손가락이 루트의 빈 자리(여유 칸·빈 띠·여백)에 닿아 있는 동안 후보 줄에 내려온 손가락도 떨군다. 그 경우 손가락을 모두 떼고 다시 누르면 된다(입력 손실 없음).
 - **띄운 자판 옮기기:** 옮기기 상태 기계(`PlateMover`, LLD-08 7.4)는 떨구기 전의 원래 사건을 보므로 "기다림 + 다른 손가락 내려옴 → 버림"이 후보 줄 위 손가락에도 그대로다. 끄는 동안 `movePlate`가 모든 자식을 옮기므로 후보 줄도 함께 움직이고, 그 제스처는 루트가 가로채 후보 줄도 터치를 받지 않는다.
 - **테두리·획:** 모드 뷰를 고치지 않는다 — 입력기 테두리는 자판 사각형의 네 변 그대로이고, 키에서 시작해 후보 줄 위로 나간 획은 모드 뷰가 음수 y로 계속 받는다(FR-SUG-02 ③, LLD-08 7절 "획이 시작된 뒤").
 - **모드 전환·덮개:** `setModeView`·`enableGuide`·`openGuide`는 후보 줄을 건드리지 않는다. 덮개는 키 영역 높이(`rows × rowHeightDp`, 바닥 정렬)라 후보 줄을 덮지 않는다.
@@ -659,7 +661,7 @@ private fun releaseDictionary() { dictGen++; suggestion.attach(null) }
 3. **SCOWL 2020.12.07**(압축 파일의 `final/`과 `Copyright`만 푼다): 단계 ≤ 60의 `english-words.*`·`american-words.*`에서 `^[a-z]+$`인 낱말 = 소문자 낱말 L. `english-upper.*`·`american-upper.*`·`english-proper-names.*`·`american-proper-names.*`에서 `^[A-Z][A-Za-z]*$` = 대문자 낱말 U. `english-contractions.*` = 축약형 C(소문자로). 파일은 latin-1로 읽는다.
 4. **키와 모양:** 집계 토큰 t마다 키 k = `t.lower()`, `total[k] += 합`, `forms[k][t] = 합`. 키마다 모양: `k == "i"` → `I`. k ∈ L → 소문자 k, 단 길이 > 1이고 `forms[k].get(k, 0) / total[k] < 0.2`이고 가장 많이 쓰인 모양(동점은 글자 순 앞)이 U에 있으면 그 모양(분석 dictionary.md 3.1 ③). k ∉ L → `forms[k]` 가운데 U에 있는 것 중 가장 많이 쓰인 모양(동점은 글자 순 앞), 없으면 버림. **키 하나에 모양 하나**(3절의 K 전제).
 5. **한 글자:** `a`, `I`만 남긴다.
-6. **축약형**(`contractions.tsv`, 열 = `form` · `host` · `permille` · `extra`): 한 줄이 축약형 하나. `form.lower()`가 C에 있거나 `extra = 1`(SCOWL에 없는 `'s`형 11개 — `it's that's he's she's there's what's here's who's where's how's let's`)인 줄만 쓴다. 점수 = `total[host] × permille // 1000`(정수), `host` 키가 없으면 버림. `permille`은 꼬리마다 고정: `n't` 50, `'m` 50, `'re`·`'ve`·`'ll`·`'d` 20, `'s` 10. `host`는 축약 앞 낱말(`don't` → `do`, `can't` → `can`, `won't` → `will`, `I'm` → `i`, `it's` → `it`). **까닭:** 축약형 순위에 같은 조건 공개를 요구하는 자료(CC BY-SA)를 쓰지 않는다(NFR-15, HLD 5B.5 ⑥). 같은 출처의 2-gram 횟수로 세는 방법은 내려받을 양이 수십 GB이고 Ngram이 축약형을 `do n't`처럼 가르는 방식이 판마다 확인되지 않아 고르지 않았다. 이 계수는 어림이다 — 실사용 뒤 다시 본다(R26, TBD-43).
+6. **축약형**(`contractions.tsv`, 열 = `form` · `host` · `permille` · `extra`): 한 줄이 축약형 하나. **표에 넣는 범위(고정):** C의 형태 가운데 꼬리가 `n't`·`'m`·`'re`·`'ve`·`'ll`·`'d`·`'s` 중 하나이고 `host`가 정해지는 것 — `host` = 꼬리를 뗀 앞 낱말, 불규칙 셋만 고정(`can't` → `can`, `won't` → `will`, `shan't` → `shall`) — 과 `extra = 1`의 `'s`형 11개(SCOWL에 없음 — `it's that's he's she's there's what's here's who's where's how's let's`). **`host`가 정해지지 않는 형태(`ain't`, `y'all`, `o'clock`, 꼬리가 둘인 형태 등)는 표에서 뺀다**(검수 1회차 J5). 도구는 `form.lower()`가 C에 있거나 `extra = 1`인 줄만 쓴다. 점수 = `total[host] × permille // 1000`(정수), `host` 키가 없으면 버림. `permille`은 꼬리마다 고정: `n't` 50, `'m` 50, `'re`·`'ve`·`'ll`·`'d` 20, `'s` 10. `host`는 축약 앞 낱말(`don't` → `do`, `can't` → `can`, `won't` → `will`, `I'm` → `i`, `it's` → `it`). **까닭:** 축약형 순위에 같은 조건 공개를 요구하는 자료(CC BY-SA)를 쓰지 않는다(NFR-15, HLD 5B.5 ⑥). 같은 출처의 2-gram 횟수로 세는 방법은 내려받을 양이 수십 GB이고 Ngram이 축약형을 `do n't`처럼 가르는 방식이 판마다 확인되지 않아 고르지 않았다. 이 계수는 어림이다 — 실사용 뒤 다시 본다(R26, TBD-43).
 7. **거르기:** LDNOOBW `en`의 줄(소문자, 공백 없는 것)에 든 키는 버린다(축약형 포함). 단 `restore.txt`의 키는 버리지 않는다.
 8. **고르기와 쓰기:** (모양, 점수)를 점수 큰 순, 같으면 모양의 글자 순(파이썬 문자열 비교)으로 줄 세워 앞 50,000개. 모든 모양이 3절의 정규식·길이 ≤ 32에 맞고, 소문자 키가 겹치지 않고, `a`·`I`가 들어 있는지 검사(아니면 멈춤). 3절의 머리 + 단어 줄을 `core-suggest/src/main/resources/suggest/en_words.txt`에 쓴다.
 9. **결정성:** 날짜·시각·임의 순서(집합·사전 순회 순서)를 출력에 쓰지 않는다. 같은 입력으로 두 번 돌린 파일이 바이트까지 같다(`check`: 다시 만든 파일을 저장소의 파일과 견줌).
