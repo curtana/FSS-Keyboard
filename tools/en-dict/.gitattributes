@@ -1,0 +1,3 @@
+# Byte-exact files: contractions.tsv and restore.txt are hashed into the word list header,
+# testdata/ holds a golden file and a latin-1 SCOWL list.
+* -text

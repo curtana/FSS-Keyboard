@@ -1,0 +1,32 @@
+#fss-words 1
+#name en
+#dict 2026.11.1
+#tool tools/en-dict/build_en_words.py 1
+#source ngram googlebooks-eng-all-1gram-20120701 years=1980-2008 min=2000 sha256-list=9337bbdaef37e76393d56af7642f163d3bf9f81f266f513935fc49f1b9c366ed
+#source scowl 2020.12.07 level=60 sha256=0f98559fcf5c6f47e21115b98d6a5d08cd0b07fd406dcaf57f43d124dc4d8c84
+#source ldnoobw en commit=9505cacb7c710ed17125fcc6cb3669e8ddca6c8c sha256=f563a40d7141e016f1f21db66bbe4e972e654b103975be81a557825d120f78e2
+#contractions tools/en-dict/contractions.tsv sha256=c0a82e6731690daf940775824978368f3c38b5bcc3c1109ecb43936e4cd409d7
+#words 22
+#sha256 0e815a63b3f5c0d1f73df1712cf2854288d5f44dfc9a78554ae2ee17922e4449
+the
+I
+a
+it
+do
+has
+they
+we
+you
+I'm
+don't
+Paris
+God
+march
+Monday
+McDonald
+bat
+cat
+it's
+bill
+we're
+you're
