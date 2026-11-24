@@ -1,0 +1,164 @@
+{
+  "ngram": {
+    "name": "Google Books Ngram Viewer, English 1-grams",
+    "version": "googlebooks-eng-all-1gram-20120701",
+    "licence": "CC BY 3.0 Unported",
+    "files": [
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-a.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-a.gz",
+        "sha256": "6245438ef0a9774456b0999afda53d6dbf10802f593d66fc893a9f6a5130937c"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-b.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-b.gz",
+        "sha256": "2c7002acb3e4814a71afee08de84576acfda57cd50a61c3e0357e6f7d2427e7b"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-c.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-c.gz",
+        "sha256": "d40ccbcd35223bdf257caa89a5b036154856586d1e2bb913867bffdcdcba82f2"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-d.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-d.gz",
+        "sha256": "8d270d16239301c1bf58812cb7b0aa1cd1cfc0d989c78675ab3959a47d059544"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-e.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-e.gz",
+        "sha256": "99123f3d46550d235e51418473841eb4b18df25aac28cb42d0087fb4f17952b7"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-f.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-f.gz",
+        "sha256": "849bb0c41b8618a9549fed34b7438098687c978ea6fb0e198af8ff0f8e5c0647"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-g.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-g.gz",
+        "sha256": "645ffd22555badaa0b5a34108715f03cf457d675fe342b3b09b04341ca8bcf52"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-h.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-h.gz",
+        "sha256": "a791586b897543c94d9bd39627da162e64eef8625aac9baea768d03c0011d113"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-i.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-i.gz",
+        "sha256": "586920f29fa47dd615ad1b3d50f98a1b219cbbf4c062b7ec84382b7eb46bf311"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-j.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-j.gz",
+        "sha256": "be055978a665a007c34d893113bdd6e252df9b0c3c659c226105f3facffa7d79"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-k.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-k.gz",
+        "sha256": "696623eea52d359d3a934f9c2155b29d9c51dc01fc6e59f714396a7899e1ebd1"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-l.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-l.gz",
+        "sha256": "1bec4dcaa2b158285c2618028e531719198032d5fdb1f291ee6e39540f0f5443"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-m.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-m.gz",
+        "sha256": "cbf03a9bb06b90d9287ddd8d4872e17fdc0d7c3b69eeebb662baff0613c9599c"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-n.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-n.gz",
+        "sha256": "a60755c335144cab07eb0ee1a586b34376661cf00856728563c793e3631d0f74"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-o.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-o.gz",
+        "sha256": "2e3a595a70ab4cbd7eacfd0fc84bd23c5e65d15b9b1cbb02b1334b7192a21a82"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-p.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-p.gz",
+        "sha256": "3a842dc0099151abd9972d7f30b8732e4303089f8d41d6abb64ba1a34c473213"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-q.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-q.gz",
+        "sha256": "a83edfb8190cf5c4d4f9612889bb08128e9fa29849afde97ae34b93699ac4113"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-r.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-r.gz",
+        "sha256": "f4e8b3ba3057ddaf510810e31f2d94404e1f3734e2aab927960a9099249a8116"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-s.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-s.gz",
+        "sha256": "b729ebf3b6a4e0db8545cb931b05e7ed88a2fbc3bc5fae64598970424173ad0c"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-t.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-t.gz",
+        "sha256": "2fe088064434ccc2dfa3ee82e83ef89c16e5ab36463fd1028046bbae592d015d"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-u.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-u.gz",
+        "sha256": "d7332088b35b736e5d8130e621189892ff01aed5f463a15ad4fb8396ac43bddb"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-v.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-v.gz",
+        "sha256": "0a99420d8e21955030a34f622ee478bd6758fde22c9e9242b80320cb5d62fd22"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-w.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-w.gz",
+        "sha256": "48884c710fbc21a5d36fc22fc6e40a2d8f170262db33928746fb534882f80288"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-x.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-x.gz",
+        "sha256": "f987c68641c291f8dcd2fc049bb5d1624484cf928971e36110906ecc8920a1d4"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-y.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-y.gz",
+        "sha256": "e118ad96be2dc078573e71e256577ecd987504fc1ed0443ab41fa8a55228ca30"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-z.gz",
+        "url": "https://storage.googleapis.com/books/ngrams/books/googlebooks-eng-all-1gram-20120701-z.gz",
+        "sha256": "364fb0873683d893b229ade98012060dd20e0af6ac26ccea40a940cdc619ea7c"
+      }
+    ]
+  },
+  "scowl": {
+    "name": "SCOWL (Spell Checker Oriented Word Lists)",
+    "version": "2020.12.07",
+    "licence": "SCOWL Copyright file (MIT-like, includes the WordNet notice)",
+    "files": [
+      {
+        "name": "scowl-2020.12.07.tar.gz",
+        "url": "https://downloads.sourceforge.net/project/wordlist/SCOWL/2020.12.07/scowl-2020.12.07.tar.gz",
+        "sha256": "5587667caa20c4891390c2d42dbb4d5c4c3f41bee77af1457ece3ba23fb859cc"
+      }
+    ]
+  },
+  "ldnoobw": {
+    "name": "List of Dirty, Naughty, Obscene, and Otherwise Bad Words",
+    "version": "en",
+    "commit": "5faf2ba42d7b1c0977169ec3611df25a3c08eb13",
+    "licence": "CC BY 4.0",
+    "files": [
+      {
+        "name": "en",
+        "url": "https://raw.githubusercontent.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/5faf2ba42d7b1c0977169ec3611df25a3c08eb13/en",
+        "sha256": "af851ecef1d5f212caba17339b12ac39cc2fef7d78c74876f67237644fcee8bd"
+      }
+    ]
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "ngram": {
+    "version": "googlebooks-eng-all-1gram-20120701",
+    "licence": "test data",
+    "files": [
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-a.gz",
+        "url": "https://example.invalid/ngram-a.gz",
+        "sha256": "23d13d8b0839ae9947e056e4ecc334d6c8a40bbbb5d17730be4a8bad7f4df893"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-b.gz",
+        "url": "https://example.invalid/ngram-b.gz",
+        "sha256": "92e0b0892063089be0b495f0e08eb3458d04df35790fa7376e39d7b857863489"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-c.gz",
+        "url": "https://example.invalid/ngram-c.gz",
+        "sha256": "8c902a4f06c5422c054df859c28ad262a3cca052473e55a35f5f551fe04ecb13"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-d.gz",
+        "url": "https://example.invalid/ngram-d.gz",
+        "sha256": "bf6f07d8b695c67fd1a88cf21d0fd52a3ec981ec778c96c5ef9472fdd1de720a"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-e.gz",
+        "url": "https://example.invalid/ngram-e.gz",
+        "sha256": "ae54772b173c598f980367597c190d896ba59faee86e9b121d9c959b6cbcc54a"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-f.gz",
+        "url": "https://example.invalid/ngram-f.gz",
+        "sha256": "a8c911626cd8d1d4b62093fb9d15944d881f596d068c17d01c1c1260804d7a03"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-g.gz",
+        "url": "https://example.invalid/ngram-g.gz",
+        "sha256": "ffd90c48014a1110c729da9eb5fbf53cdbfe36b6f659cfe09712e4fe1dd4c3f8"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-h.gz",
+        "url": "https://example.invalid/ngram-h.gz",
+        "sha256": "22c20af49dc03e9d8f88a2f2075f26c03a0fd7b74509d794750a962cdd325048"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-i.gz",
+        "url": "https://example.invalid/ngram-i.gz",
+        "sha256": "c2f6859d38ab6011a0cc33dc2e1e674cd565e892f9e5e848f65b90f3464fab29"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-j.gz",
+        "url": "https://example.invalid/ngram-j.gz",
+        "sha256": "b5350f701cda6df18c138c8ce287b5a01a7b6d50af67794550eecc5885ff66bf"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-k.gz",
+        "url": "https://example.invalid/ngram-k.gz",
+        "sha256": "f0a38ed36e9b77f95a79ad2e6ee23efcfb66e38298ab7be35fbb167a0e50e0b0"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-l.gz",
+        "url": "https://example.invalid/ngram-l.gz",
+        "sha256": "7cb45616e593b46561d0714249d44223c1aeddc26a50865e2d1aa1b1fbdb36dd"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-m.gz",
+        "url": "https://example.invalid/ngram-m.gz",
+        "sha256": "af934b8af207728fd71e710cfc3eede19c8cee8835bcbf0a04881f0f8127e174"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-n.gz",
+        "url": "https://example.invalid/ngram-n.gz",
+        "sha256": "f3029c0ea87a7fdcf723632c7d0bb2225199e3b92d208ec21d02bbf543f8a79c"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-o.gz",
+        "url": "https://example.invalid/ngram-o.gz",
+        "sha256": "b466fe3d8147647f91ccea50bd000cb0e131883598d1006f7b002a91a00f2a32"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-p.gz",
+        "url": "https://example.invalid/ngram-p.gz",
+        "sha256": "ee335b7998396e78243742344ff1a805ac626e194019bbed7cc4742c34c6dac4"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-q.gz",
+        "url": "https://example.invalid/ngram-q.gz",
+        "sha256": "e97fe437bc17aa72a0cb0a2f6daf63d55da9989aba5e9c5fe3ff03a5643bbe35"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-r.gz",
+        "url": "https://example.invalid/ngram-r.gz",
+        "sha256": "dfca3a93b2855e740daf944f8139785173610297b89220f0d1c54001c96971df"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-s.gz",
+        "url": "https://example.invalid/ngram-s.gz",
+        "sha256": "15e62ee4d595444e496a29ca70cfd4d6290b998d5c9154741b309710460d4984"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-t.gz",
+        "url": "https://example.invalid/ngram-t.gz",
+        "sha256": "5b88f7e5b76fcbddacb8ebde5cd1c22cc7b12dae3aa8d83027e9f9781fffdf3d"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-u.gz",
+        "url": "https://example.invalid/ngram-u.gz",
+        "sha256": "cf54b21d6fd99a408e64db90fc3c639aa50023058d41d7efe12ea24d538723fc"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-v.gz",
+        "url": "https://example.invalid/ngram-v.gz",
+        "sha256": "7620c79a2806ee6a241407332b9cc9c49845ee1bc1ba8e47ec2fe54311feb85b"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-w.gz",
+        "url": "https://example.invalid/ngram-w.gz",
+        "sha256": "515d323615dce556fb207fc6271dea835b7f44b8fd25a0c15c08e6e62e7b736f"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-x.gz",
+        "url": "https://example.invalid/ngram-x.gz",
+        "sha256": "0754bbf7581fe7adb55555fececccecf9b7e88bb4f3c82bfc2d6918662f0ff63"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-y.gz",
+        "url": "https://example.invalid/ngram-y.gz",
+        "sha256": "9e36a71b5549ba4637424303b81faa0609d6f9169f9054845e23f8e9559c98f3"
+      },
+      {
+        "name": "googlebooks-eng-all-1gram-20120701-z.gz",
+        "url": "https://example.invalid/ngram-z.gz",
+        "sha256": "74e0ce023ef86a0d8c336814e9612cefbfad12025b2a974dc9aabe5ddfaf7f4f"
+      }
+    ]
+  },
+  "scowl": {
+    "version": "2020.12.07",
+    "licence": "test data",
+    "files": [
+      {
+        "name": "scowl-2020.12.07.tar.gz",
+        "url": "https://example.invalid/scowl.tar.gz",
+        "sha256": "0f98559fcf5c6f47e21115b98d6a5d08cd0b07fd406dcaf57f43d124dc4d8c84"
+      }
+    ]
+  },
+  "ldnoobw": {
+    "version": "en",
+    "commit": "9505cacb7c710ed17125fcc6cb3669e8ddca6c8c",
+    "licence": "test data",
+    "files": [
+      {
+        "name": "en",
+        "url": "https://example.invalid/en",
+        "sha256": "f563a40d7141e016f1f21db66bbe4e972e654b103975be81a557825d120f78e2"
+      }
+    ]
+  }
+}
